@@ -8,7 +8,7 @@
 		LiveStatsScene,
 	} from '$lib/models/enum';
 	import Device from 'svelte-device-info';
-	import type { AutoUpdater, Overlay, OverlayEditor, Url } from '$lib/models/types/overlay';
+	import { Overlay, OverlayEditor, Url } from '$lib/models/types/overlay';
 	import type {
 		CurrentPlayer,
 		GameStartTypeExtended,
@@ -22,6 +22,7 @@
 	import { TypedEmitter } from './customEventEmitter';
 	import type { Obs, ObsConnection } from '$lib/models/types/obsTypes';
 	import { Controller, SceneSwitchCommands } from '$lib/models/types/commandTypes';
+	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());

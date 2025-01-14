@@ -41,8 +41,8 @@
 			const unsubscribe = authorizationKey.subscribe((key) => {
 				cachedAuthorizationKey = key;
 				resolve(key);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -55,8 +55,8 @@
 			const unsubscribe = currentPlayer.subscribe((player) => {
 				cachedCurrentPlayer = player;
 				resolve(player);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -69,8 +69,8 @@
 			const unsubscribe = localEmitter.subscribe((emitter) => {
 				cachedLocalEmitter = emitter;
 				resolve(emitter);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -83,8 +83,8 @@
 			const unsubscribe = electronEmitter.subscribe((emitter) => {
 				cachedElectronEmitter = emitter;
 				resolve(emitter);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -97,8 +97,8 @@
 			const unsubscribe = obs.subscribe((obsVal) => {
 				cachedObs = obsVal;
 				resolve(obsVal);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -112,8 +112,8 @@
 				const list = Object.values(overlayObj);
 				cachedOverlays = list;
 				resolve(list);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -121,8 +121,8 @@
 		return new Promise<Overlay | undefined>((resolve) => {
 			const unsubscribe = overlays.subscribe((overlayObj) => {
 				resolve(overlayObj[overlayId]);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -135,8 +135,8 @@
 			const unsubscribe = page.subscribe((p) => {
 				cachedPage = p;
 				resolve(p);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -149,8 +149,8 @@
 			const unsubscribe = currentPlayers.subscribe((playersVal) => {
 				cachedPlayers = playersVal;
 				resolve(playersVal);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -163,8 +163,8 @@
 			const unsubscribe = gameFrame.subscribe((frame) => {
 				cachedGameFrame = frame;
 				resolve(frame);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -177,8 +177,8 @@
 			const unsubscribe = gameState.subscribe((gs) => {
 				cachedGameState = gs;
 				resolve(gs);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -191,8 +191,8 @@
 			const unsubscribe = postGame.subscribe((stats) => {
 				cachedGameStats = stats;
 				resolve(stats);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -205,8 +205,8 @@
 			const unsubscribe = gameSettings.subscribe((gs) => {
 				cachedGameSettings = gs;
 				resolve(gs);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -219,8 +219,8 @@
 			const unsubscribe = recentGames.subscribe((rg) => {
 				cachedRecentGames = rg;
 				resolve(rg);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -233,8 +233,8 @@
 			const unsubscribe = gameScore.subscribe((score) => {
 				cachedMatchScore = score;
 				resolve(score);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -247,8 +247,8 @@
 			const unsubscribe = sessionStats.subscribe((stats) => {
 				cachedSession = stats;
 				resolve(stats);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -261,8 +261,8 @@
 			const unsubscribe = isIframe.subscribe((val) => {
 				cachedIsIframe = val;
 				resolve(val);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -275,8 +275,8 @@
 			const unsubscribe = urls.subscribe((urlVal) => {
 				cachedUrls = urlVal;
 				resolve(urlVal);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 
@@ -289,8 +289,8 @@
 			const unsubscribe = isElectron.subscribe((val) => {
 				cachedIsElectron = val;
 				resolve(val);
-				unsubscribe();
 			});
+			unsubscribe();
 		});
 	}
 </script>

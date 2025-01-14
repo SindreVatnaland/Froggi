@@ -39,7 +39,7 @@
 	import { WEBSOCKET_PORT } from '$lib/models/const';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
-	import { debounce, isNil, throttle } from 'lodash';
+	import { debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
 	const debouncedSetGameFrame = debounce(
@@ -304,7 +304,7 @@
 		const _electronEmitter = await getElectronEmitter();
 		_electronEmitter.removeAllListeners();
 
-		const electronOnAnyHandler = (event: string | symbol, ...data: any[]) => {
+		const electronOnAnyHandler = (event: any, ...data: any[]) => {
 			window.electron.send('message', JSON.stringify({ [event as string]: data }));
 		};
 
@@ -336,40 +336,33 @@
 
 		const _electronEmitter = await getElectronEmitter();
 
-		let electronOnAnyHandler: ((event: string | symbol, ...data: any[]) => void) | null = null;
+		const emitElectronMessage = async (event: any, ...data: any) => {
+			const _authorizationKey = await getAuthorizationKey();
+			socket.send(
+				JSON.stringify({
+					[event as string]: data,
+					['AuthorizationKey']: _authorizationKey,
+				}),
+			);
+		};
 
 		socket.onopen = async () => {
-			electronOnAnyHandler = async (event: string | symbol, ...data: any[]) => {
-				const _authorizationKey = await getAuthorizationKey();
-				socket.send(
-					JSON.stringify({
-						[event as string]: data,
-						AuthorizationKey: _authorizationKey,
-					}),
-				);
-			};
-			_electronEmitter.onAny(electronOnAnyHandler);
+			_electronEmitter.offAny(emitElectronMessage);
+			_electronEmitter.onAny(emitElectronMessage);
 
 			_electronEmitter.emit('Ping');
 		};
 
 		socket.onclose = () => {
 			socket.removeEventListener('message', handleWebSocketMessage);
-
-			if (electronOnAnyHandler) {
-				_electronEmitter.offAny(electronOnAnyHandler);
-			}
-
+			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
-
 			setTimeout(reload, 1000);
 		};
 
 		return () => {
 			socket.removeEventListener('message', handleWebSocketMessage);
-			if (electronOnAnyHandler) {
-				_electronEmitter.offAny(electronOnAnyHandler);
-			}
+			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
 		};
 	};
