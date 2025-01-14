@@ -68,8 +68,9 @@ export const isPlayerAlive = (
     if (isNil(postFrame)) return false;
     const actionStateId = postFrame?.actionStateId
     const actionStateCounter = postFrame?.actionStateCounter
+    const hasStocks = hasStocksRemaining(postFrame, 1)
     if (isNil(actionStateId) || isNil(actionStateCounter)) return;
-    return (actionStateId ?? 0) > 10 || ((actionStateId ?? 0) <= 10 && actionStateCounter != -1);
+    return ((actionStateId ?? 0) > 10 || ((actionStateId ?? 0) <= 10 && actionStateCounter != -1)) && hasStocks;
 };
 
 export const isPlayerEnteringOnHalo = (
