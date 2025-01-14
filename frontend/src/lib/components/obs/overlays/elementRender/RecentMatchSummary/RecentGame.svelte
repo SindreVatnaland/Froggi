@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayers, gameScore, gameSettings, recentGames } from '$lib/utils/store.svelte';
+	import { currentPlayers, gameScore, gameSettings } from '$lib/utils/store.svelte';
 	import GameStage from '../../element/GameStage.svelte';
 	import CharacterIcon from '../../element/CharacterIcon.svelte';
 	import CharacterRender from '../../element/CharacterRender.svelte';
 	import { BestOf, Character } from '$lib/models/enum';
 	import { Stage } from '$lib/models/constants/stageData';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
+	import { GameStats } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
-
-	const game = $recentGames.at(-1)?.at(-1);
+	export let game: GameStats | undefined;
 
 	$: player1 = game?.settings?.players.at($currentPlayers?.at(0)?.playerIndex ?? 0);
 	$: player2 = game?.settings?.players.at($currentPlayers?.at(1)?.playerIndex ?? 1);

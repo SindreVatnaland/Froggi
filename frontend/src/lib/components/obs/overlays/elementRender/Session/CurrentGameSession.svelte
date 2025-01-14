@@ -9,14 +9,14 @@
 	export let style: GridContentItemStyle;
 
 	$: wins =
-		$sessionStats && $sessionStats.currentRankStats.wins - $sessionStats.startRankStats.wins;
+		Number($sessionStats?.currentRankStats?.wins) - Number($sessionStats?.startRankStats?.wins);
 	$: losses =
-		$sessionStats &&
-		$sessionStats.currentRankStats.losses - $sessionStats.startRankStats.losses;
+		Number($sessionStats?.currentRankStats?.losses) -
+		Number($sessionStats?.startRankStats?.losses);
 	$: numberOfGames = (wins ?? 0) + (losses ?? 0);
 	$: rating =
-		$sessionStats &&
-		$sessionStats.currentRankStats.rating - $sessionStats.startRankStats.rating;
+		Number($sessionStats?.currentRankStats?.rating) -
+		Number($sessionStats?.startRankStats?.rating);
 </script>
 
 {#if dataItem?.elementId === CustomElement.SessionWins}

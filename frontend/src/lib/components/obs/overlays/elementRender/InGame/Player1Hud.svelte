@@ -2,6 +2,7 @@
 	import { CHARACTERS } from '$lib/models/constants/characterData';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
+	import { Player } from '$lib/models/types/slippiData';
 	import { currentPlayers, gameFrame, gameScore } from '$lib/utils/store.svelte';
 	import PlayerPercent from '../../element/PlayerPercent.svelte';
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
@@ -13,50 +14,26 @@
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
+	export let player: Player | undefined;
 </script>
 
 {#if dataItem?.elementId === CustomElement.InGamePlayer1Percent}
-	<PlayerPercent
-		{style}
-		{dataItem}
-		{defaultPreview}
-		numberOfDecimals={0}
-		player={$currentPlayers?.at(0)}
-	/>
+	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
 {/if}
 {#if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimal}
-	<PlayerPercent
-		{style}
-		{dataItem}
-		{defaultPreview}
-		numberOfDecimals={1}
-		player={$currentPlayers?.at(0)}
-	/>
+	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
 {/if}
 {#if dataItem?.elementId === CustomElement.InGamePlayer1PercentCustom}
-	<PlayerPercentCustom
-		{style}
-		{dataItem}
-		{defaultPreview}
-		numberOfDecimals={0}
-		player={$currentPlayers?.at(0)}
-	/>
+	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
 {/if}
 {#if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimalCustom}
-	<PlayerPercentCustom
-		{style}
-		{dataItem}
-		{defaultPreview}
-		numberOfDecimals={1}
-		player={$currentPlayers?.at(0)}
-	/>
+	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
 {/if}
 {#if dataItem?.elementId === CustomElement.InGamePlayer1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 4
-			: $gameFrame?.players?.[$currentPlayers?.at(0)?.playerIndex ?? 0]?.post
-					.stocksRemaining ?? '0'}
+			: $gameFrame?.players?.[player?.playerIndex ?? 0]?.post.stocksRemaining ?? '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterIcon}
@@ -64,7 +41,7 @@
 		{dataItem}
 		{style}
 		preview={defaultPreview}
-		player={$currentPlayers?.at(0)}
+		{player}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
 {/if}
@@ -72,7 +49,7 @@
 	<InGameCharacterRender
 		{dataItem}
 		{style}
-		player={$currentPlayers?.at(0)}
+		{player}
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction="left"
@@ -82,7 +59,7 @@
 	<InGameCharacterRender
 		{dataItem}
 		{style}
-		player={$currentPlayers?.at(0)}
+		{player}
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction="right"
@@ -92,7 +69,7 @@
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
-		player={$currentPlayers?.at(0)}
+		{player}
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
@@ -101,7 +78,7 @@
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
-		player={$currentPlayers?.at(0)}
+		{player}
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		series={'ultimate'}
@@ -111,7 +88,6 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 3
-			: $gameFrame?.players?.[$currentPlayers?.at(0)?.playerIndex ?? 0]?.post
-					.currentComboCount ?? '0'}
+			: $gameFrame?.players?.[player?.playerIndex ?? 0]?.post.currentComboCount ?? '0'}
 	</TextElement>
 {/if}

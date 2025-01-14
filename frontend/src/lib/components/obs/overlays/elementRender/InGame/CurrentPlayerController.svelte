@@ -2,16 +2,19 @@
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { getButtonPressesGame } from '$lib/utils/helper';
-	import { currentPlayer, gameFrame } from '$lib/utils/store.svelte';
+	import { currentPlayer } from '$lib/utils/store.svelte';
 	import ControllerInputElement from '$lib/components/obs/overlays/element/ControllerInputElement.svelte';
 	import ControllerDPadElement from '$lib/components/obs/overlays/element/ControllerDPadElement.svelte';
 	import ControllerButtonBackAnalogElement from '$lib/components/obs/overlays/element/ControllerButtonBackAnalogElement.svelte';
 	import ControllerStickAnalogElement from '$lib/components/obs/overlays/element/ControllerStickAnalogElement .svelte';
+	import { FrameEntryType } from '@slippi/slippi-js';
 
 	export let dataItem: GridContentItem;
 	export let style: GridContentItemStyle;
+	export let gameFrame: FrameEntryType | null | undefined;
+	export let playerIndex: number;
 
-	$: playerController = $gameFrame?.players?.[$currentPlayer?.playerIndex ?? 0]?.pre ?? null;
+	$: playerController = gameFrame?.players?.[playerIndex ?? 0]?.pre ?? null;
 	$: buttonPresses = getButtonPressesGame(playerController?.buttons ?? 0);
 </script>
 

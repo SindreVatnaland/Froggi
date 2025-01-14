@@ -1,23 +1,25 @@
 <script lang="ts">
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayers, recentGames } from '$lib/utils/store.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import GameStage from '../../element/GameStage.svelte';
 	import { Stage } from '$lib/models/constants/stageData';
 	import CharacterIcon from '../../element/CharacterIcon.svelte';
 	import CharacterRender from '../../element/CharacterRender.svelte';
 	import { Character } from '$lib/models/enum';
+	import { GameStats, Player } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
+	export let recentGames: GameStats[][];
+	export let currentPlayers: Player[];
 
-	$: gameNumber = $recentGames.length > 5 ? -3 : 2;
-	$: game = $recentGames.at(gameNumber)?.at(0);
+	$: gameNumber = recentGames.length > 5 ? -5 : 0;
+	$: game = recentGames.at(gameNumber)?.at(0);
 
-	$: player1 = game?.settings?.players.at($currentPlayers?.at(0)?.playerIndex ?? 0);
-	$: player2 = game?.settings?.players.at($currentPlayers?.at(1)?.playerIndex ?? 1);
+	$: player1 = game?.settings?.players.at(currentPlayers?.at(0)?.playerIndex ?? 0);
+	$: player2 = game?.settings?.players.at(currentPlayers?.at(1)?.playerIndex ?? 1);
 </script>
 
 {#if dataItem?.elementId === CustomElement.CurrentSetGame3Stage}
