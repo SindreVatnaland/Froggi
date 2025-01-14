@@ -2,7 +2,6 @@
 	import { CHARACTERS } from '$lib/models/constants/characterData';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayer, gameFrame } from '$lib/utils/store.svelte';
 	import PlayerPercent from '$lib/components/obs/overlays/element/PlayerPercent.svelte';
 	import InGameCharacterIcon from '$lib/components/obs/overlays/element/inGame/InGameCharacterIcon.svelte';
 	import InGameCharacterRender from '$lib/components/obs/overlays/element/inGame/InGameCharacterRender.svelte';
@@ -10,11 +9,13 @@
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
 	import { Player } from '$lib/models/types/slippiData';
+	import { FrameEntryType } from '@slippi/slippi-js';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
 	export let player: Player;
+	export let gameFrame: FrameEntryType | null | undefined;
 </script>
 
 {#if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercent}
@@ -33,7 +34,7 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 4
-			: $gameFrame?.players?.[player?.playerIndex ?? 0]?.post.stocksRemaining ?? '0'}
+			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.stocksRemaining ?? '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterIcon}
@@ -88,6 +89,6 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '3'
-			: $gameFrame?.players?.[player?.playerIndex ?? 0]?.post.currentComboCount ?? '0'}
+			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.currentComboCount ?? '0'}
 	</TextElement>
 {/if}

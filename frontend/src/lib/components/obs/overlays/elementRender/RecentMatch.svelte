@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentMatch, currentPlayer } from '$lib/utils/store.svelte';
+	import { CurrentPlayer, Match, MatchStats } from '$lib/models/types/slippiData';
 	import CurrentPlayerActionCount from './RecentMatch/RecentMatchCurrentPlayerActionCount.svelte';
 	import CurrentPlayerAttackCount from './RecentMatch/RecentMatchCurrentPlayerAttackCount.svelte';
 	import CurrentPlayerOverallStats from './RecentMatch/RecentMatchCurrentPlayerOverallStats.svelte';
@@ -14,10 +14,12 @@
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
+	export let match: Match;
+	export let currentPlayer: CurrentPlayer;
 
-	$: currentPlayerIndex = $currentPlayer?.playerIndex;
+	$: currentPlayerIndex = currentPlayer?.playerIndex;
 
-	$: stats = $currentMatch?.stats;
+	$: stats = match?.stats;
 </script>
 
 <CurrentPlayerAttackCount

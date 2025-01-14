@@ -1,22 +1,23 @@
 <script lang="ts">
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayers, gameScore, gameSettings } from '$lib/utils/store.svelte';
+	import { gameScore, gameSettings } from '$lib/utils/store.svelte';
 	import GameStage from '../../element/GameStage.svelte';
 	import CharacterIcon from '../../element/CharacterIcon.svelte';
 	import CharacterRender from '../../element/CharacterRender.svelte';
-	import { BestOf, Character } from '$lib/models/enum';
+	import { Character } from '$lib/models/enum';
 	import { Stage } from '$lib/models/constants/stageData';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
-	import { GameStats } from '$lib/models/types/slippiData';
+	import { GameStats, Player } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
 	export let game: GameStats | undefined;
+	export let currentPlayers: Player[];
 
-	$: player1 = game?.settings?.players.at($currentPlayers?.at(0)?.playerIndex ?? 0);
-	$: player2 = game?.settings?.players.at($currentPlayers?.at(1)?.playerIndex ?? 1);
+	$: player1 = game?.settings?.players.at(currentPlayers?.at(0)?.playerIndex ?? 0);
+	$: player2 = game?.settings?.players.at(currentPlayers?.at(1)?.playerIndex ?? 1);
 </script>
 
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentStage}
@@ -110,7 +111,7 @@
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
-			? game?.lastFrame?.players?.[$currentPlayers?.at(0)?.playerIndex ?? 0]?.post
+			? game?.lastFrame?.players?.[currentPlayers?.at(0)?.playerIndex ?? 0]?.post
 					.stocksRemaining
 			: defaultPreview
 			? `2`
@@ -120,7 +121,7 @@
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
-			? game?.lastFrame?.players?.[$currentPlayers?.at(1)?.playerIndex ?? 1]?.post
+			? game?.lastFrame?.players?.[currentPlayers?.at(1)?.playerIndex ?? 1]?.post
 					.stocksRemaining
 			: defaultPreview
 			? `0`

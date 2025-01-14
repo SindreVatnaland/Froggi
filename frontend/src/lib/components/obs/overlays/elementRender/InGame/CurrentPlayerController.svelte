@@ -2,7 +2,6 @@
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { getButtonPressesGame } from '$lib/utils/helper';
-	import { currentPlayer } from '$lib/utils/store.svelte';
 	import ControllerInputElement from '$lib/components/obs/overlays/element/ControllerInputElement.svelte';
 	import ControllerDPadElement from '$lib/components/obs/overlays/element/ControllerDPadElement.svelte';
 	import ControllerButtonBackAnalogElement from '$lib/components/obs/overlays/element/ControllerButtonBackAnalogElement.svelte';

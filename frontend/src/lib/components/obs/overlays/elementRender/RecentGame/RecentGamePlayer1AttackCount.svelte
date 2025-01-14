@@ -10,7 +10,7 @@
 	export let style: GridContentItemStyle;
 
 	export let playerIndex: number;
-	export let stats: StatsType | null;
+	export let stats: StatsType | null | undefined;
 
 	$: attackCount = stats?.actionCounts?.[playerIndex ?? 0]?.attackCount;
 </script>

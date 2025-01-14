@@ -11,7 +11,7 @@
 	export let style: GridContentItemStyle;
 
 	export let playerIndex: number;
-	export let stats: StatsType | null;
+	export let stats: StatsType | null | undefined;
 
 	$: playerOverall = stats?.overall?.[playerIndex ?? 0];
 	$: playerStocks = stats?.stocks.find((stock) => stock.playerIndex === playerIndex);

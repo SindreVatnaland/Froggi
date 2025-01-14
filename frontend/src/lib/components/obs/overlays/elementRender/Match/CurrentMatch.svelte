@@ -2,18 +2,21 @@
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import { BestOf } from '$lib/models/enum';
 	import { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayers, gameScore, gameSettings, statsScene } from '$lib/utils/store.svelte';
+	import { GameStartTypeExtended, Player } from '$lib/models/types/slippiData';
 	import TextElement from '../../element/TextElement.svelte';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
+	export let currentPlayers: Player[];
+	export let gameScore: number[];
+	export let gameSettings: GameStartTypeExtended;
 
-	const bestOf = $gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3;
-	const player1Tag = $currentPlayers.at(0)?.displayName ?? '';
-	const player2Tag = $currentPlayers.at(1)?.displayName ?? '';
-	const player1Score = $gameScore.at(0) ?? 0;
-	const player2Score = $gameScore.at(1) ?? 0;
+	const bestOf = gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3;
+	const player1Tag = currentPlayers.at(0)?.displayName ?? '';
+	const player2Tag = currentPlayers.at(1)?.displayName ?? '';
+	const player1Score = gameScore.at(0) ?? 0;
+	const player2Score = gameScore.at(1) ?? 0;
 </script>
 
 {#if dataItem?.elementId === CustomElement.MatchBestOf}

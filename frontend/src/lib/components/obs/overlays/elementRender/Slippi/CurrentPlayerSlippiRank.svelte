@@ -12,7 +12,7 @@
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
 
-	const player: CurrentPlayer = $currentPlayer;
+	export let player: CurrentPlayer;
 </script>
 
 {#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerTag}

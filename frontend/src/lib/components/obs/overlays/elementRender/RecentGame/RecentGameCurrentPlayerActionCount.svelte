@@ -11,7 +11,7 @@
 	export let style: GridContentItemStyle;
 
 	export let playerIndex: number;
-	export let stats: StatsType | null;
+	export let stats: StatsType | null | undefined;
 
 	$: actionCounts = stats?.actionCounts?.[playerIndex ?? 0];
 </script>

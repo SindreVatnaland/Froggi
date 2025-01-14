@@ -9,7 +9,18 @@
 	import Session from './elementRender/Session.svelte';
 	import RecentMatchSummary from './elementRender/RecentMatchSummary.svelte';
 	import Match from './elementRender/Match.svelte';
-	import { overlays, statsScene } from '$lib/utils/store.svelte';
+	import {
+		currentMatch,
+		currentPlayer,
+		currentPlayers,
+		gameFrame,
+		gameScore,
+		gameSettings,
+		overlays,
+		postGame,
+		recentGames,
+		statsScene,
+	} from '$lib/utils/store.svelte';
 	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
 
@@ -101,17 +112,57 @@
 		<div class="w-full h-full">
 			<Custom {dataItem} {style} />
 
-			<InGame {dataItem} {defaultPreview} {style} />
+			<InGame
+				{dataItem}
+				{defaultPreview}
+				{style}
+				gameFrame={$gameFrame}
+				gameSettings={$gameSettings}
+				currentPlayer={$currentPlayer}
+				currentPlayers={$currentPlayers}
+			/>
 
-			<Match {dataItem} {defaultPreview} {style} />
+			<Match
+				{dataItem}
+				{defaultPreview}
+				{style}
+				gameScore={$gameScore}
+				gameSettings={$gameSettings}
+				currentPlayers={$currentPlayers}
+			/>
 
-			<RecentGame {dataItem} {defaultPreview} {style} />
+			<RecentGame
+				{dataItem}
+				{defaultPreview}
+				{style}
+				currentPlayer={$currentPlayer}
+				postGame={$postGame}
+			/>
 
-			<RecentMatch {dataItem} {defaultPreview} {style} />
+			<RecentMatch
+				{dataItem}
+				{defaultPreview}
+				{style}
+				match={$currentMatch}
+				currentPlayer={$currentPlayer}
+			/>
 
-			<RecentMatchSummary {dataItem} {defaultPreview} {style} />
+			<RecentMatchSummary
+				{dataItem}
+				{defaultPreview}
+				{style}
+				recentGames={$recentGames}
+				currentPlayers={$currentPlayers}
+			/>
 
-			<SlippiRank {dataItem} {defaultPreview} {style} />
+			<SlippiRank
+				{dataItem}
+				{defaultPreview}
+				{style}
+				gameSettings={$gameSettings}
+				currentPlayer={$currentPlayer}
+				currentPlayers={$currentPlayers}
+			/>
 
 			<Session {dataItem} {defaultPreview} {style} />
 
