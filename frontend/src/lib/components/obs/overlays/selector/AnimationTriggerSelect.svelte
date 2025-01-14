@@ -26,7 +26,7 @@
 		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
 		on:click={() => (open = true)}
 	>
-		Select
+		Apply Animation Triggers
 	</button>
 </div>
 

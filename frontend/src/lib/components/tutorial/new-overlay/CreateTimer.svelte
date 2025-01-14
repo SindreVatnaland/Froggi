@@ -7,7 +7,11 @@
 
 <h2>For good measures we will create a new layer where we can place the timer.</h2>
 
-<img class="rounded-sm border" src="/image/tutorial/new-overlay/add-timer.png" alt="Add timer" />
+<img
+	class="rounded-sm border border-secondary-color"
+	src="/image/tutorial/new-overlay/add-timer.png"
+	alt="Add timer"
+/>
 
 <h2>The timer is split up in separate components due to flexibility.</h2>
 
@@ -29,7 +33,7 @@
 </h2>
 
 <img
-	class="rounded-sm border"
+	class="rounded-sm border border-secondary-color"
 	src="/image/tutorial/new-overlay/preview-timer.png"
 	alt="Add timer"
 />

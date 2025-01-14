@@ -69,7 +69,7 @@
 		]}
 	>
 		<div
-			class={`w-full border-b-1 border-t-1 border-zinc-700 gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between items-center background-color-primary bg-opacity-30 hover:bg-opacity-60`}
+			class={`w-full border-b-1 border-t-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between items-center background-color-primary bg-opacity-30 hover:bg-opacity-60`}
 			style={`${isSelected && 'background-color: rgba(255, 255, 255, 0.10);'}`}
 		>
 			<div class="col-span-1 grid justify-center">

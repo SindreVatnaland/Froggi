@@ -159,10 +159,10 @@
 				>
 					<div class="w-full h-full relative">
 						<div
-							class={`w-full h-full absolute ${
+							class={`w-full h-full absolute outline outline-1 outline-offset-[-1px]  ${
 								selectedItemId === dataItem?.id
-									? 'outline outline-1 outline-secondary-color'
-									: ''
+									? 'outline-secondary-color'
+									: 'outline-dotted'
 							}`}
 						>
 							<GridContent edit={true} {dataItem} />

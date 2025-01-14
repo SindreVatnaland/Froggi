@@ -57,7 +57,7 @@
 </video>
 
 <h2>
-	Or if you want to take this even further you can do something like the
+	Or you can take this even further you can do something like the
 	<b>Hud</b>
 	demo overlay, which is included with the app.
 </h2>
@@ -71,6 +71,18 @@
 >
 	<track kind="captions" />
 </video>
+
+<h2>
+	Is this clip we have made a copy of the stocks and moved them in the center. We then added two
+	black boxes with a slight opacity as a little background and finished off with adding the
+	remaining stock number.
+</h2>
+
+<h2>
+	Finally we add a condition that requires all the elements to only be visible when either player
+	are <b>Not</b>
+	alive.
+</h2>
 
 <h2>
 	Lets move over to the next tutorial where we will deep diver into how to integrate <b>Froggi</b>

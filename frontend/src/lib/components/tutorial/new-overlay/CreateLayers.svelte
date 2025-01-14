@@ -4,17 +4,18 @@
 <h1 class="text-2xl font-semibold">Adding layers</h1>
 
 <h2>
-	As other centered hud components are not allowed to overlap with other components it is
-	necessary to add a new layers.
+	Other components are not allowed to overlap with other components on the same layer. Thus it is
+	necessary to add new layers.
 </h2>
 
 <h2>
-	We want to replicate most of the HUD from melee as possible. Thus we want to implement the <b>
+	We want to replicate most of the HUD from melee as possible. We will start by implementing the <b
+	>
 		Ready
 	</b>
 	and
 	<b>Go</b>
-	text when game starts.
+	text that pops up when game starts.
 </h2>
 
 <img class="border-secondary" src="/image/tutorial/new-overlay/add-layer.png" alt="Add layer" />

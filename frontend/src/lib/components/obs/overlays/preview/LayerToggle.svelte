@@ -36,7 +36,7 @@
 
 	let scrollElement: HTMLElement;
 	const scrollToBottom = () => {
-		scrollElement.scrollBy({ behavior: 'smooth', top: 1000 });
+		scrollElement.scroll({ top: scrollElement.scrollHeight, behavior: 'smooth' });
 	};
 
 	const updateSelectedLayer = () => {
@@ -48,7 +48,7 @@
 {#if layers && curOverlay}
 	<div class="h-full flex flex-col">
 		<div
-			class="w-full h-12 border-b-1 border-zinc-700 gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between background-color-primary bg-opacity-50"
+			class="w-full h-12 border-b-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between background-color-primary bg-opacity-50"
 		>
 			<div
 				class="col-span-1 grid justify-center"
@@ -94,7 +94,7 @@
 				</button>
 			</div>
 			{#each layers as layer, layerIndex (layer.id)}
-				<div class="w-full visible" animate:flip={{ duration: 80 }}>
+				<div class="w-full visible">
 					<LayerDisplayRow
 						{curOverlay}
 						{layerIndex}

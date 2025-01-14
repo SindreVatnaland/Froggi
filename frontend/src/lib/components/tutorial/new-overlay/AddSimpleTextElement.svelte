@@ -20,9 +20,13 @@
 
 <h2>
 	From here we can click the <b>Add new element</b>
-	button. Select the only
+	button. A window will pop up where you can select a category and elements related to that category.
+	As
+	<b>{LiveStatsScene.WaitingForDolphin}</b>
+	is a scene that is being displayed when dolphin is disconnected, there is not many categories to
+	choose from. Proceed by selecting the
 	<b>Custom</b>
-	category and
+	category followed by
 	<b>Custom Text</b>
 </h2>
 
