@@ -32,151 +32,267 @@
 	import type { TypedEmitter } from './customEventEmitter';
 	import type { Obs } from '$lib/models/types/obsTypes';
 
+	let cachedAuthorizationKey: string | undefined;
 	export async function getAuthorizationKey(): Promise<string | undefined> {
-		return await new Promise<string | undefined>((resolve) => {
-			authorizationKey.subscribe((key) => {
+		if (cachedAuthorizationKey !== undefined) {
+			return cachedAuthorizationKey;
+		}
+		return new Promise<string | undefined>((resolve) => {
+			const unsubscribe = authorizationKey.subscribe((key) => {
+				cachedAuthorizationKey = key;
 				resolve(key);
+				unsubscribe();
 			});
 		});
 	}
 
+	// -----------------------------
+	//  2) Current Player
+	// -----------------------------
+	let cachedCurrentPlayer: CurrentPlayer | undefined;
 	export async function getCurrentPlayer(): Promise<CurrentPlayer | undefined> {
-		return await new Promise<CurrentPlayer | undefined>((resolve) => {
-			currentPlayer.subscribe((player) => {
+		if (cachedCurrentPlayer !== undefined) {
+			return cachedCurrentPlayer;
+		}
+		return new Promise<CurrentPlayer | undefined>((resolve) => {
+			const unsubscribe = currentPlayer.subscribe((player) => {
+				cachedCurrentPlayer = player;
 				resolve(player);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedLocalEmitter: TypedEmitter | undefined;
 	export async function getLocalEmitter(): Promise<TypedEmitter> {
-		return await new Promise<TypedEmitter>((resolve) => {
-			localEmitter.subscribe((localEmitter) => {
-				resolve(localEmitter);
+		if (cachedLocalEmitter) {
+			return cachedLocalEmitter;
+		}
+		return new Promise<TypedEmitter>((resolve) => {
+			const unsubscribe = localEmitter.subscribe((emitter) => {
+				cachedLocalEmitter = emitter;
+				resolve(emitter);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedElectronEmitter: TypedEmitter | undefined;
 	export async function getElectronEmitter(): Promise<TypedEmitter> {
-		return await new Promise<TypedEmitter>((resolve) => {
-			electronEmitter.subscribe((localEmitter) => {
-				resolve(localEmitter);
+		if (cachedElectronEmitter) {
+			return cachedElectronEmitter;
+		}
+		return new Promise<TypedEmitter>((resolve) => {
+			const unsubscribe = electronEmitter.subscribe((emitter) => {
+				cachedElectronEmitter = emitter;
+				resolve(emitter);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedObs: Obs | undefined;
 	export async function getObs(): Promise<Obs> {
-		return await new Promise<Obs>((resolve) => {
-			obs.subscribe((obs) => {
-				resolve(obs);
+		if (cachedObs) {
+			return cachedObs;
+		}
+		return new Promise<Obs>((resolve) => {
+			const unsubscribe = obs.subscribe((obsVal) => {
+				cachedObs = obsVal;
+				resolve(obsVal);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedOverlays: Overlay[] | undefined;
 	export async function getOverlays(): Promise<Overlay[]> {
-		return await new Promise<Overlay[]>((resolve) => {
-			overlays.subscribe((overlays) => {
-				resolve(Object.values(overlays));
+		if (cachedOverlays) {
+			return cachedOverlays;
+		}
+		return new Promise<Overlay[]>((resolve) => {
+			const unsubscribe = overlays.subscribe((overlayObj) => {
+				const list = Object.values(overlayObj);
+				cachedOverlays = list;
+				resolve(list);
+				unsubscribe();
 			});
 		});
 	}
 
 	export async function getOverlayById(overlayId: string): Promise<Overlay | undefined> {
-		return await new Promise<Overlay>((resolve) => {
-			overlays.subscribe((overlays) => {
-				resolve(overlays[overlayId]);
+		return new Promise<Overlay | undefined>((resolve) => {
+			const unsubscribe = overlays.subscribe((overlayObj) => {
+				resolve(overlayObj[overlayId]);
+				unsubscribe();
 			});
 		});
 	}
 
-	export const getPage = async () => {
-		return await new Promise<Page>((resolve) => {
-			page.subscribe((p) => {
+	let cachedPage: Page | undefined;
+	export async function getPage(): Promise<Page> {
+		if (cachedPage) {
+			return cachedPage;
+		}
+		return new Promise<Page>((resolve) => {
+			const unsubscribe = page.subscribe((p) => {
+				cachedPage = p;
 				resolve(p);
+				unsubscribe();
 			});
 		});
-	};
+	}
 
+	let cachedPlayers: Player[] | undefined;
 	export async function getPlayers(): Promise<Player[] | undefined> {
-		return await new Promise<Player[] | undefined>((resolve) => {
-			currentPlayers.subscribe((players) => {
-				resolve(players);
+		if (cachedPlayers !== undefined) {
+			return cachedPlayers;
+		}
+		return new Promise<Player[] | undefined>((resolve) => {
+			const unsubscribe = currentPlayers.subscribe((playersVal) => {
+				cachedPlayers = playersVal;
+				resolve(playersVal);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedGameFrame: FrameEntryType | null | undefined;
 	export async function getGameFrame(): Promise<FrameEntryType | null | undefined> {
-		return await new Promise<FrameEntryType | null | undefined>((resolve) => {
-			gameFrame.subscribe((gameFrame) => {
-				resolve(gameFrame);
+		if (cachedGameFrame !== undefined) {
+			return cachedGameFrame;
+		}
+		return new Promise<FrameEntryType | null | undefined>((resolve) => {
+			const unsubscribe = gameFrame.subscribe((frame) => {
+				cachedGameFrame = frame;
+				resolve(frame);
+				unsubscribe();
 			});
 		});
 	}
+
+	let cachedGameState: InGameState | undefined;
 	export async function getGameState(): Promise<InGameState> {
-		return await new Promise<InGameState>((resolve) => {
-			gameState.subscribe((gameState) => {
-				resolve(gameState);
+		if (cachedGameState) {
+			return cachedGameState;
+		}
+		return new Promise<InGameState>((resolve) => {
+			const unsubscribe = gameState.subscribe((gs) => {
+				cachedGameState = gs;
+				resolve(gs);
+				unsubscribe();
 			});
 		});
 	}
+
+	let cachedGameStats: GameStats | undefined;
 	export async function getGameStats(): Promise<GameStats> {
-		return await new Promise<GameStats>((resolve) => {
-			postGame.subscribe((stats) => {
+		if (cachedGameStats) {
+			return cachedGameStats;
+		}
+		return new Promise<GameStats>((resolve) => {
+			const unsubscribe = postGame.subscribe((stats) => {
+				cachedGameStats = stats;
 				resolve(stats);
+				unsubscribe();
 			});
 		});
 	}
+
+	let cachedGameSettings: GameStartType | undefined;
 	export async function getGameSettings(): Promise<GameStartType> {
-		return await new Promise<GameStartType>((resolve) => {
-			gameSettings.subscribe((gameSettings) => {
-				resolve(gameSettings);
+		if (cachedGameSettings) {
+			return cachedGameSettings;
+		}
+		return new Promise<GameStartType>((resolve) => {
+			const unsubscribe = gameSettings.subscribe((gs) => {
+				cachedGameSettings = gs;
+				resolve(gs);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedRecentGames: GameStats[][] | undefined;
 	export async function getRecentGames(): Promise<GameStats[][]> {
-		return await new Promise<GameStats[][]>((resolve) => {
-			recentGames.subscribe((stats) => {
-				resolve(stats);
+		if (cachedRecentGames) {
+			return cachedRecentGames;
+		}
+		return new Promise<GameStats[][]>((resolve) => {
+			const unsubscribe = recentGames.subscribe((rg) => {
+				cachedRecentGames = rg;
+				resolve(rg);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedMatchScore: number[] | undefined;
 	export async function getMatchScore(): Promise<number[]> {
-		return await new Promise<number[]>((resolve) => {
-			gameScore.subscribe((score) => {
+		if (cachedMatchScore) {
+			return cachedMatchScore;
+		}
+		return new Promise<number[]>((resolve) => {
+			const unsubscribe = gameScore.subscribe((score) => {
+				cachedMatchScore = score;
 				resolve(score);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedSession: SessionStats | undefined;
 	export async function getSession(): Promise<SessionStats | undefined> {
-		return await new Promise<SessionStats | undefined>((resolve) => {
-			sessionStats.subscribe((stats) => {
+		if (cachedSession !== undefined) {
+			return cachedSession;
+		}
+		return new Promise<SessionStats | undefined>((resolve) => {
+			const unsubscribe = sessionStats.subscribe((stats) => {
+				cachedSession = stats;
 				resolve(stats);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedIsIframe: boolean | undefined;
 	export async function getIsIframe(): Promise<boolean> {
-		return await new Promise<boolean>((resolve) => {
-			isIframe.subscribe((value) => {
-				resolve(value);
+		if (cachedIsIframe !== undefined) {
+			return cachedIsIframe;
+		}
+		return new Promise<boolean>((resolve) => {
+			const unsubscribe = isIframe.subscribe((val) => {
+				cachedIsIframe = val;
+				resolve(val);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedUrls: Url | undefined;
 	export async function getUrls(): Promise<Url> {
-		return await new Promise<Url>((resolve) => {
-			urls.subscribe((urls) => {
-				resolve(urls);
+		if (cachedUrls) {
+			return cachedUrls;
+		}
+		return new Promise<Url>((resolve) => {
+			const unsubscribe = urls.subscribe((urlVal) => {
+				cachedUrls = urlVal;
+				resolve(urlVal);
+				unsubscribe();
 			});
 		});
 	}
 
+	let cachedIsElectron: boolean | undefined;
 	export async function getIsElectron(): Promise<boolean> {
-		return await new Promise<boolean>((resolve) => {
-			isElectron.subscribe((isElectron) => {
-				resolve(isElectron);
+		if (cachedIsElectron !== undefined) {
+			return cachedIsElectron;
+		}
+		return new Promise<boolean>((resolve) => {
+			const unsubscribe = isElectron.subscribe((val) => {
+				cachedIsElectron = val;
+				resolve(val);
+				unsubscribe();
 			});
 		});
 	}

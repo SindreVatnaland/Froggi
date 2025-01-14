@@ -3,190 +3,159 @@
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { currentPlayer, currentMatch } from '$lib/utils/store.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
+	import { MatchStats } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
 
-	$: currentPlayerIndex = $currentPlayer?.playerIndex;
+	export let playerIndex: number;
+	export let stats: MatchStats;
 
-	$: currentPlayerAttackCount =
-		$currentMatch?.stats?.actionCounts?.[currentPlayerIndex ?? 0]?.attackCount;
+	$: attackCount = stats?.actionCounts?.[playerIndex ?? 0]?.attackCount;
 </script>
 
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountBair}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.bair, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.bair
+		{![attackCount?.bair, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.bair
 			: defaultPreview
-			? `28`
+			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountDair}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.dair, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.dair
+		{![attackCount?.dair, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.dair
 			: defaultPreview
-			? `28`
+			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountDash}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.dash, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.dash
+		{![attackCount?.dash, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.dash
 			: defaultPreview
-			? `28`
+			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountDsmash}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.dsmash, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.dsmash
+		{![attackCount?.dsmash, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.dsmash
 			: defaultPreview
-			? `8`
+			? `${8 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountDtilt}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.dtilt, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.dtilt
+		{![attackCount?.dtilt, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.dtilt
 			: defaultPreview
-			? `14`
+			? `${14 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountFair}
 	<TextElement {style} {dataItem}>
-		{[currentPlayerAttackCount?.fair, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.fair
+		{![attackCount?.fair, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.fair
 			: defaultPreview
-			? `7`
+			? `${7 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountFsmash}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.fsmash, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.fsmash
+		{![attackCount?.fsmash, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.fsmash
 			: defaultPreview
-			? `13`
+			? `${13 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountFtilt}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.ftilt, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.ftilt
+		{![attackCount?.ftilt, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.ftilt
 			: defaultPreview
-			? `13`
+			? `${13 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountJab}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.jab1, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.jab1
+		{![attackCount?.jab1, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.jab1
 			: defaultPreview
-			? `11`
+			? `${11 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountJab2}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.jab2, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.jab2
+		{![attackCount?.jab2, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.jab2
 			: defaultPreview
-			? `11`
+			? `${11 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountJab3}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.jab3, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.jab3
+		{![attackCount?.jab3, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.jab3
 			: defaultPreview
-			? `10`
+			? `${10 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountJabMulti}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.jabm, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.jabm
+		{![attackCount?.jabm, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.jabm
 			: defaultPreview
-			? `2`
+			? `${2 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountNair}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.nair, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.nair
+		{![attackCount?.nair, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.nair
 			: defaultPreview
-			? `22`
+			? `${22 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountUair}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.uair, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.uair
+		{![attackCount?.uair, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.uair
 			: defaultPreview
-			? `16`
+			? `${16 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountUsmash}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.usmash, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.usmash
+		{![attackCount?.usmash, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.usmash
 			: defaultPreview
-			? `5`
+			? `${5 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerAttackCountUtilt}
 	<TextElement {style} {dataItem}>
-		{![currentPlayerAttackCount?.utilt, currentPlayerIndex].some(
-			(e) => e === undefined || e === null,
-		)
-			? currentPlayerAttackCount?.utilt
+		{![attackCount?.utilt, playerIndex].some((e) => e === undefined || e === null)
+			? attackCount?.utilt
 			: defaultPreview
-			? `5`
+			? `${5 + playerIndex}`
 			: '0'}
 	</TextElement>
 {/if}

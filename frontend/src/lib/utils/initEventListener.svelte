@@ -287,62 +287,90 @@
 
 	export const initElectronEvents = async () => {
 		console.log('Initializing electron');
+
 		const _localEmitter = await getLocalEmitter();
 		_localEmitter.removeAllListeners();
-		window.electron.receive('message', (data: any) => {
-			let parse = JSON.parse(data);
-			console.log(parse);
-			for (const [key, value] of Object.entries(parse) as [
-				key: keyof MessageEvents,
-				value: Parameters<MessageEvents[keyof MessageEvents]>,
-			]) {
+
+		const electronMessageHandler = (data: any) => {
+			const parse = JSON.parse(data);
+			for (const [key, value] of Object.entries(parse)) {
 				messageDataHandler(key as keyof MessageEvents, ...(value as any));
 				_localEmitter.emit(key as keyof MessageEvents, ...(value as any));
 			}
-		});
+		};
+
+		window.electron.receive('message', electronMessageHandler);
 
 		const _electronEmitter = await getElectronEmitter();
 		_electronEmitter.removeAllListeners();
-		_electronEmitter.onAny((event, ...data) => {
+
+		const electronOnAnyHandler = (event: string | symbol, ...data: any[]) => {
 			window.electron.send('message', JSON.stringify({ [event as string]: data }));
-		});
+		};
+
+		_electronEmitter.onAny(electronOnAnyHandler);
+
+		return () => {
+			window.electron.removeListener?.('message', electronMessageHandler);
+			_electronEmitter.offAny(electronOnAnyHandler);
+		};
 	};
 
 	export const initWebSocket = async () => {
 		const _page = await getPage();
 		console.log('Initializing websocket');
+
 		const _localEmitter = await getLocalEmitter();
+
 		const socket = new WebSocket(`ws://${_page.url.hostname}:${WEBSOCKET_PORT}`);
-		socket.removeEventListener('message', console.log);
-		socket.addEventListener('message', ({ data }: { data: any }) => {
+
+		const handleWebSocketMessage = ({ data }: { data: any }) => {
 			const parse = JSON.parse(data);
-			console.log(parse);
-			for (const [key, value] of Object.entries(parse) as [
-				key: keyof MessageEvents,
-				value: Parameters<MessageEvents[keyof MessageEvents]>,
-			]) {
+			for (const [key, value] of Object.entries(parse)) {
 				messageDataHandler(key as keyof MessageEvents, ...(value as any));
 				_localEmitter.emit(key as keyof MessageEvents, ...(value as any));
 			}
-		});
+		};
+
+		socket.addEventListener('message', handleWebSocketMessage);
 
 		const _electronEmitter = await getElectronEmitter();
+
+		let electronOnAnyHandler: ((event: string | symbol, ...data: any[]) => void) | null = null;
+
 		socket.onopen = async () => {
-			_electronEmitter.offAny(console.log);
-			_electronEmitter.onAny(async (event, ...data) => {
+			electronOnAnyHandler = async (event: string | symbol, ...data: any[]) => {
 				const _authorizationKey = await getAuthorizationKey();
 				socket.send(
 					JSON.stringify({
 						[event as string]: data,
-						['AuthorizationKey']: _authorizationKey,
+						AuthorizationKey: _authorizationKey,
 					}),
 				);
-			});
+			};
+			_electronEmitter.onAny(electronOnAnyHandler);
+
 			_electronEmitter.emit('Ping');
 		};
+
 		socket.onclose = () => {
-			socket.removeEventListener('message', console.log);
+			socket.removeEventListener('message', handleWebSocketMessage);
+
+			if (electronOnAnyHandler) {
+				_electronEmitter.offAny(electronOnAnyHandler);
+			}
+
+			socket.close();
+
 			setTimeout(reload, 1000);
+		};
+
+		return () => {
+			socket.removeEventListener('message', handleWebSocketMessage);
+			if (electronOnAnyHandler) {
+				_electronEmitter.offAny(electronOnAnyHandler);
+			}
+			socket.close();
 		};
 	};
 

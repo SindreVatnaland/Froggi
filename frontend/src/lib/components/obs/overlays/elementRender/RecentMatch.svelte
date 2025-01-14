@@ -1,26 +1,27 @@
 <script lang="ts">
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import CurrentPlayerActionCount from './RecentMatch/RecentMatchCurrentPlayerActionCount.svelte';
-	import CurrentPlayerAttackCount from './RecentMatch/RecentMatchCurrentPlayerAttackCount.svelte';
-	import CurrentPlayerOverallStats from './RecentMatch/RecentMatchCurrentPlayerOverallStats.svelte';
-	import Player1ActionCount from './RecentMatch/RecentMatchPlayer1ActionCount.svelte';
-	import Player1AttackCount from './RecentMatch/RecentMatchPlayer1AttackCount.svelte';
-	import Player1OverallStats from './RecentMatch/RecentMatchPlayer1OverallStats.svelte';
-	import Player2ActionCount from './RecentMatch/RecentMatchPlayer2ActionCount.svelte';
-	import Player2AttackCount from './RecentMatch/RecentMatchPlayer2AttackCount.svelte';
-	import Player2OverallStats from './RecentMatch/RecentMatchPlayer2OverallStats.svelte';
+	import { currentMatch, currentPlayer } from '$lib/utils/store.svelte';
+	import PlayerActionCount from './RecentMatch/RecentMatchPlayerActionCount.svelte';
+	import PlayerAttackCount from './RecentMatch/RecentMatchPlayerAttackCount.svelte';
+	import PlayerOverallStats from './RecentMatch/RecentMatchPlayerOverallStats.svelte';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
+
+	$: currentPlayerIndex = $currentPlayer?.playerIndex;
+
+	$: stats = $currentMatch?.stats;
 </script>
 
-<CurrentPlayerAttackCount {dataItem} {defaultPreview} {style} />
-<CurrentPlayerActionCount {dataItem} {defaultPreview} {style} />
-<CurrentPlayerOverallStats {dataItem} {defaultPreview} {style} />
-<Player1AttackCount {dataItem} {defaultPreview} {style} />
-<Player1ActionCount {dataItem} {defaultPreview} {style} />
-<Player1OverallStats {dataItem} {defaultPreview} {style} />
-<Player2AttackCount {dataItem} {defaultPreview} {style} />
-<Player2ActionCount {dataItem} {defaultPreview} {style} />
-<Player2OverallStats {dataItem} {defaultPreview} {style} />
+<PlayerAttackCount {dataItem} {defaultPreview} {style} playerIndex={currentPlayerIndex} {stats} />
+<PlayerActionCount {dataItem} {defaultPreview} {style} playerIndex={currentPlayerIndex} {stats} />
+<PlayerOverallStats {dataItem} {defaultPreview} {style} playerIndex={currentPlayerIndex} {stats} />
+
+<PlayerAttackCount {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
+<PlayerActionCount {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
+<PlayerOverallStats {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
+
+<PlayerAttackCount {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />
+<PlayerActionCount {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />
+<PlayerOverallStats {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />

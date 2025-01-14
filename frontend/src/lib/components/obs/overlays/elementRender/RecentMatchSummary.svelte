@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { LiveStatsScene } from '$lib/models/enum';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
+	import { statsScene } from '$lib/utils/store.svelte';
 	import Game1 from './RecentMatchSummary/Game1.svelte';
 	import Game2 from './RecentMatchSummary/Game2.svelte';
 	import Game3 from './RecentMatchSummary/Game3.svelte';
