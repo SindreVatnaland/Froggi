@@ -46,9 +46,6 @@
 		});
 	}
 
-	// -----------------------------
-	//  2) Current Player
-	// -----------------------------
 	let cachedCurrentPlayer: CurrentPlayer | undefined;
 	export async function getCurrentPlayer(): Promise<CurrentPlayer | undefined> {
 		if (cachedCurrentPlayer !== undefined) {

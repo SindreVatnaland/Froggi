@@ -102,7 +102,7 @@
 {#if dataItem?.elementId === CustomElement.CurrentSetGame4Player1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
-			? game?.lastFrame?.players?.[$currentPlayers?.at(0)?.playerIndex ?? 0]?.post
+			? game?.lastFrame?.players?.[currentPlayers?.at(0)?.playerIndex ?? 0]?.post
 					.stocksRemaining
 			: defaultPreview
 			? `3`
@@ -112,7 +112,7 @@
 {#if dataItem?.elementId === CustomElement.CurrentSetGame4Player2StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
-			? game?.lastFrame?.players?.[$currentPlayers?.at(1)?.playerIndex ?? 1]?.post
+			? game?.lastFrame?.players?.[currentPlayers?.at(1)?.playerIndex ?? 1]?.post
 					.stocksRemaining
 			: defaultPreview
 			? `0`
