@@ -37,7 +37,7 @@
 		if (cachedAuthorizationKey !== undefined) {
 			return cachedAuthorizationKey;
 		}
-		return new Promise<string | undefined>((resolve) => {
+		return await new Promise<string | undefined>((resolve) => {
 			const unsubscribe = authorizationKey.subscribe((key) => {
 				cachedAuthorizationKey = key;
 				resolve(key);
@@ -51,7 +51,7 @@
 		if (cachedCurrentPlayer !== undefined) {
 			return cachedCurrentPlayer;
 		}
-		return new Promise<CurrentPlayer | undefined>((resolve) => {
+		return await new Promise<CurrentPlayer | undefined>((resolve) => {
 			const unsubscribe = currentPlayer.subscribe((player) => {
 				cachedCurrentPlayer = player;
 				resolve(player);
@@ -65,7 +65,7 @@
 		if (cachedLocalEmitter) {
 			return cachedLocalEmitter;
 		}
-		return new Promise<TypedEmitter>((resolve) => {
+		return await new Promise<TypedEmitter>((resolve) => {
 			const unsubscribe = localEmitter.subscribe((emitter) => {
 				cachedLocalEmitter = emitter;
 				resolve(emitter);
@@ -79,7 +79,7 @@
 		if (cachedElectronEmitter) {
 			return cachedElectronEmitter;
 		}
-		return new Promise<TypedEmitter>((resolve) => {
+		return await new Promise<TypedEmitter>((resolve) => {
 			const unsubscribe = electronEmitter.subscribe((emitter) => {
 				cachedElectronEmitter = emitter;
 				resolve(emitter);
@@ -93,7 +93,7 @@
 		if (cachedObs) {
 			return cachedObs;
 		}
-		return new Promise<Obs>((resolve) => {
+		return await new Promise<Obs>((resolve) => {
 			const unsubscribe = obs.subscribe((obsVal) => {
 				cachedObs = obsVal;
 				resolve(obsVal);
@@ -107,7 +107,7 @@
 		if (cachedOverlays) {
 			return cachedOverlays;
 		}
-		return new Promise<Overlay[]>((resolve) => {
+		return await new Promise<Overlay[]>((resolve) => {
 			const unsubscribe = overlays.subscribe((overlayObj) => {
 				const list = Object.values(overlayObj);
 				cachedOverlays = list;
@@ -118,7 +118,7 @@
 	}
 
 	export async function getOverlayById(overlayId: string): Promise<Overlay | undefined> {
-		return new Promise<Overlay | undefined>((resolve) => {
+		return await new Promise<Overlay | undefined>((resolve) => {
 			const unsubscribe = overlays.subscribe((overlayObj) => {
 				resolve(overlayObj[overlayId]);
 			});
@@ -131,7 +131,7 @@
 		if (cachedPage) {
 			return cachedPage;
 		}
-		return new Promise<Page>((resolve) => {
+		return await new Promise<Page>((resolve) => {
 			const unsubscribe = page.subscribe((p) => {
 				cachedPage = p;
 				resolve(p);
@@ -145,7 +145,7 @@
 		if (cachedPlayers !== undefined) {
 			return cachedPlayers;
 		}
-		return new Promise<Player[] | undefined>((resolve) => {
+		return await new Promise<Player[] | undefined>((resolve) => {
 			const unsubscribe = currentPlayers.subscribe((playersVal) => {
 				cachedPlayers = playersVal;
 				resolve(playersVal);
@@ -229,7 +229,7 @@
 		if (cachedMatchScore) {
 			return cachedMatchScore;
 		}
-		return new Promise<number[]>((resolve) => {
+		return await new Promise<number[]>((resolve) => {
 			const unsubscribe = gameScore.subscribe((score) => {
 				cachedMatchScore = score;
 				resolve(score);
@@ -243,7 +243,7 @@
 		if (cachedSession !== undefined) {
 			return cachedSession;
 		}
-		return new Promise<SessionStats | undefined>((resolve) => {
+		return await new Promise<SessionStats | undefined>((resolve) => {
 			const unsubscribe = sessionStats.subscribe((stats) => {
 				cachedSession = stats;
 				resolve(stats);
@@ -257,7 +257,7 @@
 		if (cachedIsIframe !== undefined) {
 			return cachedIsIframe;
 		}
-		return new Promise<boolean>((resolve) => {
+		return await new Promise<boolean>((resolve) => {
 			const unsubscribe = isIframe.subscribe((val) => {
 				cachedIsIframe = val;
 				resolve(val);
@@ -271,7 +271,7 @@
 		if (cachedUrls) {
 			return cachedUrls;
 		}
-		return new Promise<Url>((resolve) => {
+		return await new Promise<Url>((resolve) => {
 			const unsubscribe = urls.subscribe((urlVal) => {
 				cachedUrls = urlVal;
 				resolve(urlVal);
@@ -285,7 +285,7 @@
 		if (cachedIsElectron !== undefined) {
 			return cachedIsElectron;
 		}
-		return new Promise<boolean>((resolve) => {
+		return await new Promise<boolean>((resolve) => {
 			const unsubscribe = isElectron.subscribe((val) => {
 				cachedIsElectron = val;
 				resolve(val);

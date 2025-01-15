@@ -183,23 +183,20 @@
 		position: absolute;
 		bottom: 0;
 		right: 0;
-		width: 20px; /* Adjust size as needed */
-		height: 20px; /* Adjust size as needed */
-		cursor: se-resize; /* Changes cursor on hover */
-		/* Optional: make the container transparent */
+		width: 20px;
+		height: 20px;
+		cursor: se-resize;
 		background: transparent;
 	}
 
-	/* Create a small arrow using the ::after pseudo-element */
 	.resizer::after {
 		content: '';
 		position: absolute;
-		right: 4px; /* adjust for alignment */
-		bottom: 4px; /* adjust for alignment */
-		width: 8px; /* control the arrow size */
+		right: 4px;
+		bottom: 4px;
+		width: 8px;
 		height: 8px;
-		/* Draw the arrow using borders */
-		border-right: 2px solid #000; /* color of arrow */
-		border-bottom: 2px solid #000;
+		border-right: 2px solid var(--secondary-color);
+		border-bottom: 2px solid var(--secondary-color);
 	}
 </style>

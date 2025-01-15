@@ -104,8 +104,9 @@ export class SlippiJs {
 	}
 
 	private async handleUserSlippiData() {
-		this.log.info("Fetching loggen in user")
+		this.log.info("Fetching logged in slippi user")
 		const connectCode = (await findPlayKey()).connectCode;
+		this.log.info("User connect code:", connectCode)
 		this.storeSettings.setCurrentPlayerConnectCode(connectCode);
 		const rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
 		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)
