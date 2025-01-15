@@ -7,6 +7,7 @@
 	import { flip } from 'svelte/animate';
 	import { onMount } from 'svelte';
 	import { Layer, Overlay } from '$lib/models/types/overlay';
+	import { LiveStatsScene } from '$lib/models/enum';
 
 	const overlayId: string | undefined = $page.params.overlay;
 
@@ -16,7 +17,7 @@
 	let layers: Layer[] = [];
 
 	onMount(() => {
-		updateLayers(curOverlay);
+		updateLayers(curOverlay, $statsScene);
 		$localEmitter.on('LayerPreviewChange', handleLayerPreviewChange);
 
 		return () => {
@@ -28,11 +29,11 @@
 		selectedLayerIndex = layerIndex;
 	};
 
-	const updateLayers = (overlay: Overlay) => {
-		layers = overlay[$statsScene].layers;
+	const updateLayers = (overlay: Overlay, statsScene: LiveStatsScene) => {
+		layers = overlay[statsScene].layers;
 	};
 
-	$: updateLayers(curOverlay);
+	$: updateLayers(curOverlay, $statsScene);
 
 	let scrollElement: HTMLElement;
 	const scrollToBottom = () => {
@@ -94,9 +95,10 @@
 				</button>
 			</div>
 			{#each layers as layer, layerIndex (layer.id)}
-				<div class="w-full visible">
+				<div class="w-full visible" animate:flip={{ duration: 80 }}>
 					<LayerDisplayRow
 						{curOverlay}
+						{layer}
 						{layerIndex}
 						{scrollToBottom}
 						bind:selectedLayerIndex

@@ -18,9 +18,10 @@
 	export let layerIndex: number;
 	export let selectedLayerIndex: number = 0;
 	export let scrollToBottom: Function;
+	export let layer: Layer;
 
 	$: isSelected = selectedLayerIndex === layerIndex;
-	$: isLastRow = curOverlay[$statsScene]?.layers.length === layerIndex + 1;
+	let isLastRow = curOverlay[$statsScene]?.layers.length === layerIndex + 1;
 
 	let deleteLayerModalOpen = false;
 
@@ -28,8 +29,6 @@
 		$electronEmitter.emit('LayerPreviewChange', layerIndex);
 		selectedLayerIndex = layerIndex;
 	};
-
-	$: layer = curOverlay[$statsScene]?.layers[layerIndex];
 
 	const handleChecked = () => {
 		if (!curOverlay) return;
