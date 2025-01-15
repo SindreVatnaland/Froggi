@@ -19,7 +19,6 @@ import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter
 import {
 	InGameState,
 	LiveStatsScene,
-	NotificationType,
 } from '../../../frontend/src/lib/models/enum';
 import { PlayerController } from '../../../frontend/src/lib/models/types/controller';
 import { ElectronPlayersStore } from './storePlayers';
@@ -228,16 +227,7 @@ export class ElectronCommandStore {
 		command: T,
 		payload: OBSRequestTypes[T] | undefined,
 	) => {
-		try {
-			await this.obsWebSocket.executeCommand(command, payload);
-		} catch {
-			this.log.error(`Could not execute command: ${command}`);
-			this.messageHandler.sendMessage(
-				'Notification',
-				`Could not execute command: ${command}`,
-				NotificationType.Warning,
-			);
-		}
+		await this.obsWebSocket.executeCommand(command, payload);
 	};
 
 	private executeObsCustomCommand = async <T extends ObsCustomRequest>(

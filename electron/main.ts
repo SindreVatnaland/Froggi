@@ -24,6 +24,7 @@ import { ElectronCommandStore } from './services/store/storeCommands';
 import { FileHandler } from './services/fileUpload';
 import { BACKEND_PORT, VITE_PORT } from '../frontend/src/lib/models/const';
 import { FrontendLogger } from './services/frontendLogger';
+import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
 
 let mainLog: ElectronLog = log
 
@@ -69,7 +70,7 @@ try {
 
 	let mainWindow: BrowserWindow | any;
 	let tray: Tray;
-	let notification: Notification;
+	let backgroundNotification: Notification;
 
 	function createWindow(): BrowserWindow {
 		log.info('Creating window');
@@ -109,7 +110,7 @@ try {
 		mainWindow.on('close', () => {
 			windowState.saveState(mainWindow);
 
-			notification.show();
+			backgroundNotification.show();
 		});
 
 		return mainWindow;
@@ -168,20 +169,7 @@ try {
 		return tray;
 	}
 
-	function createNotification(): Notification {
-		return new Notification({
-			title: "App running",
-			body: 'The window has been closed, but the app is still running in the background.',
-			urgency: "low",
-			silent: true,
-			actions: [
-				{
-					type: "button",
-					text: "Quit App"
-				},
-			]
-		});
-	}
+
 
 	contextMenu({
 		showLookUpSelection: false,
@@ -209,23 +197,8 @@ try {
 
 	function createMainWindow() {
 		mainWindow = createWindow();
-		notification = createNotification();
+		backgroundNotification = createBackgroundNotification(app, mainWindow)
 		createTray();
-
-		notification.addListener("click", () => {
-			mainWindow.show();
-		});
-
-		notification.addListener("close", () => {
-			mainWindow.hide();
-		})
-
-		notification.addListener("action", (_, index) => {
-			if (index === 0) {
-				app.exit();
-			}
-		});
-
 
 		if (dev) loadVite(port);
 		if (!dev) serveURL(mainWindow);
@@ -280,8 +253,9 @@ try {
 
 	process.on('uncaughtException', (error) => {
 		mainLog.error('Uncaught Exception:', error);
-
-		app.exit();
+		const notification = createErrorNotification(mainWindow, "Error", error.message)
+		notification.show();
+		setTimeout(() => app.exit(), 15000)
 	});
 } catch (err) {
 	mainLog.error(err);
