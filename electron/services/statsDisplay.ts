@@ -142,6 +142,7 @@ export class StatsDisplay {
 
 		let gameStats = await this.getRecentGameStats(settings, gameEnd);
 		if (!gameStats) {
+			this.log.info("Did not find the recently played game.")
 			this.storeLiveStats.setStatsScene(LiveStatsScene.Menu)
 			return;
 		};
@@ -258,22 +259,27 @@ export class StatsDisplay {
 		if (!slippiSettings?.rootSlpPath) return;
 
 		const isBeta = slippiSettings?.useNetplayBeta;
-		const betaRegex = /\b(Mainline|beta)\b/i;
+		const mainlineRegex = /\b(Mainline|beta)\b/i;
+		const directoryRegex = /^\d{4}-\d{2}$/
+
 
 		const subFolder = slippiSettings.useMonthlySubfolders
 			? (await fs.readdir(slippiSettings.rootSlpPath, { withFileTypes: true }))
 				.filter((dirent) => dirent.isDirectory())
 				.map((dirent) => dirent.name)
-				.filter((dirname) => (isBeta ? betaRegex.test(dirname) : dirname))
+				.filter((dirname) => (isBeta ? mainlineRegex.test(dirname) : dirname))
+				.filter((dirname) => directoryRegex.test(dirname))
 				.sort((a, b) => (a < b ? 1 : -1))
-				.at(0)
-			: '';
+				.at(0) ?? './'
+			: './';
 
 		const root = slippiSettings.rootSlpPath;
 
-		const replayFolders = await this.getReplayDirs(root, subFolder);
+		this.log.info("Replay directory:", path.join(root, subFolder))
 
-		const replayFiles = replayFolders
+		const replaysDirContent = await this.getReplayDirs(root, subFolder);
+
+		const replayFiles = replaysDirContent
 			.map((filename: string) => `${path.parse(filename).name}.slp`)
 			.filter((f: string) => re.test(f))
 			.map(
@@ -315,6 +321,7 @@ export class StatsDisplay {
 		const matchId = settings?.matchInfo?.matchId ?? '';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
+		this.log.info("Looking for replay:", matchId, gameNumber)
 		const file = files.find((file) => {
 			const settings = new SlippiGame(file).getSettings();
 			return matchId
@@ -325,7 +332,11 @@ export class StatsDisplay {
 				)
 				: settings?.randomSeed === randomSeed;
 		});
-		if (!file) return null;
+		if (!file) {
+			this.log.error("Could not find recent replay")
+			return null
+		};
+		this.log.info("Analyzing game:", settings?.matchInfo)
 		this.log.debug('Analyzing recent game file:', file);
 		let game = new SlippiGame(file);
 		return this.getGameStats(game, gameEnd);

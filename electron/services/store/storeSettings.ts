@@ -53,8 +53,9 @@ export class ElectronSettingsStore {
 		return this.store.get('settings.slippiLauncher') as SlippiLauncherSettings;
 	}
 
-	setSlippiLauncherSettings(dir: SlippiLauncherSettings) {
-		this.store.set('settings.slippiLauncher', dir);
+	setSlippiLauncherSettings(config: SlippiLauncherSettings) {
+		this.log.info("Slippi Config: ", config)
+		this.store.set('settings.slippiLauncher', config);
 	}
 
 	updateSlippiSettings(): SlippiLauncherSettings | undefined {
