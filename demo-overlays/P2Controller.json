@@ -1,12 +1,13 @@
 {
 	"id": "p2controller",
-	"defaultScene": "menu",
-	"description": "Scene Description",
-	"isDemo": false,
-	"title": "P2 Controller",
 	"aspectRatio": { "width": 16, "height": 9 },
+	"isDemo": true,
+	"description": "Scene Description",
+	"froggiVersion": "0.0.0",
+	"title": "P2 Controller",
 	"waitingForDolphin": {
 		"active": true,
+		"id": 625,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -68,7 +69,8 @@
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
-				"id": "ckfomq3uj",
+				"index": 0,
+				"id": 1063,
 				"items": [
 					{
 						"512": {
@@ -175,6 +177,7 @@
 	},
 	"menu": {
 		"active": true,
+		"id": 626,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -227,10 +230,11 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cha9dioz8", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1064, "items": [], "preview": true }]
 	},
 	"inGame": {
 		"active": true,
+		"id": 627,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -278,7 +282,8 @@
 		"font": { "family": "default", "src": "" },
 		"layers": [
 			{
-				"id": "c25xoqplb",
+				"index": 0,
+				"id": 1065,
 				"items": [
 					{
 						"512": {
@@ -1267,6 +1272,7 @@
 	},
 	"postGame": {
 		"active": false,
+		"id": 628,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -1319,10 +1325,11 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "ci22d6mvo", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1066, "items": [], "preview": true }]
 	},
 	"postSet": {
 		"active": false,
+		"id": 629,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -1375,10 +1382,11 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cq4ny0fxb", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1067, "items": [], "preview": true }]
 	},
 	"rankChange": {
 		"active": false,
+		"id": 630,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -1431,7 +1439,7 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cpzabgfyy", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1068, "items": [], "preview": true }]
 	},
 	"customFiles": {}
 }

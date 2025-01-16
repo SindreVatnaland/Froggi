@@ -32,21 +32,6 @@ export class SqliteOverlay {
   async addOrUpdateOverlay(overlay: Overlay) {
     this.log.info("Add or updating overlay:", overlay.id);
 
-
-    for (const key of Object.keys(LiveStatsScene)) {
-      if (!isNaN(Number(key))) continue;
-
-      const currentScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
-
-      if (overlay[currentScene] && overlay[currentScene].layers) {
-        for (const [index, layer] of overlay[currentScene].layers.entries()) {
-          delete layer.id;
-          layer.index = index;
-        }
-        delete overlay[currentScene].id;
-      }
-    }
-
     const overlayEntity = this.overlayRepo.create(overlay);
 
     const savedOverlay = await this.overlayRepo.save(overlayEntity);

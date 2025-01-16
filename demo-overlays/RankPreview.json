@@ -1,12 +1,13 @@
 {
 	"id": "rankpreview",
-	"defaultScene": "menu",
-	"description": "Scene Description",
-	"isDemo": true,
-	"title": "Rank Preview",
 	"aspectRatio": { "width": 16, "height": 9 },
+	"isDemo": true,
+	"description": "Scene Description",
+	"froggiVersion": "0.0.0",
+	"title": "Rank Preview",
 	"waitingForDolphin": {
 		"active": false,
+		"id": 631,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -66,10 +67,11 @@
 		},
 		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cg0ze3mdd", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1069, "items": [], "preview": true }]
 	},
 	"menu": {
 		"active": false,
+		"id": 632,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -131,7 +133,8 @@
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
-				"id": "cgl07jey4",
+				"index": 0,
+				"id": 1070,
 				"items": [
 					{
 						"512": {
@@ -562,6 +565,7 @@
 	},
 	"inGame": {
 		"active": false,
+		"id": 633,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -614,10 +618,11 @@
 		},
 		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cmzjnrixt", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1071, "items": [], "preview": true }]
 	},
 	"postGame": {
 		"active": false,
+		"id": 634,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -670,10 +675,11 @@
 		},
 		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cenqd8n5b", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1072, "items": [], "preview": true }]
 	},
 	"postSet": {
 		"active": false,
+		"id": 635,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -726,10 +732,11 @@
 		},
 		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cmiamseli", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1073, "items": [], "preview": true }]
 	},
 	"rankChange": {
 		"active": true,
+		"id": 636,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -791,7 +798,8 @@
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
-				"id": "c8nem74ro",
+				"index": 0,
+				"id": 1074,
 				"items": [
 					{
 						"512": {
@@ -1228,7 +1236,8 @@
 				"preview": true
 			},
 			{
-				"id": "cuut1am3n",
+				"index": 1,
+				"id": 1075,
 				"items": [
 					{
 						"512": {
@@ -1358,6 +1367,5 @@
 			}
 		]
 	},
-	"customFiles": {},
-	"froggiVersion": "0.0.0"
+	"customFiles": {}
 }

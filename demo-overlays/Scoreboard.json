@@ -1,12 +1,13 @@
 {
 	"id": "scoreboard",
-	"defaultScene": "menu",
-	"description": "Scene Description",
-	"isDemo": false,
-	"title": "Scoreboard",
 	"aspectRatio": { "width": 16, "height": 9 },
+	"isDemo": false,
+	"description": "Scene Description",
+	"froggiVersion": "0.0.0",
+	"title": "Scoreboard",
 	"waitingForDolphin": {
 		"active": false,
+		"id": 637,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -59,10 +60,11 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "cnveia7ig", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1076, "items": [], "preview": true }]
 	},
 	"menu": {
 		"active": true,
+		"id": 638,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -108,10 +110,11 @@
 		},
 		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "c5uqixv6u", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1077, "items": [], "preview": true }]
 	},
 	"inGame": {
 		"active": true,
+		"id": 639,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -173,7 +176,8 @@
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
-				"id": "cjadovs5i",
+				"index": 0,
+				"id": 1078,
 				"items": [
 					{
 						"512": {
@@ -708,6 +712,7 @@
 	},
 	"postGame": {
 		"active": false,
+		"id": 640,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -760,10 +765,11 @@
 		},
 		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "c8wkyqlbc", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1079, "items": [], "preview": true }]
 	},
 	"postSet": {
 		"active": false,
+		"id": 641,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -816,10 +822,11 @@
 		},
 		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "c056erh4j", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1080, "items": [], "preview": true }]
 	},
 	"rankChange": {
 		"active": false,
+		"id": 642,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -872,7 +879,7 @@
 		},
 		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "id": "c29c59i67", "items": [], "preview": true }]
+		"layers": [{ "index": 0, "id": 1081, "items": [], "preview": true }]
 	},
 	"customFiles": {}
 }
