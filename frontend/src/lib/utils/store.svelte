@@ -74,7 +74,7 @@
 	});
 	export const sceneSwitch = writable<SceneSwitchCommands | undefined>();
 
-	export const overlays = writable<{ [id: string]: Overlay }>({});
+	export const overlays = writable<Record<string, Overlay>>({});
 	export const currentOverlayEditor = writable<OverlayEditor>({ layerIndex: 0 } as OverlayEditor);
 	export const postGame = writable<GameStats>({} as GameStats);
 	export const currentMatch = writable<Match>({} as Match);

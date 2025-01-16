@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import SecondaryOverlay from '$lib/components/obs/overlays/SecondaryOverlay.svelte';
 	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
-	import { COL, ROW, SCENE_TRANSITION_DELAY } from '$lib/models/const';
+	import { COL, ROW } from '$lib/models/const';
 	import { Layer, Overlay, Scene } from '$lib/models/types/overlay';
 	import { overlays, statsScene } from '$lib/utils/store.svelte';
 	import { isNil } from 'lodash';
@@ -10,7 +8,7 @@
 	import Grid from 'svelte-grid';
 
 	export let overlayId: string;
-	export let layerId: string;
+	export let layerId: number | undefined;
 	let overlay: Overlay | undefined;
 	let layer: Layer | undefined;
 	let scene: Scene | undefined;

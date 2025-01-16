@@ -23,27 +23,27 @@ export class OverlayEntity implements Overlay {
   @Column()
   title: string;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   waitingForDolphin: SceneEntity;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   menu: SceneEntity;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   inGame: SceneEntity;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   postGame: SceneEntity;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   postSet: SceneEntity;
 
-  @OneToOne(() => SceneEntity, { cascade: true, eager: true })
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   rankChange: SceneEntity;
 }

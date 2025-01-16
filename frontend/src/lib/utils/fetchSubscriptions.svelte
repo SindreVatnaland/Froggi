@@ -102,16 +102,15 @@
 		});
 	}
 
-	let cachedOverlays: Overlay[] | undefined;
-	export async function getOverlays(): Promise<Overlay[]> {
+	let cachedOverlays: Record<string, Overlay> | undefined;
+	export async function getOverlays(): Promise<Record<string, Overlay>> {
 		if (cachedOverlays) {
 			return cachedOverlays;
 		}
-		return await new Promise<Overlay[]>((resolve) => {
-			const unsubscribe = overlays.subscribe((overlayObj) => {
-				const list = Object.values(overlayObj);
-				cachedOverlays = list;
-				resolve(list);
+		return await new Promise<Record<string, Overlay>>((resolve) => {
+			const unsubscribe = overlays.subscribe((overlays) => {
+				cachedOverlays = overlays;
+				resolve(overlays);
 			});
 			unsubscribe();
 		});

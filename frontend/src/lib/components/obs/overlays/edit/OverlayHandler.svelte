@@ -22,66 +22,6 @@
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { newId } from '$lib/utils/helper';
 
-	const getDefaultScene = (sceneId: string, active: boolean = true): Scene => {
-		return {
-			id: undefined,
-			active: active,
-			animation: {
-				duration: 250,
-				in: getDefaultAnimations(SCENE_TRANSITION_DELAY),
-				out: getDefaultAnimations(),
-				layerRenderDelay: 250,
-			},
-			background: {
-				color: '#000000',
-				customImage: {
-					src: undefined,
-					name: undefined,
-					objectFit: undefined,
-				},
-				image: { src: undefined, name: undefined, objectFit: undefined },
-				opacity: 100,
-				type: SceneBackground.None,
-				animation: {
-					in: getDefaultAnimations(SCENE_TRANSITION_DELAY),
-					out: getDefaultAnimations(),
-				},
-			},
-			fallback: LiveStatsScene.Menu,
-			font: {
-				family: 'default',
-				src: '',
-			},
-			layers: [
-				{
-					id: undefined,
-					items: [],
-					preview: true,
-					index: 0,
-				},
-			],
-		};
-	};
-
-	export function getNewOverlay(aspect: AspectRatio = { width: 16, height: 9 }): Overlay {
-		const id = newId();
-		return {
-			id: id,
-			defaultScene: LiveStatsScene.Menu,
-			description: 'Scene Description',
-			isDemo: false,
-			title: `New Overlay - ${id}`,
-			aspectRatio: aspect,
-			froggiVersion: '',
-			[LiveStatsScene.WaitingForDolphin]: getDefaultScene(newId()),
-			[LiveStatsScene.Menu]: getDefaultScene(newId()),
-			[LiveStatsScene.InGame]: getDefaultScene(newId()),
-			[LiveStatsScene.PostGame]: getDefaultScene(newId()),
-			[LiveStatsScene.PostSet]: getDefaultScene(newId(), false),
-			[LiveStatsScene.RankChange]: getDefaultScene(newId()),
-		} as Overlay;
-	}
-
 	export function generateNewItem(
 		elementId: CustomElement,
 		payload: ElementPayload,
@@ -116,9 +56,9 @@
 		overlayId: string | undefined,
 	): Promise<Overlay | undefined> {
 		if (isNil(overlayId)) return;
-		return await new Promise<Overlay | undefined>((resolve) => {
-			overlays?.subscribe((overlays) => resolve(overlays[overlayId]));
-		});
+
+		const overlays = await getOverlays();
+		overlays[overlayId];
 	}
 
 	export async function updateOverlay(overlay: Overlay) {
@@ -223,7 +163,7 @@
 		};
 	}
 
-	export function getDefaultAnimations(delay: number = 0): AnimationSettings {
+	function getDefaultAnimations(delay: number = 0): AnimationSettings {
 		return {
 			options: {
 				delay: delay,
@@ -242,9 +182,12 @@
 		statsScene: LiveStatsScene,
 		indexPlacement: number | undefined = 0,
 	): Promise<number> {
-		const newLayerId = newId();
-
 		const overlay = await getOverlayById(overlayId);
+
+		const _electronEmitter = await getElectronEmitter();
+		_electronEmitter.emit('SceneLayerNew', layerIndex);
+
+		// TODO: Move this logic
 
 		if (isNil(overlay)) return 0;
 
@@ -264,30 +207,34 @@
 	export async function moveLayer(
 		overlayId: string,
 		statsScene: LiveStatsScene,
-		selectedLayer: number,
+		selectedLayerIndex: number | undefined,
 		relativeSwap: number,
-	): Promise<number> {
+	) {
+		if (!selectedLayerIndex) return 0;
 		let updatedOverlay = await getOverlayById(overlayId);
+
+		const _electronEmitter = await getElectronEmitter();
+		_electronEmitter.emit('SceneLayerMove', layerId, relativeSwap);
+
+		// TODO: Emit event and Move logic to node
 
 		if (isNil(updatedOverlay)) return 0;
 
 		if (
-			selectedLayer === undefined ||
-			selectedLayer >= updatedOverlay[statsScene]?.layers.length - 1 ||
+			selectedLayerIndex === undefined ||
+			selectedLayerIndex >= updatedOverlay[statsScene]?.layers.length - 1 ||
 			relativeSwap === 0
 		)
 			return 0;
 		[
-			updatedOverlay![statsScene].layers[selectedLayer],
-			updatedOverlay![statsScene].layers[selectedLayer + relativeSwap],
+			updatedOverlay![statsScene].layers[selectedLayerIndex],
+			updatedOverlay![statsScene].layers[selectedLayerIndex + relativeSwap],
 		] = [
-			updatedOverlay![statsScene].layers[selectedLayer + relativeSwap],
-			updatedOverlay![statsScene].layers[selectedLayer],
+			updatedOverlay![statsScene].layers[selectedLayerIndex + relativeSwap],
+			updatedOverlay![statsScene].layers[selectedLayerIndex],
 		];
 
 		updateScene(updatedOverlay, statsScene);
-
-		return selectedLayer + relativeSwap;
 	}
 
 	export async function duplicateLayer(
@@ -300,18 +247,9 @@
 		return selectedLayerIndex;
 	}
 
-	export async function deleteLayer(
-		overlayId: string,
-		statsScene: LiveStatsScene,
-		selectedLayerIndex: number,
-	): Promise<number> {
-		let overlay = await getOverlayById(overlayId);
-		if (isNil(overlay) || overlay?.[statsScene].layers.length <= 1) return selectedLayerIndex;
-
-		overlay[statsScene].layers.splice(selectedLayerIndex, 1);
-		updateScene(overlay, statsScene);
-
-		return selectedLayerIndex - 1;
+	export async function deleteLayer(layerId: number | undefined): Promise<void> {
+		const _electronEmitter = await getElectronEmitter();
+		_electronEmitter.emit('SceneLayerDelete', layerId);
 	}
 
 	export async function notifyDisabledScene(

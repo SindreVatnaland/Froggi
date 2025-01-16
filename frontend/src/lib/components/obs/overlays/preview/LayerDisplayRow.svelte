@@ -5,8 +5,7 @@
 	import {
 		deleteLayer,
 		duplicateLayer,
-		moveLayerDown,
-		moveLayerUp,
+		moveLayer,
 		newLayer,
 		updateScene,
 	} from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
@@ -43,19 +42,19 @@
 		menuItems={[
 			{
 				onClick: async () => {
-					changeEditLayer(await moveLayerUp(curOverlay.id, $statsScene, layerIndex));
+					moveLayer(curOverlay.id, $statsScene, layerIndex, -1);
 				},
 				displayText: 'Move Up',
 			},
 			{
 				onClick: async () => {
-					changeEditLayer(await moveLayerDown(curOverlay.id, $statsScene, layerIndex));
+					moveLayer(curOverlay.id, $statsScene, layerIndex, 1);
 				},
 				displayText: 'Move Down',
 			},
 			{
 				onClick: async () => {
-					changeEditLayer(await duplicateLayer(curOverlay.id, $statsScene, layerIndex));
+					duplicateLayer(curOverlay.id, $statsScene, layerIndex);
 				},
 				displayText: 'Duplicate',
 			},
@@ -108,8 +107,8 @@
 			>
 				<button
 					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
-					on:click={async () => {
-						changeEditLayer(await moveLayerUp(curOverlay.id, $statsScene, layerIndex));
+					on:click={() => {
+						moveLayer(curOverlay.id, $statsScene, layerIndex, -1);
 					}}
 				>
 					<img src="/image/button-icons/up.png" alt="up" style="filter: invert(1)" />
@@ -117,9 +116,7 @@
 				<button
 					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
 					on:click={async () => {
-						changeEditLayer(
-							await moveLayerDown(curOverlay.id, $statsScene, layerIndex),
-						);
+						moveLayer(curOverlay.id, $statsScene, layerIndex, 1);
 					}}
 				>
 					<div class="w-full h-full grid justify-center items-center text-[0.5em]">
@@ -157,11 +154,7 @@
 				<h1 class="text-secondary-color">+</h1>
 			</button>
 		</div>
-		<ConfirmModal
-			bind:open={deleteLayerModalOpen}
-			on:confirm={async () =>
-				changeEditLayer(await deleteLayer(curOverlay.id, $statsScene, layerIndex))}
-		>
+		<ConfirmModal bind:open={deleteLayerModalOpen} on:confirm={() => deleteLayer(layer.id)}>
 			Delete layer?
 		</ConfirmModal>
 	</RightClick>

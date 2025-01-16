@@ -253,7 +253,7 @@ export class ElectronOverlayStore {
 		this.setOverlay(overlay)
 	}
 
-	setCurrentLayoutIndex(index: number) {
+	setCurrentLayerIndex(index: number) {
 		this.store.set('obs.layout.current.layerIndex', index);
 	}
 
@@ -299,7 +299,7 @@ export class ElectronOverlayStore {
 
 		this.clientEmitter.on('SelectedItemChange', this.setCurrentItemId.bind(this));
 
-		this.clientEmitter.on('LayerPreviewChange', this.setCurrentLayoutIndex.bind(this));
+		this.clientEmitter.on('LayerPreviewChange', this.setCurrentLayerIndex.bind(this));
 
 		this.clientEmitter.on('OverlayDownload', async (overlayId) => {
 			const overlay = await this.getOverlayById(overlayId);
