@@ -24,6 +24,7 @@
 
 	const getDefaultScene = (sceneId: string, active: boolean = true): Scene => {
 		return {
+			id: 0,
 			active: active,
 			animation: {
 				duration: 250,
@@ -70,6 +71,7 @@
 			isDemo: false,
 			title: `New Overlay - ${id}`,
 			aspectRatio: aspect,
+			froggiVersion: '',
 			[LiveStatsScene.WaitingForDolphin]: getDefaultScene(newId()),
 			[LiveStatsScene.Menu]: getDefaultScene(newId()),
 			[LiveStatsScene.InGame]: getDefaultScene(newId()),

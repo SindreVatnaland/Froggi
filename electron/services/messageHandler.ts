@@ -170,7 +170,7 @@ export class MessageHandler {
 		}
 	}
 
-	private initData(socketId: string | undefined = undefined) {
+	private async initData(socketId: string | undefined = undefined) {
 		console.log("Init Data", socketId)
 		this.sendInitMessage(socketId, 'CurrentPlayer', this.storeCurrentPlayer.getCurrentPlayer());
 		this.sendInitMessage(socketId, 'CurrentPlayers', this.storePlayers.getCurrentPlayers());
@@ -183,7 +183,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'GameSettings', this.storeLiveStats.getGameSettings());
 		this.sendInitMessage(socketId, 'GameState', this.storeLiveStats.getGameState());
 		this.sendInitMessage(socketId, 'LiveStatsSceneChange', this.storeLiveStats.getStatsScene());
-		this.sendInitMessage(socketId, 'Overlays', this.storeOverlay.getOverlays());
+		this.sendInitMessage(socketId, 'Overlays', await this.storeOverlay.getOverlays());
 		this.sendInitMessage(socketId, 'Obs', this.storeObs.getObs());
 		this.sendInitMessage(
 			socketId,

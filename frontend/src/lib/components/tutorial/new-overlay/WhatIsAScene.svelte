@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 </script>
 
 <h1 class="text-2xl font-semibold">What is a scene?</h1>
@@ -10,30 +11,30 @@
 
 <div class="grid grid-cols-[2fr_5fr] gap-2 w-[600px] my-2">
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.WaitingForDolphin}
+		{startCase(LiveStatsScene.WaitingForDolphin)}
 	</div>
 	<div class="flex items-center">- While dolphin is disconnected</div>
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.Menu}
+		{startCase(LiveStatsScene.Menu)}
 	</div>
 	<div class="flex items-center">- While being idle outside of a game</div>
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.InGame}
+		{startCase(LiveStatsScene.InGame)}
 	</div>
 	<div class="flex items-center">- While in a game</div>
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.PostGame}
+		{startCase(LiveStatsScene.PostGame)}
 	</div>
 	<div class="flex items-center">- 60 seconds after a game is finished</div>
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.PostSet}
+		{startCase(LiveStatsScene.PostSet)}
 	</div>
 	<div class="flex items-center">
 		- 60 seconds after a game is finished and its registered a set winner (eg. bo3). Or 50
 		seconds after rank change.
 	</div>
 	<div class="flex items-center font-bold">
-		{LiveStatsScene.RankChange}
+		{startCase(LiveStatsScene.RankChange)}
 	</div>
 	<div class="flex items-center">- 10 Seconds after a rank game while updating rank</div>
 </div>

@@ -25,6 +25,8 @@ import { FileHandler } from './services/fileUpload';
 import { BACKEND_PORT, VITE_PORT } from '../frontend/src/lib/models/const';
 import { FrontendLogger } from './services/frontendLogger';
 import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
+import { SqliteOrm } from './services/sqlite/initiSqlite';
+import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 
 let mainLog: ElectronLog = log
 
@@ -224,6 +226,8 @@ try {
 
 			container.resolve(ElectronCommandStore);
 
+			container.resolve(SqliteOrm);
+			container.resolve(SqliteOverlay);
 			container.resolve(DiscordRpc);
 			container.resolve(MessageHandler);
 			container.resolve(StatsDisplay);

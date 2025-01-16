@@ -142,7 +142,7 @@ export interface Image {
 
 export interface Layer {
 	items: GridContentItem[]
-	id: string;
+	id: number | undefined;
 	preview: boolean;
 }
 
@@ -199,8 +199,8 @@ export interface SceneAnimation extends Animations {
 	layerRenderDelay: number;
 }
 
-
 export interface Scene {
+	id: number | undefined
 	active: boolean;
 	animation: SceneAnimation;
 	background: Background;

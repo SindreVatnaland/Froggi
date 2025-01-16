@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 </script>
 
 <h1 class="text-2xl font-semibold">Add session stats</h1>
@@ -7,7 +8,7 @@
 <h2>Now we have gathered the understanding on how to add new elements to a scene.</h2>
 
 <h2>
-	Now we can move over and click on the <b>{LiveStatsScene.Menu}</b>
+	Now we can move over and click on the <b>{startCase(LiveStatsScene.Menu)}</b>
 	scene.
 </h2>
 

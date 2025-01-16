@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 </script>
 
 <h1 class="text-2xl font-semibold">Add simple text element</h1>
@@ -8,7 +9,7 @@
 	Now that we have set up the overlay configurations, we can start adding elements to the overlay.
 </h2>
 <h2>
-	To start off we can select the <b>{LiveStatsScene.WaitingForDolphin}</b>
+	To start off we can select the <b>{startCase(LiveStatsScene.WaitingForDolphin)}</b>
 	scene.
 </h2>
 
@@ -22,7 +23,7 @@
 	From here we can click the <b>Add new element</b>
 	button. A window will pop up where you can select a category and elements related to that category.
 	As
-	<b>{LiveStatsScene.WaitingForDolphin}</b>
+	<b>{startCase(LiveStatsScene.WaitingForDolphin)}</b>
 	is a scene that is being displayed when dolphin is disconnected, there is not many categories to
 	choose from. Proceed by selecting the
 	<b>Custom</b>

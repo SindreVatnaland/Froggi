@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 </script>
 
 <h1 class="text-2xl font-semibold">Create Modern HUD</h1>
@@ -15,7 +16,7 @@
 </h2>
 
 <h2>
-	Now we can move on an click the <b>{LiveStatsScene.InGame}</b>
+	Now we can move on an click the <b>{startCase(LiveStatsScene.InGame)}</b>
 	button.
 </h2>
 

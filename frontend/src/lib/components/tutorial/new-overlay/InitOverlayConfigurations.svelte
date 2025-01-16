@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 </script>
 
 <h1 class="text-2xl font-semibold">Init overlay configurations</h1>
@@ -54,11 +55,11 @@
 />
 
 <h2>
-	For this tutorial we will only worry about <b>{LiveStatsScene.WaitingForDolphin}</b>
+	For this tutorial we will only worry about <b>{startCase(LiveStatsScene.WaitingForDolphin)}</b>
 	,
-	<b>{LiveStatsScene.Menu}</b>
+	<b>{startCase(LiveStatsScene.Menu)}</b>
 	and
-	<b>{LiveStatsScene.InGame}</b>
+	<b>{startCase(LiveStatsScene.InGame)}</b>
 	.
 	<br />
 	These scenes will teach you the basics of creating an overlay. How scene transitions work, create
@@ -66,15 +67,15 @@
 </h2>
 
 <h2>
-	The <b>{LiveStatsScene.PostGame}</b>
+	The <b>{startCase(LiveStatsScene.PostGame)}</b>
 	and
-	<b>{LiveStatsScene.PostSet}</b>
+	<b>{startCase(LiveStatsScene.PostSet)}</b>
 	scenes can be used to display stats after a game or set has finished, but is out of scope for this
 	tutorial.
 </h2>
 
 <h2>
-	The <b>{LiveStatsScene.RankChange}</b>
+	The <b>{startCase(LiveStatsScene.RankChange)}</b>
 	scene can be used to display rank changes after a ranked match, but is also out of scope for this
 	tutorial.
 </h2>
@@ -132,11 +133,11 @@
 </h2>
 <h2>
 	If you select
-	<b>{LiveStatsScene.InGame}</b>
+	<b>{startCase(LiveStatsScene.InGame)}</b>
 	,
-	<b>{LiveStatsScene.PostGame}</b>
+	<b>{startCase(LiveStatsScene.PostGame)}</b>
 	or
-	<b>{LiveStatsScene.PostSet}</b>
+	<b>{startCase(LiveStatsScene.PostSet)}</b>
 	you will get the option to select a
 	<b>Stage image</b>
 </h2>

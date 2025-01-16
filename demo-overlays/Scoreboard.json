@@ -1,11 +1,11 @@
 {
 	"id": "scoreboard",
-	"defaultScene": "Menu",
+	"defaultScene": "menu",
 	"description": "Scene Description",
 	"isDemo": false,
 	"title": "Scoreboard",
 	"aspectRatio": { "width": 16, "height": 9 },
-	"Waiting For Dolphin": {
+	"waitingForDolphin": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -57,11 +57,11 @@
 				}
 			}
 		},
-		"fallback": "Menu",
+		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "cnveia7ig", "items": [], "preview": true }]
 	},
-	"Menu": {
+	"menu": {
 		"active": true,
 		"animation": {
 			"duration": 250,
@@ -106,11 +106,11 @@
 				}
 			}
 		},
-		"fallback": "Menu",
+		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "c5uqixv6u", "items": [], "preview": true }]
 	},
-	"In Game": {
+	"inGame": {
 		"active": true,
 		"animation": {
 			"duration": 250,
@@ -169,7 +169,7 @@
 				}
 			}
 		},
-		"fallback": "Menu",
+		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
@@ -706,7 +706,7 @@
 			}
 		]
 	},
-	"Post Game": {
+	"postGame": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -758,11 +758,11 @@
 				}
 			}
 		},
-		"fallback": "In Game",
+		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "c8wkyqlbc", "items": [], "preview": true }]
 	},
-	"Post Set": {
+	"postSet": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -814,11 +814,11 @@
 				}
 			}
 		},
-		"fallback": "In Game",
+		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "c056erh4j", "items": [], "preview": true }]
 	},
-	"Rank Change": {
+	"rankChange": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -870,7 +870,7 @@
 				}
 			}
 		},
-		"fallback": "In Game",
+		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "c29c59i67", "items": [], "preview": true }]
 	},

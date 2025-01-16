@@ -1,5 +1,4 @@
 <script lang="ts" context="module">
-	import { NotificationType } from '$lib/models/enum';
 	import type { Overlay } from '$lib/models/types/overlay';
 
 	import {
@@ -217,6 +216,7 @@
 			case 'Overlays':
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['Overlays']>[0];
+					console.log('Overlays', value);
 					if (!value) return;
 					overlays.set(value);
 				})();

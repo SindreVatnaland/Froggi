@@ -15,6 +15,9 @@ import { COL } from '../../../frontend/src/lib/models/const';
 //@ts-ignore
 import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
+import { SqliteOverlay } from './../sqlite/sqliteOverlay';
+import semver from 'semver'
+import { OverlayEntity } from 'services/sqlite/entities/overlayEntities';
 
 
 @singleton()
@@ -22,28 +25,35 @@ export class ElectronOverlayStore {
 	constructor(
 		@inject('AppDir') private appDir: string,
 		@inject('BrowserWindow') private mainWindow: BrowserWindow,
+		@inject('Dev') private isDev: boolean,
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ElectronStore') private store: Store,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(ElectronFroggiStore) private froggiStore: ElectronFroggiStore,
+		@inject(SqliteOverlay) private sqliteOverlay: SqliteOverlay,
 	) {
 		this.log.info('Initializing Obs Overlay Store');
+		this.initDemoOverlays();
 		this.migrateOverlays();
 		this.initListeners();
 		this.initSvelteListeners();
-		this.initDemoOverlays();
 	}
 
-	getOverlays(): Record<string, Overlay> {
-		return (this.store.get('obs.layout.overlays') ?? {}) as Record<string, Overlay>
+	async getOverlays(): Promise<Record<string, OverlayEntity>> {
+		const overlays = await this.sqliteOverlay.getOverlays()
+		return overlays.reduce((acc, overlay) => {
+			acc[overlay.id] = overlay;
+			return acc;
+		}, {} as Record<string, OverlayEntity>);
 	}
 
-	setOverlay(value: Overlay) {
+	async setOverlay(value: Overlay) {
 		if (!value) return;
 		const froggiConfig = this.froggiStore.getFroggiConfig();
-		const overlay = { ...value, froggiVersion: froggiConfig.version } as Overlay
-		this.store.set(`obs.layout.overlays.${value.id}`, overlay);
+		const froggiVersion = this.isDev ? "0.0.0" : froggiConfig.version
+		const overlay = { ...value, froggiVersion: froggiVersion } as Overlay
+		await this.sqliteOverlay.addOrUpdateOverlay(overlay)
 		this.emitOverlayUpdate()
 	}
 
@@ -52,12 +62,14 @@ export class ElectronOverlayStore {
 	}
 
 	setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
+		console.log("Set scene", overlayId, statsScene, scene.id)
 		this.store.set(`obs.layout.overlays.${overlayId}.${statsScene}`, scene)
 		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, scene)
 	}
 
-	getOverlayById(overlayId: string): Overlay | undefined {
-		return this.store.get(`obs.layout.overlays.${overlayId}`) as Overlay;
+	async getOverlayById(overlayId: string): Promise<Overlay | undefined> {
+		const overlays = await this.getOverlays()
+		return overlays[overlayId]
 	}
 
 	removeDuplicateItems(): void {
@@ -65,8 +77,8 @@ export class ElectronOverlayStore {
 		overlays.forEach(this.removeDuplicateOverlayItems.bind(this))
 	}
 
-	removeDuplicateItemsByOverlayId(overlayId: string): void {
-		let overlay = this.getOverlayById(overlayId)
+	async removeDuplicateItemsByOverlayId(overlayId: string): Promise<void> {
+		let overlay = await this.getOverlayById(overlayId)
 		if (isNil(overlay)) return;
 		this.removeDuplicateOverlayItems(overlay)
 	}
@@ -97,8 +109,8 @@ export class ElectronOverlayStore {
 		overlays.forEach((overlay) => this.cleanupCustomResourceByOverlayId(overlay.id))
 	}
 
-	cleanupCustomResourceByOverlayId(overlayId: string) {
-		const overlay = this.getOverlayById(overlayId)
+	async cleanupCustomResourceByOverlayId(overlayId: string) {
+		const overlay = await this.getOverlayById(overlayId)
 		if (isNil(overlay)) return;
 		const itemsKebabId = Object.values(LiveStatsScene).map(statsScene => {
 			return overlay[statsScene].layers?.map((layer: Layer) => layer.items).flat()
@@ -130,31 +142,43 @@ export class ElectronOverlayStore {
 		this.setOverlay(overlay)
 	}
 
-	copyOverlay(overlayId: string): void {
-		const overlay = this.getOverlayById(overlayId);
+	async copyOverlay(overlayId: string): Promise<void> {
+		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay)) return;
+
 		const newOverlay = { ...overlay, id: newId(), title: `${overlay.title} - copy`, isDemo: false }
+		Object.keys(LiveStatsScene)
+			.filter(key => isNaN(Number(key)))
+			.forEach(key => {
+				const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+				newOverlay[statsScene].layers.forEach(layer => {
+					delete layer.id;
+				})
+				delete newOverlay[statsScene].id
+			})
+
 		this.setOverlay(newOverlay);
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		const destination = path.join(this.appDir, "public", "custom", newOverlay.id)
 		fs.cp(source, destination, { recursive: true }, (err => this.log.error(err)));
 	}
 
-	uploadOverlay(overlay: Overlay, overlayId: string = newId()): void {
+	async uploadOverlay(overlay: Overlay, overlayId: string = newId()): Promise<void> {
 		overlay.id = overlayId
-		// TODO: Handle version
-		this.setOverlay(overlay)
+		await this.setOverlay(overlay)
 	}
 
-	deleteOverlay(overlayId: string): void {
-		this.store.delete(`obs.layout.overlays.${overlayId}`)
-		setTimeout(this.emitOverlayUpdate.bind(this), 100)
+	async deleteOverlay(overlayId: string): Promise<void> {
+		this.log.info("Deleting overlay:", overlayId)
+		// this.store.delete(`obs.layout.overlays.${overlayId}`)
+		await this.sqliteOverlay.deleteOverlayById(overlayId)
+		this.emitOverlayUpdate.bind(this)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		fs.rm(source, { recursive: true }, (err => this.log.error(err)))
 	}
 
 	async copySceneLayerItem(overlayId: string, statsScene: LiveStatsScene, layerIndex: number, itemId: string) {
-		const overlay = this.getOverlayById(overlayId);
+		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay) || !overlay?.[statsScene].layers.length) return;
 
 		const layer = overlay[statsScene].layers[layerIndex]
@@ -193,13 +217,12 @@ export class ElectronOverlayStore {
 		this.setOverlay(overlay)
 	}
 
-	duplicateSceneLayer(overlayId: string, statsScene: LiveStatsScene, layerIndex: number) {
-		const overlay = this.getOverlayById(overlayId);
+	async duplicateSceneLayer(overlayId: string, statsScene: LiveStatsScene, layerIndex: number) {
+		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay) || !overlay?.[statsScene].layers.length) return;
 
 		const duplicatedLayer: Layer = cloneDeep({
 			...overlay[statsScene].layers[layerIndex],
-			id: newId(),
 		});
 
 		const customFileDir = path.join(this.appDir, "public", "custom", overlayId)
@@ -238,8 +261,8 @@ export class ElectronOverlayStore {
 		this.store.set('obs.layout.current.itemId', itemId);
 	}
 
-	emitOverlayUpdate() {
-		const overlays = this.getOverlays();
+	async emitOverlayUpdate() {
+		const overlays = await this.getOverlays();
 		this.messageHandler.sendMessage('Overlays', overlays);
 	}
 
@@ -279,7 +302,7 @@ export class ElectronOverlayStore {
 		this.clientEmitter.on('LayerPreviewChange', this.setCurrentLayoutIndex.bind(this));
 
 		this.clientEmitter.on('OverlayDownload', async (overlayId) => {
-			const overlay = this.getOverlayById(overlayId);
+			const overlay = await this.getOverlayById(overlayId);
 			if (!overlay) return;
 			const { canceled, filePath } = await dialog.showSaveDialog(this.mainWindow, {
 				filters: [{ name: 'json', extensions: ['json'] }],
@@ -311,28 +334,29 @@ export class ElectronOverlayStore {
 		});
 	}
 
-	private initDemoOverlays() {
+	private async initDemoOverlays() {
 		const overlayFiles = fs.readdirSync(path.join(__dirname, "/../../demo-overlays"));
 
-		const overlays = this.getOverlays();
+		const overlays = await this.getOverlays();
 
-		Object.values(overlays)
-			.filter(overlay => overlay.isDemo)
-			.forEach(overlay => {
-				this.deleteOverlay(overlay.id)
-			})
+		const currentFroggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0"
 
-		overlayFiles.forEach((file) => {
+		await Promise.all(
+			Object.values(overlays)
+				.filter(overlay => overlay.isDemo)
+				.filter(overlay => semver.gt(currentFroggiVersion, overlay.froggiVersion) || this.isDev)
+				.map(async (overlay) => await this.deleteOverlay(overlay.id))
+		);
+
+		for (const file of overlayFiles) {
 			try {
 				const overlayRaw = fs.readFileSync(path.join(__dirname, "/../../demo-overlays", file), 'utf8');
 				const overlay: Overlay = { ...JSON.parse(overlayRaw), isDemo: true } as Overlay;
-				const demoId = file.replace(/\s+|\.json$/g, '');
-				this.uploadOverlay(overlay, demoId);
+				await this.uploadOverlay(overlay, overlay.id);
 			} catch (e) {
 				this.log.error(e)
 			}
-		});
-
+		}
 	}
 
 	private migrateOverlays(): void {

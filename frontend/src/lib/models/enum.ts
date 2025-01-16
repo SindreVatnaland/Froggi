@@ -122,12 +122,12 @@ export enum InGameState {
 }
 
 export enum LiveStatsScene {
-	WaitingForDolphin = "Waiting For Dolphin",
-	Menu = "Menu",
-	InGame = "In Game",
-	PostGame = "Post Game",
-	PostSet = "Post Set",
-	RankChange = "Rank Change",
+	WaitingForDolphin = "waitingForDolphin",
+	Menu = "menu",
+	InGame = "inGame",
+	PostGame = "postGame",
+	PostSet = "postSet",
+	RankChange = "rankChange",
 }
 
 export enum NotificationType {

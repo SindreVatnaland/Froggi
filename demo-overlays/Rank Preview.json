@@ -1,11 +1,11 @@
 {
 	"id": "rankpreview",
-	"defaultScene": "Menu",
+	"defaultScene": "menu",
 	"description": "Scene Description",
 	"isDemo": true,
 	"title": "Rank Preview",
 	"aspectRatio": { "width": 16, "height": 9 },
-	"Waiting For Dolphin": {
+	"waitingForDolphin": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -64,11 +64,11 @@
 				}
 			}
 		},
-		"fallback": "Rank Change",
+		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "cg0ze3mdd", "items": [], "preview": true }]
 	},
-	"Menu": {
+	"menu": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -127,7 +127,7 @@
 				}
 			}
 		},
-		"fallback": "Rank Change",
+		"fallback": "rankChange",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
@@ -274,7 +274,7 @@
 									"type": "fade"
 								},
 								"selectedOptions": {
-									"Slippi Stats Rank Change": true,
+									"Slippi Stats rankChange": true,
 									"Player 2 Score Change": false,
 									"Player 1 Score Change": false,
 									"Player 2 Connect Code Change": false,
@@ -398,7 +398,7 @@
 									"Player 1 Tag Change": false,
 									"Match Game Mode Change": false,
 									"Match Best Of Change": false,
-									"Slippi Stats Rank Change": false,
+									"Slippi Stats rankChange": false,
 									"Slippi Stats Losses Change": false,
 									"Slippi Stats Wins Change": false
 								}
@@ -499,7 +499,7 @@
 									},
 									"type": "fade"
 								},
-								"selectedOptions": { "Slippi Stats Rank Change": true }
+								"selectedOptions": { "Slippi Stats rankChange": true }
 							},
 							"class": { "rounded": "", "alignment": "justify-center" },
 							"css": {
@@ -560,7 +560,7 @@
 			}
 		]
 	},
-	"In Game": {
+	"inGame": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -612,11 +612,11 @@
 				}
 			}
 		},
-		"fallback": "Rank Change",
+		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "cmzjnrixt", "items": [], "preview": true }]
 	},
-	"Post Game": {
+	"postGame": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -668,11 +668,11 @@
 				}
 			}
 		},
-		"fallback": "Rank Change",
+		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "cenqd8n5b", "items": [], "preview": true }]
 	},
-	"Post Set": {
+	"postSet": {
 		"active": false,
 		"animation": {
 			"duration": 250,
@@ -724,11 +724,11 @@
 				}
 			}
 		},
-		"fallback": "Rank Change",
+		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
 		"layers": [{ "id": "cmiamseli", "items": [], "preview": true }]
 	},
-	"Rank Change": {
+	"rankChange": {
 		"active": true,
 		"animation": {
 			"duration": 250,
@@ -787,7 +787,7 @@
 				}
 			}
 		},
-		"fallback": "Menu",
+		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
@@ -934,7 +934,7 @@
 									"type": "fade"
 								},
 								"selectedOptions": {
-									"Slippi Stats Rank Change": true,
+									"Slippi Stats rankChange": true,
 									"Player 2 Score Change": false,
 									"Player 1 Score Change": false,
 									"Player 2 Connect Code Change": false,
@@ -1045,7 +1045,7 @@
 									"type": "fade"
 								},
 								"selectedOptions": {
-									"Slippi Stats Rank Change": true,
+									"Slippi Stats rankChange": true,
 									"Player 2 Score Change": false,
 									"Player 1 Score Change": false,
 									"Player 2 Connect Code Change": false,
@@ -1165,7 +1165,7 @@
 									"Player 1 Tag Change": false,
 									"Match Game Mode Change": false,
 									"Match Best Of Change": false,
-									"Slippi Stats Rank Change": false,
+									"Slippi Stats rankChange": false,
 									"Slippi Stats Losses Change": false,
 									"Slippi Stats Wins Change": false
 								}
@@ -1282,7 +1282,7 @@
 									"Match Game Mode Change": false,
 									"Match Best Of Change": false,
 									"Slippi Stats Rating Change": false,
-									"Slippi Stats Rank Change": false,
+									"Slippi Stats rankChange": false,
 									"Slippi Stats Losses Change": false,
 									"Slippi Stats Wins Change": false,
 									"Session Rating Change": false,
