@@ -172,9 +172,9 @@ export class ElectronOverlayStore {
 		this.log.info("Deleting overlay:", overlayId)
 		// this.store.delete(`obs.layout.overlays.${overlayId}`)
 		await this.sqliteOverlay.deleteOverlayById(overlayId)
-		this.emitOverlayUpdate.bind(this)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		fs.rm(source, { recursive: true }, (err => this.log.error(err)))
+		setTimeout(this.emitOverlayUpdate.bind(this))
 	}
 
 	async copySceneLayerItem(overlayId: string, statsScene: LiveStatsScene, layerIndex: number, itemId: string) {
@@ -341,12 +341,11 @@ export class ElectronOverlayStore {
 
 		const currentFroggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0"
 
-		await Promise.all(
-			Object.values(overlays)
-				.filter(overlay => overlay.isDemo)
-				.filter(overlay => semver.gt(currentFroggiVersion, overlay.froggiVersion) || this.isDev)
-				.map(async (overlay) => await this.deleteOverlay(overlay.id))
-		);
+		for (const overlay of Object.values(overlays)) {
+			if (!overlay.isDemo) continue;
+			if (semver.gt(currentFroggiVersion, overlay.froggiVersion) && !this.isDev) return;
+			await this.deleteOverlay(overlay.id)
+		}
 
 		for (const file of overlayFiles) {
 			try {

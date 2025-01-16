@@ -10,6 +10,9 @@ export class LayerEntity {
   @Column({ type: 'simple-json' })
   items: GridContentItem[];
 
+  @Column({ default: 0 })
+  index: number = 0;
+
   @Column()
   preview: boolean;
 

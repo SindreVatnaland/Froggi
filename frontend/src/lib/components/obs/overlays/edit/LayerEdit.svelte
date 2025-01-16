@@ -5,8 +5,7 @@
 	import { fly } from 'svelte/transition';
 	import {
 		deleteLayer,
-		moveLayerDown,
-		moveLayerUp,
+		moveLayer,
 		newLayer,
 	} from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import TextFitMulti from '$lib/components/TextFitMulti.svelte';
@@ -42,7 +41,7 @@
 		<button
 			class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 			on:click={async () =>
-				(selectedLayer = await moveLayerUp(overlay.id, $statsScene, selectedLayer))}
+				(selectedLayer = await moveLayer(overlay.id, $statsScene, selectedLayer, -1))}
 		>
 			<TextFitMulti>Move up</TextFitMulti>
 		</button>
@@ -51,7 +50,7 @@
 		<button
 			class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 			on:click={async () =>
-				(selectedLayer = await moveLayerDown(overlay.id, $statsScene, selectedLayer))}
+				(selectedLayer = await moveLayer(overlay.id, $statsScene, selectedLayer, +1))}
 		>
 			<TextFitMulti>Move down</TextFitMulti>
 		</button>

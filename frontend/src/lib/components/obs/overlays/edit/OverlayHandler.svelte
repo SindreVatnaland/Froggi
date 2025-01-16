@@ -24,7 +24,7 @@
 
 	const getDefaultScene = (sceneId: string, active: boolean = true): Scene => {
 		return {
-			id: 0,
+			id: undefined,
 			active: active,
 			animation: {
 				duration: 250,
@@ -54,9 +54,10 @@
 			},
 			layers: [
 				{
-					id: sceneId,
+					id: undefined,
 					items: [],
 					preview: true,
+					index: 0,
 				},
 			],
 		};
@@ -239,7 +240,7 @@
 	export async function newLayer(
 		overlayId: string,
 		statsScene: LiveStatsScene,
-		indexPlacement: number | undefined = undefined,
+		indexPlacement: number | undefined = 0,
 	): Promise<number> {
 		const newLayerId = newId();
 
@@ -249,7 +250,8 @@
 
 		const layersLength = overlay[statsScene]?.layers.length;
 		overlay[statsScene]?.layers.splice(indexPlacement ?? layersLength, 0, {
-			id: newLayerId,
+			id: undefined,
+			index: indexPlacement,
 			items: [],
 			preview: true,
 		});
@@ -259,10 +261,11 @@
 		return overlay![statsScene]?.layers.length - 1;
 	}
 
-	export async function moveLayerDown(
+	export async function moveLayer(
 		overlayId: string,
 		statsScene: LiveStatsScene,
 		selectedLayer: number,
+		relativeSwap: number,
 	): Promise<number> {
 		let updatedOverlay = await getOverlayById(overlayId);
 
@@ -270,43 +273,21 @@
 
 		if (
 			selectedLayer === undefined ||
-			selectedLayer >= updatedOverlay[statsScene]?.layers.length - 1
+			selectedLayer >= updatedOverlay[statsScene]?.layers.length - 1 ||
+			relativeSwap === 0
 		)
 			return 0;
 		[
 			updatedOverlay![statsScene].layers[selectedLayer],
-			updatedOverlay![statsScene].layers[selectedLayer + 1],
+			updatedOverlay![statsScene].layers[selectedLayer + relativeSwap],
 		] = [
-			updatedOverlay![statsScene].layers[selectedLayer + 1],
+			updatedOverlay![statsScene].layers[selectedLayer + relativeSwap],
 			updatedOverlay![statsScene].layers[selectedLayer],
 		];
 
 		updateScene(updatedOverlay, statsScene);
 
-		return selectedLayer + 1;
-	}
-
-	export async function moveLayerUp(
-		overlayId: string,
-		statsScene: LiveStatsScene,
-		selectedLayer: number,
-	): Promise<number> {
-		let updatedOverlay = await getOverlayById(overlayId);
-
-		if (isNil(updatedOverlay)) return 0;
-
-		if (selectedLayer === undefined || selectedLayer === 0) return 0;
-		[
-			updatedOverlay![statsScene].layers[selectedLayer],
-			updatedOverlay![statsScene].layers[selectedLayer - 1],
-		] = [
-			updatedOverlay![statsScene].layers[selectedLayer - 1],
-			updatedOverlay![statsScene].layers[selectedLayer],
-		];
-
-		updateScene(updatedOverlay, statsScene);
-
-		return selectedLayer - 1;
+		return selectedLayer + relativeSwap;
 	}
 
 	export async function duplicateLayer(

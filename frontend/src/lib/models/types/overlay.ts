@@ -142,6 +142,7 @@ export interface Image {
 
 export interface Layer {
 	items: GridContentItem[]
+	index: number;
 	id: number | undefined;
 	preview: boolean;
 }
