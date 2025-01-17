@@ -201,8 +201,6 @@
 					>;
 					if (isNil(overlayId) || isNil(liveStatsScene) || isNil(scene)) return;
 					overlays.update((prev: Record<string, Overlay>) => {
-						console.log('SceneUpdate prev', cloneDeep(prev[overlayId][liveStatsScene]));
-						console.log('SceneUpdate new', cloneDeep(scene));
 						prev[overlayId][liveStatsScene] = scene;
 						return prev;
 					});
@@ -272,6 +270,7 @@
 					const value = payload[0] as Parameters<
 						MessageEvents['LiveStatsSceneChange']
 					>[0];
+					console.log('LiveStatsSceneChange', value);
 					if (!value) return;
 					statsScene.set(value);
 				})();

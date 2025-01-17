@@ -4,11 +4,13 @@
 	import Board from '$lib/components/obs/overlays/Board.svelte';
 	import { page } from '$app/stores';
 
-	export let layerIds: string[] | undefined = undefined;
+	export let layerIds: number[] | undefined = undefined;
 	export let preview: boolean = false;
 
 	const overlayId = $page.params.overlay;
 	$: curOverlay = $overlays[overlayId];
+
+	$: console.log(curOverlay);
 
 	const handleError = (e: Error) => {
 		console.error(e);

@@ -1,20 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import SecondaryOverlay from '$lib/components/obs/overlays/SecondaryOverlay.svelte';
-	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
+	import { LiveStatsScene } from '$lib/models/enum';
 	import { overlays, statsScene } from '$lib/utils/store.svelte';
 
 	$: overlayId = $page.params.overlay;
-	let layerIds: string[] = [];
+	let layerIds: number[] = [];
 
-	const getOverlay = async () => {
+	const getOverlay = async (overlayId: string, statsScene: LiveStatsScene) => {
 		const overlay = $overlays[overlayId];
 		if (!overlay) return;
-		layerIds = overlay[$statsScene].layers
+		layerIds = overlay[statsScene].layers
 			.filter((layer) => layer.preview)
-			.map((layer) => layer.id);
+			.map((layer) => layer.id)
+			.filter((id): id is number => id !== undefined);
 	};
-	$: $statsScene, $overlays, getOverlay();
+	$: $overlays, getOverlay(overlayId, $statsScene);
 </script>
 
 <SecondaryOverlay bind:layerIds preview={true} />

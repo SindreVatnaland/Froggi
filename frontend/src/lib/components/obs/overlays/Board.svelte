@@ -1,11 +1,5 @@
 <script lang="ts">
-	import {
-		electronEmitter,
-		isElectron,
-		obs,
-		overlays,
-		statsScene,
-	} from '$lib/utils/store.svelte';
+	import { electronEmitter, isElectron, statsScene } from '$lib/utils/store.svelte';
 	import Grid from 'svelte-grid';
 	import GridContent from './GridContent.svelte';
 	import type { Layer, Overlay, Scene } from '$lib/models/types/overlay';
@@ -17,29 +11,34 @@
 	import { onMount } from 'svelte';
 
 	export let curOverlay: Overlay;
-	export let layerIds: string[] | undefined;
+	export let layerIds: number[] | undefined;
 	export let preview: boolean = false;
 
 	let ready = false;
 
 	let curStatsScene: LiveStatsScene;
-	function updateCurrentScene(): Scene | undefined {
+	function updateCurrentScene(
+		curOverlay: Overlay,
+		statsScene: LiveStatsScene,
+		layerIds: number[] | undefined,
+	): Scene | undefined {
 		if (preview) {
-			updateFixedLayerItems(curOverlay[$statsScene].layers);
-			curStatsScene = $statsScene;
+			updateFixedLayerItems(curOverlay[statsScene].layers, layerIds ?? []);
+			curStatsScene = statsScene;
 			return;
 		}
-		curStatsScene = curOverlay?.[$statsScene].active
-			? $statsScene
-			: curOverlay?.[$statsScene].fallback ?? LiveStatsScene.Menu;
-		updateFixedLayerItems(curOverlay[curStatsScene].layers);
+		curStatsScene = curOverlay?.[statsScene].active
+			? statsScene
+			: curOverlay?.[statsScene].fallback ?? LiveStatsScene.Menu;
+		updateFixedLayerItems(curOverlay[curStatsScene].layers, layerIds ?? []);
 	}
-	$: layerIds, $statsScene, $overlays, updateCurrentScene();
+	$: updateCurrentScene(curOverlay, $statsScene, layerIds);
 
 	let fixedLayers: Layer[] = [];
-	function updateFixedLayerItems(layers: Layer[]) {
+	function updateFixedLayerItems(layers: Layer[], includedLayerIds: number[]) {
+		console.log('Fixed', layers, includedLayerIds);
 		fixedLayers = layers
-			?.filter((layer) => layerIds?.includes(layer.id) ?? true)
+			?.filter((layer) => includedLayerIds.includes(layer?.id ?? -1))
 			.map((layer) => {
 				return {
 					...layer,
@@ -96,7 +95,7 @@
 
 <svelte:window on:resize={debounce(handleResize, 1000)} on:error={handleError} />
 
-{#if curScene && rowHeight && fixedLayers && ready}
+{#if curScene && rowHeight && fixedLayers.length && ready}
 	<div class="w-full h-full overflow-hidden relative origin-top-left">
 		{#key innerHeight * innerWidth}
 			<BoardContainer
