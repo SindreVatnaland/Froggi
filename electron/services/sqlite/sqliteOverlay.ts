@@ -4,7 +4,6 @@ import { ElectronLog } from "electron-log";
 import { Overlay, Scene } from "../../../frontend/src/lib/models/types/overlay";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
-import { LiveStatsScene } from "../../../frontend/src/lib/models/enum";
 import { SceneEntity } from "./entities/sceneEntity";
 
 @singleton()
@@ -35,18 +34,16 @@ export class SqliteOverlay {
   async addOrUpdateOverlay(overlay: Overlay) {
     this.log.info("Add or updating overlay:", overlay.id);
 
-    for (const key of Object.keys(LiveStatsScene)) {
-      if (!isNaN(Number(key))) continue;
-      const currentScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
-      if (overlay[currentScene] && overlay[currentScene].layers) {
-        delete overlay[currentScene].id;
-      }
-    }
 
     const overlayEntity = this.overlayRepo.create(overlay);
 
-    const savedOverlay = await this.overlayRepo.save(overlayEntity);
-    return savedOverlay;
+    try {
+      const savedOverlay = await this.overlayRepo.save(overlayEntity);
+      return savedOverlay;
+    } catch (error) {
+      this.log.error("Error saving overlay:", error);
+    }
+    return null;
   }
 
   async deleteOverlayById(overlayId: string) {

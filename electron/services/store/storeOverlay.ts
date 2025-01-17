@@ -9,7 +9,7 @@ import { BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { LiveStatsScene } from '../../../frontend/src/lib/models/enum';
-import { cloneDeep, isNil, kebabCase } from 'lodash';
+import { camelCase, cloneDeep, isNil, kebabCase, startCase } from 'lodash';
 import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
 import { COL } from '../../../frontend/src/lib/models/const';
 //@ts-ignore
@@ -301,7 +301,7 @@ export class ElectronOverlayStore {
 	}
 
 	async deleteLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerId: number) {
-		console.log("Delete layer", overlayId, statsScene)
+		this.log.info("Delete layer", overlayId, statsScene)
 		const scene = await this.sqliteOverlay.getScene(sceneId) as Scene
 		if (!scene) return;
 
@@ -430,15 +430,43 @@ export class ElectronOverlayStore {
 		}
 	}
 
-	private migrateOverlays(): void {
+	private async migrateOverlays(): Promise<void> {
+		const jsonOverlays = (this.store.get(`obs.layout.overlays`) ?? {}) as Record<string, Overlay>;
+
+		for (const overlay of Object.values(jsonOverlays)) {
+			if (overlay.isDemo) continue;
+			this.convertAndClearOverlay(overlay);
+			await this.setOverlay(overlay);
+		}
+
+		this.store.delete(`obs.layout.overlays`);
+
 		const overlays = this.getOverlays();
 		Object.values(overlays).forEach(overlay => {
 			if (!overlay.froggiVersion) {
-				overlay.froggiVersion = "0.0.0"
+				overlay.froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
 			}
 			// Migrate overlay
 			// Compare version and migrate
 		})
-		this.store.set('obs.layout.overlays', overlays)
+
+	}
+
+	private convertAndClearOverlay(overlay: Overlay) {
+		for (const key of Object.keys(LiveStatsScene)) {
+			if (!isNaN(Number(key))) continue;
+			const oldConventionScene = startCase(camelCase(LiveStatsScene[key as keyof typeof LiveStatsScene])) as LiveStatsScene;
+			const newConventionScene = camelCase(oldConventionScene) as LiveStatsScene;
+
+			if (overlay[oldConventionScene] && overlay[oldConventionScene].layers) {
+				delete overlay[oldConventionScene].id;
+				overlay[newConventionScene] = overlay[oldConventionScene];
+				delete overlay[oldConventionScene];
+			}
+			for (const [index, layer] of overlay[newConventionScene].layers.entries()) {
+				delete layer.id;
+				layer.index = index;
+			}
+		}
 	}
 }
