@@ -234,9 +234,8 @@ export class ElectronOverlayStore {
 		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay) || !overlay?.[statsScene].layers.length) return;
 
-		const duplicatedLayer: Layer = cloneDeep({
-			...overlay[statsScene].layers[layerIndex],
-		});
+		const duplicatedLayer: Layer = cloneDeep(overlay[statsScene].layers[layerIndex]);
+		delete duplicatedLayer.id;
 
 		const customFileDir = path.join(this.appDir, "public", "custom", overlayId)
 
@@ -263,7 +262,7 @@ export class ElectronOverlayStore {
 			...layers.slice(layerIndex),
 		];
 
-		this.setOverlay(overlay)
+		this.setScene(overlayId, statsScene, overlay[statsScene])
 	}
 
 	setCurrentLayerIndex(index: number) {
@@ -289,7 +288,7 @@ export class ElectronOverlayStore {
 			index: layerIndex,
 			items: [],
 			id: undefined,
-			preview: false,
+			preview: true,
 		};
 
 		scene.layers = [
