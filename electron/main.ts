@@ -25,7 +25,6 @@ import { FileHandler } from './services/fileUpload';
 import { BACKEND_PORT, VITE_PORT } from '../frontend/src/lib/models/const';
 import { FrontendLogger } from './services/frontendLogger';
 import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
-import { SqliteOrm } from './services/sqlite/initiSqlite';
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 
 let mainLog: ElectronLog = log
@@ -206,11 +205,18 @@ try {
 		if (!dev) serveURL(mainWindow);
 
 		mainWindow.webContents.once('dom-ready', async () => {
+			container.register<string>('Port', { useValue: port });
+			container.register<boolean>('Dev', { useValue: dev });
+			container.register<string>('AppDir', {
+				useValue: dev ? getAppDataPath('Electron') : getAppDataPath('froggi'),
+			});
+			container.register<ElectronLog>('ElectronLog', { useValue: mainLog });
+
+			container.resolve(SqliteOverlay);
 			container.register<Electron.App>('App', { useValue: app });
 			container.register<BrowserWindow>('BrowserWindow', { useValue: mainWindow });
 			container.register<TypedEmitter>('LocalEmitter', { useValue: localEmitter });
 			container.register<TypedEmitter>('ClientEmitter', { useValue: clientEmitter });
-			container.register<ElectronLog>('ElectronLog', { useValue: mainLog });
 			container.register<IpcMain>('IpcMain', { useValue: ipcMain });
 			container.register<SlpParser>('SlpParser', { useValue: slpParser });
 			container.register<SlpStream>('SlpStream', { useValue: slpStream });
@@ -218,16 +224,9 @@ try {
 			container.register<string>('RootDir', {
 				useValue: `${__dirname}/../..`.replaceAll('\\', '/'),
 			});
-			container.register<string>('AppDir', {
-				useValue: dev ? getAppDataPath('Electron') : getAppDataPath('froggi'),
-			});
-			container.register<string>('Port', { useValue: port });
-			container.register<boolean>('Dev', { useValue: dev });
 
 			container.resolve(ElectronCommandStore);
 
-			container.resolve(SqliteOrm);
-			container.resolve(SqliteOverlay);
 			container.resolve(DiscordRpc);
 			container.resolve(MessageHandler);
 			container.resolve(StatsDisplay);

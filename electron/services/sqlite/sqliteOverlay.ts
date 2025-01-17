@@ -34,7 +34,6 @@ export class SqliteOverlay {
   async addOrUpdateOverlay(overlay: Overlay) {
     this.log.info("Add or updating overlay:", overlay.id);
 
-
     const overlayEntity = this.overlayRepo.create(overlay);
 
     try {

@@ -177,7 +177,8 @@ export class ElectronOverlayStore {
 	}
 
 	async uploadOverlay(overlay: Overlay, overlayId: string = newId()): Promise<void> {
-		overlay.id = overlayId
+		overlay.id = overlayId;
+		this.clearOverlay(overlay)
 		await this.setOverlay(overlay)
 	}
 
@@ -414,9 +415,16 @@ export class ElectronOverlayStore {
 		const currentFroggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0"
 
 		for (const overlay of Object.values(overlays)) {
-			if (!overlay.isDemo) continue;
-			if (semver.gt(currentFroggiVersion, overlay.froggiVersion) && !this.isDev) return;
-			await this.deleteOverlay(overlay.id)
+			if (!semver.valid(overlay.froggiVersion)) {
+				console.error(`Invalid version: ${overlay.froggiVersion}`);
+				continue;
+			}
+
+			if (
+				semver.satisfies(currentFroggiVersion, `>=${overlay.froggiVersion}`) || this.isDev
+			) {
+				await this.deleteOverlay(overlay.id);
+			}
 		}
 
 		for (const file of overlayFiles) {
@@ -455,15 +463,25 @@ export class ElectronOverlayStore {
 	private convertAndClearOverlay(overlay: Overlay) {
 		for (const key of Object.keys(LiveStatsScene)) {
 			if (!isNaN(Number(key))) continue;
+
 			const oldConventionScene = startCase(camelCase(LiveStatsScene[key as keyof typeof LiveStatsScene])) as LiveStatsScene;
 			const newConventionScene = camelCase(oldConventionScene) as LiveStatsScene;
 
 			if (overlay[oldConventionScene] && overlay[oldConventionScene].layers) {
-				delete overlay[oldConventionScene].id;
 				overlay[newConventionScene] = overlay[oldConventionScene];
 				delete overlay[oldConventionScene];
 			}
-			for (const [index, layer] of overlay[newConventionScene].layers.entries()) {
+
+		}
+		this.clearOverlay(overlay);
+	}
+
+	private clearOverlay(overlay: Overlay) {
+		for (const key of Object.keys(LiveStatsScene)) {
+			if (!isNaN(Number(key))) continue;
+			const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+			const scene = overlay[statsScene];
+			for (const [index, layer] of scene.layers.entries()) {
 				delete layer.id;
 				layer.index = index;
 			}

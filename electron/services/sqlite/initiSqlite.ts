@@ -21,7 +21,7 @@ export class SqliteOrm {
 
   private async initOrm() {
     this.log.info("Initializing SqliteOrm")
-    // Construct a full path to the database file in the desired directory.
+
     const dbPath = this.isDev
       ? path.resolve("./database.sqlite")
       : path.join(this.appDir, "database.sqlite");
