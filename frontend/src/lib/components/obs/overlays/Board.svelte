@@ -7,7 +7,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import BoardContainer from '$lib/components/obs/overlays/BoardContainer.svelte';
 	import { updateFont } from './CustomFontHandler.svelte';
-	import { debounce } from 'lodash';
+	import { debounce, isNil } from 'lodash';
 	import { onMount } from 'svelte';
 
 	export let curOverlay: Overlay;
@@ -35,9 +35,11 @@
 	$: updateCurrentScene(curOverlay, $statsScene, layerIds);
 
 	let fixedLayers: Layer[] = [];
-	function updateFixedLayerItems(layers: Layer[], includedLayerIds: number[]) {
+	function updateFixedLayerItems(layers: Layer[], includedLayerIds: number[] | undefined) {
 		fixedLayers = layers
-			?.filter((layer) => includedLayerIds.includes(layer?.id ?? -1))
+			?.filter(
+				(layer) => isNil(includedLayerIds) || includedLayerIds?.includes(layer?.id ?? -1),
+			)
 			.map((layer) => {
 				return {
 					...layer,
