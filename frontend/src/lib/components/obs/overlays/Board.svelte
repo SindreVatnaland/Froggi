@@ -36,7 +36,6 @@
 
 	let fixedLayers: Layer[] = [];
 	function updateFixedLayerItems(layers: Layer[], includedLayerIds: number[]) {
-		console.log('Fixed', layers, includedLayerIds);
 		fixedLayers = layers
 			?.filter((layer) => includedLayerIds.includes(layer?.id ?? -1))
 			.map((layer) => {

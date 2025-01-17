@@ -10,8 +10,6 @@
 	const overlayId = $page.params.overlay;
 	$: curOverlay = $overlays[overlayId];
 
-	$: console.log(curOverlay);
-
 	const handleError = (e: Error) => {
 		console.error(e);
 		setTimeout(location.reload, 2000);
