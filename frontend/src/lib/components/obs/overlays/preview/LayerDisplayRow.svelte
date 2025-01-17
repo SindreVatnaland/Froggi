@@ -44,13 +44,13 @@
 		menuItems={[
 			{
 				onClick: async () => {
-					moveLayer(curOverlay.id, $statsScene, scene.id, layer.index, -1);
+					moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, -1);
 				},
 				displayText: 'Move Up',
 			},
 			{
 				onClick: async () => {
-					moveLayer(curOverlay.id, $statsScene, scene.id, layer.index, 1);
+					moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, 1);
 				},
 				displayText: 'Move Down',
 			},
@@ -98,10 +98,10 @@
 			</div>
 			<button
 				class="w-full h-full col-span-1 grid justify-center text-lg font-bold text-secondary-color transition"
-				on:click={() => changeEditLayer(layerIndex)}
+				on:click={() => changeEditLayer(layer.index)}
 			>
 				<div class="w-full h-full grid justify-center items-center text-[1.5em]">
-					{layerIndex + 1}
+					{layer.index + 1}
 				</div>
 			</button>
 			<div
@@ -150,13 +150,16 @@
 				class="w-full h-full justify-center background-color-primary bg-opacity-40 hover:bg-opacity-60"
 				on:click={async () => {
 					if (isLastRow) setTimeout(() => scrollToBottom(), 50);
-					await newLayer(curOverlay.id, $statsScene, layerIndex + 1);
+					await newLayer(curOverlay.id, $statsScene, scene.id, layerIndex + 1);
 				}}
 			>
 				<h1 class="text-secondary-color">+</h1>
 			</button>
 		</div>
-		<ConfirmModal bind:open={deleteLayerModalOpen} on:confirm={() => deleteLayer(layer.id)}>
+		<ConfirmModal
+			bind:open={deleteLayerModalOpen}
+			on:confirm={() => deleteLayer(curOverlay.id, $statsScene, scene.id, layer.id)}
+		>
 			Delete layer?
 		</ConfirmModal>
 	</RightClick>

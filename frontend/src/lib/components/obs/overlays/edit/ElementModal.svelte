@@ -25,6 +25,7 @@
 	import type { CustomElement } from '$lib/models/constants/customElement';
 	import { fixTransition } from './fixTransition';
 	import { isNil } from 'lodash';
+	import { LiveStatsScene } from '$lib/models/enum';
 
 	const overlayId = $page.params.overlay;
 
@@ -50,14 +51,14 @@
 	};
 	$: open, openItemSelect();
 
-	function updateOverlay() {
+	function updateOverlay(statsScene: LiveStatsScene) {
 		const currentOverlay = getCurrentOverlay();
 		if (isNil(currentOverlay)) return;
 		$electronEmitter.emit(
 			'SceneUpdate',
 			currentOverlay.id,
-			$statsScene,
-			currentOverlay[$statsScene],
+			statsScene,
+			currentOverlay[statsScene],
 		);
 	}
 
@@ -71,7 +72,7 @@
 		return curOverlay[$statsScene]?.layers[$currentOverlayEditor?.layerIndex ?? 0]?.items ?? [];
 	}
 
-	function add() {
+	function add(statsScene: LiveStatsScene) {
 		let items = getCurrentItems();
 		let newItem = generateNewItem(selectedElementId, payload, items);
 
@@ -83,20 +84,20 @@
 
 		if (isNil(currentOverlay)) return;
 
-		$overlays[currentOverlay.id][$statsScene].layers[
+		$overlays[currentOverlay.id][statsScene].layers[
 			$currentOverlayEditor?.layerIndex ?? 0
 		].items = items;
 
-		updateOverlay();
+		updateOverlay(statsScene);
 		open = false;
 	}
 
-	function update() {
+	function update(statsScene: LiveStatsScene) {
 		let items = getCurrentItems();
 		let prevItem = items.find((item) => item.id === selectedItemId);
 
 		if (!prevItem) {
-			add();
+			add(statsScene);
 			return;
 		}
 
@@ -124,11 +125,11 @@
 
 		if (isNil(currentOverlay)) return;
 
-		$overlays[currentOverlay.id][$statsScene].layers[
+		$overlays[currentOverlay.id][statsScene].layers[
 			$currentOverlayEditor?.layerIndex ?? 0
 		].items = items;
 
-		updateOverlay();
+		updateOverlay(statsScene);
 		open = false;
 	}
 
@@ -169,7 +170,7 @@
 				<button
 					transition:fly={{ duration: 250, x: 150 }}
 					class="transition w-24 background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
-					on:click={update}
+					on:click={() => update($statsScene)}
 				>
 					{isNewElement ? 'Add' : 'Update'}
 				</button>

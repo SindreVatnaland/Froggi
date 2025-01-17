@@ -35,7 +35,7 @@
 		<div>
 			<button
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-				on:click={() => newLayer(scene.id, selectedLayer.index)}
+				on:click={() => newLayer(overlay.id, $statsScene, scene.id, selectedLayer.index)}
 			>
 				<TextFitMulti>New layer</TextFitMulti>
 			</button>
@@ -62,7 +62,8 @@
 			<div transition:fly={{ duration: 250, y: -25 }}>
 				<button
 					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-					on:click={() => deleteLayer(scene.id, selectedLayer.id)}
+					on:click={() =>
+						deleteLayer(overlay.id, $statsScene, scene.id, selectedLayer.id)}
 				>
 					<TextFitMulti>Delete layer</TextFitMulti>
 				</button>

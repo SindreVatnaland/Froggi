@@ -13,8 +13,8 @@ export class LayerEntity {
   @Column({ default: 0 })
   index: number = 0;
 
-  @Column()
-  preview: boolean;
+  @Column({ default: true })
+  preview: boolean = true;
 
   @ManyToOne(() => SceneEntity, (scene) => scene.layers)
   scene: SceneEntity;

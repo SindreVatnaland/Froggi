@@ -38,7 +38,7 @@
 	import { WEBSOCKET_PORT } from '$lib/models/const';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
-	import { debounce, isNil } from 'lodash';
+	import { cloneDeep, debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
 	const debouncedSetGameFrame = debounce(
@@ -201,6 +201,8 @@
 					>;
 					if (isNil(overlayId) || isNil(liveStatsScene) || isNil(scene)) return;
 					overlays.update((prev: Record<string, Overlay>) => {
+						console.log('SceneUpdate prev', cloneDeep(prev[overlayId][liveStatsScene]));
+						console.log('SceneUpdate new', cloneDeep(scene));
 						prev[overlayId][liveStatsScene] = scene;
 						return prev;
 					});
@@ -216,7 +218,6 @@
 			case 'Overlays':
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['Overlays']>[0];
-					console.log('Overlays', value);
 					if (!value) return;
 					overlays.set(value);
 				})();
@@ -299,19 +300,19 @@
 			}
 		};
 
+		const electronOnAnyHandler = (event: any, ...data: any[]) => {
+			window.electron.send('message', JSON.stringify({ [event as string]: data }));
+		};
+
 		window.electron.receive('message', electronMessageHandler);
 
 		const _electronEmitter = await getElectronEmitter();
 		_electronEmitter.removeAllListeners();
 
-		const electronOnAnyHandler = (event: any, ...data: any[]) => {
-			window.electron.send('message', JSON.stringify({ [event as string]: data }));
-		};
-
 		_electronEmitter.onAny(electronOnAnyHandler);
 
 		return () => {
-			window.electron.removeListener?.('message', electronMessageHandler);
+			window.electron.removeListener('message', electronMessageHandler);
 			_electronEmitter.offAny(electronOnAnyHandler);
 		};
 	};

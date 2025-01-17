@@ -54,7 +54,6 @@
 	): Promise<Overlay | undefined> {
 		if (isNil(overlayId)) return;
 		const overlays = await getOverlays();
-		console.log('Get overlays', overlays);
 		return overlays[overlayId];
 	}
 
@@ -174,27 +173,17 @@
 		};
 	}
 
-	export async function newLayer(sceneId: number | undefined, layerIndex: number) {
+	export async function newLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		sceneId: number | undefined,
+		layerIndex: number,
+	) {
+		console.log(overlayId, statsScene, sceneId, layerIndex);
 		if (!sceneId) return;
 
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('LayerNew', sceneId, layerIndex);
-
-		// TODO: Move this logic
-
-		if (isNil(overlay)) return 0;
-
-		const layersLength = overlay[statsScene]?.layers.length;
-		overlay[statsScene]?.layers.splice(indexPlacement ?? layersLength, 0, {
-			id: undefined,
-			index: indexPlacement,
-			items: [],
-			preview: true,
-		});
-
-		updateScene(overlay, statsScene);
-
-		return overlay![statsScene]?.layers.length - 1;
+		_electronEmitter.emit('LayerNew', overlayId, statsScene, sceneId, layerIndex);
 	}
 
 	export async function moveLayer(
@@ -204,6 +193,7 @@
 		layerIndex: number,
 		relativeSwap: number,
 	) {
+		console.log('move', overlayId, statsScene, sceneId, layerIndex, relativeSwap);
 		if (!sceneId) return;
 		const _electronEmitter = await getElectronEmitter();
 		_electronEmitter.emit(
@@ -227,12 +217,15 @@
 	}
 
 	export async function deleteLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
 		sceneId: number | undefined,
 		layerId: number | undefined,
 	): Promise<void> {
-		if (!sceneId || !layerId) return;
+		console.log('delete', overlayId, statsScene, sceneId, layerId);
+		if (!sceneId || isNil(layerId)) return;
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('LayerDelete', sceneId, layerId);
+		_electronEmitter.emit('LayerDelete', overlayId, statsScene, sceneId, layerId);
 	}
 
 	export async function notifyDisabledScene(

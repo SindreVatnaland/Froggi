@@ -62,14 +62,17 @@ export class ElectronOverlayStore {
 		return this.store.get(`obs.layout.overlays.${overlayId}.${statsScene}`) as Scene
 	}
 
-	setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
-		console.log("Set scene", overlayId, statsScene, scene.id)
-		scene.layers.forEach((layer, index) => {
+	async setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
+		console.log("Set scene", overlayId, statsScene, scene.id);
+
+		for (const [index, layer] of scene.layers.entries()) {
 			layer.index = index;
-		});
-		scene.layers = scene.layers.sort((a, b) => a.index - b.index);
-		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, scene)
-		this.sqliteOverlay.addOrUpdateScene(scene);
+		};
+
+		scene.layers.sort((a, b) => a.index - b.index);
+
+		const updatedScene = await this.sqliteOverlay.addOrUpdateScene(scene);
+		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, updatedScene);
 	}
 
 	async getOverlayById(overlayId: string): Promise<Overlay | undefined> {
@@ -298,22 +301,34 @@ export class ElectronOverlayStore {
 		this.setScene(overlayId, statsScene, scene)
 	}
 
-	async moveLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number, relativeSwap: number) {
-		this.log.debug("Moving layer", overlayId, statsScene)
-		const scene = await this.sqliteOverlay.getScene(sceneId)
-
+	async deleteLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerId: number) {
+		console.log("Delete layer", overlayId, statsScene)
+		const scene = await this.sqliteOverlay.getScene(sceneId) as Scene
 		if (!scene) return;
-		if (scene.layers.length <= 1 || layerIndex >= (scene.layers.length - 1)) return;
 
-		[
-			scene.layers[layerIndex],
-			scene.layers[layerIndex + relativeSwap],
-		] = [
-				scene.layers[layerIndex + relativeSwap],
-				scene.layers[layerIndex],
-			];
+		scene.layers = scene.layers.filter((layer) => layer.id !== layerId);
 
-		this.setScene(overlayId, statsScene, scene)
+		await this.setScene(overlayId, statsScene, scene)
+		await this.sqliteOverlay.deleteLayer(layerId)
+	}
+
+	async moveLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		sceneId: number,
+		layerIndex: number,
+		relativeSwap: number
+	) {
+		this.log.debug("Moving layer", overlayId, statsScene, sceneId, layerIndex, relativeSwap);
+		let scene = await this.sqliteOverlay.getScene(sceneId);
+		if (!scene) return;
+
+		const newIndex = layerIndex + relativeSwap;
+		if (newIndex < 0 || newIndex >= scene.layers.length) return;
+		[scene.layers[layerIndex], scene.layers[newIndex]] =
+			[scene.layers[newIndex], scene.layers[layerIndex]];
+
+		await this.setScene(overlayId, statsScene, scene);
 	}
 
 	initListeners() {
@@ -346,6 +361,8 @@ export class ElectronOverlayStore {
 		this.clientEmitter.on('OverlayCreate', this.createOverlay.bind(this));
 
 		this.clientEmitter.on('SceneItemDuplicate', this.copySceneLayerItem.bind(this))
+
+		this.clientEmitter.on('LayerDelete', this.deleteLayer.bind(this))
 
 		this.clientEmitter.on('LayerNew', this.addLayer.bind(this))
 

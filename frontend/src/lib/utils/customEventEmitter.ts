@@ -71,9 +71,9 @@ export interface MessageEvents {
 	RemoveDuplicateItemsByOverlayId: (overlayId: string) => void;
 	SessionStats: (session: SessionStats | undefined) => void;
 	LiveStatsSceneChange: (scene: LiveStatsScene) => void;
-	LayerDelete: (sceneId: number, layerId: number) => void;
+	LayerDelete: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, LayerDelete: number) => void;
 	LayerDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number) => void;
-	LayerNew: (sceneId: number, layerIndex: number) => void;
+	LayerNew: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number) => void;
 	LayerMove: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number, relativeSwap: number) => void;
 	Url: (url: Url) => void;
 	CurrentOverlayEditor: (overlay: OverlayEditor) => void;

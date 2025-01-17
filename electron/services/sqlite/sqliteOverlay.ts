@@ -56,12 +56,20 @@ export class SqliteOverlay {
   }
 
   async getScene(sceneId: number): Promise<SceneEntity | null> {
-    return await this.sceneRepo.findOneBy({ id: sceneId })
+    const scenes = await this.sceneRepo.findOneBy({ id: sceneId })
+    scenes?.layers.sort((a, b) => a.index - b.index);
+    return scenes;
   }
 
-  async addOrUpdateScene(scene: SceneEntity | Scene): Promise<SceneEntity> {
-    this.log.debug("Adding scene:", scene.id)
-    this.sceneRepo.create(scene);
-    return await this.sceneRepo.save(scene);
+  async addOrUpdateScene(scene: Scene): Promise<SceneEntity> {
+    this.log.debug("Adding scene:", scene.id);
+    const sceneEntity = this.sceneRepo.create(scene);
+    return await this.sceneRepo.save(sceneEntity);
+  }
+
+  async deleteLayer(layerId: number) {
+    this.log.info("Deleting layer:", layerId)
+    const deleted = await this.sceneRepo.delete({ id: layerId })
+    return deleted
   }
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { localEmitter, overlays, statsScene } from '$lib/utils/store.svelte';
+	import { localEmitter, overlays, sceneSwitch, statsScene } from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
 	import LayerDisplayRow from '$lib/components/obs/overlays/preview/LayerDisplayRow.svelte';
 	import { newLayer } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
@@ -14,6 +14,7 @@
 	let selectedLayerIndex: number = 0;
 
 	$: curOverlay = $overlays[overlayId];
+	$: scene = curOverlay[$statsScene];
 	let layers: Layer[] = [];
 
 	onMount(() => {
@@ -88,7 +89,7 @@
 				<button
 					class="w-full h-full justify-center background-color-primary bg-opacity-40 hover:bg-opacity-60"
 					on:click={async () => {
-						await newLayer(overlayId, $statsScene, 0);
+						await newLayer(overlayId, $statsScene, scene.id, 0);
 					}}
 				>
 					<h1 class="text-secondary-color text-shadow-md">+</h1>
