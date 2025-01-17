@@ -10,7 +10,9 @@
 	let overlayPreviewOpen = false;
 
 	const openPreview = async (overlayId: string) => {
+		console.log(overlayId);
 		selectedOverlay = await getOverlayById(overlayId);
+		console.log(overlayId, selectedOverlay);
 		overlayPreviewOpen = true;
 	};
 

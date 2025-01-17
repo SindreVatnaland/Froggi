@@ -22,6 +22,8 @@
 	$: isSelected = selectedLayerIndex === layerIndex;
 	let isLastRow = curOverlay[$statsScene]?.layers.length === layerIndex + 1;
 
+	$: scene = curOverlay[$statsScene];
+
 	let deleteLayerModalOpen = false;
 
 	const changeEditLayer = (layerIndex: number) => {
@@ -42,13 +44,13 @@
 		menuItems={[
 			{
 				onClick: async () => {
-					moveLayer(curOverlay.id, $statsScene, layerIndex, -1);
+					moveLayer(curOverlay.id, $statsScene, scene.id, layer.index, -1);
 				},
 				displayText: 'Move Up',
 			},
 			{
 				onClick: async () => {
-					moveLayer(curOverlay.id, $statsScene, layerIndex, 1);
+					moveLayer(curOverlay.id, $statsScene, scene.id, layer.index, 1);
 				},
 				displayText: 'Move Down',
 			},
@@ -108,7 +110,7 @@
 				<button
 					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
 					on:click={() => {
-						moveLayer(curOverlay.id, $statsScene, layerIndex, -1);
+						moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, -1);
 					}}
 				>
 					<img src="/image/button-icons/up.png" alt="up" style="filter: invert(1)" />
@@ -116,7 +118,7 @@
 				<button
 					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
 					on:click={async () => {
-						moveLayer(curOverlay.id, $statsScene, layerIndex, 1);
+						moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, 1);
 					}}
 				>
 					<div class="w-full h-full grid justify-center items-center text-[0.5em]">

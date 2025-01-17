@@ -1,5 +1,5 @@
 import Store from 'electron-store';
-import type { GridContentItem, Layer, Overlay, OverlayEditor, Scene, SharedOverlay } from '../../../frontend/src/lib/models/types/overlay';
+import type { AspectRatio, GridContentItem, Layer, Overlay, OverlayEditor, Scene, SharedOverlay } from '../../../frontend/src/lib/models/types/overlay';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
@@ -18,6 +18,7 @@ import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlayEntities';
+import { getNewOverlay } from './../../utils/overlayHandler';
 
 
 @singleton()
@@ -63,13 +64,22 @@ export class ElectronOverlayStore {
 
 	setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
 		console.log("Set scene", overlayId, statsScene, scene.id)
-		this.store.set(`obs.layout.overlays.${overlayId}.${statsScene}`, scene)
+		scene.layers.forEach((layer, index) => {
+			layer.index = index;
+		});
+		scene.layers = scene.layers.sort((a, b) => a.index - b.index);
 		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, scene)
+		this.sqliteOverlay.addOrUpdateScene(scene);
 	}
 
 	async getOverlayById(overlayId: string): Promise<Overlay | undefined> {
 		const overlays = await this.getOverlays()
 		return overlays[overlayId]
+	}
+
+	async createOverlay(aspectRatio: AspectRatio): Promise<void> {
+		let overlay = getNewOverlay(aspectRatio);
+		this.setOverlay(overlay)
 	}
 
 	removeDuplicateItems(): void {
@@ -266,6 +276,46 @@ export class ElectronOverlayStore {
 		this.messageHandler.sendMessage('Overlays', overlays);
 	}
 
+
+	async addLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number) {
+		this.log.debug("Adding layer", overlayId, statsScene)
+		const scene = await this.sqliteOverlay.getScene(sceneId) as Scene
+		if (!scene) return;
+
+		const newLayer: Layer = {
+			index: layerIndex,
+			items: [],
+			id: undefined,
+			preview: false,
+		};
+
+		scene.layers = [
+			...scene.layers.slice(0, layerIndex),
+			newLayer,
+			...scene.layers.slice(layerIndex),
+		];
+
+		this.setScene(overlayId, statsScene, scene)
+	}
+
+	async moveLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number, relativeSwap: number) {
+		this.log.debug("Moving layer", overlayId, statsScene)
+		const scene = await this.sqliteOverlay.getScene(sceneId)
+
+		if (!scene) return;
+		if (scene.layers.length <= 1 || layerIndex >= (scene.layers.length - 1)) return;
+
+		[
+			scene.layers[layerIndex],
+			scene.layers[layerIndex + relativeSwap],
+		] = [
+				scene.layers[layerIndex + relativeSwap],
+				scene.layers[layerIndex],
+			];
+
+		this.setScene(overlayId, statsScene, scene)
+	}
+
 	initListeners() {
 		this.store.onDidChange('obs.layout.current', (value) => {
 			this.messageHandler.sendMessage('CurrentOverlayEditor', value as OverlayEditor);
@@ -293,9 +343,15 @@ export class ElectronOverlayStore {
 
 		this.clientEmitter.on('OverlayDelete', this.deleteOverlay.bind(this));
 
+		this.clientEmitter.on('OverlayCreate', this.createOverlay.bind(this));
+
 		this.clientEmitter.on('SceneItemDuplicate', this.copySceneLayerItem.bind(this))
 
-		this.clientEmitter.on('SceneLayerDuplicate', this.duplicateSceneLayer.bind(this))
+		this.clientEmitter.on('LayerNew', this.addLayer.bind(this))
+
+		this.clientEmitter.on('LayerDuplicate', this.duplicateSceneLayer.bind(this))
+
+		this.clientEmitter.on('LayerMove', this.moveLayer.bind(this))
 
 		this.clientEmitter.on('SelectedItemChange', this.setCurrentItemId.bind(this));
 

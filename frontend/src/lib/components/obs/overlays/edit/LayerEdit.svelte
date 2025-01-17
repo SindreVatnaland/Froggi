@@ -13,6 +13,8 @@
 	export let overlay: Overlay;
 	export let selectedLayer: Layer;
 
+	$: scene = overlay[$statsScene];
+
 	const changeLayer = () => {
 		$electronEmitter.emit('LayerPreviewChange', selectedLayer.index);
 	};
@@ -33,7 +35,7 @@
 		<div>
 			<button
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-				on:click={() => newLayer(overlay.id, $statsScene)}
+				on:click={() => newLayer(scene.id, selectedLayer.index)}
 			>
 				<TextFitMulti>New layer</TextFitMulti>
 			</button>
@@ -41,7 +43,8 @@
 		<div>
 			<button
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-				on:click={() => moveLayer(overlay.id, $statsScene, selectedLayer.index, -1)}
+				on:click={() =>
+					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, -1)}
 			>
 				<TextFitMulti>Move up</TextFitMulti>
 			</button>
@@ -49,7 +52,8 @@
 		<div>
 			<button
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-				on:click={() => moveLayer(overlay.id, $statsScene, selectedLayer.index, +1)}
+				on:click={() =>
+					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, 1)}
 			>
 				<TextFitMulti>Move down</TextFitMulti>
 			</button>
@@ -58,7 +62,7 @@
 			<div transition:fly={{ duration: 250, y: -25 }}>
 				<button
 					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
-					on:click={() => deleteLayer(selectedLayer.id)}
+					on:click={() => deleteLayer(scene.id, selectedLayer.id)}
 				>
 					<TextFitMulti>Delete layer</TextFitMulti>
 				</button>

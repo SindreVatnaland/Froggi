@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { electronEmitter } from '$lib/utils/store.svelte';
-	import { getNewOverlay } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 
 	function importOverlay() {
 		$electronEmitter.emit('OverlayUpload');
@@ -9,18 +8,14 @@
 	}
 
 	function createHorizontalOverlay() {
-		const overlay = getNewOverlay();
-		$electronEmitter.emit('OverlayUpdate', overlay);
+		$electronEmitter.emit('OverlayCreate', { width: 16, height: 9 });
 		open = false;
 	}
 
 	function createVerticalOverlay() {
-		const overlay = getNewOverlay({ width: 9, height: 16 });
-		$electronEmitter.emit('OverlayUpdate', overlay);
+		$electronEmitter.emit('OverlayCreate', { width: 9, height: 16 });
 		open = false;
 	}
-
-	// TODO: Create button for pre-made overlays
 
 	export let open = false;
 </script>

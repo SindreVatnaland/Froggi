@@ -21,7 +21,7 @@ import type {
 	NotificationType,
 } from '../models/enum';
 import type { PlayerController } from '../models/types/controller';
-import type { Overlay, OverlayEditor, Scene, Url } from '../models/types/overlay';
+import type { AspectRatio, Overlay, OverlayEditor, Scene, Url } from '../models/types/overlay';
 import type {
 	CurrentPlayer,
 	GameStartTypeExtended,
@@ -71,12 +71,17 @@ export interface MessageEvents {
 	RemoveDuplicateItemsByOverlayId: (overlayId: string) => void;
 	SessionStats: (session: SessionStats | undefined) => void;
 	LiveStatsSceneChange: (scene: LiveStatsScene) => void;
+	LayerDelete: (sceneId: number, layerId: number) => void;
+	LayerDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number) => void;
+	LayerNew: (sceneId: number, layerIndex: number) => void;
+	LayerMove: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number, relativeSwap: number) => void;
 	Url: (url: Url) => void;
 	CurrentOverlayEditor: (overlay: OverlayEditor) => void;
 	Obs: (obs: Obs | undefined) => void;
 	ObsAuth: (auth: ObsAuth) => void;
 	ObsConnection: (connection: ObsConnection) => void;
 	Overlays: (overlays: Record<string, Overlay> | undefined) => void;
+	OverlayCreate: (aspectRatio: AspectRatio) => void;
 	OverlayDelete: (overlayId: string) => void;
 	OverlayDownload: (overlayId: string) => void;
 	OverlayDuplicate: (overlayId: string) => void;
@@ -84,7 +89,6 @@ export interface MessageEvents {
 	OverlayUpload: () => void;
 	SaveLogs: () => void;
 	SceneItemDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number, prevItemId: string) => void;
-	SceneLayerDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number) => void;
 	SceneUpdate: (overlayId: string, liveStatsScene: LiveStatsScene, scene: Scene) => void;
 	SelectedItemChange: (itemId: string) => void;
 

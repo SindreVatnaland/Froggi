@@ -1,19 +1,22 @@
 import { inject, singleton } from "tsyringe";
 import { OverlayEntity } from "./entities/overlayEntities";
 import { ElectronLog } from "electron-log";
-import { Overlay } from "../../../frontend/src/lib/models/types/overlay";
+import { Overlay, Scene } from "../../../frontend/src/lib/models/types/overlay";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
 import { LiveStatsScene } from "../../../frontend/src/lib/models/enum";
+import { SceneEntity } from "./entities/sceneEntity";
 
 @singleton()
 export class SqliteOverlay {
   private overlayRepo: Repository<OverlayEntity>
+  private sceneRepo: Repository<SceneEntity>
   constructor(
     @inject('ElectronLog') private log: ElectronLog,
     @inject(SqliteOrm) private sqlite: SqliteOrm,
   ) {
     this.overlayRepo = this.sqlite.AppDataSource.getRepository(OverlayEntity);
+    this.sceneRepo = this.sqlite.AppDataSource.getRepository(SceneEntity);
   }
 
   async getOverlays() {
@@ -50,5 +53,15 @@ export class SqliteOverlay {
     this.log.info("Deleting overlay:", overlayId)
     const deleted = await this.overlayRepo.delete({ id: overlayId })
     return deleted
+  }
+
+  async getScene(sceneId: number): Promise<SceneEntity | null> {
+    return await this.sceneRepo.findOneBy({ id: sceneId })
+  }
+
+  async addOrUpdateScene(scene: SceneEntity | Scene): Promise<SceneEntity> {
+    this.log.debug("Adding scene:", scene.id)
+    this.sceneRepo.create(scene);
+    return await this.sceneRepo.save(scene);
   }
 }

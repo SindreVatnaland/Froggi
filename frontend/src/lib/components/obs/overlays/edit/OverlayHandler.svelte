@@ -1,14 +1,11 @@
 <script lang="ts" context="module">
-	import { Animation, LiveStatsScene, SceneBackground } from '$lib/models/enum';
+	import { Animation, LiveStatsScene } from '$lib/models/enum';
 	import type { CustomElement } from '$lib/models/constants/customElement';
 	import type {
 		AnimationSettings,
-		AspectRatio,
 		ElementPayload,
 		GridContentItem,
-		Layer,
 		Overlay,
-		Scene,
 	} from '$lib/models/types/overlay';
 
 	import { COL, MIN, SCENE_TRANSITION_DELAY } from '$lib/models/const';
@@ -56,9 +53,9 @@
 		overlayId: string | undefined,
 	): Promise<Overlay | undefined> {
 		if (isNil(overlayId)) return;
-
 		const overlays = await getOverlays();
-		overlays[overlayId];
+		console.log('Get overlays', overlays);
+		return overlays[overlayId];
 	}
 
 	export async function updateOverlay(overlay: Overlay) {
@@ -177,15 +174,11 @@
 		};
 	}
 
-	export async function newLayer(
-		overlayId: string,
-		statsScene: LiveStatsScene,
-		indexPlacement: number | undefined = 0,
-	): Promise<number> {
-		const overlay = await getOverlayById(overlayId);
+	export async function newLayer(sceneId: number | undefined, layerIndex: number) {
+		if (!sceneId) return;
 
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('SceneLayerNew', layerIndex);
+		_electronEmitter.emit('LayerNew', sceneId, layerIndex);
 
 		// TODO: Move this logic
 
@@ -207,34 +200,20 @@
 	export async function moveLayer(
 		overlayId: string,
 		statsScene: LiveStatsScene,
-		selectedLayerIndex: number | undefined,
+		sceneId: number | undefined,
+		layerIndex: number,
 		relativeSwap: number,
 	) {
-		if (!selectedLayerIndex) return 0;
-		let updatedOverlay = await getOverlayById(overlayId);
-
+		if (!sceneId) return;
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('SceneLayerMove', layerId, relativeSwap);
-
-		// TODO: Emit event and Move logic to node
-
-		if (isNil(updatedOverlay)) return 0;
-
-		if (
-			selectedLayerIndex === undefined ||
-			selectedLayerIndex >= updatedOverlay[statsScene]?.layers.length - 1 ||
-			relativeSwap === 0
-		)
-			return 0;
-		[
-			updatedOverlay![statsScene].layers[selectedLayerIndex],
-			updatedOverlay![statsScene].layers[selectedLayerIndex + relativeSwap],
-		] = [
-			updatedOverlay![statsScene].layers[selectedLayerIndex + relativeSwap],
-			updatedOverlay![statsScene].layers[selectedLayerIndex],
-		];
-
-		updateScene(updatedOverlay, statsScene);
+		_electronEmitter.emit(
+			'LayerMove',
+			overlayId,
+			statsScene,
+			sceneId,
+			layerIndex,
+			relativeSwap,
+		);
 	}
 
 	export async function duplicateLayer(
@@ -243,13 +222,17 @@
 		selectedLayerIndex: number,
 	) {
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('SceneLayerDuplicate', overlayId, statsScene, selectedLayerIndex);
+		_electronEmitter.emit('LayerDuplicate', overlayId, statsScene, selectedLayerIndex);
 		return selectedLayerIndex;
 	}
 
-	export async function deleteLayer(layerId: number | undefined): Promise<void> {
+	export async function deleteLayer(
+		sceneId: number | undefined,
+		layerId: number | undefined,
+	): Promise<void> {
+		if (!sceneId || !layerId) return;
 		const _electronEmitter = await getElectronEmitter();
-		_electronEmitter.emit('SceneLayerDelete', layerId);
+		_electronEmitter.emit('LayerDelete', sceneId, layerId);
 	}
 
 	export async function notifyDisabledScene(
