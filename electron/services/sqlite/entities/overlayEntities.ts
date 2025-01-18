@@ -17,8 +17,8 @@ export class OverlayEntity implements Overlay {
   @Column()
   description: string;
 
-  @Column()
-  froggiVersion: string;
+  @Column({ default: "0.0.0" })
+  froggiVersion: string = "0.0.0";
 
   @Column()
   title: string;
