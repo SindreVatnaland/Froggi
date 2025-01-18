@@ -181,10 +181,10 @@ export class StatsDisplay {
 			const currentPlayerRankStats = await this.api.getPlayerRankStats(
 				playerConnectCode,
 			);
-			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}
 		if (isPostSet) {
-			this.storeLiveStats.setStatsSceneTimeout(
+			return this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostSet,
 				LiveStatsScene.Menu,
 				60000,

@@ -16,6 +16,7 @@ import { isMatch } from 'lodash';
 @singleton()
 export class ElectronCurrentPlayerStore {
 	private sceneTimeout: NodeJS.Timeout;
+	private rankChangeSceneTimeout: NodeJS.Timeout;
 	private listeners: Function[];
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -89,14 +90,22 @@ export class ElectronCurrentPlayerStore {
 		const player = this.getCurrentPlayer();
 		if (!player) return;
 		this.log.info('Handling rank change');
+		const rankSceneTimeout = 10000;
 		this.storeLiveStats.setStatsSceneTimeout(
 			LiveStatsScene.RankChange,
 			LiveStatsScene.PostSet,
-			10000,
+			rankSceneTimeout,
 		);
 		setTimeout(() => {
 			this.setCurrentPlayerCurrentRankStats(player.rank?.new);
 		}, 4000);
+		this.rankChangeSceneTimeout = setTimeout(() => {
+			this.storeLiveStats.setStatsSceneTimeout(
+				LiveStatsScene.PostSet,
+				LiveStatsScene.Menu,
+				rankSceneTimeout,
+			);
+		}, rankSceneTimeout)
 	}
 
 	private initPlayerListener() {
@@ -118,6 +127,7 @@ export class ElectronCurrentPlayerStore {
 			}),
 			this.store.onDidChange('stats.scene', () => {
 				clearTimeout(this.sceneTimeout);
+				clearTimeout(this.rankChangeSceneTimeout);
 			}),
 		];
 	}
