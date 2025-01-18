@@ -17,8 +17,8 @@ export class SceneEntity implements Scene {
   @Column({ type: "simple-json" })
   background: Background;
 
-  @Column()
-  fallback: LiveStatsScene;
+  @Column({ default: LiveStatsScene.Menu })
+  fallback: LiveStatsScene = LiveStatsScene.Menu;
 
   @Column({ type: "simple-json" })
   font: Font;

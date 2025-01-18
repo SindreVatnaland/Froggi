@@ -11,16 +11,16 @@ export class OverlayEntity implements Overlay {
   @Column({ type: "simple-json" })
   aspectRatio: AspectRatio;
 
-  @Column()
-  isDemo: boolean;
+  @Column({ default: false })
+  isDemo: boolean = false;
 
-  @Column()
-  description: string;
+  @Column({ default: "" })
+  description: string = "";
 
   @Column({ default: "0.0.0" })
   froggiVersion: string = "0.0.0";
 
-  @Column()
+  @Column({ default: "New Overlay" })
   title: string;
 
   @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
