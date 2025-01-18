@@ -205,14 +205,11 @@ try {
 		if (!dev) serveURL(mainWindow);
 
 		mainWindow.webContents.once('dom-ready', async () => {
-			container.register<string>('Port', { useValue: port });
-			container.register<boolean>('Dev', { useValue: dev });
+			container.register<ElectronLog>('ElectronLog', { useValue: mainLog });
+
 			container.register<string>('AppDir', {
 				useValue: dev ? getAppDataPath('Electron') : getAppDataPath('froggi'),
 			});
-			container.register<ElectronLog>('ElectronLog', { useValue: mainLog });
-
-			container.resolve(SqliteOverlay);
 			container.register<Electron.App>('App', { useValue: app });
 			container.register<BrowserWindow>('BrowserWindow', { useValue: mainWindow });
 			container.register<TypedEmitter>('LocalEmitter', { useValue: localEmitter });
@@ -225,8 +222,12 @@ try {
 				useValue: `${__dirname}/../..`.replaceAll('\\', '/'),
 			});
 
+			container.register<boolean>('Dev', { useValue: dev });
+			container.register<string>('Port', { useValue: port });
+
 			container.resolve(ElectronCommandStore);
 
+			container.resolve(SqliteOverlay);
 			container.resolve(DiscordRpc);
 			container.resolve(MessageHandler);
 			container.resolve(StatsDisplay);

@@ -415,7 +415,7 @@ export class ElectronOverlayStore {
 		const currentFroggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0"
 
 		for (const overlay of Object.values(overlays)) {
-			if (overlay.isDemo) continue;
+			if (!overlay.isDemo) continue;
 			if (!semver.valid(overlay.froggiVersion)) {
 				console.error(`Invalid version: ${overlay.froggiVersion}`);
 				continue;
