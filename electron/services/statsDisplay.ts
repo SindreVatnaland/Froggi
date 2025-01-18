@@ -128,6 +128,7 @@ export class StatsDisplay {
 			settings?.matchInfo?.matchId?.replace(/[.:]/g, '-')
 		)
 			return;
+		this.log.info("New game detected. Clearing recent games.")
 		this.storeGames.clearRecentGames();
 	}
 
@@ -162,7 +163,9 @@ export class StatsDisplay {
 
 	private handleScore(gameStats: GameStats, score: number[]): number[] {
 		const winnerIndex = getWinnerIndex(gameStats);
-		if (!isNil(winnerIndex)) score[winnerIndex ?? 0] += 1;
+		if (isNil(winnerIndex)) return score;
+		score[winnerIndex ?? 0] += 1;
+		this.log.info("Player", winnerIndex + 1, "won the game. Score:", score)
 		return score
 	}
 

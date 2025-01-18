@@ -54,7 +54,7 @@ export class SqliteOverlay {
     for (const key of Object.keys(LiveStatsScene)) {
       if (!isNaN(Number(key))) continue;
       const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
-      await this.sceneRepo.delete({ id: overlay[statsScene].id });
+      await this.sceneRepo.delete({ id: overlay[statsScene]?.id });
     }
     await this.overlayRepo.delete({ id: overlayId })
   }
