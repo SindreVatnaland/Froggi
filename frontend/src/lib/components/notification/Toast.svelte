@@ -13,14 +13,17 @@
 	};
 
 	const deleteNotification = (id: string) => {
-		notifications.update((state) => state.filter((n) => n.id !== id));
+		console.log('deleteNotification', id);
+		notifications.update((n) => n.filter((n) => n.id !== id));
+		console.log('deleteNotification', $notifications);
 	};
 </script>
 
 {#if $isElectron || !$isOverlayPage}
 	<div class={`notifications ${$isMobile ? 'bottom-20' : 'bottom-2'}`}>
 		{#each $notifications as notification (notification.id)}
-			<div
+			<button
+				on:click={() => deleteNotification(notification.id)}
 				animate:flip
 				class="toast rounded-md"
 				style="background: {themes[notification.type]};"
@@ -28,10 +31,7 @@
 				out:fly={{ y: -30 }}
 			>
 				<div class="content">{notification.message}</div>
-				<button class="close" on:click={() => deleteNotification(notification.id)}>
-					&times;
-				</button>
-			</div>
+			</button>
 		{/each}
 	</div>
 {/if}
@@ -48,7 +48,6 @@
 		flex-direction: column;
 		justify-content: flex-start;
 		align-items: center;
-		pointer-events: none;
 	}
 
 	.toast {
@@ -58,7 +57,6 @@
 
 	.content {
 		padding: 10px;
-		display: block;
 		color: white;
 		font-weight: 500;
 	}

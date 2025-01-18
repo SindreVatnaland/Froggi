@@ -25,11 +25,13 @@
 			}
 		}
 
-		const { subscribe } = _notifications;
+		const { subscribe, set, update } = _notifications;
 
 		return {
 			subscribe,
 			send,
+			update,
+			set,
 			default: (msg: string, timeout = 5000) => send(msg, 'default', timeout),
 			danger: (msg: string, timeout = 5000) => send(msg, 'danger', timeout),
 			warning: (msg: string, timeout = 5000) => send(msg, 'warning', timeout),
