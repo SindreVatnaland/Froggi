@@ -45,6 +45,7 @@ export class ElectronLiveStatsStore {
 	}
 
 	setStatsSceneTimeout(firstScene: LiveStatsScene, secondScene: LiveStatsScene, ms: number) {
+		clearTimeout(this.sceneTimeout);
 		this.log.info('Setting scene to', firstScene, "for", ms, "ms,", "then to", secondScene);
 		this.store.set('stats.scene', firstScene);
 		this.sceneTimeout = setTimeout(() => {

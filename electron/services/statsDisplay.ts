@@ -182,14 +182,14 @@ export class StatsDisplay {
 				playerConnectCode,
 			);
 			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
-		} else {
+		}
+		if (isPostSet) {
 			this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostSet,
 				LiveStatsScene.Menu,
 				60000,
 			);
-		}
-		if (!isPostSet)
+		} else
 			return this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostGame,
 				LiveStatsScene.Menu,
