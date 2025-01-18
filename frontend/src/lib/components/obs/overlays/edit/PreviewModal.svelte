@@ -17,7 +17,7 @@
 
 <Modal bind:open on:close={() => (open = false)}>
 	<div
-		class="w-[80vw] h-80 max-w-[800px] flex rounded-lg bg-transparent m-0 bg-cover bg-center p-4 background-primary-color"
+		class="w-[80vw] h-80 max-h-[80vh] max-w-[800px] flex rounded-lg bg-transparent m-0 bg-cover bg-center p-4 background-primary-color"
 	>
 		<div class="flex-1 flex flex-col justify-between items-center w-[80%]">
 			<h1 class="text-xl font-medium color-secondary">Open Preview In New Window</h1>

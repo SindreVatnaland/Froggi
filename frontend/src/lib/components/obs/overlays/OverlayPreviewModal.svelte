@@ -60,7 +60,7 @@
 		height: 0,
 	};
 
-	const handleResize = () => {
+	const handleResize = (parentDiv: any) => {
 		previewSize = {
 			height: parentDiv?.clientHeight ?? 0,
 			width:
@@ -69,29 +69,35 @@
 		};
 	};
 
-	$: parentDiv, handleResize();
+	$: handleResize(parentDiv);
+
+	$: isVertical = previewSize.height > previewSize.width;
 </script>
 
 <svelte:window on:resize={handleResize} />
 
 <Modal bind:open on:close={() => (open = false)}>
 	<div
-		class="min-w-[80vw] min-h-[80vh] max-w-[80vw] max-h-[95vh] overflow-y-auto flex flex-col gap-4 justify-between items-center bg-cover bg-center border-secondary rounded-md p-4 background-primary-color color-secondary"
+		class="h-[80vh] w-[800px] max-w-[80vw] overflow-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color color-secondary"
 	>
 		<div>
 			<h1 class="font-bold text-3xl">{overlay?.title}</h1>
 		</div>
 		<div
-			class={`max-h-full max-w-full w-full h-full flex justify-center`}
+			class={`max-h-full max-w-full w-full h-full flex flex-1 justify-center items-center`}
 			style={`aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height}`}
 			bind:this={parentDiv}
 		>
-			{#if url}
+			{#if url && parentDiv}
 				<div
-					class="border-secondary"
-					style={`height: ${previewSize?.height}px; width: ${previewSize?.width}px; aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height}`}
+					class={`border-secondary ${isVertical ? 'h-full' : 'w-full'}`}
+					style={`max-height: 100%; max-width: 100%; aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height};`}
 				>
-					<NonInteractiveIFrame {src} title="overlay" />
+					<NonInteractiveIFrame
+						{src}
+						title="overlay"
+						style="width: 100%; height: 100%; object-fit: contain;"
+					/>
 				</div>
 			{/if}
 		</div>

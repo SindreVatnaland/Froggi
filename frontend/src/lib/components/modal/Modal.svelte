@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isIframe } from '$lib/utils/store.svelte';
+	import { isIframe, isMobile } from '$lib/utils/store.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	export let open: boolean;
@@ -45,6 +45,7 @@
 			use:modalAction
 			transition:fade={{ duration: 200 }}
 			class="fixed inset-0 top-0 left-0 w-screen h-screen z-50 p-2"
+			style={`${$isMobile ? 'padding-bottom: 8rem;' : ''}`}
 		>
 			<section>
 				<aside
