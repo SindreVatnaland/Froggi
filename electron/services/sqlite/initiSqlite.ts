@@ -4,7 +4,7 @@ import path from 'path';
 import { ElectronLog } from "electron-log";
 import fs from 'fs';
 import { LayerEntity } from "./entities/layerEntity";
-import { OverlayEntity } from "./entities/overlayEntities";
+import { OverlayEntity } from "./entities/overlayEntity";
 import { SceneEntity } from "./entities/sceneEntity";
 
 @singleton()
@@ -36,7 +36,7 @@ export class SqliteOrm {
       type: 'sqlite',
       database: dbPath,
       entities: [OverlayEntity, SceneEntity, LayerEntity],
-      synchronize: true, // For development: automatically creates database tables
+      synchronize: true,
       logging: false,
     });
 

@@ -1,10 +1,11 @@
 import { inject, singleton } from "tsyringe";
-import { OverlayEntity } from "./entities/overlayEntities";
+import { OverlayEntity } from "./entities/overlayEntity";
 import { ElectronLog } from "electron-log";
 import { Overlay, Scene } from "../../../frontend/src/lib/models/types/overlay";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
 import { SceneEntity } from "./entities/sceneEntity";
+import { LiveStatsScene } from "../../../frontend/src/lib/models/enum";
 
 @singleton()
 export class SqliteOverlay {
@@ -47,8 +48,15 @@ export class SqliteOverlay {
 
   async deleteOverlayById(overlayId: string) {
     this.log.info("Deleting overlay:", overlayId)
-    const deleted = await this.overlayRepo.delete({ id: overlayId })
-    return deleted
+    const overlay = await this.overlayRepo.findOne({ where: { id: overlayId } })
+    if (!overlay) return;
+
+    for (const key of Object.keys(LiveStatsScene)) {
+      if (!isNaN(Number(key))) continue;
+      const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+      await this.sceneRepo.delete({ id: overlay[statsScene].id });
+    }
+    await this.overlayRepo.delete({ id: overlayId })
   }
 
   async getScene(sceneId: number): Promise<SceneEntity | null> {

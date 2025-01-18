@@ -16,6 +16,8 @@ export class LayerEntity {
   @Column({ default: true })
   preview: boolean = true;
 
-  @ManyToOne(() => SceneEntity, (scene) => scene.layers)
+  @ManyToOne(() => SceneEntity, (scene) => scene.layers, {
+    onDelete: "CASCADE",
+  })
   scene: SceneEntity;
 }

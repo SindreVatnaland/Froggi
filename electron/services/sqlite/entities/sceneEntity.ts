@@ -23,6 +23,10 @@ export class SceneEntity implements Scene {
   @Column({ type: "simple-json" })
   font: Font;
 
-  @OneToMany(() => LayerEntity, (layer) => layer.scene, { cascade: true, onDelete: "CASCADE", eager: true })
+  @OneToMany(() => LayerEntity, (layer) => layer.scene, {
+    cascade: true,
+    onDelete: "CASCADE",
+    eager: true,
+  })
   layers: LayerEntity[];
 }

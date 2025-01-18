@@ -17,7 +17,7 @@ import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
-import { OverlayEntity } from 'services/sqlite/entities/overlayEntities';
+import { OverlayEntity } from 'services/sqlite/entities/overlayEntity';
 import { getNewOverlay } from './../../utils/overlayHandler';
 
 
@@ -183,8 +183,6 @@ export class ElectronOverlayStore {
 	}
 
 	async deleteOverlay(overlayId: string): Promise<void> {
-		this.log.info("Deleting overlay:", overlayId)
-		// this.store.delete(`obs.layout.overlays.${overlayId}`)
 		await this.sqliteOverlay.deleteOverlayById(overlayId)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		fs.rm(source, { recursive: true }, (err => this.log.error(err)))
@@ -408,7 +406,6 @@ export class ElectronOverlayStore {
 	}
 
 	private async initDemoOverlays() {
-		const overlayFiles = fs.readdirSync(path.join(__dirname, "/../../demo-overlays"));
 
 		const overlays = await this.getOverlays();
 
@@ -427,6 +424,7 @@ export class ElectronOverlayStore {
 				await this.deleteOverlay(overlay.id);
 			}
 		}
+		const overlayFiles = fs.readdirSync(path.join(__dirname, "/../../demo-overlays"));
 
 		for (const file of overlayFiles) {
 			try {
