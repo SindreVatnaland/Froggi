@@ -106,10 +106,7 @@
 			{/if}
 		</div>
 		<SceneSelect />
-		<div
-			class="flex gap-2 max-w-full justify-center"
-			style={`width: 100%; ${!$isMobile && 'overflow: auto'};`}
-		>
+		<div class="flex gap-2 max-w-full justify-center" style={`width: 100%;`}>
 			{#if $isElectron}
 				<button
 					class={availableClass}
