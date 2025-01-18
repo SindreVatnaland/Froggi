@@ -11,7 +11,7 @@
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import NumberInput from '$lib/components/input/NumberInput.svelte';
 	import { updateScene } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
-	import { debounce, isNil } from 'lodash';
+	import { debounce, isNil, throttle } from 'lodash';
 
 	const overlayId = $page.params.overlay;
 	export let selectedItemId: string | undefined;
@@ -106,8 +106,6 @@
 	}
 	$: selectedItem, updateSelectItem();
 
-	let lockOut = false;
-
 	function handleKeydown(e: KeyboardEvent) {
 		if (!selectedItemId || !selectedItem) return;
 		if (e.shiftKey) {
@@ -152,12 +150,10 @@
 		if (e.key === 'Esc') {
 			clearItem();
 		}
-		lockOut = true;
-		setTimeout(() => (lockOut = false), 100);
 	}
 </script>
 
-<svelte:window on:keydown={debounce(handleKeydown, 50)} />
+<svelte:window on:keydown={throttle(handleKeydown, 50)} />
 
 <h1
 	class="text-secondary-color text-lg font-medium color-secondary"

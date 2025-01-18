@@ -89,7 +89,7 @@
 				class={`h-10 w-10 bg-gray-600 bg-opacity-75 justify-center rounded-2xl p-1 col-auto`}
 				style={`${getStyle($autoUpdater)}`}
 			>
-				<div class="max-h-2 w-full">
+				<div class="max-h-2 w-full text-center">
 					<TextFitMulti>{`${getContent($autoUpdater)}`}</TextFitMulti>
 				</div>
 			</button>

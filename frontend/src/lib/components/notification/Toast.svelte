@@ -11,6 +11,10 @@
 		info: '#5bc0de',
 		default: '#aaaaaa',
 	};
+
+	const deleteNotification = (id: string) => {
+		notifications.update((state) => state.filter((n) => n.id !== id));
+	};
 </script>
 
 {#if $isElectron || !$isOverlayPage}
@@ -24,7 +28,9 @@
 				out:fly={{ y: -30 }}
 			>
 				<div class="content">{notification.message}</div>
-				{#if notification.icon}<i class={notification.icon} />{/if}
+				<button class="close" on:click={() => deleteNotification(notification.id)}>
+					&times;
+				</button>
 			</div>
 		{/each}
 	</div>

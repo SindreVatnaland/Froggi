@@ -484,6 +484,7 @@ export class ElectronOverlayStore {
 				delete layer.id;
 				layer.index = index;
 			}
+			delete scene.id;
 		}
 	}
 }
