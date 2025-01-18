@@ -1,5 +1,5 @@
 {
-	"id": "p1controller",
+	"id": "player1-controller",
 	"aspectRatio": { "width": 16, "height": 9 },
 	"isDemo": true,
 	"description": "Scene Description",

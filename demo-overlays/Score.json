@@ -1,13 +1,14 @@
 {
-	"id": "scoreboard",
-	"aspectRatio": { "width": 16, "height": 9 },
-	"isDemo": false,
+	"isDemo": true,
 	"description": "Scene Description",
 	"froggiVersion": "0.0.0",
-	"title": "Scoreboard",
+	"id": "scoreboard",
+	"aspectRatio": { "width": 16, "height": 9 },
+	"title": "Score",
 	"waitingForDolphin": {
 		"active": false,
-		"id": 637,
+		"fallback": "menu",
+		"id": 655,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -22,7 +23,14 @@
 				"type": "none"
 			},
 			"out": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"layerRenderDelay": 250
@@ -58,21 +66,35 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1076, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 162, "items": [] }]
 	},
 	"menu": {
 		"active": true,
-		"id": 638,
+		"fallback": "menu",
+		"id": 656,
 		"animation": {
 			"duration": 250,
 			"in": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"out": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"layerRenderDelay": 250
@@ -108,13 +130,13 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1077, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 163, "items": [] }]
 	},
 	"inGame": {
 		"active": true,
-		"id": 639,
+		"fallback": "menu",
+		"id": 657,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -172,24 +194,24 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
 				"index": 0,
-				"id": 1078,
+				"preview": true,
+				"id": 164,
 				"items": [
 					{
 						"512": {
-							"fixed": false,
-							"resizable": true,
+							"fixed": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
 							"w": 16,
-							"h": 30,
+							"h": 24,
 							"x": 248,
 							"y": 0,
 							"id": "clm6ty4dg"
@@ -279,15 +301,15 @@
 					},
 					{
 						"512": {
-							"fixed": false,
-							"resizable": true,
+							"fixed": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 200,
-							"h": 30,
+							"w": 210,
+							"h": 24,
 							"x": 0,
 							"y": 0,
 							"id": "cknn9rfm9"
@@ -386,16 +408,16 @@
 					},
 					{
 						"512": {
-							"fixed": false,
-							"resizable": true,
+							"fixed": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 200,
-							"h": 30,
-							"x": 312,
+							"w": 210,
+							"h": 24,
+							"x": 302,
 							"y": 0,
 							"id": "c4ww91i7k"
 						},
@@ -493,15 +515,15 @@
 					},
 					{
 						"512": {
-							"fixed": false,
-							"resizable": true,
+							"fixed": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 40,
-							"h": 30,
+							"w": 30,
+							"h": 24,
 							"x": 265,
 							"y": 0,
 							"id": "e58a2whcv"
@@ -600,16 +622,16 @@
 					},
 					{
 						"512": {
-							"fixed": false,
-							"resizable": true,
+							"fixed": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 40,
-							"h": 30,
-							"x": 207,
+							"w": 30,
+							"h": 24,
+							"x": 217,
 							"y": 0,
 							"id": "eq261iggg"
 						},
@@ -705,14 +727,14 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			}
 		]
 	},
 	"postGame": {
 		"active": false,
-		"id": 640,
+		"fallback": "inGame",
+		"id": 658,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -727,7 +749,14 @@
 				"type": "none"
 			},
 			"out": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"layerRenderDelay": 250
@@ -763,13 +792,13 @@
 				}
 			}
 		},
-		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1079, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 165, "items": [] }]
 	},
 	"postSet": {
 		"active": false,
-		"id": 641,
+		"fallback": "inGame",
+		"id": 659,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -784,7 +813,14 @@
 				"type": "none"
 			},
 			"out": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"layerRenderDelay": 250
@@ -820,13 +856,13 @@
 				}
 			}
 		},
-		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1080, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 166, "items": [] }]
 	},
 	"rankChange": {
 		"active": false,
-		"id": 642,
+		"fallback": "inGame",
+		"id": 660,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -841,7 +877,14 @@
 				"type": "none"
 			},
 			"out": {
-				"options": { "delay": 0, "duration": 0, "easing": "", "start": 0, "x": 0, "y": 0 },
+				"options": {
+					"delay": 0,
+					"duration": 0,
+					"easing": "",
+					"start": 0,
+					"x": 0,
+					"y": 0
+				},
 				"type": "none"
 			},
 			"layerRenderDelay": 250
@@ -877,9 +920,8 @@
 				}
 			}
 		},
-		"fallback": "inGame",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1081, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 167, "items": [] }]
 	},
 	"customFiles": {}
 }
