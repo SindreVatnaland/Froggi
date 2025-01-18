@@ -23,14 +23,14 @@
 		layerIds: number[] | undefined,
 	): Scene | undefined {
 		if (preview) {
-			updateFixedLayerItems(curOverlay[statsScene].layers, layerIds ?? []);
+			updateFixedLayerItems(curOverlay[statsScene].layers, layerIds);
 			curStatsScene = statsScene;
 			return;
 		}
 		curStatsScene = curOverlay?.[statsScene].active
 			? statsScene
 			: curOverlay?.[statsScene].fallback ?? LiveStatsScene.Menu;
-		updateFixedLayerItems(curOverlay[curStatsScene].layers, layerIds ?? []);
+		updateFixedLayerItems(curOverlay[curStatsScene].layers, layerIds);
 	}
 	$: updateCurrentScene(curOverlay, $statsScene, layerIds);
 

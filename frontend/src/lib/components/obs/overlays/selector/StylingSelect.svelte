@@ -184,7 +184,7 @@
 							id="default-input"
 							placeholder="Text"
 							bind:value={payload.string}
-							class="w-full h-full border-secondary color-secondary text-lg rounded-lg block p-2.5"
+							class="w-full h-full border-secondary color-secondary background-primary-color text-lg rounded-lg block p-2.5"
 						/>
 					</div>
 				</div>
