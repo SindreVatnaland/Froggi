@@ -41,7 +41,7 @@
 	];
 </script>
 
-<div class="flex flex-wrap gap-2">
+<div class="flex flex-wrap gap-2 w-full">
 	{#each buttons ?? [] as button}
 		<div
 			class="flex gap-2 justify-start items-center"

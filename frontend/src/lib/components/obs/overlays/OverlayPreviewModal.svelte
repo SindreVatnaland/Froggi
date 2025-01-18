@@ -71,27 +71,31 @@
 
 	$: handleResize(parentDiv);
 
-	$: isVertical = previewSize.height > previewSize.width;
+	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 1);
 </script>
 
 <svelte:window on:resize={handleResize} />
 
 <Modal bind:open on:close={() => (open = false)}>
 	<div
-		class="h-[80vh] w-[800px] max-w-[80vw] overflow-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color color-secondary"
+		class="h-[80vh] w-[800px] max-w-[80vw] overflow-y-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color color-secondary"
 	>
 		<div>
 			<h1 class="font-bold text-3xl">{overlay?.title}</h1>
 		</div>
 		<div
-			class={`max-h-full max-w-full w-full h-full flex flex-1 justify-center items-center`}
+			class={`max-h-full max-w-full w-full h-full flex flex-1 justify-center items-start`}
 			style={`aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height}`}
 			bind:this={parentDiv}
 		>
 			{#if url && parentDiv}
 				<div
-					class={`border-secondary ${isVertical ? 'h-full' : 'w-full'}`}
-					style={`max-height: 100%; max-width: 100%; aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height};`}
+					class={`border-secondary`}
+					style={`${
+						isVertical ? 'height: 100%' : 'width: 100%'
+					}; max-height: 100%; max-width: 100%; aspect-ratio: ${
+						overlay?.aspectRatio?.width
+					}/${overlay?.aspectRatio?.height};`}
 				>
 					<NonInteractiveIFrame
 						{src}
@@ -102,7 +106,10 @@
 			{/if}
 		</div>
 		<SceneSelect />
-		<div class="flex gap-2">
+		<div
+			class="flex gap-2 max-w-full justify-center"
+			style={`width: 100%; ${!$isMobile && 'overflow: auto'};`}
+		>
 			{#if $isElectron}
 				<button
 					class={availableClass}
