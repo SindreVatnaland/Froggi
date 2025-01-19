@@ -7,11 +7,31 @@ on:
 permissions: write-all
 
 jobs:
+    create_release:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get Last Commit Message
+              id: get_commit
+              run: |
+                  # Get the last commit message for the tag
+                  LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s" $GITHUB_REF_NAME)
+                  echo "Last commit message: $LAST_COMMIT_MSG"
+                  echo "commit_message=$LAST_COMMIT_MSG" >> $GITHUB_ENV
+
+            - name: Create GitHub Release
+              uses: actions/create-release@v1
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  release_name: Release ${{ github.ref_name }}
+                  body: |
+                      `${{ env.commit_message }}`
+                      "\n Download links should be ready in a few minutes."
+
     deploy_macos:
         uses: ./.github/workflows/deploy.yml
         secrets: inherit
         with:
-            file: | 
+            file: |
                 ./dist/*.dmg
                 ./dist/*mac.zip 
                 ./dist/*.zip.blockmap 
