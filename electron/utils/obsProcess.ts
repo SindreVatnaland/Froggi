@@ -32,12 +32,26 @@ export const isObsRunning = async () => {
 	});
 };
 
+const possibleWinConfigPaths
+	= ['plugin_config/obs-websocket/config.json', 'plugin_config/obs-websocket/config.json'];
+
 export const getObsWebsocketConfig = (): ObsWebsocketConfig | undefined => {
 	const isWindows = os.platform() === 'win32';
 	const isMac = os.platform() === 'darwin';
 	const isLinux = os.platform() === 'linux';
 	const appDataPath = getAppDataPath('obs-studio');
 	if (isWindows) {
+		for (const relativePath of possibleWinConfigPaths) {
+			const configPath = path.join(appDataPath, relativePath);
+			if (!fs.existsSync(configPath)) continue;
+			try {
+				const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as ObsWebsocketConfig;
+				return config;
+			} catch (err) {
+				console.error(err);
+				continue;
+			}
+		}
 		const configPath = path.join(appDataPath, 'plugin_config', 'obs-websocket', 'obs-websocket.json');
 		if (!fs.existsSync(configPath)) return;
 		const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as ObsWebsocketConfig;
