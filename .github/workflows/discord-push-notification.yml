@@ -1,0 +1,48 @@
+name: Discord Push Notification
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    notify-discord:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Get Previous Tag
+              id: get_prev_tag
+              run: |
+                  PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+                  echo "prev_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+
+            - name: Get Commit Messages Since Previous Tag
+              id: get_commit_messages
+              run: |
+                  PREVIOUS_TAG=${{ steps.get_prev_tag.outputs.prev_tag }}
+                  if [ -z "$PREVIOUS_TAG" ]; then
+                    COMMITS=$(git log --pretty=format:"* %h | %cr | %s")
+                  else
+                    COMMITS=$(git log "$PREVIOUS_TAG"..HEAD --pretty=format:"* %h | %cr | %s")
+                  fi
+                  echo "commits<<EOF" >> $GITHUB_OUTPUT
+                  echo "$COMMITS" >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
+
+            - name: Notify Discord
+              uses: SethCohen/github-releases-to-discord@v1.16.2
+              with:
+                  webhook_url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+                  color: '2105893'
+                  username: 'Release Changelog'
+                  avatar_url: 'https://cdn.discordapp.com/avatars/487431320314576937/bd64361e4ba6313d561d54e78c9e7171.png'
+                  content: |
+                      **New Release Published: ${{ github.event.release.tag_name }}**
+                      Changes since ${{ steps.get_prev_tag.outputs.prev_tag }}:
+                      ${{ steps.get_commit_messages.outputs.commits }}
+                  footer_title: 'Changelog'
+                  footer_icon_url: 'https://cdn.discordapp.com/avatars/487431320314576937/bd64361e4ba6313d561d54e78c9e7171.png'
+                  footer_timestamp: true
