@@ -15,7 +15,7 @@ import { BestOf, LiveStatsScene } from "../../frontend/src/lib/models/enum";
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
-describe('ElectnronGamesStore', () => {
+describe('ElectronGamesStore', () => {
     let connectCode: string;
     let electronGamesStore: ElectronGamesStore;
     let statsDisplay: StatsDisplay;

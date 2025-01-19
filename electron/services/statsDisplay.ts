@@ -150,8 +150,8 @@ export class StatsDisplay {
 			return;
 		};
 
-		if (settings.matchInfo?.matchId !== gameStats.settings?.matchInfo?.matchId) {
-			this.log.info("Match ID Mismatch. Assuming replay.")
+		if (!settings.matchInfo?.matchId && gameStats.settings?.matchInfo?.matchId) {
+			this.log.info("Settings matchId does not match replay matchId. Assuming replay.")
 			gameStats.isReplay = true;
 		}
 
