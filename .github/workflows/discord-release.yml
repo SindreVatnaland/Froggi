@@ -1,9 +1,6 @@
 name: Discord Release
 
-on:
-    release:
-        types:
-            - published
+on: release
 
 jobs:
     notify-discord:
