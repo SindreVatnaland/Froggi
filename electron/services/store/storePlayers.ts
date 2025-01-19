@@ -46,7 +46,7 @@ export class ElectronPlayersStore {
     }
 
     initEventListeners() {
-        this.clientEmitter.on("PlayersTagUpdate", (players: Player[]) => {
+        this.clientEmitter.on("PlayersUpdate", (players: Player[]) => {
             this.setCurrentPlayers(players);
         })
     }

@@ -60,7 +60,7 @@ export interface MessageEvents {
 	CurrentMatch: (match: Match) => void;
 	MemoryControllerInput: (controllerInputs: PlayerController) => void;
 	Notification: (message: string, type: NotificationType, timeout?: number) => void;
-	PlayersTagUpdate: (players: Player[]) => void; // Here
+	PlayersUpdate: (players: Player[]) => void; // Here
 	PostGameStats: (stats: GameStats | undefined) => void;
 	RecentGames: (games: GameStats[][]) => void;
 	RecentGamesDelete: (gameIndex: number) => void; // Here

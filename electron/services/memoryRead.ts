@@ -8,12 +8,14 @@ import DolphinMemory from 'dolphin-memory-reader';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { InGameState } from '../../frontend/src/lib/models/enum';
 import { isNil } from 'lodash';
+import { isDolphinRunning } from 'utils/dolphinProcess';
 
 @singleton()
 export class MemoryRead {
 	private memoryReadInterval: NodeJS.Timeout = {} as NodeJS.Timeout;
 	private isWindows = os.platform() === 'win32';
 	private memory: DolphinMemory | null = null;
+	private dolphinProcessInterval: NodeJS.Timeout;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
@@ -21,11 +23,10 @@ export class MemoryRead {
 	) { }
 
 	initMemoryRead() {
-		this.initMemoryReadWin();
+		this.startProcessSearchInterval();
 	}
 
 	private async initMemoryReadWin() {
-		if (!this.isWindows) return;
 		this.log.info('Initializing Memory Read');
 		this.memory = new DolphinMemory();
 		await this.memory.init();
@@ -62,5 +63,21 @@ export class MemoryRead {
 		this.log.warn('Stopping memory read');
 		this.memory = null;
 		clearInterval(this.memoryReadInterval);
+		this.startProcessSearchInterval();
+	}
+
+	private async startProcessSearchInterval() {
+		if (!this.isWindows) return;
+		this.stopProcessSearchInterval();
+		this.dolphinProcessInterval = setInterval(async () => {
+			if (await isDolphinRunning()) {
+				this.initMemoryReadWin();
+				this.stopProcessSearchInterval();
+			}
+		}, 5000);
+	}
+
+	private stopProcessSearchInterval() {
+		clearInterval(this.dolphinProcessInterval);
 	}
 }

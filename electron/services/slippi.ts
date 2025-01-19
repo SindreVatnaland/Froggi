@@ -15,7 +15,6 @@ import { Api } from './api';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { findPlayKey } from '../utils/playkey';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
-import os from 'os';
 import { MemoryRead } from './memoryRead';
 import { ElectronSessionStore } from './store/storeSession';
 import { isDolphinRunning } from '../utils/dolphinProcess';
@@ -24,8 +23,7 @@ import { MessageHandler } from './messageHandler';
 @singleton()
 export class SlippiJs {
 	dolphinConnection = new DolphinConnection();
-	dolphinProcessInterval: NodeJS.Timeout;
-	isWindows = os.platform() === 'win32';
+	private dolphinProcessInterval: NodeJS.Timeout;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('SlpStream') private slpStream: SlpStream,

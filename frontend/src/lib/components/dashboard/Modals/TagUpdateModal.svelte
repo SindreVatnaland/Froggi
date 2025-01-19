@@ -10,7 +10,7 @@
 
 	const updateTag = () => {
 		open = false;
-		$electronEmitter.emit('PlayersTagUpdate', players);
+		$electronEmitter.emit('PlayersUpdate', players);
 	};
 </script>
 
