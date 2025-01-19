@@ -129,6 +129,7 @@ export class StatsDisplay {
 			settings?.matchInfo?.matchId?.replace(/[.:]/g, '-')
 		)
 			return;
+		if (previousGame?.isReplay) return;
 		this.log.info("New game detected. Clearing recent games.")
 		this.storeGames.clearRecentGames();
 	}
@@ -148,6 +149,11 @@ export class StatsDisplay {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.Menu)
 			return;
 		};
+
+		if (settings.matchInfo?.matchId !== gameStats.settings?.matchInfo?.matchId) {
+			this.log.info("Match ID Mismatch. Assuming replay.")
+			gameStats.isReplay = true;
+		}
 
 		let score = this.storeGames.getGameScore();
 
