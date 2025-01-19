@@ -1,21 +1,35 @@
+name: Discord Release
+
 on:
-    release:
-        types: [published]
+    push:
+        tags:
+            - 'v*'
 
 jobs:
     github-releases-to-discord:
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout
+            - name: Checkout Repository
               uses: actions/checkout@v4
-            - name: Github Releases To Discord
+
+            - name: Get Last Commit Message
+              id: get_commit
+              run: |
+                  # Get the last commit message for the tag
+                  LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s" $GITHUB_REF_NAME)
+                  echo "Last commit message: $LAST_COMMIT_MSG"
+                  echo "commit_message=$LAST_COMMIT_MSG" >> $GITHUB_ENV
+
+            - name: Notify Discord
               uses: SethCohen/github-releases-to-discord@v1.16.2
               with:
                   webhook_url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
                   color: '2105893'
                   username: 'Release Changelog'
                   avatar_url: 'https://cdn.discordapp.com/avatars/487431320314576937/bd64361e4ba6313d561d54e78c9e7171.png'
-                  content: ''
+                  content: |
+                      **New release: ${{ github.ref_name }}**
+                      Last Commit: `${{ env.commit_message }}`
                   footer_title: 'Changelog'
                   footer_icon_url: 'https://cdn.discordapp.com/avatars/487431320314576937/bd64361e4ba6313d561d54e78c9e7171.png'
                   footer_timestamp: true
