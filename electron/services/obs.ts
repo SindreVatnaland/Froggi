@@ -4,10 +4,11 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import OBSWebSocket, { OBSRequestTypes } from 'obs-websocket-js';
 import { ElectronObsStore } from './store/storeObs';
-import { ObsInputs, ObsItem, ObsScenes } from '../../frontend/src/lib/models/types/obsTypes';
+import { ObsAuth, ObsInputs, ObsItem, ObsScenes } from '../../frontend/src/lib/models/types/obsTypes';
 import { MessageHandler } from './messageHandler';
 import { NotificationType, ConnectionState } from '../../frontend/src/lib/models/enum';
 import { getObsWebsocketConfig, isObsRunning } from '../utils/obsProcess';
+import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 
 @singleton()
 export class ObsWebSocket {
@@ -17,11 +18,13 @@ export class ObsWebSocket {
 	private shouldSendNotification = true;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
+		@inject("ClientEmitter") private clientEmitter: TypedEmitter,
 		@inject(ElectronObsStore) private storeObs: ElectronObsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
 		this.log.info('Initializing OBS');
 		this.initObsWebSocket();
+		this.initEventListeners();
 	}
 
 	private updateObsData = async () => {
@@ -122,6 +125,16 @@ export class ObsWebSocket {
 		}, 5000);
 	};
 
+	private connectToObs = async (ipAddress: string, port: string, password: string) => {
+		try {
+			await this.obs.connect(`ws://${ipAddress}:${port}`, password);
+		} catch {
+			this.log.error(
+				`Could not connect to OBS: ${`ws://${ipAddress}:${port}`}`,
+			);
+		}
+	}
+
 	private initConnection = async () => {
 		await this.updateObsData();
 		await this.reloadBrowserSources();
@@ -139,6 +152,8 @@ export class ObsWebSocket {
 			this.log.error('OBS Connection Error');
 		});
 		this.obs.on('ConnectionOpened', () => {
+			clearInterval(this.obsConnectionInterval);
+			clearInterval(this.obsProcessInterval);
 			this.storeObs.setConnectionState(ConnectionState.Connected);
 			this.messageHandler.sendMessage("Notification", "OBS Connected", NotificationType.Success, 2000);
 			setTimeout(this.initConnection.bind(this), 1000);
@@ -221,4 +236,9 @@ export class ObsWebSocket {
 		}
 	};
 
+	initEventListeners() {
+		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {
+			this.connectToObs(auth.ipAddress, auth.port, auth.password);
+		})
+	}
 }

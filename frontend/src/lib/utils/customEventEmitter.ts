@@ -78,8 +78,8 @@ export interface MessageEvents {
 	Url: (url: Url) => void;
 	CurrentOverlayEditor: (overlay: OverlayEditor) => void;
 	Obs: (obs: Obs | undefined) => void;
-	ObsAuth: (auth: ObsAuth) => void;
 	ObsConnection: (connection: ObsConnection) => void;
+	ObsManualConnect: (auth: ObsAuth) => void;
 	Overlays: (overlays: Record<string, Overlay> | undefined) => void;
 	OverlayCreate: (aspectRatio: AspectRatio) => void;
 	OverlayDelete: (overlayId: string) => void;

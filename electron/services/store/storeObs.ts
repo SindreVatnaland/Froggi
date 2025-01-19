@@ -6,7 +6,7 @@ import { MessageHandler } from '../messageHandler';
 import { Obs, ObsAuth, ObsConnection, ObsInputs, ObsScenes } from '../../../frontend/src/lib/models/types/obsTypes';
 import { OBSResponseTypes } from 'obs-websocket-js';
 import { ConnectionState } from '../../../frontend/src/lib/models/enum';
-import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
+
 
 
 @singleton()
@@ -15,11 +15,9 @@ export class ElectronObsStore {
     private obsConnectionState: ConnectionState = this.store.get('obs.connection.state') as ConnectionState;
     constructor(
         @inject("ElectronLog") private log: ElectronLog,
-        @inject("ClientEmitter") private clientEmitter: TypedEmitter,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
     ) {
         this.log.info("Initializing Obs Store")
-        this.initEventListeners();
         this.initListeners();
     }
 
@@ -90,16 +88,7 @@ export class ElectronObsStore {
         this.store.set('obs.connection.scenes', scenes);
     }
 
-    private initEventListeners() {
-        this.clientEmitter.on("ObsAuth", (auth: ObsAuth) => {
-            this.store.set('obs.auth', auth);
-        })
-    }
-
     private initListeners() {
-        this.store.onDidChange("obs.auth", (value) => {
-            this.messageHandler.sendMessage("ObsAuth", value as ObsAuth);
-        })
         this.store.onDidChange("obs.connection", (connection) => {
             this.messageHandler.sendMessage("ObsConnection", { ...(connection as ObsConnection), auth: undefined } as ObsConnection);
         })

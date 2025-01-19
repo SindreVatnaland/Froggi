@@ -3,13 +3,12 @@
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { electronEmitter, obs } from '$lib/utils/store.svelte';
 	import { cloneDeep } from 'lodash';
+	import { onMount } from 'svelte';
 
 	const defaultAuth = { ipAddress: 'localhost', port: '4455', password: '' };
 	let authValidator = { ipAddress: false, port: false, password: false };
 
-	let auth = $obs?.auth ?? cloneDeep(defaultAuth);
-
-	$: $obs, (auth = $obs?.auth ?? defaultAuth);
+	let auth = cloneDeep(defaultAuth);
 
 	const isValidIpAddress = (ipAddress: string) => {
 		const ipv4Regex =
@@ -45,18 +44,23 @@
 	};
 	$: auth, validateAuth();
 
-	const updateAuth = () => {
+	const connect = () => {
 		if (!isValidInputs()) {
 			notifications.danger('Invalid Inputs', 3000);
 			return;
 		}
-		$electronEmitter.emit('ObsAuth', auth);
-		notifications.success('Updated OBS Websocket Settings', 3000);
+		$electronEmitter.emit('ObsManualConnect', auth);
 	};
 
 	const resetToDefault = () => {
 		auth = cloneDeep(defaultAuth);
 	};
+
+	onMount(() => {
+		if ($obs.auth) {
+			auth = cloneDeep($obs.auth);
+		}
+	});
 </script>
 
 <div class="w-full max-w-[25rem] justify-center items-center item flex flex-col gap-4">
@@ -100,8 +104,8 @@
 			placeholder="password123"
 		/>
 	</div>
-	<button class="p-2 border-secondary" on:click={updateAuth}>
-		<h1 class="color-secondary text-xl font-semibold">Update</h1>
+	<button class="p-2 border-secondary" on:click={connect}>
+		<h1 class="color-secondary text-xl font-semibold">Connect</h1>
 	</button>
 	<hr />
 	<button class="p-2 border-secondary" on:click={resetToDefault}>
