@@ -17,6 +17,7 @@ import { Api } from './api';
 import {
 	GameStats,
 	Player,
+	SlippiLauncherSettings,
 	StatsTypeExtended,
 } from '../../frontend/src/lib/models/types/slippiData';
 import { InGameState, LiveStatsScene } from '../../frontend/src/lib/models/enum';
@@ -254,7 +255,7 @@ export class StatsDisplay {
 	}
 
 	private async getGameFiles(): Promise<string[] | undefined> {
-		const re = new RegExp('^Game_.*.slp$');
+		const re = new RegExp('^.*Game.*\\.slp$');
 
 		const slippiSettings = this.storeSettings.getSlippiLauncherSettings();
 		this.log.debug('Settings:', slippiSettings);
@@ -276,36 +277,45 @@ export class StatsDisplay {
 				.at(0) ?? './'
 			: './';
 
-		const root = slippiSettings.rootSlpPath;
-
-		this.log.info("Replay directory:", path.join(root, subFolder))
-
-		const replaysDirContent = await this.getReplayDirs(root, subFolder);
+		const replaysDirContent = await this.getReplayDirs(slippiSettings, subFolder);
 
 		const replayFiles = replaysDirContent
-			.map((filename: string) => `${path.parse(filename).name}.slp`)
 			.filter((f: string) => re.test(f))
-			.map(
-				(f: string) =>
-					`${slippiSettings.rootSlpPath}/${subFolder ? `${subFolder}/` : ''}${f}`,
-			);
+
 
 		return replayFiles.sort((a, b) => (a > b ? -1 : 1));
 	}
 
-	private getReplayDirs = async (root: string, subFolder: string | undefined) => {
+	private getReplayDirs = async (slippiLauncherSettings: SlippiLauncherSettings, subFolder: string | undefined) => {
 		let filesFromRoot: string[] = [];
 		let filesFromSpectate: string[] = [];
+
+
 		try {
-			filesFromRoot = await fs.readdir(`${root}${subFolder ? `/${subFolder}` : ''}`);
+			const root = slippiLauncherSettings.rootSlpPath;
+			if (root) {
+				const dir = path.join(root, subFolder ?? '');
+				const files = await fs.readdir(dir);
+				filesFromRoot = files.map(
+					(file: string) => path.join(dir, file),
+				);
+			}
 		} catch (error) {
 			if (error.code !== 'ENOENT') {
 				console.error('Error reading files from root:', error);
 			}
 		}
 
+		if (!slippiLauncherSettings.spectateSlpPath) return filesFromRoot;
+
 		try {
-			filesFromSpectate = await fs.readdir(`${root}/Spectate`);
+			const dir = slippiLauncherSettings.spectateSlpPath;
+			if (dir) {
+				const files = await fs.readdir(dir);
+				filesFromSpectate = files.map(
+					(file: string) => path.join(dir, file),
+				);
+			}
 		} catch (error) {
 			if (error.code !== 'ENOENT') {
 				console.error('Error reading files from Spectate:', error);
@@ -324,14 +334,14 @@ export class StatsDisplay {
 		const matchId = settings?.matchInfo?.matchId ?? '';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
-		this.log.info("Looking for replay:", matchId, gameNumber)
+		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed)
 		const file = files.find((file) => {
 			const settings = new SlippiGame(file).getSettings();
 			return matchId
 				? (
-					settings?.matchInfo?.matchId === matchId &&
-					settings?.matchInfo?.gameNumber === gameNumber &&
-					settings?.matchInfo?.tiebreakerNumber === 0
+					(settings?.matchInfo?.matchId === matchId &&
+						settings?.matchInfo?.gameNumber === gameNumber &&
+						settings?.matchInfo?.tiebreakerNumber === 0)
 				)
 				: settings?.randomSeed === randomSeed;
 		});
