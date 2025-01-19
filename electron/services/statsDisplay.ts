@@ -180,10 +180,9 @@ export class StatsDisplay {
 		const isPostSet = game.score.some((score) => score >= Math.ceil(bestOf / 2));
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
-		if (isPostSet && isRanked && playerConnectCode) {
-			const currentPlayerRankStats = await this.api.getPlayerRankStats(
-				playerConnectCode,
-			);
+		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		if (isPostSet && isRanked && playerConnectCode && oldRank) {
+			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
 			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}
 		if (isPostSet) {

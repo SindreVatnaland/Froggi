@@ -125,7 +125,36 @@ export class Api {
 			winsPercent: Number(winsPercent.toFixed(1)),
 		}
 	}
+
+	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 5000): Promise<RankedNetplayProfile> {
+		for (let attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				this.log.info(`Attempt ${attempt}/${maxRetries}: Fetching rank data...`);
+
+				const newRank = await this.getPlayerRankStats(connectCode);
+
+				if (!newRank) {
+					this.log.warn(`Attempt ${attempt}: No rank data found, retrying...`);
+				} else if (newRank.totalSets > oldRank.totalSets) {
+					this.log.info(`New rank detected after ${attempt} attempts.`);
+					return newRank;
+				} else {
+					this.log.info(`Attempt ${attempt}: Rank has not updated yet.`);
+				}
+
+				if (attempt < maxRetries) {
+					await new Promise((resolve) => setTimeout(resolve, delay));
+				}
+			} catch (err) {
+				this.log.error(`Attempt ${attempt} failed due to error:`, err);
+			}
+		}
+
+		this.log.warn(`Exhausted all ${maxRetries} attempts. Returning old rank.`);
+		return oldRank;
+	}
 }
+
 
 export function getPlayerRank(rating: number, regionalPlacement: number, globalPlacement: number) {
 	switch (true) {
