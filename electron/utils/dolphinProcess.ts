@@ -21,15 +21,15 @@ export const isDolphinRunning = async () => {
 	const validProcesses = getValidProcesses();
 	const exec = child_process.exec;
 	const command = isWindows
-		? `tasklist`
+		? `tasklist /FO CSV`
 		: `ps -e -o comm=`;
 	const shell = isWindows ? 'powershell.exe' : '/bin/bash';
 	return await new Promise((resolve) => {
 		exec(command, { shell: shell }, (_: ExecException | null, stdout: string) => {
 			if (stdout) {
-				stdout = stdout.toLowerCase();
+				const lines = stdout.split('\n').map(line => line.toLowerCase());
 				for (const process of validProcesses) {
-					if (stdout.includes(process.toLowerCase())) {
+					if (lines.some(line => line.includes(process.toLowerCase()))) {
 						return resolve(true);
 					}
 				}

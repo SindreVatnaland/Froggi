@@ -175,9 +175,11 @@ export class ObsWebSocket {
 		this.obsProcessInterval = setInterval(async () => {
 			const isRunning = await isObsRunning();
 			if (!isRunning) return;
+			this.log.info('OBS Process Found');
 			const obsWebsocketConfig = getObsWebsocketConfig()
 
 			if (!obsWebsocketConfig) return;
+			this.log.info('OBS WebSocket Config: ', obsWebsocketConfig);
 
 			if (obsWebsocketConfig?.server_enabled) {
 				this.storeObs.setPort(String(obsWebsocketConfig?.server_port ?? '4455'));
