@@ -13,8 +13,10 @@ jobs:
             - name: Get Last Commit Message
               id: get_commit
               run: |
+                  # Get the tag name from the current reference
+                  TAG_NAME="${GITHUB_REF_NAME}"
                   # Get the last commit message for the tag
-                  LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s" $GITHUB_REF_NAME)
+                  LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$TAG_NAME")
                   echo "Last commit message: $LAST_COMMIT_MSG"
                   echo "commit_message=$LAST_COMMIT_MSG" >> $GITHUB_ENV
 
