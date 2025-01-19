@@ -57,7 +57,7 @@ export class StatsDisplay {
 	}
 
 	private async initStatDisplay() {
-		this.log.info('Initialize Dolphin Events');
+		this.log.info('Initializeing Dolphin Events');
 		this.slpStream.on(SlpStreamEvent.COMMAND, async (event: SlpRawEventPayload) => {
 			this.slpParser.handleCommand(event.command, event.payload);
 			if (event.command === Command.GAME_START) {
