@@ -1,9 +1,9 @@
 <script lang="ts">
 	import TextInput from '$lib/components/input/TextInput.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
+	import { ObsAuth } from '$lib/models/types/obsTypes';
 	import { electronEmitter, obs } from '$lib/utils/store.svelte';
 	import { cloneDeep } from 'lodash';
-	import { onMount } from 'svelte';
 
 	const defaultAuth = { ipAddress: 'localhost', port: '4455', password: '' };
 	let authValidator = { ipAddress: false, port: false, password: false };
@@ -35,14 +35,14 @@
 		return Object.values(authValidator).every((value) => value);
 	};
 
-	const validateAuth = () => {
+	const validateAuth = (auth: ObsAuth) => {
 		authValidator = {
 			ipAddress: isValidIpAddress(auth.ipAddress),
 			port: isValidPort(auth.port),
 			password: typeof auth.password === 'string',
 		};
 	};
-	$: auth, validateAuth();
+	$: validateAuth(auth);
 
 	const connect = () => {
 		if (!isValidInputs()) {
@@ -55,12 +55,6 @@
 	const resetToDefault = () => {
 		auth = cloneDeep(defaultAuth);
 	};
-
-	onMount(() => {
-		if ($obs.auth) {
-			auth = cloneDeep($obs.auth);
-		}
-	});
 </script>
 
 <div class="w-full max-w-[25rem] justify-center items-center item flex flex-col gap-4">
