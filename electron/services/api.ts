@@ -126,9 +126,12 @@ export class Api {
 		}
 	}
 
-	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 5000): Promise<RankedNetplayProfile> {
+	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 2000, backoffMultiplier: number = 1): Promise<RankedNetplayProfile> {
 		for (let attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
+				if (attempt < maxRetries) {
+					await new Promise((resolve) => setTimeout(resolve, delay * backoffMultiplier * attempt));
+				}
 				this.log.info(`Attempt ${attempt}/${maxRetries}: Fetching rank data...`);
 
 				const newRank = await this.getPlayerRankStats(connectCode);
@@ -142,9 +145,6 @@ export class Api {
 					this.log.info(`Attempt ${attempt}: Rank has not updated yet.`);
 				}
 
-				if (attempt < maxRetries) {
-					await new Promise((resolve) => setTimeout(resolve, delay));
-				}
 			} catch (err) {
 				this.log.error(`Attempt ${attempt} failed due to error:`, err);
 			}

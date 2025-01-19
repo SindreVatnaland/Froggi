@@ -182,6 +182,7 @@ export class StatsDisplay {
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 		if (isPostSet && isRanked && playerConnectCode && oldRank) {
+			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
 			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}

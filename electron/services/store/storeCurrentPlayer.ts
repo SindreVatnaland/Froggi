@@ -61,9 +61,9 @@ export class ElectronCurrentPlayerStore {
 	setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		if (!rankStats || !connectCode) return;
-		this.storeSession.updateSessionStats(rankStats);
 		this.log.info('Setting new rank stats', rankStats);
 		this.store.set(`player.${connectCode}.rank.new`, rankStats);
+		this.storeSession.updateSessionStats(rankStats);
 		this.updateCurrentPlayerRankHistory(rankStats);
 	}
 
@@ -90,22 +90,26 @@ export class ElectronCurrentPlayerStore {
 		const player = this.getCurrentPlayer();
 		if (!player) return;
 		this.log.info('Handling rank change');
-		const rankSceneTimeout = 10000;
-		this.storeLiveStats.setStatsSceneTimeout(
-			LiveStatsScene.RankChange,
-			LiveStatsScene.PostSet,
-			rankSceneTimeout,
-		);
+		this.log.info(`Previous rating: ${player.rank?.current?.rating}. New rating: ${player.rank?.new?.rating}`);
 		setTimeout(() => {
+			this.log.info("Setting new rank to current rank");
 			this.setCurrentPlayerCurrentRankStats(player.rank?.new);
-		}, 4000);
-		this.rankChangeSceneTimeout = setTimeout(() => {
+		}, 3000);
+		if (this.storeLiveStats.getStatsScene() === LiveStatsScene.RankChange) {
+			const rankSceneTimeout = 10000;
 			this.storeLiveStats.setStatsSceneTimeout(
+				LiveStatsScene.RankChange,
 				LiveStatsScene.PostSet,
-				LiveStatsScene.Menu,
 				rankSceneTimeout,
 			);
-		}, rankSceneTimeout)
+			this.rankChangeSceneTimeout = setTimeout(() => {
+				this.storeLiveStats.setStatsSceneTimeout(
+					LiveStatsScene.PostSet,
+					LiveStatsScene.Menu,
+					50000,
+				);
+			}, rankSceneTimeout)
+		}
 	}
 
 	private initPlayerListener() {
