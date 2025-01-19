@@ -8,7 +8,7 @@ import DolphinMemory from 'dolphin-memory-reader';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { InGameState } from '../../frontend/src/lib/models/enum';
 import { isNil } from 'lodash';
-import { isDolphinRunning } from 'utils/dolphinProcess';
+import { isDolphinRunning } from './../utils/dolphinProcess';
 
 @singleton()
 export class MemoryRead {
