@@ -86,6 +86,94 @@ export enum Character {
     "Ganondorf" = 25,
 }
 
+export const VISUAL_CHARACTER_MAP: { [key: string]: number } = {
+    // Falcon
+    "C.F": 0,
+    "C F": 0,
+    "CON": 0,
+    // DK
+    "DK": 1,
+    "D K": 1,
+    "D.K": 1,
+    // Fox
+    "FOX": 2,
+    "F O X": 2,
+    "F O": 2,
+    "O X": 2,
+    // Mr. Game & Watch
+    "MR": 3,
+    "GAME": 3,
+    "WAT": 3,
+    // Kirby
+    "KIR": 4,
+    "IRB": 4,
+    // Bowser
+    "BOW": 5,
+    "OWS": 5,
+    "SER": 5,
+    // Young Link
+    "UNG": 21,
+    "NGL": 21,
+    // Link
+    "LIN": 6,
+    "INK": 6,
+    // Luigi
+    "LUI": 7,
+    // Dr. Mario
+    "DR": 22,
+    "R.M": 22,
+    // Mario
+    "MARI": 8,
+    // Marth
+    "MARTH": 9,
+    // Mewtwo
+    "MEW": 10,
+    // Ness
+    "NES": 11,
+    // Peach
+    "PEACH": 12,
+    // Pikachu
+    "PIK": 13,
+    "KAC": 13,
+    // Ice Climbers
+    "ICE": 14,
+    "CLIMBERS": 14,
+    "CLIM": 14,
+    "IMB": 14,
+    // Jigglypuff
+    "JIG": 15,
+    "IGG": 15,
+    "GLY": 15,
+    "PUF": 15,
+    // Samus
+    "SAM": 16,
+    "AMU": 16,
+    "MUS": 16,
+    // Yoshi
+    "YOS": 17,
+    "SHI": 17,
+    "OSH": 17,
+    // Zelda
+    "ZEL": 18,
+    "ELD": 18,
+    // Sheik
+    "SHE": 19,
+    "HEI": 19,
+    // Falco
+    "FAL": 20,
+    "ALC": 20,
+    // Roy
+    "OY": 23,
+    "RO": 20,
+    // Pichu
+    "PIC": 24,
+    "ICH": 24,
+    // Ganondorf
+    "GAN": 25,
+    "DOR": 25,
+    "NON": 25,
+}
+
 
 interface CharacterExternalSeriesMap {
     [key: number]: string

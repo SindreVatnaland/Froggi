@@ -52,10 +52,6 @@ export const getObsWebsocketConfig = (): ObsWebsocketConfig | undefined => {
 				continue;
 			}
 		}
-		const configPath = path.join(appDataPath, 'plugin_config', 'obs-websocket', 'obs-websocket.json');
-		if (!fs.existsSync(configPath)) return;
-		const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as ObsWebsocketConfig;
-		return config;
 	}
 
 	if (isMac || isLinux) {

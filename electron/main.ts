@@ -26,6 +26,7 @@ import { BACKEND_PORT, VITE_PORT } from '../frontend/src/lib/models/const';
 import { FrontendLogger } from './services/frontendLogger';
 import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
+import { ImageAnalyser } from './services/imageAnalyser';
 
 let mainLog: ElectronLog = log
 
@@ -236,6 +237,7 @@ try {
 			container.resolve(AutoUpdater);
 			container.resolve(FileHandler);
 			container.resolve(FrontendLogger);
+			container.resolve(ImageAnalyser)
 		});
 
 		mainWindow.on('close', (event: Event) => {

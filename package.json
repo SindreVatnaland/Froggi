@@ -61,6 +61,7 @@
 		"run-script-os": "^1.1.6",
 		"semver": "^7.6.3",
 		"sqlite3": "^5.1.7",
+		"tesseract.js": "^6.0.0",
 		"tsyringe": "^4.8.0",
 		"typed-emitter": "^2.1.0",
 		"typeorm": "^0.3.20",
