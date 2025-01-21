@@ -16,9 +16,7 @@ export const getProcessPid = async (): Promise<number | undefined> => {
 	return undefined;
 };
 
-let isDolphinRunningCache = false;
 export const isDolphinRunning = async () => {
-	if (isDolphinRunningCache) return true;
 	const isWindows = os.platform() === 'win32';
 	const validProcesses = getValidProcesses();
 	const exec = child_process.exec;
@@ -32,12 +30,10 @@ export const isDolphinRunning = async () => {
 				const lines = stdout.split('\n').map(line => line.toLowerCase());
 				for (const process of validProcesses) {
 					if (lines.some(line => line.includes(process.toLowerCase()))) {
-						isDolphinRunningCache = true;
 						return resolve(true);
 					}
 				}
 			}
-			isDolphinRunningCache = false;
 			return resolve(false);
 		});
 	});
