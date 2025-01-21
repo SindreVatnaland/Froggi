@@ -38,10 +38,9 @@
 	},
 	"executableName": "Froggi",
 	"files": [
-		"build",
-		"build_electron",
 		"build/**/*",
-		"build_electron/**/*",
+		"!**/*.map",
+		"!**/node_modules/**/*",
 		{
 			"from": "build",
 			"to": ""
