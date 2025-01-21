@@ -13,6 +13,7 @@ import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter
 import { BACKEND_PORT } from '../../../frontend/src/lib/models/const';
 import { MessageHandler } from './../messageHandler';
 import { getDolphinSettings } from './../../utils/dolphinSettings';
+import { DolphinSettings, DolphinSettingsMainline } from '../../../frontend/src/lib/models/types/dolphinTypes';
 
 @singleton()
 export class ElectronSettingsStore {
@@ -89,11 +90,12 @@ export class ElectronSettingsStore {
 		return settings;
 	}
 
-	getDolphinSettings(): SlippiLauncherSettings | undefined {
-		return this.store.get('settings.dolphin') as SlippiLauncherSettings;
+	getDolphinSettings(): DolphinSettings | DolphinSettingsMainline | undefined {
+		return this.store.get('settings.dolphin') as DolphinSettings | DolphinSettingsMainline;
 	}
 
-	setDolphinSettings(config: any) {
+	setDolphinSettings(config: DolphinSettings | DolphinSettingsMainline | undefined) {
+		if (!config) return;
 		this.log.info("Slippi Config: ", config)
 		this.store.set('settings.dolphin', config);
 	}

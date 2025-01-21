@@ -44,15 +44,15 @@ const getDolphinUserFolder = (isBeta: boolean): string => {
 }
 
 const fixMissingDolphinSettings = (config: DolphinSettings | DolphinSettingsMainline, configPath: string): DolphinSettings | DolphinSettingsMainline => {
-  if ("Slippi" in config && "Core" in config) {
-    if (!config.Slippi.ForceNetplayPort) {
+  if ("Slippi" in config) {
+    if (!(JSON.parse(`${config.Slippi.ForceNetplayPort}`.toLocaleLowerCase()))) {
       config.Slippi.ForceNetplayPort = true;
     }
     if (!config.Slippi.NetplayPort) {
       config.Slippi.NetplayPort = 2626;
     }
   } else if ("Core" in config) {
-    if (!config.Core.SlippiForceNetplayPort) {
+    if (!(JSON.parse(`${config.Core.SlippiForceNetplayPort}`.toLocaleLowerCase()))) {
       config.Core.SlippiForceNetplayPort = true;
     }
     if (!config.Core.SlippiNetplayPort) {
@@ -63,4 +63,13 @@ const fixMissingDolphinSettings = (config: DolphinSettings | DolphinSettingsMain
 
   fs.writeFileSync(configPath, ini.stringify(config));
   return config;
+}
+
+export const getDolphinPort = (config: DolphinSettings | DolphinSettingsMainline): number | undefined => {
+  if ("Slippi" in config) {
+    return config.Slippi.NetplayPort;
+  } else if ("Core" in config) {
+    return config.Core.SlippiNetplayPort;
+  }
+  return;
 }

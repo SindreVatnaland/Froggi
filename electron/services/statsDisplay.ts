@@ -35,6 +35,7 @@ import { getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
 import { Command } from '../../frontend/src/lib/models/types/overlay';
 import { MessageHandler } from './messageHandler';
 import path from 'path';
+import { PacketCapture } from './packetCapture';
 
 @singleton()
 export class StatsDisplay {
@@ -52,6 +53,7 @@ export class StatsDisplay {
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
+		@inject(PacketCapture) private packetCapture: PacketCapture,
 	) {
 		this.initStatDisplay();
 	}
@@ -110,6 +112,7 @@ export class StatsDisplay {
 
 	async handleGameStart(settings: GameStartType | null) {
 		this.log.info("Game start:", settings)
+		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings);
 
@@ -140,6 +143,7 @@ export class StatsDisplay {
 		settings: GameStartType,
 	) {
 		this.log.info("Game end:", gameEnd)
+		this.packetCapture.startPacketCapture();
 		this.stopPauseInterval();
 		this.handleInGameState(gameEnd, latestGameFrame);
 

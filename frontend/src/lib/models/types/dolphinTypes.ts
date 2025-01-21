@@ -8,7 +8,7 @@ export interface DolphinSettingsMainline {
 }
 
 interface Core {
-    SlippiForceNetplayPort: boolean
+    SlippiForceNetplayPort: string | boolean
     SlippiNetplayPort: number
 }
 
