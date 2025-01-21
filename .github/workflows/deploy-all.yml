@@ -14,7 +14,6 @@ jobs:
             file: |
                 ./dist/*.dmg
                 ./dist/*mac.zip 
-                ./dist/*.zip.blockmap 
                 ./dist/latest-mac.yml
             runs-on: 'macos-latest'
 
@@ -33,6 +32,5 @@ jobs:
         with:
             file: |
                 ./dist/*.exe
-                ./dist/*.exe.blockmap
                 ./dist/latest.yml
             runs-on: 'windows-latest'
