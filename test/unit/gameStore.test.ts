@@ -135,8 +135,11 @@ describe('ElectronGamesStore', () => {
     afterEach(() => {
         store.delete("player")
         store.delete("stats")
-        packetCapture.close();
     })
+
+    afterAll(() => {
+        packetCapture.close();
+    });
 
     test('Is New Game The Same As Recent Game', async () => {
         for (const gameTest of rankedGameTest) {
