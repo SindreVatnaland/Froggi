@@ -1,9 +1,9 @@
 import path from "path";
 import os from "os";
 import fs from "fs";
-import { app } from "electron";
 import ini from 'ini';
 import { DolphinSettings, DolphinSettingsMainline } from "../../frontend/src/lib/models/types/dolphinTypes";
+import getAppDataPath from "appdata-path";
 
 
 export const getDolphinSettings = (isBeta: boolean): DolphinSettings | DolphinSettingsMainline | undefined => {
@@ -22,13 +22,13 @@ export const getDolphinSettings = (isBeta: boolean): DolphinSettings | DolphinSe
 
 const getDolphinUserFolder = (isBeta: boolean): string => {
   const betaSuffix = isBeta ? "-beta" : "";
-  const installationFolder = path.join(app.getPath("userData"), `netplay${betaSuffix}`);
+  const installationFolder = path.join(getAppDataPath('Slippi Launcher'), `netplay${betaSuffix}`);
   switch (process.platform) {
     case "win32": {
       return path.join(installationFolder, "User");
     }
     case "darwin": {
-      const configPath = path.join(os.homedir(), "Library", "Application Support", `com.project-slippi.dolphin`);
+      const configPath = getAppDataPath(`com.project-slippi.dolphin`);
       const userFolderName = `netplay${betaSuffix}/User`;
 
       return path.join(configPath, userFolderName);
