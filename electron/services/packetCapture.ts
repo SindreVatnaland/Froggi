@@ -31,7 +31,7 @@ export class PacketCapture {
     this.server.off("message", this.handleMessage);
   }
 
-  private handleMessage(message: Buffer<ArrayBufferLike>, rinfo: dgram.RemoteInfo): void {
+  private handleMessage(message: Buffer, rinfo: dgram.RemoteInfo): void {
     this.log.info(`Received message from ${rinfo.address}:${rinfo.port}`);
     this.log.info(`Message: ${message}`);
   }
