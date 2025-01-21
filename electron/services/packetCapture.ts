@@ -35,4 +35,9 @@ export class PacketCapture {
     this.log.info(`Received message from ${rinfo.address}:${rinfo.port}`);
     this.log.info(`Message: ${message}`);
   }
+
+  // For testing purposes
+  public close(): void {
+    this.server.close();
+  }
 }

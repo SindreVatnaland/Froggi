@@ -34,8 +34,7 @@
 		"target": ["default"],
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
-		"entitlementsInherit": "entitlements.mac.plist",
-		"notarize": false
+		"entitlementsInherit": "entitlements.mac.plist"
 	},
 	"executableName": "Froggi",
 	"files": [
