@@ -23,11 +23,13 @@ export class MemoryRead {
 	) { }
 
 	initMemoryRead() {
+		if (!this.isWindows) return;
 		this.startProcessSearchInterval();
 	}
 
-	private async initMemoryReadWin() {
+	private async startMemoryRead() {
 		this.log.info('Initializing Memory Read');
+		clearInterval(this.dolphinProcessInterval);
 		this.memory = new DolphinMemory();
 		await this.memory.init();
 		this.memoryReadInterval = setInterval(() => {
@@ -67,17 +69,13 @@ export class MemoryRead {
 	}
 
 	private async startProcessSearchInterval() {
-		if (!this.isWindows) return;
-		this.stopProcessSearchInterval();
+		clearInterval(this.dolphinProcessInterval);
 		this.dolphinProcessInterval = setInterval(async () => {
 			if (await isDolphinRunning()) {
-				this.initMemoryReadWin();
-				this.stopProcessSearchInterval();
+				setTimeout(() => {
+					this.startMemoryRead();
+				});
 			}
 		}, 5000);
-	}
-
-	private stopProcessSearchInterval() {
-		clearInterval(this.dolphinProcessInterval);
 	}
 }

@@ -94,7 +94,6 @@ export class SlippiJs {
 
 	private async handleConnected() {
 		this.handleUserSlippiData();
-		this.memoryRead.stopMemoryRead();
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Connected);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.Menu);
 		this.memoryRead.initMemoryRead();
