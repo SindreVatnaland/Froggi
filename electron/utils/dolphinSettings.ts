@@ -11,6 +11,7 @@ export const getDolphinSettings = (isBeta: boolean): DolphinSettings | DolphinSe
   const configPath = path.join(userFolder, 'Config', 'Dolphin.ini');
 
   if (!fs.existsSync(configPath)) {
+    console.log("Dolphin settings not found at", configPath);
     return;
   }
   const iniContent = fs.readFileSync(configPath, 'utf8');

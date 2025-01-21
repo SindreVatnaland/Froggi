@@ -96,7 +96,7 @@ export class ElectronSettingsStore {
 
 	setDolphinSettings(config: DolphinSettings | DolphinSettingsMainline | undefined) {
 		if (!config) return;
-		this.log.info("Slippi Config: ", config)
+		this.log.info("Dolphin settings: ", config)
 		this.store.set('settings.dolphin', config);
 	}
 
