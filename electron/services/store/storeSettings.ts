@@ -12,6 +12,7 @@ import { ElectronCurrentPlayerStore } from './storeCurrentPlayer';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { BACKEND_PORT } from '../../../frontend/src/lib/models/const';
 import { MessageHandler } from './../messageHandler';
+import { getDolphinSettings } from './../../utils/dolphinSettings';
 
 @singleton()
 export class ElectronSettingsStore {
@@ -31,6 +32,7 @@ export class ElectronSettingsStore {
 		this.initStoreListeners();
 		this.initEventListeners();
 		this.updateSlippiSettings();
+		this.updateDolphinSettings();
 	}
 
 	getAuthorizationKey(): string {
@@ -86,6 +88,28 @@ export class ElectronSettingsStore {
 		);
 		return settings;
 	}
+
+	getDolphinSettings(): SlippiLauncherSettings | undefined {
+		return this.store.get('settings.dolphin') as SlippiLauncherSettings;
+	}
+
+	setDolphinSettings(config: any) {
+		this.log.info("Slippi Config: ", config)
+		this.store.set('settings.dolphin', config);
+	}
+
+	updateDolphinSettings(): SlippiLauncherSettings | undefined {
+		const slippiLauncherSettings = this.getSlippiLauncherSettings();
+		const isBeta = slippiLauncherSettings?.useNetplayBeta ?? false;
+		try {
+			const settings = getDolphinSettings(isBeta);
+			this.setDolphinSettings(settings);
+		} catch (err) {
+			this.log.error(err);
+		}
+		return;
+	}
+
 
 	getSlippiDefaultPath(): string {
 		const username = os.userInfo().username;
