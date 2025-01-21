@@ -1,6 +1,5 @@
 import { AspectRatio, Overlay } from '../../../../frontend/src/lib/models/types/overlay';
 import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
-import 'reflect-metadata';
 import { SceneEntity } from './sceneEntity';
 
 @Entity()
