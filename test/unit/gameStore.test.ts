@@ -12,12 +12,14 @@ import { ElectronLiveStatsStore } from "../../electron/services/store/storeLiveS
 import { ElectronSettingsStore } from "../../electron/services/store/storeSettings";
 import log from 'electron-log';
 import { BestOf, LiveStatsScene } from "../../frontend/src/lib/models/enum";
+import { PacketCapture } from "../../electron/services/packetCapture";
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
 describe('ElectronGamesStore', () => {
     let connectCode: string;
     let electronGamesStore: ElectronGamesStore;
+    let packetCapture: PacketCapture;
     let statsDisplay: StatsDisplay;
     let storeLiveStats: ElectronLiveStatsStore;
     let storeCurrentPlayer: ElectronCurrentPlayerStore
@@ -119,7 +121,11 @@ describe('ElectronGamesStore', () => {
 
         electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, storeSettings, storeCurrentPlayer, store);
 
-        statsDisplay = new StatsDisplay(log, slpParser, slpStream, api, messageHandler, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, {} as any)
+        packetCapture = new PacketCapture(log, storeSettings)
+        packetCapture.startPacketCapture = () => { }
+        packetCapture.stopPacketCapture = () => { }
+
+        statsDisplay = new StatsDisplay(log, slpParser, slpStream, api, messageHandler, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, packetCapture)
         statsDisplay["getCurrentPlayersWithRankStats"] = async (settings: GameStartType): Promise<Player[]> => (new Promise<Player[]>(resolve => {
             const players = settings.players.filter(player => player)
             resolve([{ connectCode: players.at(0)?.connectCode, rank: {}, playerIndex: players.at(0)?.playerIndex } as Player, { connectCode: players.at(1)?.connectCode, rank: {}, playerIndex: players.at(1)?.playerIndex } as Player])
