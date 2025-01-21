@@ -419,7 +419,7 @@ export class ElectronOverlayStore {
 			}
 
 			if (
-				semver.satisfies(currentFroggiVersion, `>=${overlay.froggiVersion}`) || this.isDev
+				semver.satisfies(currentFroggiVersion, `${overlay.froggiVersion}`) || this.isDev
 			) {
 				await this.deleteOverlay(overlay.id);
 			}
