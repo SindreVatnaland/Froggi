@@ -22,12 +22,14 @@ export class PacketCapture {
 
     const port = getDolphinPort(dolphinSettings);
 
+    console.log("Listening on port", port);
+
     this.server.on('message', (msg, rinfo) => {
       this.log.info(`Received message from ${rinfo.address}:${rinfo.port}`);
       this.log.info(`Message: ${msg}`);
     });
 
-    this.server.bind(port);
+    this.server.bind(port, "0.0.0.0");
   }
 
   stopPacketCapture(): void {
