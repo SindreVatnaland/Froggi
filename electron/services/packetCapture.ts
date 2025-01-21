@@ -28,14 +28,6 @@ export class PacketCapture {
     });
 
     this.server.bind(port);
-
-    // const server2 = net.createServer((socket) => {
-    //   socket.on('data', (data) => {
-    //     console.log(`Received: ${data}`);
-    //   });
-    // });
-
-    // server2.listen(2024, '0.0.0.0');
   }
 
   stopPacketCapture(): void {
