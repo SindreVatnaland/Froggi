@@ -22,6 +22,8 @@ export class AutoUpdater {
 
 		autoUpdater.checkForUpdates();
 		autoUpdater.autoInstallOnAppQuit = true;
+		autoUpdater.autoDownload = false;
+		autoUpdater.autoDownload = false;
 	}
 
 	private async initListeners() {

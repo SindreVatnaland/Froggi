@@ -5,23 +5,111 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Update Available</title>
 		<script defer src="renderer.js"></script>
+		<script defer src="icon.png"></script>
 		<style>
+			:root {
+				--primary-color: #fbf0e5;
+				--secondary-color: #450d21;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--primary-color: #1a1a1a;
+					--secondary-color: #d1d1d1;
+				}
+			}
+
+			main {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				height: 100vh;
+				width: 100vw;
+				margin: 0;
+				background-color: var(--primary-color);
+				color: var(--secondary-color);
+				padding: 1rem;
+			}
+
 			header {
 				width: 100vw;
 				-webkit-app-region: drag;
+				display: flex;
+				justify-content: center;
+			}
+
+			body {
+				display: flex;
+				flex-direction: column;
+				flex: 1;
+				align-items: center;
+				height: 100vh;
+				margin: 0;
+				gap: 1rem;
+				background-color: #f0f0f0;
+			}
+
+			img {
+				flex: 1;
+				aspect-ratio: 1;
+				max-height: 100px;
+				pointer-events: none;
+				-webkit-user-drag: none;
+			}
+
+			.buttons {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				justify-content: center;
+				gap: 1rem;
+			}
+
+			button {
+				background-color: var(--primary-color);
+				color: var(--secondary-color);
+				border: var(--secondary-color) 1px solid;
+				border-radius: 0.25rem;
+				padding: 1rem;
+				padding-top: 0.4rem;
+				padding-bottom: 0.4rem;
+				font-size: medium;
+				width: 6rem;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					color 0.2s ease;
+			}
+
+			button:hover {
+				background-color: var(--secondary-color);
+				color: var(--primary-color);
+			}
+
+			button:active {
+				transform: scale(0.95);
+			}
+
+			* {
+				user-select: none;
 			}
 		</style>
 	</head>
-	<header>
-		<h1>Froggi Launcher</h1>
-	</header>
-	<body>
-		<p id="status-message">Checking for updates...</p>
-		<div id="progress-container" style="display: none">
-			<progress id="progress-bar" value="0" max="100"></progress>
-			<span id="progress-text">0%</span>
-		</div>
-		<button id="skip-update">Skip</button>
-		<button id="download-updates" disabled>Download Update</button>
-	</body>
+	<main>
+		<header>
+			<h1>Froggi</h1>
+		</header>
+		<body>
+			<img id="icon" src="icon.png" alt="Froggi Icon" />
+			<p id="status-message">Checking for updates...</p>
+			<div id="progress-container" class="progress" style="display: none">
+				<progress id="progress-bar" value="0" max="100"></progress>
+				<span id="progress-text">0%</span>
+			</div>
+			<div class="buttons">
+				<button id="skip-update">Skip</button>
+				<button id="download-updates" disabled>Update</button>
+			</div>
+		</body>
+	</main>
 </html>

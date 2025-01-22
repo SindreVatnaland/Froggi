@@ -2,15 +2,21 @@ import { BrowserWindow, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
 import path from "path";
 import { createErrorNotification } from "./../utils/notifications";
+import { ElectronLog } from "electron-log";
 
-export async function performUpdate(): Promise<void> {
-  const updateWindow = createUpdateWindow();
+export async function performUpdate(app: Electron.App, log: ElectronLog): Promise<void> {
+  console.log(app);
+  autoUpdater.disableDifferentialDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoRunAppAfterInstall = true;
+  const updateWindow = createUpdateWindow(log);
   try {
     console.log('Performing update tasks...');
-    await waitForUpdateConfirmation();
+    await waitForUpdateConfirmation(log);
     updateWindow.close();
   } catch (error) {
-    console.error('Error during update tasks:', error);
+    log.error('Error during update tasks:', error);
     const notification = createErrorNotification(updateWindow, "Update Error", error.message);
     notification.show();
     setTimeout(() => {
@@ -19,8 +25,8 @@ export async function performUpdate(): Promise<void> {
   }
 }
 
-function createUpdateWindow(): BrowserWindow {
-  console.log('Creating update window');
+function createUpdateWindow(log: ElectronLog): BrowserWindow {
+  log.info('Creating update window');
   const updateWindow = new BrowserWindow({
     width: 400,
     height: 300,
@@ -40,15 +46,17 @@ function createUpdateWindow(): BrowserWindow {
   updateWindow.loadURL(updateURL);
 
   autoUpdater.on('update-available', () => {
+    log.info('Update available');
     updateWindow.webContents.send('autoUpdater:status', 'Update Available');
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    updateWindow.webContents.send('autoUpdater:progress', progress.percent);
+    log.info("Download progress", progress.percent.toFixed(2));
+    updateWindow.webContents.send('autoUpdater:progress', progress.percent.toFixed(2));
   });
 
   autoUpdater.on('update-downloaded', () => {
-    updateWindow.webContents.send('autoUpdater:status', 'Download Complete');
+    log.info('Download complete');
     autoUpdater.quitAndInstall();
   });
 
@@ -58,26 +66,29 @@ function createUpdateWindow(): BrowserWindow {
 }
 
 
-async function waitForUpdateConfirmation(): Promise<boolean> {
+async function waitForUpdateConfirmation(log: ElectronLog): Promise<boolean> {
   return await new Promise((resolve) => {
     ipcMain.on('autoUpdater:skipUpdate', () => {
-      console.log('Skipped update...');
+      log.info('Skipped update...');
       resolve(false);
     });
 
     ipcMain.on('autoUpdater:download', () => {
-      console.log('Downloading update...');
+      log.info('Downloading update...');
       autoUpdater.downloadUpdate();
     });
 
     autoUpdater.on('update-not-available', () => {
-      console.log('No updates available.');
+      log.info('No updates available.');
       resolve(false);
     });
 
-    autoUpdater.on('update-downloaded', () => {
-      console.log('Update downloaded.');
-      resolve(true);
-    });
+    autoUpdater.on('update-cancelled', () => {
+      resolve(false);
+    })
+
+    autoUpdater.on('error', () => {
+      resolve(false);
+    })
   });
 }

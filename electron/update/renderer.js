@@ -16,7 +16,7 @@ skipUpdate.addEventListener('click', () => {
 });
 
 window.electron.autoUpdater.onStatus((status) => {
-	statusMessage.textContent = `Status: ${status}`;
+	statusMessage.textContent = `${status}`;
 	if (status === 'Update Available') {
 		downloadButton.disabled = false;
 	}

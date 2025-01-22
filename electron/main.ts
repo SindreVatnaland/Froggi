@@ -31,9 +31,6 @@ import { performUpdate } from './update/updateWindow';
 
 let mainLog: ElectronLog = log
 
-console.log = mainLog.info;
-console.error = mainLog.error;
-
 function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
 	try {
 		const appDataPath = getAppDataPath(appName);
@@ -46,7 +43,6 @@ function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
 	} catch (err) {
 		log.error(err);
 	}
-
 
 	return log;
 }
@@ -249,7 +245,7 @@ try {
 	}
 
 	app.on('ready', async () => {
-		if (dev) await performUpdate();
+		if (!dev) await performUpdate(app, mainLog);
 		createMainWindow();
 	});
 
@@ -258,7 +254,8 @@ try {
 	});
 
 	app.on('before-quit', () => {
-		app.quit();
+		mainLog.info('Quitting app');
+		setTimeout(app.exit, 1000)
 	});
 
 	process.on('uncaughtException', (error) => {
