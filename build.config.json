@@ -31,12 +31,7 @@
 	},
 	"mac": {
 		"icon": "bin/static/icon.png",
-		"target": [
-			{
-				"target": "dmg",
-				"arch": ["x64"]
-			}
-		],
+		"target": ["default"],
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
