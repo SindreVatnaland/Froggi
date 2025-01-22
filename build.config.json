@@ -26,10 +26,6 @@
 			{
 				"target": "AppImage",
 				"arch": ["x64"]
-			},
-			{
-				"target": "deb",
-				"arch": ["x64"]
 			}
 		]
 	},
@@ -38,7 +34,9 @@
 		"target": ["default"],
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
-		"entitlementsInherit": "entitlements.mac.plist"
+		"entitlementsInherit": "entitlements.mac.plist",
+		"hardenedRuntime": true,
+		"gatekeeperAssess": false
 	},
 	"executableName": "Froggi",
 	"files": [
