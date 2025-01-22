@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "0.8.42",
+	"version": "0.8.43",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -17,11 +17,10 @@
 		"build:darwin": "npm run compile && electron-builder -m --config build.config.json",
 		"build:win32": "npm run compile && electron-builder -w --config build.config.json",
 		"compile": "npm run build:svelte && npm run compile:electron && tsc --p ./electron/tsconfig.json",
-		"compile:electron": "npm run && tsc --p ./electron/tsconfig.json && npm run overlay:copy",
+		"compile:electron": "npm run && tsc --p ./electron/tsconfig.json",
 		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles",
-		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
-		"overlay:copy": "shx mkdir -p ./build_electron/electron/demo-overlays && shx cp -r ./demo-overlays/* ./build_electron/electron/demo-overlays"
+		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/"
 	},
 	"engines": {
 		"npm": ">=7",

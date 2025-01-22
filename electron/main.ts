@@ -67,7 +67,7 @@ try {
 	const localEmitter = new TypedEmitter();
 	const clientEmitter = new TypedEmitter();
 
-	const serveURL = serve({ directory: '.' });
+	const serveURL = serve({ directory: 'build' });
 	const port = dev ? `${VITE_PORT}` : `${BACKEND_PORT}`;
 
 	let mainWindow: BrowserWindow | any;
