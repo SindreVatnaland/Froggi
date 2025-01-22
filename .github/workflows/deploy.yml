@@ -25,6 +25,16 @@ jobs:
               with:
                   node-version: 20.15.1
 
+            - name: Cache NPM Dependencies
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      node_modules
+                      frontend/node_modules
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-modules-
+
             - name: Decode and import signing certificate
               if: runner.os == 'macOS'
               run: |
