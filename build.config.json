@@ -4,9 +4,9 @@
 	"directories": {
 		"output": "dist"
 	},
-	"artifactName": "Froggi-${version}-${os}.${ext}",
+	"artifactName": "Froggi-${version}-${os}-${arch}.${ext}",
 	"win": {
-		"icon": "bin/static/icon.png",
+		"icon": "bin/static/favicon.ico",
 		"target": [
 			{
 				"target": "nsis",
@@ -21,10 +21,14 @@
 		"differentialPackage": true
 	},
 	"linux": {
-		"icon": "bin/static/icon.png",
+		"icon": "bin/static/favicon.ico",
 		"target": [
 			{
 				"target": "AppImage",
+				"arch": ["x64"]
+			},
+			{
+				"target": "deb",
 				"arch": ["x64"]
 			}
 		]
@@ -40,12 +44,13 @@
 	"files": [
 		"build_electron/**/*",
 		"build/**/*",
-		"node_modules/**/*",
-		"demo-overlays/**/*",
 		{
-			"from": "build_electron/test",
-			"to": "test",
-			"filter": ["**/*", "!**/test/**/*"]
+			"from": "node_modules",
+			"filter": ["dependencies"]
+		},
+		{
+			"from": "demo-overlays",
+			"to": "build_electron/electron/demo-overlays"
 		}
 	]
 }

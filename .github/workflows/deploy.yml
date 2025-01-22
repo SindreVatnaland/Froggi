@@ -12,6 +12,7 @@ on:
 
 jobs:
     deploy:
+        timeout-minutes: 30
         runs-on: ${{ inputs['runs-on'] }}
         environment: production
         permissions: write-all
