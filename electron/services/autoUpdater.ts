@@ -89,6 +89,22 @@ export class AutoUpdater {
 			);
 		});
 
+		autoUpdater.on('error', (error) => {
+			this.log.error('Error:', error);
+			this.messageHandler.sendMessage(
+				'AutoUpdaterVersion',
+				autoUpdater.currentVersion.version,
+			);
+		});
+
+		autoUpdater.on('update-cancelled', (info) => {
+			this.log.error('Update cancelled:', info);
+			this.messageHandler.sendMessage(
+				'AutoUpdaterVersion',
+				autoUpdater.currentVersion.version,
+			);
+		});
+
 		this.clientEmitter.on('AutoUpdaterInstall', async () => {
 			if (this.status !== AutoUpdaterStatus.DownloadComplete) return;
 			this.log.warn('Quit and install');

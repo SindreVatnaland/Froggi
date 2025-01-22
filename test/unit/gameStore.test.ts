@@ -138,7 +138,6 @@ describe('ElectronGamesStore', () => {
     })
 
     afterAll(() => {
-        packetCapture.close();
     });
 
     test('Is New Game The Same As Recent Game', async () => {
