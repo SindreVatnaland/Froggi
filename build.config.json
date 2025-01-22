@@ -21,7 +21,6 @@
 		"differentialPackage": true
 	},
 	"linux": {
-		"differentialPackage": true,
 		"icon": "bin/static/favicon.ico",
 		"target": [
 			{
@@ -32,8 +31,12 @@
 	},
 	"mac": {
 		"icon": "bin/static/icon.png",
-		"differentialPackage": true,
-		"target": ["dmg"],
+		"target": [
+			{
+				"target": "dmg",
+				"arch": ["x64"]
+			}
+		],
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
