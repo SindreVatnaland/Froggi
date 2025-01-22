@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Update Available</title>
+		<script defer src="renderer.js"></script>
+		<style>
+			header {
+				width: 100vw;
+				-webkit-app-region: drag;
+			}
+		</style>
+	</head>
+	<header>
+		<h1>Froggi Launcher</h1>
+	</header>
+	<body>
+		<p id="status-message">Checking for updates...</p>
+		<div id="progress-container" style="display: none">
+			<progress id="progress-bar" value="0" max="100"></progress>
+			<span id="progress-text">0%</span>
+		</div>
+		<button id="skip-update">Skip</button>
+		<button id="download-updates" disabled>Download Update</button>
+	</body>
+</html>

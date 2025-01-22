@@ -36,16 +36,10 @@
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
 		"hardenedRuntime": true,
-		"gatekeeperAssess": false,
-		"teamID": "J464TU6BU3",
 		"files": [
 			"build_electron/**/*",
 			"build/**/*",
 			"node_modules/**/*",
-			{
-				"from": "node_modules",
-				"filter": ["dependencies"]
-			},
 			{
 				"from": "demo-overlays",
 				"to": "build_electron/electron/demo-overlays"

@@ -27,6 +27,7 @@ import { FrontendLogger } from './services/frontendLogger';
 import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
+import { performUpdate } from './update/updateWindow';
 
 let mainLog: ElectronLog = log
 
@@ -247,7 +248,10 @@ try {
 		});
 	}
 
-	app.once('ready', createMainWindow);
+	app.on('ready', async () => {
+		if (dev) await performUpdate();
+		createMainWindow();
+	});
 
 	app.on('activate', () => {
 		mainWindow.show();
@@ -266,3 +270,4 @@ try {
 } catch (err) {
 	mainLog.error(err);
 }
+
