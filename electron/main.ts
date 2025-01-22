@@ -267,4 +267,3 @@ try {
 } catch (err) {
 	mainLog.error(err);
 }
-

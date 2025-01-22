@@ -31,7 +31,7 @@ jobs:
                   path: |
                       node_modules
                       frontend/node_modules
-                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package.json') }}
                   restore-keys: |
                       ${{ runner.os }}-node-modules-
 
@@ -41,18 +41,21 @@ jobs:
                   echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > certificate.p12
 
                   security create-keychain -p "" build.keychain
-
                   security import certificate.p12 -k build.keychain -P "${{ secrets.MACOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
 
                   security list-keychains -s build.keychain
                   security unlock-keychain -p "" build.keychain
-                  security unlock-keychain -p "" build.keychain
+                  security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+                  security find-identity -v -p codesigning
+
                   security show-keychain-info build.keychain
 
-                  security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+                  echo "AC_PASSWORD=${{ secrets.APPLE_ID_PASSWORD }}" | tee -a ~/.bashrc
               env:
                   MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
                   MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
             - name: install dependencies
               run: npm run install:all
