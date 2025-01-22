@@ -35,7 +35,6 @@
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
-		"hardenedRuntime": true,
 		"files": [
 			"build_electron/**/*",
 			"build/**/*",
