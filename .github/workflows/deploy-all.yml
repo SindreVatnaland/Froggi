@@ -14,7 +14,7 @@ jobs:
         with:
             file: |
                 ./dist/*.dmg
-                ./dist/*mac.zip 
+                ./dist/*.zip 
                 ./dist/*.zip.blockmap 
                 ./dist/latest-mac.yml
             runs-on: 'macos-latest'

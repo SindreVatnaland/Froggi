@@ -21,6 +21,7 @@
 		"differentialPackage": true
 	},
 	"linux": {
+		"differentialPackage": true,
 		"icon": "bin/static/favicon.ico",
 		"target": [
 			{
@@ -31,10 +32,12 @@
 	},
 	"mac": {
 		"icon": "bin/static/icon.png",
-		"target": ["default"],
+		"differentialPackage": true,
+		"target": ["dmg"],
 		"extraResources": ["res", "favicon.png"],
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
+		"hardenedRuntime": true,
 		"files": [
 			"build_electron/**/*",
 			"build/**/*",
