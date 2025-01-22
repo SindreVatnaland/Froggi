@@ -46,6 +46,8 @@ jobs:
 
                   security list-keychains -s build.keychain
                   security unlock-keychain -p "" build.keychain
+                  security unlock-keychain -p "" build.keychain
+                  security show-keychain-info build.keychain
 
                   security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
               env:
