@@ -29,12 +29,6 @@ import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
 
-const isOnlyInstance = app.requestSingleInstanceLock();
-
-if (!isOnlyInstance) {
-	app.quit();
-}
-
 let mainLog: ElectronLog = log
 
 function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
@@ -58,6 +52,8 @@ try {
 	const appName = dev ? "Electron" : "froggi";
 	mainLog = setLoggingPath(log, appName);
 	mainLog.info('Starting app');
+	handleMultipleInstances();
+
 	const isMac = os.platform() === 'darwin';
 	const isWindows = os.platform() === 'win32';
 	const isLinux = os.platform() === 'linux';
@@ -137,6 +133,14 @@ try {
 			},
 		];
 		return []
+	}
+
+	function handleMultipleInstances() {
+		const isOnlyInstance = app.requestSingleInstanceLock();
+
+		if (!isOnlyInstance) {
+			app.quit();
+		}
 	}
 
 	function createTray(): Tray {
@@ -249,6 +253,12 @@ try {
 			else app.hide();
 		});
 	}
+
+	app.on('second-instance', () => {
+		if (!mainWindow) return;
+		if (mainWindow.isMinimized()) mainWindow.restore();
+		mainWindow.focus();
+	});
 
 	app.on('ready', async () => {
 		if (!dev) await performUpdate(app, mainLog);
