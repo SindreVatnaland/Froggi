@@ -22,7 +22,7 @@ export class Api {
 		}
 	}
 
-	async getPlayerRankStats(connectCode: string): Promise<RankedNetplayProfile | undefined> {
+	async getPlayerRankStats(connectCode: string, isDev: boolean = false): Promise<RankedNetplayProfile | undefined> {
 		let response = await axios.post('https://gql-gateway-dot-slippi.uc.r.appspot.com/graphql', {
 			headers: {
 				'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export class Api {
 			dailyRegionalPlacement: player.rankedNetplayProfile.dailyRegionalPlacement,
 			wins: player.rankedNetplayProfile.wins ?? 0,
 			losses: player.rankedNetplayProfile.losses ?? 0,
-			rating: player.rankedNetplayProfile.ratingOrdinal,
+			rating: player.rankedNetplayProfile.ratingOrdinal + (isDev ? Math.random() * 100 : 0),
 
 			continent: player?.rankedNetplayProfile?.continent ?? '',
 			leaderboardPlacement: 0,

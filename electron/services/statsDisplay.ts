@@ -43,6 +43,7 @@ export class StatsDisplay {
 	private isWin: boolean = os.platform() === 'win32';
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
+		@inject('Dev') private isDev: boolean,
 		@inject('SlpParser') private slpParser: SlpParser,
 		@inject('SlpStream') private slpStream: SlpStream,
 		@inject(delay(() => Api)) private api: Api,
@@ -192,11 +193,18 @@ export class StatsDisplay {
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		if (this.isDev && isPostSet && playerConnectCode) {
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+			const currentPlayerRankStats = await this.api.getPlayerRankStats(playerConnectCode, true);
+			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+		}
+
 		if (isPostSet && isRanked && playerConnectCode && oldRank) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
 			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}
+
 		if (isPostSet) {
 			return this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostSet,

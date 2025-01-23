@@ -125,7 +125,7 @@ describe('ElectronGamesStore', () => {
         packetCapture.startPacketCapture = () => { }
         packetCapture.stopPacketCapture = () => { }
 
-        statsDisplay = new StatsDisplay(log, slpParser, slpStream, api, messageHandler, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, packetCapture)
+        statsDisplay = new StatsDisplay(log, false, slpParser, slpStream, api, messageHandler, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, packetCapture)
         statsDisplay["getCurrentPlayersWithRankStats"] = async (settings: GameStartType): Promise<Player[]> => (new Promise<Player[]>(resolve => {
             const players = settings.players.filter(player => player)
             resolve([{ connectCode: players.at(0)?.connectCode, rank: {}, playerIndex: players.at(0)?.playerIndex } as Player, { connectCode: players.at(1)?.connectCode, rank: {}, playerIndex: players.at(1)?.playerIndex } as Player])
