@@ -94,9 +94,9 @@ export class ElectronCurrentPlayerStore {
 		setTimeout(() => {
 			this.log.info("Setting new rank to current rank");
 			this.setCurrentPlayerCurrentRankStats(player.rank?.new);
-		}, 3000);
+		}, 5000);
+		const rankSceneTimeout = 10000;
 		if (this.storeLiveStats.getStatsScene() === LiveStatsScene.RankChange) {
-			const rankSceneTimeout = 10000;
 			this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.RankChange,
 				LiveStatsScene.PostSet,

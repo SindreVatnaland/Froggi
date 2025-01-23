@@ -22,7 +22,7 @@ export class Api {
 		}
 	}
 
-	async getPlayerRankStats(connectCode: string, isDev: boolean = false): Promise<RankedNetplayProfile | undefined> {
+	async getPlayerRankStats(connectCode: string): Promise<RankedNetplayProfile | undefined> {
 		let response = await axios.post('https://gql-gateway-dot-slippi.uc.r.appspot.com/graphql', {
 			headers: {
 				'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export class Api {
 			dailyRegionalPlacement: player.rankedNetplayProfile.dailyRegionalPlacement,
 			wins: player.rankedNetplayProfile.wins ?? 0,
 			losses: player.rankedNetplayProfile.losses ?? 0,
-			rating: player.rankedNetplayProfile.ratingOrdinal + (isDev ? Math.random() * 100 : 0),
+			rating: player.rankedNetplayProfile.ratingOrdinal,
 
 			continent: player?.rankedNetplayProfile?.continent ?? '',
 			leaderboardPlacement: 0,
@@ -129,7 +129,7 @@ export class Api {
 	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 2000, backoffMultiplier: number = 1): Promise<RankedNetplayProfile> {
 		for (let attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
-				if (attempt < maxRetries) {
+				if (attempt <= maxRetries) {
 					await new Promise((resolve) => setTimeout(resolve, delay * backoffMultiplier * attempt));
 				}
 				this.log.info(`Attempt ${attempt}/${maxRetries}: Fetching rank data...`);

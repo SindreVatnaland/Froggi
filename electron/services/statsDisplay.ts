@@ -194,8 +194,18 @@ export class StatsDisplay {
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 		if (this.isDev && isPostSet && playerConnectCode) {
+			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			await new Promise((resolve) => setTimeout(resolve, 2000));
-			const currentPlayerRankStats = await this.api.getPlayerRankStats(playerConnectCode, true);
+			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+			if (!currentPlayerRankStats) return;
+			const didWin = Math.random() > 0.5;
+			const ratingChange = (didWin ? 1 : 0) * Math.random() * 100;
+			currentPlayerRankStats = {
+				...currentPlayerRankStats,
+				rating: Number((currentPlayerRankStats.rating + ratingChange).toFixed(1)),
+				wins: currentPlayerRankStats.wins + (didWin ? 1 : 0),
+				losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
+			}
 			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}
 
