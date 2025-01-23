@@ -1,4 +1,5 @@
 const statusMessage = document.getElementById('status-message');
+const progressContainer = document.getElementById('progress-container');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const skipUpdate = document.getElementById('skip-update');
@@ -7,6 +8,8 @@ const downloadButton = document.getElementById('download-updates');
 window.electron.autoUpdater.checkForUpdates();
 
 downloadButton.addEventListener('click', () => {
+	downloadButton.disabled = true;
+	skipUpdate.disabled = true;
 	window.electron.autoUpdater.downloadUpdate();
 });
 
@@ -23,7 +26,7 @@ window.electron.autoUpdater.onStatus((status) => {
 });
 
 window.electron.autoUpdater.onProgress((progress) => {
-	progressBar.style.display = 'block';
+	progressContainer.style.display = 'block';
 	progressBar.value = progress;
 	progressText.textContent = `${progress}%`;
 });
