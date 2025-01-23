@@ -29,7 +29,7 @@
 		{defaultPreview
 			? `+132.41`
 			: currentDifference
-			? `${currentDifference >= 0 ? '+' : '-'}${currentDifference.toFixed(1)}`
+			? `${currentDifference >= 0 ? '+' : ''}${currentDifference.toFixed(1)}`
 			: '+0'}
 	</TextElement>
 {/if}
