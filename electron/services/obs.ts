@@ -193,7 +193,10 @@ export class ObsWebSocket {
 			this.log.info('OBS Process Found');
 			const obsWebsocketConfig = getObsWebsocketConfig()
 
-			if (!obsWebsocketConfig) return;
+			if (!obsWebsocketConfig) {
+				this.log.error('Could not get OBS Websocket Config');
+				await new Promise((resolve) => setTimeout(resolve, 120000));
+			};
 			this.log.info('OBS WebSocket Config: ', obsWebsocketConfig);
 
 			if (obsWebsocketConfig?.server_enabled) {
