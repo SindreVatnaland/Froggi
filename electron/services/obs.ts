@@ -46,14 +46,18 @@ export class ObsWebSocket {
 		const inputList = await this.obs.call('GetInputList');
 		let inputs = inputList.inputs as unknown as ObsInputs[];
 		for (const [index, input] of inputs.entries()) {
-			const volume = await this.obs.call('GetInputVolume', {
-				inputName: `${input.inputName}`,
-			});
+			try {
+				const volume = await this.obs.call('GetInputVolume', {
+					inputName: `${input.inputName}`,
+				});
+				inputs[index] = {
+					...input,
+					volume: { ...volume },
+				};
+			} catch (err) {
+				this.log.error(`Could not get input volume`, err);
+			}
 
-			inputs[index] = {
-				...input,
-				volume: { ...volume },
-			};
 		}
 		const filteredInputs = inputs.filter(
 			(input) => !['browser_source'].includes(input.inputKind),
@@ -76,24 +80,30 @@ export class ObsWebSocket {
 	};
 
 	private reloadBrowserSources = async () => {
-		try {
-			const scenes = await this.obs.call('GetSceneList');
-			const sceneList = scenes.scenes.map((scene) => scene.sceneName);
-			for (const scene of sceneList) {
+		const scenes = await this.obs.call('GetSceneList');
+		const sceneList = scenes.scenes.map((scene) => scene.sceneName);
+		for (const scene of sceneList) {
+			try {
+
 				const itemsList = await this.obs.call('GetSceneItemList', {
 					sceneName: `${scene}`,
 				});
 				itemsList.sceneItems.forEach(async (item) => {
 					if (item.inputKind === 'browser_source') {
-						await this.obs.call('PressInputPropertiesButton', {
-							inputName: `${item.sourceName}`,
-							propertyName: 'refreshnocache',
-						});
+						try {
+
+							await this.obs.call('PressInputPropertiesButton', {
+								inputName: `${item.sourceName}`,
+								propertyName: 'refreshnocache',
+							});
+						} catch (err) {
+							this.log.error(`Could not refresh browser source`, err);
+						}
 					}
 				});
+			} catch (err) {
+				this.log.error(`Could not get scene items`, err);
 			}
-		} catch (err) {
-			this.log.error(`Could not reload browser source`, err);
 		}
 	};
 
