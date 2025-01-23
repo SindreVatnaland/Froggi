@@ -65,7 +65,7 @@ export class MessageHandler {
 	}
 
 	private initHtml() {
-		this.log.info('Initializing HTML');
+		this.log.info('Initializing ExpressJs');
 		this.tryCreatePublicDir(this.appDir + '/public')
 
 		const staticFrontendServe = express.static(path.join(this.rootDir + '/build'));
@@ -77,7 +77,7 @@ export class MessageHandler {
 				this.app.use('*', staticFrontendServe);
 			}
 			this.server.listen(3200, (_: any) => {
-				console.log(`listening on *:${this.port}`);
+				this.log.info(`listening on *:${this.port}`);
 			});
 		} catch (err) {
 			this.log.error(err);
@@ -85,9 +85,13 @@ export class MessageHandler {
 	}
 
 	private tryCreatePublicDir(dir: string) {
+		this.log.info('Creating Public Dir');
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
+			this.log.info('Public Dir Created');
+			return;
 		}
+		this.log.info('Public Dir Already Exists');
 	}
 
 	private initElectronMessageHandler() {
