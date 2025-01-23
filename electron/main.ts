@@ -29,6 +29,12 @@ import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
 
+const isOnlyInstance = app.requestSingleInstanceLock();
+
+if (!isOnlyInstance) {
+	app.quit();
+}
+
 let mainLog: ElectronLog = log
 
 function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
