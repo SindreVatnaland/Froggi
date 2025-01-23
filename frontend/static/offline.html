@@ -12,7 +12,7 @@
 			:global(body) {
 				background: transparent;
 			}
-			
+
 			body {
 				width: 100vw;
 				height: 100vh;
@@ -54,7 +54,9 @@
 		<div>
 			<h1>Froggi Disconnected</h1>
 			<p>Make sure Froggi is open</p>
-			<p>Scan new QR code - IP address might have changed - Use a static IP on hosting device</p>
+			<p>
+				Scan new QR code - IP address might have changed - Use a static IP on hosting device
+			</p>
 		</div>
 
 		<!-- Inline the page's JavaScript file. -->
@@ -63,22 +65,17 @@
 			// This handles the case when the device is online, but the server
 			// is offline or misbehaving.
 			async function checkNetworkAndReload() {
-				try {
-					const response = await fetch('.');
-					// Verify we get a valid response from the server
-					if (response.status >= 200 && response.status < 500) {
-						await new Promise(resolve => {
-							setTimeout(resolve, 1500)
-						})
-						window.location.reload();
-					}
-				} catch {
-					await checkNetworkAndReload()
-					// Unable to connect to the server, ignore.
+				while (true) {
+					try {
+						const response = await fetch('.');
+						if (response.status >= 200 && response.status < 500) {
+							window.location.reload();
+						}
+					} catch {}
 				}
 			}
 
-			checkNetworkAndReload()
+			checkNetworkAndReload();
 		</script>
 	</body>
 </html>

@@ -3,9 +3,7 @@
 	import { writable } from 'svelte/store';
 
 	function createNotificationStore() {
-		const _notifications = writable<
-			{ id: string; type: string; message: string; timeout: number }[]
-		>([]);
+		const _notifications = writable<{ id: string; message: string; timeout: number }[]>([]);
 
 		async function send(message: string, type = 'default', timeout = 5000) {
 			if (await getIsIframe()) return;
@@ -45,4 +43,6 @@
 	}
 
 	export const notifications = createNotificationStore();
+
+	export type NotificationType = 'default' | 'danger' | 'warning' | 'info' | 'success';
 </script>

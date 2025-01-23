@@ -36,10 +36,14 @@
 		getPage,
 	} from '$lib/utils/fetchSubscriptions.svelte';
 	import { WEBSOCKET_PORT } from '$lib/models/const';
-	import { notifications } from '$lib/components/notification/Notifications.svelte';
+	import {
+		notifications,
+		NotificationType,
+	} from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
-	import { cloneDeep, debounce, isNil } from 'lodash';
+	import { debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
+	import { goto } from '$app/navigation';
 
 	const debouncedSetGameFrame = debounce(
 		(value: Parameters<MessageEvents['GameFrame']>[0]) => {
@@ -166,7 +170,7 @@
 			case 'Notification':
 				if (await getIsIframe()) return;
 				const message = payload[0] as Parameters<MessageEvents['Notification']>[0];
-				const type = payload[1] as keyof Omit<typeof notifications, 'send' | 'subscribe'>;
+				const type = payload[1] as NotificationType;
 				const timeout = Number(
 					(payload[2] as Parameters<MessageEvents['Notification']>[0]) ?? 2000,
 				);
@@ -346,9 +350,9 @@
 		};
 
 		socket.onopen = async () => {
+			console.log('Websocket connected');
 			_electronEmitter.offAny(emitElectronMessage);
 			_electronEmitter.onAny(emitElectronMessage);
-
 			_electronEmitter.emit('Ping');
 		};
 
@@ -356,7 +360,7 @@
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
-			setTimeout(reload, 1000);
+			setTimeout(handleClose, 1000);
 		};
 
 		return () => {
@@ -366,7 +370,11 @@
 		};
 	};
 
-	const reload = () => {
-		window.location.reload();
+	const handleClose = () => {
+		console.log('Websocket closed');
+		notifications.danger('Lost connection to Froggi', 2000);
+		setTimeout(() => {
+			initWebSocket();
+		}, 1000);
 	};
 </script>
