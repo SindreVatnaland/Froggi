@@ -55,8 +55,8 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `1429.3`
-			: player.rank?.current?.rating
-			? player.rank?.current?.rating
+			: player.rank?.current?.rating.toFixed(1)
+			? player.rank?.current?.rating.toFixed(1)
 			: '-'}
 	</TextElement>
 {/if}

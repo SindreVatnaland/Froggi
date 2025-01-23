@@ -19,6 +19,7 @@ import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter
 @singleton()
 export class ElectronLiveStatsStore {
 	private sceneTimeout: NodeJS.Timeout;
+	private rankChangeSceneTimeout: NodeJS.Timeout;
 	private gameState: InGameState = InGameState.Inactive;
 	private gameFrame: FrameEntryType | null | undefined;
 	constructor(
@@ -41,6 +42,7 @@ export class ElectronLiveStatsStore {
 	setStatsScene(scene: LiveStatsScene) {
 		this.log.info('Setting scene to', scene);
 		clearTimeout(this.sceneTimeout);
+		clearTimeout(this.rankChangeSceneTimeout)
 		this.store.set('stats.scene', scene ?? LiveStatsScene.WaitingForDolphin);
 	}
 

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { GameStartType } from '@slippi/slippi-js';
 	import RatingDifference from './RatingDifference.svelte';
 	import { CurrentPlayer, GameStartTypeExtended } from '$lib/models/types/slippiData';
 

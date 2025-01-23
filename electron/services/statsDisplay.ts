@@ -199,7 +199,7 @@ export class StatsDisplay {
 			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 			if (!currentPlayerRankStats) return;
 			const didWin = Math.random() > 0.5;
-			const ratingChange = (didWin ? 1 : 0) * Math.random() * 100;
+			const ratingChange = (didWin ? 1 : -1) * Math.random() * 100;
 			currentPlayerRankStats = {
 				...currentPlayerRankStats,
 				rating: Number((currentPlayerRankStats.rating + ratingChange).toFixed(1)),
