@@ -19,7 +19,8 @@
 		}
 	};
 
-	export const updateFont = async (overlay: Overlay) => {
+	export const updateFont = async (overlay: Overlay | undefined) => {
+		if (!overlay) return;
 		const urls = await getUrls();
 		const isElectron = await getIsElectron();
 		const url = isElectron ? urls?.localResource : urls?.externalResource;

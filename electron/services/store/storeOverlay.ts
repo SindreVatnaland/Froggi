@@ -38,6 +38,7 @@ export class ElectronOverlayStore {
 		this.initDemoOverlays();
 		this.migrateOverlays();
 		this.initListeners();
+
 		this.initSvelteListeners();
 	}
 

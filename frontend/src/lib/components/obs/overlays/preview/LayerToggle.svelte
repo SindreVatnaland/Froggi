@@ -1,34 +1,26 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { localEmitter, overlays, sceneSwitch, statsScene } from '$lib/utils/store.svelte';
+	import {
+		currentOverlayEditor,
+		localEmitter,
+		overlays,
+		sceneSwitch,
+		statsScene,
+	} from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
 	import LayerDisplayRow from '$lib/components/obs/overlays/preview/LayerDisplayRow.svelte';
 	import { newLayer } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import { flip } from 'svelte/animate';
-	import { onMount } from 'svelte';
 	import { Layer, Overlay } from '$lib/models/types/overlay';
 	import { LiveStatsScene } from '$lib/models/enum';
 
 	const overlayId: string | undefined = $page.params.overlay;
 
-	let selectedLayerIndex: number = 0;
+	let selectedLayerIndex: number = $currentOverlayEditor.layerIndex ?? 0;
 
 	$: curOverlay = $overlays[overlayId];
 	$: scene = curOverlay[$statsScene];
 	let layers: Layer[] = [];
-
-	onMount(() => {
-		updateLayers(curOverlay, $statsScene);
-		$localEmitter.on('LayerPreviewChange', handleLayerPreviewChange);
-
-		return () => {
-			$localEmitter.off('LayerPreviewChange', handleLayerPreviewChange);
-		};
-	});
-
-	const handleLayerPreviewChange = (layerIndex: number) => {
-		selectedLayerIndex = layerIndex;
-	};
 
 	const updateLayers = (overlay: Overlay, statsScene: LiveStatsScene) => {
 		layers = overlay[statsScene].layers;
