@@ -41,11 +41,7 @@ export class AutoUpdater {
 
 		autoUpdater.on('update-not-available', () => {
 			this.log.verbose('Update Not Available');
-			this.messageHandler.sendMessage('AutoUpdaterStatus', AutoUpdaterStatus.UpToDate);
-			this.messageHandler.sendMessage(
-				'AutoUpdaterVersion',
-				autoUpdater.currentVersion.version,
-			);
+			this.handleUpdateNotAvailable();
 		});
 
 		autoUpdater.on('update-available', (info: UpdateInfo) => {
@@ -91,18 +87,12 @@ export class AutoUpdater {
 
 		autoUpdater.on('error', (error) => {
 			this.log.error('Error:', error);
-			this.messageHandler.sendMessage(
-				'AutoUpdaterVersion',
-				autoUpdater.currentVersion.version,
-			);
+			this.handleUpdateNotAvailable();
 		});
 
 		autoUpdater.on('update-cancelled', (info) => {
 			this.log.error('Update cancelled:', info);
-			this.messageHandler.sendMessage(
-				'AutoUpdaterVersion',
-				autoUpdater.currentVersion.version,
-			);
+			this.handleUpdateNotAvailable();
 		});
 
 		this.clientEmitter.on('AutoUpdaterInstall', async () => {
@@ -125,5 +115,13 @@ export class AutoUpdater {
 		this.localEmitter.on('AutoUpdaterStatus', (status) => {
 			this.status = status;
 		});
+	}
+
+	private handleUpdateNotAvailable() {
+		this.messageHandler.sendMessage('AutoUpdaterStatus', AutoUpdaterStatus.UpToDate);
+		this.messageHandler.sendMessage(
+			'AutoUpdaterVersion',
+			autoUpdater.currentVersion.version,
+		);
 	}
 }
