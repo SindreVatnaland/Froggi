@@ -10,13 +10,13 @@ import { SceneEntity } from "./entities/sceneEntity";
 @singleton()
 export class SqliteOrm {
   AppDataSource: DataSource;
-
+  initializing: Promise<void>;
   constructor(
     @inject('AppDir') private appDir: string,
     @inject('Dev') private isDev: boolean,
     @inject('ElectronLog') private log: ElectronLog,
   ) {
-    this.initOrm();
+    this.initializing = this.initOrm();
   }
 
   private async initOrm() {
@@ -40,12 +40,16 @@ export class SqliteOrm {
       logging: false,
     });
 
+    await this.initialize();
+  }
+
+  async initialize() {
     try {
       await this.AppDataSource.initialize();
       this.log.info("SqliteOrm successfully initialized.");
     } catch (error) {
       this.log.error("Error during DataSource initialization:", error);
-      // Optionally handle the error or rethrow it
     }
   }
+
 }

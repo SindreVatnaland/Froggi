@@ -15,11 +15,17 @@ export class SqliteOverlay {
     @inject('ElectronLog') private log: ElectronLog,
     @inject(SqliteOrm) private sqlite: SqliteOrm,
   ) {
+    this.initializeRepositories();
+  }
+
+  async initializeRepositories() {
+    await this.sqlite.initializing;
     this.overlayRepo = this.sqlite.AppDataSource.getRepository(OverlayEntity);
     this.sceneRepo = this.sqlite.AppDataSource.getRepository(SceneEntity);
   }
 
   async getOverlays() {
+    await this.sqlite.initializing;
     const overlays = await this.overlayRepo.find();
     overlays.forEach(overlay => {
       overlay.waitingForDolphin?.layers.sort((a, b) => a.index - b.index);
@@ -33,6 +39,8 @@ export class SqliteOverlay {
   }
 
   async addOrUpdateOverlay(overlay: Overlay) {
+    await this.sqlite.initializing;
+
     this.log.info("Add or updating overlay:", overlay.id);
 
     const overlayEntity = this.overlayRepo.create(overlay);
@@ -47,6 +55,7 @@ export class SqliteOverlay {
   }
 
   async deleteOverlayById(overlayId: string) {
+    await this.sqlite.initializing;
     this.log.info("Deleting overlay:", overlayId)
     const overlay = await this.overlayRepo.findOne({ where: { id: overlayId } })
     if (!overlay) return;
@@ -60,18 +69,21 @@ export class SqliteOverlay {
   }
 
   async getScene(sceneId: number): Promise<SceneEntity | null> {
+    await this.sqlite.initializing;
     const scenes = await this.sceneRepo.findOneBy({ id: sceneId })
     scenes?.layers.sort((a, b) => a.index - b.index);
     return scenes;
   }
 
   async addOrUpdateScene(scene: Scene): Promise<SceneEntity> {
+    await this.sqlite.initializing;
     this.log.debug("Adding scene:", scene.id);
     const sceneEntity = this.sceneRepo.create(scene);
     return await this.sceneRepo.save(sceneEntity);
   }
 
   async deleteLayer(layerId: number) {
+    await this.sqlite.initializing;
     this.log.info("Deleting layer:", layerId)
     const deleted = await this.sceneRepo.delete({ id: layerId })
     return deleted
