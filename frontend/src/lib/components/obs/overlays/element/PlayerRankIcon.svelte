@@ -8,7 +8,7 @@
 	export let style: GridContentItemStyle;
 	export let fallbackIcon = 'GOLD 2';
 
-	$: playerRankIcon = player?.rank?.current?.rank?.toUpperCase();
+	const playerRankIcon = player?.rank?.current?.rank?.toUpperCase();
 	$: getRankIcon = (rankIcon: string | undefined) => {
 		if (preview) return fallbackIcon;
 		if (rankIcon) return rankIcon;

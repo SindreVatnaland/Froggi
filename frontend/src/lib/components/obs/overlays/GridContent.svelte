@@ -8,6 +8,7 @@
 	import GridElements from '$lib/components/obs/overlays/GridElements.svelte';
 	import VisibilityAnimationLayer from './element/animations/VisibilityAnimationLayer.svelte';
 	import { Element } from 'svelte/types/compiler/interfaces';
+	import { isNil } from 'lodash';
 
 	export let additionalDelay: number = 0;
 	export let curScene: Scene | undefined = undefined;
@@ -22,7 +23,7 @@
 	$: demoItem, updateDemoData();
 
 	const animateIn = (node: Element): TransitionConfig => {
-		if (edit || !dataItem || !curScene) return fly(node, { duration: 0 });
+		if (edit || isNil(dataItem) || isNil(curScene)) return fly(node, { duration: 0 });
 		const delay =
 			dataItem[COL]?.y +
 			Math.abs(dataItem[COL]?.x + dataItem[COL]?.w / 2 - COL / 2) +

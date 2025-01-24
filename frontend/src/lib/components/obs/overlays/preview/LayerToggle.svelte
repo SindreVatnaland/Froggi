@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import {
-		currentOverlayEditor,
-		localEmitter,
-		overlays,
-		sceneSwitch,
-		statsScene,
-	} from '$lib/utils/store.svelte';
+	import { currentOverlayEditor, overlays, statsScene } from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
 	import LayerDisplayRow from '$lib/components/obs/overlays/preview/LayerDisplayRow.svelte';
 	import { newLayer } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';

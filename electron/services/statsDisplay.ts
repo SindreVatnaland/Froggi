@@ -13,7 +13,7 @@ import {
 } from '@slippi/slippi-js';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
-import { Api } from './api';
+import { Api, getPlayerRank } from './api';
 import {
 	GameStats,
 	Player,
@@ -199,10 +199,13 @@ export class StatsDisplay {
 			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 			if (!currentPlayerRankStats) return;
 			const didWin = Math.random() > 0.5;
-			const ratingChange = (didWin ? 1 : -1) * Math.random() * 100;
+			const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
+			const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
+			const newMockRank = getPlayerRank(newMockRating, 0, 0);
 			currentPlayerRankStats = {
 				...currentPlayerRankStats,
-				rating: Number((currentPlayerRankStats.rating + ratingChange).toFixed(1)),
+				rating: newMockRating,
+				rank: newMockRank,
 				wins: currentPlayerRankStats.wins + (didWin ? 1 : 0),
 				losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
 			}

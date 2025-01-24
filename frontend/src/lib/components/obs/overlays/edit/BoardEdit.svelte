@@ -40,13 +40,7 @@
 		];
 	}
 
-	function updateScene() {
-		const items = updateItems();
-		updateOverlay(curOverlay, items, selectedLayerIndex, $statsScene);
-	}
-
-	function updateItems() {
-		items = removeDuplicates(items);
+	function fixOutOfBounce(items: GridContentItem[]) {
 		items
 			.map((item) => item[COL])
 			.filter((item) => item.y + item.h > ROW + 1)
@@ -54,6 +48,16 @@
 			.forEach((item) => {
 				item.h = ROW - item.y;
 			});
+	}
+
+	function updateScene() {
+		const items = updateItems();
+		updateOverlay(curOverlay, items, selectedLayerIndex, $statsScene);
+	}
+
+	function updateItems() {
+		items = removeDuplicates(items);
+		fixOutOfBounce(items);
 		return items;
 	}
 
@@ -65,7 +69,7 @@
 	) {
 		if (!overlay) return [];
 		items = removeDuplicates(overlay[statsScene]?.layers[layerIndex ?? 0]?.items ?? []);
-		items?.forEach((item: any) => {
+		items?.forEach((item: GridContentItem) => {
 			item[COL].draggable = true;
 			item[COL].resizable = true;
 		});
@@ -92,29 +96,9 @@
 
 	$: notifyDisabledScene(curOverlay, $statsScene);
 
-	const clearSelected = () => {
-		updateSelectedItemId(undefined);
-	};
-
 	const updateSelectedItemId = (itemId: string | undefined) => {
 		console.log('updateSelectedItemId', itemId);
 		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, itemId: itemId });
-	};
-
-	const handleKeyPress = (
-		e: KeyboardEvent,
-		overlay: Overlay | undefined,
-		items: GridContentItem[] | undefined,
-		layerIndex: number,
-		statsScene: LiveStatsScene,
-	) => {
-		if (e.key === 'Del' && selectedItemId) {
-			items = items?.filter((item) => item.id !== selectedItemId);
-		}
-		if (e.key === 'Escape') {
-			clearSelected();
-		}
-		updateOverlay(overlay, items, layerIndex, statsScene);
 	};
 
 	updateFont(curOverlay);
@@ -136,11 +120,7 @@
 		ROW;
 </script>
 
-<svelte:window
-	bind:innerHeight
-	on:keydown={(e) => handleKeyPress(e, curOverlay, items, selectedLayerIndex, $statsScene)}
-	on:error={handleError}
-/>
+<svelte:window bind:innerHeight on:error={handleError} />
 
 {#if curOverlay}
 	{#key $statsScene}
@@ -166,10 +146,7 @@
 							fastStart={true}
 							on:change={updateScene}
 							on:pointerup={(e) => {
-								selectedItemId = undefined;
-								setTimeout(() => {
-									updateSelectedItemId(e.detail.id);
-								}, 20);
+								updateSelectedItemId(e.detail.id);
 							}}
 						>
 							<div class="w-full h-full relative">

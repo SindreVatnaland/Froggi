@@ -46,7 +46,6 @@
 
 	async function refreshOverlay() {
 		overlay = await getOverlayById(overlayId);
-		console.log('Refresh', overlay);
 	}
 	$: $overlays, refreshOverlay();
 

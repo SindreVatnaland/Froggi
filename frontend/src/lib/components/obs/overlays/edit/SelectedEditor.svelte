@@ -107,8 +107,9 @@
 		handleOverflow();
 
 		overlay[statsScene].layers[layerIndex].items[selectedItemIndex] = selectedItem;
+
+		updateScene(overlay, statsScene);
 	}
-	$: updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem);
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!overlayEditor.itemId || !selectedItem) return;
@@ -159,6 +160,8 @@
 		if (e.key === 'Esc') {
 			clearItem();
 		}
+
+		updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem);
 	}
 </script>
 
