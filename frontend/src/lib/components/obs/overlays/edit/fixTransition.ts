@@ -20,41 +20,39 @@ const forceApplyTransitions = (item: GridContentItem): GridContentItem => {
 }
 
 const fixMatchTransition = (item: GridContentItem) => {
-    let newItem = cloneDeep(item);
     if (
         [
             CustomElement.MatchBestOf,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchBestOfChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchBestOfChange] = true;
     }
     if (
         [
             CustomElement.MatchGameMode,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchGameModeChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchGameModeChange] = true;
     }
     if (
         [
             CustomElement.MatchPlayer1Score,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer1ScoreChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer1ScoreChange] = true;
     }
     if (
         [
             CustomElement.MatchPlayer2Score,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer2ScoreChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer2ScoreChange] = true;
     }
 
-    return newItem
+    return item
 }
 
 const fixInGameSlippiSessionTransition = (item: GridContentItem) => {
-    let newItem = cloneDeep(item);
     if (
         [
             CustomElement.InGameCurrentPlayerCharacterIcon,
@@ -62,7 +60,7 @@ const fixInGameSlippiSessionTransition = (item: GridContentItem) => {
             CustomElement.InGameCurrentPlayerCharacterRenderRight,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.InGameCurrentPlayerCharacterChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.InGameCurrentPlayerCharacterChange] = true;
     }
     if (
         [
@@ -71,7 +69,7 @@ const fixInGameSlippiSessionTransition = (item: GridContentItem) => {
             CustomElement.InGamePlayer1CharacterRenderRight,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.InGamePlayer1CharacterChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.InGamePlayer1CharacterChange] = true;
     }
     if (
         [
@@ -80,96 +78,94 @@ const fixInGameSlippiSessionTransition = (item: GridContentItem) => {
             CustomElement.InGamePlayer2CharacterRenderRight,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.InGamePlayer2CharacterChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.InGamePlayer2CharacterChange] = true;
     }
 
-    return newItem
+    return item
 }
 
 const fixSlippiSessionTransition = (item: GridContentItem) => {
-    let newItem = cloneDeep(item);
     if (
         [
             CustomElement.SessionGameNumber,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SessionGames] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SessionGames] = true;
     }
     if (
         [
             CustomElement.SessionWins,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SessionWins] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SessionWins] = true;
     }
     if (
         [
             CustomElement.SessionLosses,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SessionLosses] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SessionLosses] = true;
     }
     if (
         [
             CustomElement.SessionRating,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SessionRating] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SessionRating] = true;
     }
 
-    return newItem
+    return item
 }
 
 const fixSlippiStatsTransition = (item: GridContentItem) => {
-    let newItem = cloneDeep(item);
     if (
         [
             CustomElement.MatchPlayer1Tag,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer1TagChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer1TagChange] = true;
     }
     if (
         [
             CustomElement.MatchPlayer2Tag,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer2TagChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer2TagChange] = true;
     }
     if (
         [
             CustomElement.SlippiRankPlayer1ConnectCode,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer1ConnectCodeChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer1ConnectCodeChange] = true;
     }
     if (
         [
             CustomElement.SlippiRankPlayer2ConnectCode,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer2ConnectCodeChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer2ConnectCodeChange] = true;
     }
     if (
         [
             CustomElement.SlippiRankCurrentPlayerRankIcon,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRankChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRankChange] = true;
     }
     if (
         [
             CustomElement.SlippiRankCurrentPlayerRankText,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRankChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRankChange] = true;
     }
     if (
         [
             CustomElement.SlippiRankCurrentPlayerRating,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRatingChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRatingChange] = true;
     }
     if (
         [
@@ -177,7 +173,7 @@ const fixSlippiStatsTransition = (item: GridContentItem) => {
             CustomElement.SlippiRankCurrentPlayerWinsPercent,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsWinsChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsWinsChange] = true;
     }
     if (
         [
@@ -185,9 +181,9 @@ const fixSlippiStatsTransition = (item: GridContentItem) => {
             CustomElement.SlippiRankCurrentPlayerLossesPercent,
         ].includes(item.elementId)
     ) {
-        newItem.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsLossesChange] = true;
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsLossesChange] = true;
     }
 
 
-    return newItem
+    return item
 }
