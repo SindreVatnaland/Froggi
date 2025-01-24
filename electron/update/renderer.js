@@ -14,18 +14,15 @@ downloadButton.addEventListener('click', () => {
 });
 
 skipUpdate.addEventListener('click', () => {
-	console.log('skipping update');
 	window.electron.autoUpdater.skipUpdate();
 });
 
 window.electron.autoUpdater.onStatus((status) => {
 	statusMessage.textContent = `${status}`;
-	if (status === 'Update Available') {
-		downloadButton.disabled = false;
-	}
 });
 
 window.electron.autoUpdater.onProgress((progress) => {
+	statusMessage.textContent = `${'Downloading Update'}`;
 	progressContainer.style.display = 'block';
 	progressBar.value = progress;
 	progressText.textContent = `${progress}%`;
