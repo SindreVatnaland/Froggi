@@ -22,6 +22,7 @@ import fs from "fs"
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
 
 @singleton()
 export class MessageHandler {
@@ -218,8 +219,8 @@ export class MessageHandler {
 	}
 
 	private initEventListeners() {
-		this.clientEmitter.on('LayerPreviewChange', (layerIndex: number) => {
-			this.sendMessage('LayerPreviewChange', layerIndex);
+		this.clientEmitter.on('CurrentOverlayEditor', (overlayEditor: OverlayEditor) => {
+			this.sendMessage('CurrentOverlayEditor', overlayEditor);
 		});
 		this.clientEmitter.on('InitData', (socketId: string) => {
 			this.initData(socketId);

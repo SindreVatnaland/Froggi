@@ -55,7 +55,6 @@ export interface MessageEvents {
 	InitData: (socketId: string, authorizeKey: string | undefined) => void;
 	ImportCustomFile: (overlayId: string, directory: string, fileName: string, acceptedExtensions: string[]) => void;
 	ImportCustomFileComplete: (fileName: string) => void;
-	LayerPreviewChange: (layerIndex: number) => void;
 	Log: (message: string, severity: LogType) => void;
 	CurrentMatch: (match: Match) => void;
 	MemoryControllerInput: (controllerInputs: PlayerController) => void;

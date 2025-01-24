@@ -12,7 +12,7 @@
 
 	//@ts-ignore
 	import gridHelp from 'svelte-grid/build/helper/index.mjs';
-	import { electronEmitter, overlays } from '$lib/utils/store.svelte';
+	import { electronEmitter } from '$lib/utils/store.svelte';
 	import type { SelectedAnimationTriggerCondition } from '$lib/models/types/animationOption';
 	import { getElectronEmitter, getOverlays } from '$lib/utils/fetchSubscriptions.svelte';
 	import isNil from 'lodash/isNil';

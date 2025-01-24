@@ -1,13 +1,18 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { fade, fly } from 'svelte/transition';
-	import { electronEmitter, overlays, statsScene } from '$lib/utils/store.svelte';
+	import {
+		currentOverlayEditor,
+		electronEmitter,
+		overlays,
+		statsScene,
+	} from '$lib/utils/store.svelte';
 	import BoardEdit from '$lib/components/obs/overlays/edit/BoardEdit.svelte';
 	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import Preview from './Preview.svelte';
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import SelectedEditor from './SelectedEditor.svelte';
-	import type { Overlay } from '$lib/models/types/overlay';
+	import type { Layer, Overlay } from '$lib/models/types/overlay';
 	import LayerEdit from '$lib/components/obs/overlays/edit/LayerEdit.svelte';
 	import SceneSelect from '../selector/SceneSelect.svelte';
 	import SceneEditModal from './SceneEditModal.svelte';
@@ -15,10 +20,14 @@
 	import PreviewModal from './PreviewModal.svelte';
 	import EmbedModal from './EmbedModal.svelte';
 	import { newId } from '$lib/utils/helper';
+	import { isNil } from 'lodash';
+	import { LiveStatsScene } from '$lib/models/enum';
+	import { onMount } from 'svelte';
 
 	const overlayId = $page.params.overlay;
 
-	let selectedLayer: number = 0;
+	$: selectedLayerIndex = $currentOverlayEditor?.layerIndex ?? 0;
+	let selectedLayer: Layer | undefined = undefined;
 	let selectedItemId: string | undefined = undefined;
 	let overlay: Overlay | undefined;
 
@@ -27,19 +36,38 @@
 	let isPreviewModalOpen = false;
 	let isEmbedModalOpen = false;
 
-	function resetSelectedLayer() {
-		selectedLayer = 0;
+	function resetSelectedItem() {
+		$electronEmitter.emit('CurrentOverlayEditor', {
+			...$currentOverlayEditor,
+			itemId: undefined,
+		});
 	}
-	$: $statsScene, resetSelectedLayer();
+	$: selectedLayerIndex, resetSelectedItem();
 
 	async function refreshOverlay() {
 		overlay = await getOverlayById(overlayId);
+		console.log('Refresh', overlay);
 	}
 	$: $overlays, refreshOverlay();
 
 	function downloadOverlay() {
 		$electronEmitter.emit('OverlayDownload', overlayId);
 	}
+
+	function updateSelectedLayer(
+		overlay: Overlay | undefined,
+		statsScene: LiveStatsScene,
+		layerIndex: number,
+	) {
+		if (isNil(overlay)) return;
+		selectedLayer = overlay[statsScene].layers[layerIndex];
+	}
+
+	$: updateSelectedLayer(overlay, $statsScene, selectedLayerIndex);
+
+	onMount(() => {
+		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, layerIndex: 0 });
+	});
 
 	let innerWidth: number;
 	let innerHeight: number;
@@ -118,10 +146,10 @@
 							Embed
 						</button>
 					</div>
-					{#if !displayPreview}
-						<LayerEdit bind:overlay bind:selectedLayer />
+					{#if !displayPreview && selectedLayer}
+						<LayerEdit {overlay} bind:selectedLayer />
 					{/if}
-					<SelectedEditor bind:selectedItemId />
+					<SelectedEditor />
 				</div>
 				<div
 					style={`min-width: ${
@@ -129,7 +157,7 @@
 					}px; min-height: ${boardHeight}px;`}
 					class={`border-secondary flex`}
 				>
-					<BoardEdit bind:borderHeight={boardHeight} bind:selectedItemId />
+					<BoardEdit bind:borderHeight={boardHeight} />
 				</div>
 				<button
 					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-accent"
@@ -143,9 +171,9 @@
 				<SceneSelect />
 			</div>
 		</div>
-		<SceneEditModal bind:open={isSceneModalOpen} bind:overlay />
+		<SceneEditModal bind:open={isSceneModalOpen} {overlay} />
 	{/if}
-	<ElementModal bind:open={isElementModalOpen} {selectedItemId} />
+	<ElementModal bind:open={isElementModalOpen} />
 	<PreviewModal bind:open={isPreviewModalOpen} />
 	<EmbedModal bind:open={isEmbedModalOpen} />
 </main>

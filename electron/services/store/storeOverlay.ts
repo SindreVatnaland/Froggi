@@ -265,8 +265,8 @@ export class ElectronOverlayStore {
 		this.setScene(overlayId, statsScene, overlay[statsScene])
 	}
 
-	setCurrentLayerIndex(index: number) {
-		this.store.set('obs.layout.current.layerIndex', index);
+	setCurrentOverlayEditor(overlayEditor: OverlayEditor) {
+		this.store.set('obs.layout.current', overlayEditor);
 	}
 
 	setCurrentItemId(itemId: string) {
@@ -371,7 +371,7 @@ export class ElectronOverlayStore {
 
 		this.clientEmitter.on('SelectedItemChange', this.setCurrentItemId.bind(this));
 
-		this.clientEmitter.on('LayerPreviewChange', this.setCurrentLayerIndex.bind(this));
+		this.clientEmitter.on('CurrentOverlayEditor', this.setCurrentOverlayEditor.bind(this));
 
 		this.clientEmitter.on('OverlayDownload', async (overlayId) => {
 			const overlay = await this.getOverlayById(overlayId);

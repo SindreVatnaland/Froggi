@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Layer, Overlay } from '$lib/models/types/overlay';
 	import { fly } from 'svelte/transition';
-	import { electronEmitter, statsScene } from '$lib/utils/store.svelte';
+	import { currentOverlayEditor, electronEmitter, statsScene } from '$lib/utils/store.svelte';
 	import {
 		deleteLayer,
 		duplicateLayer,
@@ -27,7 +27,7 @@
 	let deleteLayerModalOpen = false;
 
 	const changeEditLayer = (layerIndex: number) => {
-		$electronEmitter.emit('LayerPreviewChange', layerIndex);
+		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, layerIndex });
 		selectedLayerIndex = layerIndex;
 	};
 

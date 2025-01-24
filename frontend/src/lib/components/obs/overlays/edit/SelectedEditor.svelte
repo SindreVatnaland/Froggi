@@ -11,47 +11,49 @@
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import NumberInput from '$lib/components/input/NumberInput.svelte';
 	import { updateScene } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
-	import { debounce, isNil, throttle } from 'lodash';
+	import { isNil, throttle } from 'lodash';
+	import { LiveStatsScene } from '$lib/models/enum';
+	import { GridContentItem, Overlay } from '$lib/models/types/overlay';
 
 	const overlayId = $page.params.overlay;
-	export let selectedItemId: string | undefined;
+	$: overlayEditor = $currentOverlayEditor;
 
-	let selectedItem: any;
+	let selectedItem: GridContentItem | undefined;
 	let selectedItemIndex: number;
 
 	let isElementModalOpen = false;
 
 	$: curOverlay = $overlays[overlayId];
-	$currentOverlayEditor?.layerIndex;
 
-	function getItemById() {
-		if (
-			!curOverlay ||
-			$currentOverlayEditor?.layerIndex === undefined ||
-			selectedItemId === undefined
-		)
-			return;
-		selectedItemIndex = curOverlay[$statsScene]?.layers[
-			$currentOverlayEditor?.layerIndex
-		]?.items
-			.map((i) => i.id)
-			.indexOf(selectedItemId);
+	function getItemById(
+		overlay: Overlay,
+		statsScene: LiveStatsScene,
+		selectedLayerIndex: number,
+		selectedItemId: string | undefined,
+	) {
+		if (!overlay || selectedItemId === undefined) return;
+
+		const items = overlay[statsScene]?.layers[selectedLayerIndex]?.items;
+
+		if (!items) return;
+
+		selectedItemIndex = items.map((i) => i.id).indexOf(selectedItemId);
 
 		if (isNil(selectedItemIndex)) return;
 
-		selectedItem =
-			curOverlay[$statsScene]?.layers[$currentOverlayEditor?.layerIndex].items[
-				selectedItemIndex
-			];
+		selectedItem = items[selectedItemIndex];
 	}
-	$: selectedItemId, getItemById();
+	$: getItemById(curOverlay, $statsScene, overlayEditor.layerIndex ?? 0, overlayEditor.itemId);
 
 	function clearItem() {
-		selectedItemId = undefined;
 		selectedItem = undefined;
 		selectedItemIndex = 0;
+		$electronEmitter.emit('CurrentOverlayEditor', {
+			...$currentOverlayEditor,
+			itemId: undefined,
+		});
 	}
-	$: $currentOverlayEditor?.layerIndex, $statsScene, clearItem();
+	$: $statsScene, clearItem();
 
 	function handleOverflow() {
 		if (!selectedItem) return;
@@ -77,37 +79,39 @@
 		);
 	}
 
-	function deleteElement(itemId: string | undefined) {
-		if (!curOverlay || isNil($currentOverlayEditor?.layerIndex) || isNil(itemId)) return;
-		curOverlay[$statsScene].layers[$currentOverlayEditor.layerIndex].items = curOverlay[
-			$statsScene
-		]?.layers[$currentOverlayEditor.layerIndex].items.filter((item) => item.id != itemId);
+	function deleteElement(
+		overlay: Overlay | undefined,
+		statsScene: LiveStatsScene,
+		layerIndex: number | undefined,
+		itemId: string | undefined,
+	) {
+		if (!overlay || isNil(layerIndex) || isNil(itemId)) return;
 
-		selectedItemId = undefined;
-		selectedItem = undefined;
-		selectedItemIndex = 0;
+		const items = overlay[statsScene]?.layers[layerIndex].items;
 
-		updateScene(curOverlay, $statsScene);
+		overlay[statsScene].layers[layerIndex].items = items.filter((item) => item.id != itemId);
+
+		clearItem();
+
+		updateScene(curOverlay, statsScene);
 	}
 
-	function updateSelectItem() {
-		if (
-			!curOverlay ||
-			$currentOverlayEditor?.layerIndex === undefined ||
-			selectedItemId === undefined
-		)
-			return;
+	function updateSelectItem(
+		overlay: Overlay | undefined,
+		statsScene: LiveStatsScene,
+		layerIndex: number | undefined,
+		selectedItem: GridContentItem | undefined,
+	) {
+		if (isNil(overlay) || isNil(layerIndex) || isNil(selectedItem)) return;
 
 		handleOverflow();
 
-		curOverlay[$statsScene].layers[$currentOverlayEditor?.layerIndex].items[selectedItemIndex] =
-			selectedItem;
-		updateScene(curOverlay, $statsScene);
+		overlay[statsScene].layers[layerIndex].items[selectedItemIndex] = selectedItem;
 	}
-	$: selectedItem, updateSelectItem();
+	$: updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem);
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (!selectedItemId || !selectedItem) return;
+		if (!overlayEditor.itemId || !selectedItem) return;
 		if (e.shiftKey) {
 			if (e.key === 'ArrowDown') {
 				selectedItem[COL].h += 1;
@@ -125,10 +129,15 @@
 		}
 		if (e.ctrlKey || e.cmdKey) {
 			if (e.key === 'c') {
-				copyElement(selectedItemId);
+				copyElement(overlayEditor.itemId);
 			}
 			if (e.key === 'Backspace') {
-				deleteElement(selectedItemId);
+				deleteElement(
+					curOverlay,
+					$statsScene,
+					overlayEditor.layerIndex,
+					overlayEditor.itemId,
+				);
 			}
 			return;
 		}
@@ -145,7 +154,7 @@
 			selectedItem[COL].x += 1;
 		}
 		if (e.key === 'Del') {
-			deleteElement(selectedItemId);
+			deleteElement(curOverlay, $statsScene, overlayEditor.layerIndex, overlayEditor.itemId);
 		}
 		if (e.key === 'Esc') {
 			clearItem();
@@ -189,7 +198,7 @@
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
 				<button
 					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-					on:click={() => copyElement(selectedItemId)}
+					on:click={() => copyElement(overlayEditor.itemId)}
 				>
 					Copy
 				</button>
@@ -197,16 +206,20 @@
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
 				<button
 					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-					on:click={() => deleteElement(selectedItemId)}
+					on:click={() =>
+						deleteElement(
+							curOverlay,
+							$statsScene,
+							overlayEditor.layerIndex,
+							overlayEditor.itemId,
+						)}
 				>
 					Delete
 				</button>
 			</div>
 		</div>
 		{#key isElementModalOpen}
-			{#key selectedItemId}
-				<ElementModal bind:open={isElementModalOpen} {selectedItemId} isEdit={true} />
-			{/key}
+			<ElementModal bind:open={isElementModalOpen} isEdit={true} />
 		{/key}
 	{/if}
 </div>

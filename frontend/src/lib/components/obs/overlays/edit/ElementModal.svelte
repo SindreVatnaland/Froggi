@@ -30,8 +30,8 @@
 	const overlayId = $page.params.overlay;
 
 	export let open: boolean;
-	export let selectedItemId: string | undefined = undefined;
 	export let isEdit: boolean = false;
+	let selectedItemId: string | undefined = $currentOverlayEditor.itemId;
 
 	let isElementSelectOpen = false;
 	let selectedElementId: CustomElement;
