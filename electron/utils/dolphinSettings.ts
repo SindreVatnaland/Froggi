@@ -16,7 +16,7 @@ export const getDolphinSettings = (isBeta: boolean): DolphinSettings | DolphinSe
   }
   const iniContent = fs.readFileSync(configPath, 'utf8');
   let config = ini.parse(iniContent) as DolphinSettings | DolphinSettingsMainline;
-  config = fixMissingDolphinSettings(config, configPath);
+  //config = fixMissingDolphinSettings(config, configPath);
   return config;
 }
 
@@ -44,6 +44,8 @@ const getDolphinUserFolder = (isBeta: boolean): string => {
   }
 }
 
+// Using forced port could help with packet capturing in the future.
+// @ts-ignore
 const fixMissingDolphinSettings = (config: DolphinSettings | DolphinSettingsMainline, configPath: string): DolphinSettings | DolphinSettingsMainline => {
   if ("Slippi" in config) {
     if (!(JSON.parse(`${config.Slippi.ForceNetplayPort}`.toLocaleLowerCase()))) {
@@ -60,7 +62,6 @@ const fixMissingDolphinSettings = (config: DolphinSettings | DolphinSettingsMain
       config.Core.SlippiNetplayPort = 2626;
     }
   }
-
 
   fs.writeFileSync(configPath, ini.stringify(config));
   return config;
