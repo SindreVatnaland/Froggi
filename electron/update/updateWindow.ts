@@ -14,6 +14,7 @@ export async function performUpdate(app: Electron.App, log: ElectronLog): Promis
   try {
     console.log('Performing update tasks...');
     await waitForUpdateConfirmation(log);
+    autoUpdater.removeAllListeners();
     updateWindow.close();
   } catch (error) {
     log.error('Error during update tasks:', error);
@@ -82,25 +83,16 @@ async function waitForUpdateConfirmation(log: ElectronLog): Promise<boolean> {
     ipcMain.on('autoUpdater:skipUpdate', skipUpdateHandler);
     ipcMain.on('autoUpdater:download', downloadUpdateHandler);
 
-    const cleanup = () => {
-      ipcMain.removeListener('autoUpdater:skipUpdate', skipUpdateHandler);
-      ipcMain.removeListener('autoUpdater:download', downloadUpdateHandler);
-      autoUpdater.removeAllListeners(); // Remove all autoUpdater listeners
-    };
-
     autoUpdater.on('update-not-available', () => {
       log.info('No updates available.');
-      cleanup();
       resolve(false);
     });
 
     autoUpdater.on('update-cancelled', () => {
-      cleanup();
       resolve(false);
     });
 
     autoUpdater.on('error', () => {
-      cleanup();
       resolve(false);
     });
   });
