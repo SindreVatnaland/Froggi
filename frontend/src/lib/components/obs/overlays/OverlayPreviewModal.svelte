@@ -10,11 +10,7 @@
 	} from '$lib/utils/store.svelte';
 	import SceneSelect from './selector/SceneSelect.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
-	import {
-		deleteOverlay,
-		duplicateOverlay,
-		notifyDisabledScene,
-	} from './edit/OverlayHandler.svelte';
+	import { deleteOverlay, duplicateOverlay } from './edit/OverlayHandler.svelte';
 	import { goto } from '$app/navigation';
 	import type { Overlay } from '$lib/models/types/overlay';
 	import EmbedModal from './edit/EmbedModal.svelte';
@@ -45,8 +41,6 @@
 		deleteOverlay(overlay?.id);
 		open = false;
 	};
-
-	$: notifyDisabledScene(overlay, $statsScene);
 
 	const availableClass =
 		'transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border border-white rounded w-36 h-20 my-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary';

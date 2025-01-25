@@ -229,10 +229,11 @@
 	}
 
 	export async function notifyDisabledScene(
-		curOverlay: Overlay | undefined,
+		overlayId: string | undefined,
 		statsScene: LiveStatsScene,
 	) {
-		if (curOverlay?.[statsScene]?.active) return;
+		const overlay = await getOverlayById(overlayId);
+		if (overlay?.[statsScene]?.active) return;
 		notifications.warning(`Selected scene ${statsScene} is disabled`, 3000);
 	}
 </script>

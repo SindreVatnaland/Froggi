@@ -15,10 +15,10 @@
 
 	$: scene = overlay[$statsScene];
 
-	const changeLayer = () => {
+	const changeLayer = (layerIndex: number) => {
 		$electronEmitter.emit('CurrentOverlayEditor', {
 			...$currentOverlayEditor,
-			layerIndex: selectedLayer.index,
+			layerIndex: layerIndex,
 		});
 	};
 </script>
@@ -27,7 +27,13 @@
 	<h1 class="color-secondary text-lg font-medium">Layers</h1>
 	<div class="w-full flex gap-2">
 		<div class="w-24">
-			<Select bind:selected={selectedLayer} on:change={changeLayer}>
+			<Select
+				bind:selected={selectedLayer}
+				on:change={() => changeLayer(selectedLayer.index)}
+			>
+				{#each scene?.layers as layer, i}
+					<option selected={i === 0} value={layer}>Layer {i + 1}</option>
+				{/each}
 				{#each scene?.layers as layer, i}
 					<option selected={i === 0} value={layer}>Layer {i + 1}</option>
 				{/each}

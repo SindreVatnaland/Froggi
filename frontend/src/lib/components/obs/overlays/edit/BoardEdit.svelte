@@ -12,7 +12,6 @@
 	import type { GridContentItem, Overlay } from '$lib/models/types/overlay';
 	import { COL, ROW } from '$lib/models/const';
 	import BoardContainer from '../BoardContainer.svelte';
-	import { notifyDisabledScene } from './OverlayHandler.svelte';
 	import BoardGrid from './BoardGrid.svelte';
 	import { updateFont } from '../CustomFontHandler.svelte';
 	import { isNil } from 'lodash';
@@ -93,8 +92,6 @@
 
 		$electronEmitter.emit('SceneUpdate', curOverlay.id, statsScene, curOverlay[statsScene]);
 	}
-
-	$: notifyDisabledScene(curOverlay, $statsScene);
 
 	const updateSelectedItemId = (itemId: string | undefined) => {
 		console.log('updateSelectedItemId', itemId);
