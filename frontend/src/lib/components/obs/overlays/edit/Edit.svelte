@@ -4,6 +4,7 @@
 	import {
 		currentOverlayEditor,
 		electronEmitter,
+		isElectron,
 		overlays,
 		statsScene,
 	} from '$lib/utils/store.svelte';
@@ -66,7 +67,12 @@
 	$: updateSelectedLayer(overlay, $statsScene, selectedLayerIndex);
 
 	onMount(() => {
-		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, layerIndex: 0 });
+		if ($isElectron) {
+			$electronEmitter.emit('CurrentOverlayEditor', {
+				...$currentOverlayEditor,
+				layerIndex: 0,
+			});
+		}
 	});
 
 	let tempBackgroundImage: string = '';
