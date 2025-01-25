@@ -34,7 +34,8 @@ jobs:
                       PROCESSED_JSON=$(jq 'del(.version)' "$file" | base64)
                       HASH_INPUT="${HASH_INPUT}${PROCESSED_JSON}"
                   done
-                  echo "CACHE_KEY=$(echo -n "$HASH_INPUT" | sha256sum | awk '{ print $1 }')" >> $GITHUB_ENV
+                  CACHE_KEY=$(echo -n "$HASH_INPUT" | openssl dgst -sha256 | awk '{ print $2 }')
+                  echo "CACHE_KEY=$CACHE_KEY" >> $GITHUB_ENV
 
             - name: Cache NPM Dependencies
               uses: actions/cache@v3
