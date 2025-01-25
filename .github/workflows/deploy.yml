@@ -27,6 +27,7 @@ jobs:
 
             - name: Preprocess package.json and Generate Cache Key
               id: generate_cache_key
+              shell: bash
               run: |
                   HASH_INPUT=""
                   find . -name "package.json" | while read file; do
