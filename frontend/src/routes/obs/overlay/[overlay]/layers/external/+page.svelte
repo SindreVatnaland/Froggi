@@ -29,76 +29,48 @@
 
 	let parentDiv: HTMLElement;
 
-	$: maxHeight = innerHeight - parentDiv?.clientHeight;
+	$: maxHeight = parentDiv?.clientHeight;
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight />
 
 {#if isVerticalScreen}
 	<div class={`flex flex-col background-primary-color items-start`} style={`height: 100svh;`}>
-		<div class="w-full flex flex-col justify-center" bind:this={parentDiv}>
-			<div>
-				<TextFitMulti
-					class="h-16 w-full color-secondary text-md font-medium text-shadow justify-center underline"
-				>
-					{curOverlay?.title ?? 'Preview'}
-				</TextFitMulti>
-			</div>
-			<div class="w-full aspect-video border-2 border-zinc-800 relative">
-				<div class="w-full h-full absolute background-color-primary" />
-				<div
-					class="w-full h-full absolute background-color-primary bg-cover bg-center"
-					style={`background-image: url('${base64}'
+		<div
+			class="w-full h-full absolute background-color-primary bg-cover bg-center"
+			style={`background-image: url('${base64}'
 					}');`}
-				/>
-				{#if url}
-					<div class="w-full h-full absolute">
-						<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />
-					</div>
-				{/if}
+		/>
+		{#if url}
+			<div class="w-full h-full absolute">
+				<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />
 			</div>
-			<div class="w-full p-2 grid grid-flow-row gap-2">
-				<SceneSelect />
-				<ExternalPreviewSettings bind:base64 />
-			</div>
-		</div>
-		<div class={`w-full pb-16`} style={`max-height: ${maxHeight}px`}>
-			<LayerToggle />
-		</div>
+		{/if}
+		<ExternalPreviewSettings bind:base64 />
 	</div>
 {/if}
 {#if isHorizontalScreen}
 	<div
-		class={`flex flex-row background-primary-color items-center py-4 px-18 gap-2`}
-		style={`height: 100svh; padding-bottom: ${$isMobile && '5em'}`}
+		class={`flex flex-col background-primary-color items-center py-4 px-18 gap-2`}
+		style={`height: 100svh; width: 100%; max-height: 100%; padding-bottom: ${
+			$isMobile && '5em'
+		}`}
 	>
-		<div class="w-full gap-2 flex flex-col justify-center">
-			<TextFitMulti
-				class="h-16 w-full text-secondary-color text-md font-medium text-shadow justify-center underline"
-			>
-				{curOverlay?.title ?? 'Preview'}
-			</TextFitMulti>
-			<div class="w-full h-full aspect-video max-h-full border-2 border-zinc-800 relative">
-				<div class="w-full h-full absolute background-color-primary" />
+		<h1 class="text-lg font-medium color-secondary">
+			{curOverlay?.title}
+		</h1>
+		<div class="w-full h-full flex-1 background-color-primary bg-cover" bind:this={parentDiv}>
+			{#if url && parentDiv}
 				<div
-					class="w-full h-full absolute background-color-primary bg-cover bg-center"
-					style={`background-image: url('${
-						base64 || '/image/backgrounds/MeleeMenuAll.png'
-					}');`}
-				/>
-				{#if url}
-					<div class="w-full h-full absolute">
-						<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />
-					</div>
-				{/if}
-			</div>
-			<div class="w-full p-2 grid grid-flow-row gap-2">
-				<SceneSelect />
-				<ExternalPreviewSettings bind:base64 />
-			</div>
+					class="w-full h-full bg-cover border-secondary"
+					style={`height: ${(parentDiv.clientWidth / 16) * 9}px; width: ${
+						parentDiv.clientWidth
+					}px; background-image: url('${base64}');`}
+				>
+					<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />
+				</div>
+			{/if}
 		</div>
-		<div class={`w-[50em] h-full overflow-y-auto`}>
-			<LayerToggle />
-		</div>
+		<ExternalPreviewSettings bind:base64 />
 	</div>
 {/if}
