@@ -53,13 +53,14 @@
 				height: 100vh;
 				margin: 0;
 				gap: 1rem;
+				justify-content: space-evenly;
 				background-color: #f0f0f0;
 			}
 
 			img {
 				flex: 1;
 				aspect-ratio: 1;
-				max-height: 100px;
+				max-height: 80px;
 				pointer-events: none;
 				-webkit-user-drag: none;
 			}
@@ -123,9 +124,7 @@
 		<body>
 			<img id="icon" src="icon.png" alt="Froggi Icon" />
 			<p id="status-message">Checking for updates...</p>
-			<div id="progress-container" class="progress" style="display: none">
-				<span id="progress-text">0%</span>
-			</div>
+			<p id="progress-text" style="display: none">0%</p>
 			<div class="buttons">
 				<button id="skip-update">Skip</button>
 				<button id="download-updates" disabled>Update</button>

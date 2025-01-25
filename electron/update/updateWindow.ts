@@ -52,8 +52,8 @@ function createUpdateWindow(log: ElectronLog): BrowserWindow {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    log.info("Download progress", progress.percent.toFixed(2));
-    updateWindow.webContents.send('autoUpdater:progress', progress.percent.toFixed(2));
+    log.info("Download progress", progress.percent.toFixed(1));
+    updateWindow.webContents.send('autoUpdater:progress', progress.percent.toFixed(1));
   });
 
   autoUpdater.on('update-downloaded', () => {

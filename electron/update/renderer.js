@@ -1,5 +1,4 @@
 const statusMessage = document.getElementById('status-message');
-const progressContainer = document.getElementById('progress-container');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const skipUpdate = document.getElementById('skip-update');
@@ -25,7 +24,7 @@ window.electron.autoUpdater.onStatus((status) => {
 
 window.electron.autoUpdater.onProgress((progress) => {
 	statusMessage.textContent = `${'Downloading Update'}`;
-	progressContainer.style.display = 'block';
 	progressBar.value = progress;
+	progressText.style.display = 'block';
 	progressText.textContent = `${progress}%`;
 });

@@ -266,7 +266,7 @@ try {
 	});
 
 	app.on('activate', () => {
-		mainWindow.show();
+		mainWindow?.show();
 	});
 
 	app.on('before-quit', () => {
