@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { fade, fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import {
 		currentOverlayEditor,
 		electronEmitter,
@@ -23,6 +23,7 @@
 	import { isNil } from 'lodash';
 	import { LiveStatsScene } from '$lib/models/enum';
 	import { onMount } from 'svelte';
+	import ExternalPreviewSettings from '../preview/ExternalPreviewSettings.svelte';
 
 	const overlayId = $page.params.overlay;
 
@@ -68,6 +69,8 @@
 		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, layerIndex: 0 });
 	});
 
+	let tempBackgroundImage: string = '';
+
 	let innerWidth: number;
 	let innerHeight: number;
 	$: displayPreview = innerWidth > 1024;
@@ -95,10 +98,12 @@
 			{#if displayPreview}
 				<div class="h-full flex flex-col justify-start items-center gap-4">
 					<div
-						class={`flex w-full`}
+						class={`flex w-full bg-cover`}
 						style={`max-width: ${isVertical ? 300 : 500}px; aspect-ratio: ${
 							overlay.aspectRatio.width
-						}/${overlay.aspectRatio.height}`}
+						}/${
+							overlay.aspectRatio.height
+						};  background-image: url('${tempBackgroundImage}')`}
 					>
 						<Preview />
 					</div>
@@ -153,13 +158,14 @@
 				<div
 					style={`min-width: ${
 						isVertical ? verticalWidth : boardWidth
-					}px; min-height: ${boardHeight}px;`}
-					class={`border-secondary flex`}
+					}px; min-height: ${boardHeight}px; background-image: url('${tempBackgroundImage}');
+					`}
+					class={`border-secondary flex bg-cover`}
 				>
 					<BoardEdit bind:borderHeight={boardHeight} />
 				</div>
 				<button
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-accent"
+					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 					on:click={() => {
 						selectedItemId = newId();
 						isElementModalOpen = true;
@@ -167,7 +173,10 @@
 				>
 					Add new element
 				</button>
-				<SceneSelect />
+				<div class="flex gap-4">
+					<SceneSelect />
+					<ExternalPreviewSettings bind:base64={tempBackgroundImage} />
+				</div>
 			</div>
 		</div>
 		<SceneEditModal bind:open={isSceneModalOpen} {overlay} />

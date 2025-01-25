@@ -126,9 +126,7 @@
 			if (e.key === 'ArrowRight') {
 				selectedItem[COL].w += 1;
 			}
-			return;
-		}
-		if (e.ctrlKey || e.cmdKey) {
+		} else if (e.ctrlKey || e.cmdKey) {
 			if (e.key === 'c') {
 				copyElement(overlayEditor.itemId);
 			}
@@ -140,25 +138,30 @@
 					overlayEditor.itemId,
 				);
 			}
-			return;
-		}
-		if (e.key === 'ArrowDown') {
-			selectedItem[COL].y += 1;
-		}
-		if (e.key === 'ArrowUp') {
-			selectedItem[COL].y -= 1;
-		}
-		if (e.key === 'ArrowLeft') {
-			selectedItem[COL].x -= 1;
-		}
-		if (e.key === 'ArrowRight') {
-			selectedItem[COL].x += 1;
-		}
-		if (e.key === 'Del') {
-			deleteElement(curOverlay, $statsScene, overlayEditor.layerIndex, overlayEditor.itemId);
-		}
-		if (e.key === 'Esc') {
-			clearItem();
+		} else {
+			if (e.key === 'ArrowDown') {
+				selectedItem[COL].y += 1;
+			}
+			if (e.key === 'ArrowUp') {
+				selectedItem[COL].y -= 1;
+			}
+			if (e.key === 'ArrowLeft') {
+				selectedItem[COL].x -= 1;
+			}
+			if (e.key === 'ArrowRight') {
+				selectedItem[COL].x += 1;
+			}
+			if (e.key === 'Del') {
+				deleteElement(
+					curOverlay,
+					$statsScene,
+					overlayEditor.layerIndex,
+					overlayEditor.itemId,
+				);
+			}
+			if (e.key === 'Esc') {
+				clearItem();
+			}
 		}
 
 		updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem);

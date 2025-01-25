@@ -18,7 +18,6 @@
 	$: $page.params.overlay, getOverlay();
 
 	let base64: string;
-	let imageOpacity: number = 1;
 
 	let innerWidth: number;
 	let innerHeight: number;
@@ -28,11 +27,6 @@
 	$: url = $isElectron ? $urls?.local : $urls?.external;
 	$: src = `${url}/obs/overlay/${overlayId}/layers`;
 
-	const reset = () => {
-		base64 = '';
-		imageOpacity = 1;
-	};
-
 	let parentDiv: HTMLElement;
 
 	$: maxHeight = innerHeight - parentDiv?.clientHeight;
@@ -41,7 +35,7 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 {#if isVerticalScreen}
-	<div class={`flex flex-col bg-cover bg-center items-start`} style={`height: 100svh;`}>
+	<div class={`flex flex-col background-primary-color items-start`} style={`height: 100svh;`}>
 		<div class="w-full flex flex-col justify-center" bind:this={parentDiv}>
 			<div>
 				<TextFitMulti
@@ -56,8 +50,7 @@
 					class="w-full h-full absolute background-color-primary bg-cover bg-center"
 					style={`background-image: url('${
 						base64 || '/image/backgrounds/MeleeMenuAll.png'
-					}');
-					opacity: ${imageOpacity}`}
+					}');`}
 				/>
 				{#if url}
 					<div class="w-full h-full absolute">
@@ -67,7 +60,7 @@
 			</div>
 			<div class="w-full p-2 grid grid-flow-row gap-2">
 				<SceneSelect />
-				<ExternalPreviewSettings bind:base64 bind:imageOpacity {reset} />
+				<ExternalPreviewSettings bind:base64 />
 			</div>
 		</div>
 		<div class={`w-full pb-16`} style={`max-height: ${maxHeight}px`}>
@@ -77,7 +70,7 @@
 {/if}
 {#if isHorizontalScreen}
 	<div
-		class={`flex flex-row bg-cover bg-center items-center py-4 px-18 gap-2`}
+		class={`flex flex-row background-primary-color items-center py-4 px-18 gap-2`}
 		style={`height: 100svh; padding-bottom: ${$isMobile && '5em'}`}
 	>
 		<div class="w-full gap-2 flex flex-col justify-center">
@@ -92,8 +85,7 @@
 					class="w-full h-full absolute background-color-primary bg-cover bg-center"
 					style={`background-image: url('${
 						base64 || '/image/backgrounds/MeleeMenuAll.png'
-					}');
-					opacity: ${imageOpacity}`}
+					}');`}
 				/>
 				{#if url}
 					<div class="w-full h-full absolute">
@@ -103,7 +95,7 @@
 			</div>
 			<div class="w-full p-2 grid grid-flow-row gap-2">
 				<SceneSelect />
-				<ExternalPreviewSettings bind:base64 bind:imageOpacity {reset} />
+				<ExternalPreviewSettings bind:base64 />
 			</div>
 		</div>
 		<div class={`w-[50em] h-full overflow-y-auto`}>
