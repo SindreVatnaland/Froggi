@@ -9,7 +9,6 @@ window.electron.autoUpdater.checkForUpdates();
 
 downloadButton.addEventListener('click', () => {
 	downloadButton.disabled = true;
-	skipUpdate.disabled = true;
 	window.electron.autoUpdater.downloadUpdate();
 });
 
@@ -18,6 +17,9 @@ skipUpdate.addEventListener('click', () => {
 });
 
 window.electron.autoUpdater.onStatus((status) => {
+	if (status === 'Download Available') {
+		downloadButton.disabled = false;
+	}
 	statusMessage.textContent = `${status}`;
 });
 
