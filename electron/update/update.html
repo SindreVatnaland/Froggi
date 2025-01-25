@@ -7,6 +7,13 @@
 		<script defer src="renderer.js"></script>
 		<script defer src="icon.png"></script>
 		<style>
+			@font-face {
+				font-family: 'roboto-bold-italic';
+				src: url('./fonts/roboto-bold-italic.ttf') format('truetype');
+				font-weight: normal;
+				font-style: normal;
+			}
+
 			:root {
 				--primary-color: #fbf0e5;
 				--secondary-color: #450d21;
@@ -96,16 +103,6 @@
 				cursor: not-allowed;
 			}
 
-			.progress {
-				width: 80%; /* Adjust width as needed */
-				height: 20px;
-				border-radius: 10px;
-				overflow: hidden;
-				background-color: #e0e0e0; /* Light gray background for progress bar */
-				box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-				margin: 1rem auto;
-			}
-
 			progress {
 				-webkit-appearance: none;
 				appearance: none;
@@ -113,32 +110,8 @@
 				height: 100%;
 			}
 
-			progress::-webkit-progress-bar {
-				background-color: transparent; /* Background is handled by the .progress container */
-			}
-
-			progress::-webkit-progress-value {
-				background: linear-gradient(90deg, #4caf50, #81c784); /* Green gradient */
-				border-radius: 10px; /* Smooth edges */
-				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-			}
-
-			progress::-moz-progress-bar {
-				background: linear-gradient(90deg, #4caf50, #81c784); /* Green gradient */
-				border-radius: 10px; /* Smooth edges */
-				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-			}
-
-			#progress-text {
-				display: block;
-				text-align: center;
-				font-size: 1rem;
-				font-weight: bold;
-				color: var(--secondary-color);
-				margin-top: 0.5rem;
-			}
-
 			* {
+				font-family: 'MyCustomFont', sans-serif;
 				user-select: none;
 			}
 		</style>
@@ -151,7 +124,6 @@
 			<img id="icon" src="icon.png" alt="Froggi Icon" />
 			<p id="status-message">Checking for updates...</p>
 			<div id="progress-container" class="progress" style="display: none">
-				<progress id="progress-bar" value="0" max="100"></progress>
 				<span id="progress-text">0%</span>
 			</div>
 			<div class="buttons">
