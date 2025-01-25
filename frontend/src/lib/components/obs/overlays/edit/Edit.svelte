@@ -13,7 +13,7 @@
 	import Preview from './Preview.svelte';
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import SelectedEditor from './SelectedEditor.svelte';
-	import type { Layer, Overlay } from '$lib/models/types/overlay';
+	import type { Layer, Overlay, OverlayEditor } from '$lib/models/types/overlay';
 	import LayerEdit from '$lib/components/obs/overlays/edit/LayerEdit.svelte';
 	import SceneSelect from '../selector/SceneSelect.svelte';
 	import SceneEditModal from './SceneEditModal.svelte';
@@ -38,13 +38,14 @@
 	let isPreviewModalOpen = false;
 	let isEmbedModalOpen = false;
 
-	function resetSelectedItem() {
+	function resetSelectedItem(selectedLayerIndex: number, overlayEditor: OverlayEditor) {
+		if (selectedLayerIndex === $currentOverlayEditor.layerIndex) return;
 		$electronEmitter.emit('CurrentOverlayEditor', {
 			...$currentOverlayEditor,
 			itemId: undefined,
 		});
 	}
-	$: selectedLayerIndex, resetSelectedItem();
+	$: resetSelectedItem(selectedLayerIndex, $currentOverlayEditor);
 
 	async function refreshOverlay() {
 		overlay = await getOverlayById(overlayId);

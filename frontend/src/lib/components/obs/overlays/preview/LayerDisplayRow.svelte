@@ -27,7 +27,10 @@
 	let deleteLayerModalOpen = false;
 
 	const changeEditLayer = (layerIndex: number) => {
-		$electronEmitter.emit('CurrentOverlayEditor', { ...$currentOverlayEditor, layerIndex });
+		$electronEmitter.emit('CurrentOverlayEditor', {
+			...$currentOverlayEditor,
+			layerIndex: layerIndex,
+		});
 		selectedLayerIndex = layerIndex;
 	};
 

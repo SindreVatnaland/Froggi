@@ -266,6 +266,7 @@ export class ElectronOverlayStore {
 	}
 
 	setCurrentOverlayEditor(overlayEditor: OverlayEditor) {
+		this.log.info("Current overlay editor", overlayEditor);
 		this.store.set('obs.layout.current', overlayEditor);
 	}
 
