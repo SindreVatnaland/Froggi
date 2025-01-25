@@ -16,12 +16,16 @@
 	import SceneSelectOptions from '../selector/SceneSelectOptions.svelte';
 	import { tooltip } from 'svooltip';
 	import { fly } from 'svelte/transition';
+	import NonInteractiveIFrame from '../preview/NonInteractiveIFrame.svelte';
 
 	export let open: boolean;
 	export let overlay: Overlay;
 
 	$: curScene = overlay[$statsScene];
 	$: previewBackgroundType = curScene.background.type;
+
+	$: url = $isElectron ? $urls?.local : $urls?.external;
+	$: overlayPreviewSrc = `${url}/obs/overlay/${overlay.id}/layers`;
 
 	const resourceUrl = $isElectron ? $urls.localResource : $urls.localResource;
 
@@ -190,8 +194,6 @@
 											bind:value={curScene.background.opacity}
 											label="Opacity"
 											max={100}
-											bind:autofocus
-											autoFocusValue={2}
 										/>
 									</div>
 								{/if}
@@ -237,7 +239,13 @@
 												}
 													${curScene.background.opacity !== undefined ? `opacity: ${curScene.background.opacity / 100};` : ''}
 													background-repeat: no-repeat;`}
-							/>
+							>
+								<NonInteractiveIFrame
+									src={overlayPreviewSrc}
+									title="preview"
+									class="w-full h-full"
+								/>
+							</div>
 
 							{#if curScene.background.type !== SceneBackground.None}
 								<div class="flex gap-4">

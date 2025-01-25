@@ -48,8 +48,7 @@
 				<div class="w-full h-full absolute background-color-primary" />
 				<div
 					class="w-full h-full absolute background-color-primary bg-cover bg-center"
-					style={`background-image: url('${
-						base64 || '/image/backgrounds/MeleeMenuAll.png'
+					style={`background-image: url('${base64}'
 					}');`}
 				/>
 				{#if url}
