@@ -68,27 +68,40 @@ function createUpdateWindow(log: ElectronLog): BrowserWindow {
 
 async function waitForUpdateConfirmation(log: ElectronLog): Promise<boolean> {
   return await new Promise((resolve) => {
-    ipcMain.on('autoUpdater:skipUpdate', () => {
+    const skipUpdateHandler = () => {
       log.info('Skipped update...');
+      ipcMain.removeListener('autoUpdater:download', downloadUpdateHandler);
       resolve(false);
-    });
+    };
 
-    ipcMain.on('autoUpdater:download', () => {
+    const downloadUpdateHandler = () => {
       log.info('Downloading update...');
       autoUpdater.downloadUpdate();
-    });
+    };
+
+    ipcMain.on('autoUpdater:skipUpdate', skipUpdateHandler);
+    ipcMain.on('autoUpdater:download', downloadUpdateHandler);
+
+    const cleanup = () => {
+      ipcMain.removeListener('autoUpdater:skipUpdate', skipUpdateHandler);
+      ipcMain.removeListener('autoUpdater:download', downloadUpdateHandler);
+      autoUpdater.removeAllListeners(); // Remove all autoUpdater listeners
+    };
 
     autoUpdater.on('update-not-available', () => {
       log.info('No updates available.');
+      cleanup();
       resolve(false);
     });
 
     autoUpdater.on('update-cancelled', () => {
+      cleanup();
       resolve(false);
-    })
+    });
 
     autoUpdater.on('error', () => {
+      cleanup();
       resolve(false);
-    })
+    });
   });
 }
