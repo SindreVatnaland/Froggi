@@ -45,7 +45,7 @@ jobs:
                       frontend/node_modules
                   key: ${{ runner.os }}-node-modules-${{ env.CACHE_KEY }}
                   restore-keys: |
-                      ${{ runner.os }}-node-modules-
+                      ${{ runner.os }}-node-modules-${{ env.CACHE_KEY }}
 
             - name: Decode and import signing certificate
               if: runner.os == 'macOS'
