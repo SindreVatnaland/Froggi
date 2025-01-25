@@ -9,7 +9,7 @@ import { ElectronPlayersStore } from './store/storePlayers';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { debounce } from 'lodash';
+import { debounce, startCase } from 'lodash';
 
 @singleton()
 export class DiscordRpc {
@@ -51,7 +51,7 @@ export class DiscordRpc {
 
 		this.localEmitter.on("GameSettings", (settings: GameStartType | undefined) => {
 			if (!settings) return;
-			const mode = this.storeLiveStats.getGameSettings()?.matchInfo.mode ?? 'Local';
+			const mode = startCase(this.storeLiveStats.getGameSettings()?.matchInfo.mode ?? 'Local');
 			const score = this.storeGames.getGameScore() ?? [0, 0];
 
 			const currentPlayer = this.storeCurrentPlayer.getCurrentPlayer();
@@ -74,9 +74,9 @@ export class DiscordRpc {
 				smallImageKey: `${currentPlayer?.rank?.current?.rank
 					.toLowerCase()
 					.replace(' ', '_')}`,
-				state: `${player1?.connectCode ? player1?.connectCode : 'Player1'} (${score?.at(
+				state: `${player1?.connectCode ? player1.connectCode : 'Player1'} (${score?.at(
 					0,
-				)} - ${score.at(1)}) ${player2?.connectCode ? player2?.connectCode : 'Player2'}`,
+				)} - ${score.at(1)}) ${player2?.connectCode ? player2.connectCode : 'Player2'}`,
 			};
 			this.updateActivity();
 		});
