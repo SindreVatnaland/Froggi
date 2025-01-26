@@ -90,11 +90,11 @@ export class StatsDisplay {
 	}
 
 	private resetPauseInterval() {
-		if (this.isWin) return;
+		let intervalTime = this.isWin ? 320 : 160;
 		this.stopPauseInterval();
 		this.pauseInterval = setTimeout(() => {
 			this.handleGamePaused();
-		}, 160);
+		}, intervalTime);
 	}
 
 	private stopPauseInterval() {
