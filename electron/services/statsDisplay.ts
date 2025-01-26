@@ -115,7 +115,12 @@ export class StatsDisplay {
 		this.log.info("Game start:", settings)
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
-		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings);
+
+		const previousSettings = this.storeLiveStats.getGameSettings();
+
+		const isNewGame = Boolean(settings.matchInfo?.matchId) && previousSettings?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
+
+		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
 
 		this.log.info("Current players:", currentPlayers)
 
@@ -126,14 +131,7 @@ export class StatsDisplay {
 		}
 		this.storeLiveStats.setGameSettings(settings);
 
-		const previousGame = this.storeGames.getRecentGames()?.at(0)?.at(0);
-
-		if (
-			previousGame?.settings?.matchInfo.matchId ===
-			settings?.matchInfo?.matchId?.replace(/[.:]/g, '-')
-		)
-			return;
-		if (previousGame?.isReplay) return;
+		if (!isNewGame) return;
 		this.log.info("New game detected. Clearing recent games.")
 		this.storeGames.clearRecentGames();
 	}
@@ -160,7 +158,9 @@ export class StatsDisplay {
 			gameStats.isReplay = true;
 		}
 
-		gameStats.score = this.handleScore(gameStats)
+		let score = this.storeGames.getGameScore();
+
+		gameStats.score = this.handleScore(gameStats, score)
 
 		this.storeGames.setGameScore(gameStats.score);
 		this.handleGameSetStats(gameStats);
@@ -171,8 +171,7 @@ export class StatsDisplay {
 		}, 5000)
 	}
 
-	private handleScore(gameStats: GameStats): number[] {
-		const score = gameStats.score ?? [0, 0];
+	private handleScore(gameStats: GameStats, score: number[]): number[] {
 		const winnerIndex = getWinnerIndex(gameStats);
 		if (isNil(winnerIndex)) return score;
 		score[winnerIndex ?? 0] += 1;
@@ -256,14 +255,12 @@ export class StatsDisplay {
 		this.storeLiveStats.setMatchStats(matchStats);
 	}
 
-	private async getCurrentPlayersWithRankStats(settings: GameStartType): Promise<Player[]> {
+	private async getCurrentPlayersWithRankStats(settings: GameStartType, isNewGame: boolean): Promise<Player[]> {
 		this.log.info("Getting current players with rank stats")
 
-		const isOffline = !settings.matchInfo?.matchId
-		const isNewGame = settings.matchInfo?.matchId && this.storeLiveStats.getGameSettings()?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 		const currentPlayers = settings.players.filter((player) => player);
 
-		if (isOffline || !isNewGame || currentPlayers.some((player) => !player.connectCode)) {
+		if (!isNewGame || currentPlayers.some((player) => !player.connectCode)) {
 			const previousPlayers = this.storePlayers.getCurrentPlayers();
 			if (previousPlayers) return previousPlayers;
 		}
@@ -394,7 +391,7 @@ export class StatsDisplay {
 	): GameStats | null {
 		if (!game) return null;
 		const settings = game.getSettings();
-		return {
+		const gameStats = {
 			gameEnd: gameEnd ?? game?.getGameEnd(),
 			lastFrame: game.getLatestFrame(),
 			postGameStats: this.enrichPostGameStats(game),
@@ -409,6 +406,7 @@ export class StatsDisplay {
 			},
 			timestamp: dateTimeNow(),
 		} as GameStats;
+		return gameStats;
 	}
 
 	// TODO: Add additional data not included in the default stats
