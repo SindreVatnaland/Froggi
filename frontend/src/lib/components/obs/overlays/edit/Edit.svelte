@@ -92,6 +92,8 @@
 
 	$: boardWidth = isVertical ? verticalWidth : horizontalWidth;
 	$: boardHeight = isVertical ? verticalHeight : horizontalHeight;
+
+	$: previewWidth = isVertical ? 300 : 500;
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight />
@@ -105,12 +107,13 @@
 			{#if displayPreview}
 				<div class="h-full flex flex-col justify-start items-center gap-4">
 					<div
-						class={`w-full bg-cover relative`}
-						style={`max-width: ${isVertical ? 300 : 500}px; aspect-ratio: ${
-							overlay.aspectRatio.width
-						}/${
-							overlay.aspectRatio.height
-						};  background-image: url('${tempBackgroundImage}')`}
+						class="w-full bg-cover flex relative"
+						style={`
+		width: 100%; 
+		max-width: ${previewWidth}px; 
+		aspect-ratio: ${overlay.aspectRatio.width} / ${overlay.aspectRatio.height};
+		background-image: url('${tempBackgroundImage}');
+	`}
 					>
 						<Preview />
 						<button

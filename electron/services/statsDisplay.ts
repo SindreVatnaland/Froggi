@@ -258,18 +258,15 @@ export class StatsDisplay {
 
 	private async getCurrentPlayersWithRankStats(settings: GameStartType): Promise<Player[]> {
 		this.log.info("Getting current players with rank stats")
-		const isNewGame = !settings.matchInfo?.matchId || this.storeLiveStats.getGameSettings()?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
+
+		const isOffline = !settings.matchInfo?.matchId
+		const isNewGame = settings.matchInfo?.matchId && this.storeLiveStats.getGameSettings()?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 		const currentPlayers = settings.players.filter((player) => player);
 
-		if (!isNewGame || currentPlayers.some((player) => !player.connectCode))
-			return settings.players
-				.filter((player) => player)
-				.map((player, i: number) => {
-					return {
-						...player,
-						rank: this.storePlayers.getCurrentPlayers()?.at(i)?.rank,
-					};
-				});
+		if (isOffline || !isNewGame || currentPlayers.some((player) => !player.connectCode)) {
+			const previousPlayers = this.storePlayers.getCurrentPlayers();
+			if (previousPlayers) return previousPlayers;
+		}
 
 		const currentPlayer = this.storeCurrentPlayer.getCurrentPlayer();
 
