@@ -160,9 +160,7 @@ export class StatsDisplay {
 			gameStats.isReplay = true;
 		}
 
-		let score = this.storeGames.getGameScore();
-
-		gameStats.score = this.handleScore(gameStats, score)
+		gameStats.score = this.handleScore(gameStats)
 
 		this.storeGames.setGameScore(gameStats.score);
 		this.handleGameSetStats(gameStats);
@@ -173,7 +171,8 @@ export class StatsDisplay {
 		}, 5000)
 	}
 
-	private handleScore(gameStats: GameStats, score: number[]): number[] {
+	private handleScore(gameStats: GameStats): number[] {
+		const score = gameStats.score ?? [0, 0];
 		const winnerIndex = getWinnerIndex(gameStats);
 		if (isNil(winnerIndex)) return score;
 		score[winnerIndex ?? 0] += 1;
@@ -259,7 +258,7 @@ export class StatsDisplay {
 
 	private async getCurrentPlayersWithRankStats(settings: GameStartType): Promise<Player[]> {
 		this.log.info("Getting current players with rank stats")
-		const isNewGame = this.storeLiveStats.getGameSettings()?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
+		const isNewGame = !settings.matchInfo?.matchId || this.storeLiveStats.getGameSettings()?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 		const currentPlayers = settings.players.filter((player) => player);
 
 		if (!isNewGame || currentPlayers.some((player) => !player.connectCode))
