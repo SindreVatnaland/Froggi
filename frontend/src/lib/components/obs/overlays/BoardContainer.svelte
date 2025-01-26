@@ -21,7 +21,8 @@
 	let innerHeight: number;
 	let innerWidth: number;
 
-	const animateIn = (node: Element): AnimationConfig => {
+	const animateIn = (node: Element, args: { scene: Scene | undefined }): AnimationConfig => {
+		const { scene } = args;
 		if (preview || edit || !scene) return fly(node, { duration: 0 });
 		return createAnimation(
 			node,
@@ -31,7 +32,8 @@
 			SCENE_TRANSITION_DELAY,
 		);
 	};
-	const animateOut = (node: Element): AnimationConfig => {
+	const animateOut = (node: Element, args: { scene: Scene | undefined }): AnimationConfig => {
+		const { scene } = args;
 		if (preview || edit || !scene) return fly(node, { duration: 0 });
 		return createAnimation(
 			node,
@@ -45,8 +47,8 @@
 <svelte:window bind:innerHeight bind:innerWidth />
 
 <div
-	in:animateIn|global
-	out:animateOut|global
+	in:animateIn|global={{ scene }}
+	out:animateOut|global={{ scene }}
 	class={`w-full h-full bg-center absolute z-0`}
 	style={`
 				${scene?.background.type === SceneBackground.Color ? `background: ${scene.background.color};` : ''};

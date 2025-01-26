@@ -22,7 +22,11 @@
 	}
 	$: demoItem, updateDemoData();
 
-	const animateIn = (node: Element): TransitionConfig => {
+	const animateIn = (
+		node: Element,
+		args: { curScene: Scene | undefined; dataItem: GridContentItem },
+	): TransitionConfig => {
+		const { curScene, dataItem } = args;
 		if (edit || isNil(dataItem) || isNil(curScene)) return fly(node, { duration: 0 });
 		const delay =
 			dataItem[COL]?.y +
@@ -38,7 +42,11 @@
 		);
 	};
 
-	const animateOut = (node: Element): TransitionConfig => {
+	const animateOut = (
+		node: Element,
+		args: { curScene: Scene | undefined; dataItem: GridContentItem },
+	): TransitionConfig => {
+		const { curScene, dataItem } = args;
 		if (edit || !curScene) return fly(node, { duration: 0 });
 		return createAnimation(node, curScene.animation.out, boardHeight, boardWidth, 0, dataItem);
 	};
@@ -69,7 +77,12 @@
 						{CustomElement[dataItem?.elementId] ?? ''}
 					</h1>
 				{:else}
-					<div class="w-full h-full" in:animateIn out:animateOut bind:this={parent}>
+					<div
+						class="w-full h-full"
+						in:animateIn={{ curScene, dataItem }}
+						out:animateOut={{ curScene, dataItem }}
+						bind:this={parent}
+					>
 						{#if parent}
 							<VisibilityAnimationLayer
 								animationIn={(node) =>

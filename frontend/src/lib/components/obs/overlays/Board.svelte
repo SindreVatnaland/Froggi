@@ -117,7 +117,7 @@
 						<GridContent
 							{preview}
 							{dataItem}
-							{curScene}
+							bind:curScene
 							additionalDelay={SCENE_TRANSITION_DELAY +
 								curScene.animation.layerRenderDelay * i}
 						/>

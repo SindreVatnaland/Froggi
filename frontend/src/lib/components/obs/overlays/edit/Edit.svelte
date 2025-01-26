@@ -105,7 +105,7 @@
 			{#if displayPreview}
 				<div class="h-full flex flex-col justify-start items-center gap-4">
 					<div
-						class={`flex w-full bg-cover relative`}
+						class={`w-full bg-cover relative`}
 						style={`max-width: ${isVertical ? 300 : 500}px; aspect-ratio: ${
 							overlay.aspectRatio.width
 						}/${
@@ -133,7 +133,7 @@
 			{/if}
 
 			<div
-				class={`max-w-full flex-1 flex flex-col gap-2 justify-start items-center py-2 overflow-hidden`}
+				class={`max-w-full flex-1 flex flex-col gap-2 justify-start items-center py-2 overflow-auto`}
 			>
 				<div class="flex flex-col items-center">
 					<h1 class="text-lg font-medium color-secondary">
@@ -168,9 +168,11 @@
 					<SelectedEditor />
 				</div>
 				<div
-					style={`background-image: url('${tempBackgroundImage}');
-					aspect-ratio: ${overlay.aspectRatio.width}/${overlay.aspectRatio.height};`}
-					class={`border-secondary flex bg-cover flex-1 max-h-full`}
+					style={`min-width: ${
+						isVertical ? verticalWidth : boardWidth
+					}px; min-height: ${boardHeight}px; background-image: url('${tempBackgroundImage}');
+					`}
+					class={`border-secondary flex bg-cover`}
 				>
 					<BoardEdit bind:borderHeight={boardHeight} />
 				</div>
