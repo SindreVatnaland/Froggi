@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import TextFitMulti from '$lib/components/TextFitMulti.svelte';
 	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import ExternalPreviewSettings from '$lib/components/obs/overlays/preview/ExternalPreviewSettings.svelte';
-	import LayerToggle from '$lib/components/obs/overlays/preview/LayerToggle.svelte';
 	import NonInteractiveIFrame from '$lib/components/obs/overlays/preview/NonInteractiveIFrame.svelte';
 	import SceneSelect from '$lib/components/obs/overlays/selector/SceneSelect.svelte';
 	import type { Overlay } from '$lib/models/types/overlay';
@@ -34,7 +32,9 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <div
-	class={`flex flex-col background-primary-color items-center px-18 gap-2 p-2`}
+	class={`flex flex-col background-primary-color items-center ${
+		$isMobile ? '' : 'px-18'
+	} gap-2 p-2`}
 	style={`height: 100svh; width: 100%; max-height: 100%;`}
 >
 	<h1 class="text-lg font-medium color-secondary">

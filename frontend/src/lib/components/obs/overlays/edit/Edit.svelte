@@ -133,7 +133,7 @@
 			{/if}
 
 			<div
-				class={`max-w-full flex-1 flex flex-col gap-2 justify-start items-center py-2 overflow-auto`}
+				class={`max-w-full flex-1 flex flex-col gap-2 justify-start items-center py-2 overflow-hidden`}
 			>
 				<div class="flex flex-col items-center">
 					<h1 class="text-lg font-medium color-secondary">
@@ -168,11 +168,9 @@
 					<SelectedEditor />
 				</div>
 				<div
-					style={`min-width: ${
-						isVertical ? verticalWidth : boardWidth
-					}px; min-height: ${boardHeight}px; background-image: url('${tempBackgroundImage}');
-					`}
-					class={`border-secondary flex bg-cover`}
+					style={`background-image: url('${tempBackgroundImage}');
+					aspect-ratio: ${overlay.aspectRatio.width}/${overlay.aspectRatio.height};`}
+					class={`border-secondary flex bg-cover flex-1 max-h-full`}
 				>
 					<BoardEdit bind:borderHeight={boardHeight} />
 				</div>
