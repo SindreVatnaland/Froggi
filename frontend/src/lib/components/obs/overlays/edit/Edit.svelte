@@ -105,7 +105,7 @@
 			{#if displayPreview}
 				<div class="h-full flex flex-col justify-start items-center gap-4">
 					<div
-						class={`flex w-full bg-cover`}
+						class={`flex w-full bg-cover relative`}
 						style={`max-width: ${isVertical ? 300 : 500}px; aspect-ratio: ${
 							overlay.aspectRatio.width
 						}/${
@@ -113,6 +113,16 @@
 						};  background-image: url('${tempBackgroundImage}')`}
 					>
 						<Preview />
+						<button
+							class="absolute bottom-2 right-2 z-50 w-4 h-4"
+							on:click={() => (isPreviewModalOpen = true)}
+						>
+							<img
+								src="/image/button-icons/popup.png"
+								alt="popup"
+								style="filter: brightness(0) invert(1);"
+							/>
+						</button>
 					</div>
 					<div
 						class="w-full border-secondary background-color-primary bg-opacity-20 flex-1 overflow-hidden"
@@ -144,12 +154,7 @@
 						>
 							Share
 						</button>
-						<button
-							class="transition background-color-primary bg-opacity-30 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
-							on:click={() => (isPreviewModalOpen = true)}
-						>
-							Preview
-						</button>
+
 						<button
 							class="transition background-color-primary bg-opacity-30 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
 							on:click={() => (isEmbedModalOpen = true)}
