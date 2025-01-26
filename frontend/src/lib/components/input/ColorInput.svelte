@@ -5,12 +5,12 @@
 	export let valueConcat: string = '';
 
 	export let value: string = valueConcat.length < 8 ? valueConcat : valueConcat.slice(0, -2);
-	export let sliderValue: number = parseInt(valueConcat.slice(-2), 16);
+	export let inputValue: number = parseInt(valueConcat.slice(-2), 16);
 
 	const updateConcatValue = (value: string, sliderValue: number) => {
 		valueConcat = String.format(`${value}${rgbToHex(sliderValue)}`, value);
 	};
-	$: updateConcatValue(value, sliderValue);
+	$: updateConcatValue(value, inputValue);
 
 	var rgbToHex = function (rgb: number) {
 		var hex = Number(rgb).toString(16);
@@ -40,7 +40,16 @@
 			name="head"
 			min={0}
 			max={255}
-			bind:value={sliderValue}
+			bind:value={inputValue}
+		/>
+		<input
+			class="w-full h-11 rounded-md col-span-1 background-primary-color border-secondary"
+			type="number"
+			id="head"
+			name="head"
+			min={0}
+			max={255}
+			bind:value={inputValue}
 		/>
 	{/if}
 </div>
