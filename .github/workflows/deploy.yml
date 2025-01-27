@@ -85,3 +85,4 @@ jobs:
                   files: ${{ inputs['file'] }}
                   draft: false
                   tag_name: ${{ github.ref_name }}
+                  prerelease: ${{ contains(github.ref_name, 'beta') }}

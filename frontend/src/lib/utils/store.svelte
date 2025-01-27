@@ -23,6 +23,7 @@
 	import type { Obs, ObsConnection } from '$lib/models/types/obsTypes';
 	import { Controller, SceneSwitchCommands } from '$lib/models/types/commandTypes';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
+	import { Froggi } from '$lib/models/types/froggiConfigTypes';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -60,6 +61,7 @@
 		{ displayName: '' } as Player,
 	]);
 	export const dolphinState = writable<ConnectionState | undefined>(ConnectionState.None);
+	export const froggiSettings = writable<Froggi>({} as Froggi);
 	export const gameFrame = writable<FrameEntryType | null | undefined>({} as FrameEntryType);
 	export const gameScore = writable<number[]>([0, 0]);
 	export const gameSettings = writable<GameStartTypeExtended>({} as GameStartTypeExtended);

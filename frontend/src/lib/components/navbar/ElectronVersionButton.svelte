@@ -90,7 +90,9 @@
 				style={`${getStyle($autoUpdater)}`}
 			>
 				<div class="max-h-2 w-full text-center">
-					<TextFitMulti>{`${getContent($autoUpdater)}`}</TextFitMulti>
+					{#key $autoUpdater}
+						<TextFitMulti>{`${getContent($autoUpdater)}`}</TextFitMulti>
+					{/key}
 				</div>
 			</button>
 		</button>

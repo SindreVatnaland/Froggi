@@ -33,6 +33,7 @@ import type {
 import type { FrameEntryType } from '@slippi/slippi-js';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
+import { Froggi } from '../models/types/froggiConfigTypes';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -44,9 +45,11 @@ export interface MessageEvents {
 	AutoUpdaterDownloadUrl: (url: string) => void;
 	AutoUpdaterInstall: () => void;
 	BestOfUpdate: (bestOf: BestOf) => void;
+	BetaOptIn: (optIn: boolean) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	DolphinConnectionState: (state: ConnectionState | undefined) => void;
+	FroggiSettings: (settings: Froggi) => void;
 	GameFrame: (frame: FrameEntryType | undefined | null) => void;
 	GameScore: (score: number[]) => void;
 	GameSettings: (settings: GameStartTypeExtended | undefined) => void;

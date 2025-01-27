@@ -27,6 +27,7 @@
 		sceneSwitch,
 		controller,
 		isElectron,
+		froggiSettings,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -137,6 +138,13 @@
 					>[0];
 					if (!value) return;
 					dolphinState.set(value);
+				})();
+				break;
+			case 'FroggiSettings':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['FroggiSettings']>[0];
+					if (!value) return;
+					froggiSettings.set(value);
 				})();
 				break;
 			case 'GameFrame':

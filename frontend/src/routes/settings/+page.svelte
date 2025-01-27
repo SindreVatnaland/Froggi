@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import Authorization from '$lib/components/obs/settings/Authorization.svelte';
 	import SaveLogs from '$lib/components/obs/settings/SaveLogs.svelte';
+	import BetaOptIn from '$lib/components/obs/settings/BetaOptIn.svelte';
 </script>
 
 <main
@@ -15,6 +16,7 @@
 		</div>
 		<Authorization />
 		<SaveLogs />
+		<BetaOptIn />
 	</div>
 </main>
 

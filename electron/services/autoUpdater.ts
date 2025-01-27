@@ -5,6 +5,7 @@ import { MessageHandler } from './messageHandler';
 import { AutoUpdaterStatus, NotificationType } from '../../frontend/src/lib/models/enum';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { App } from 'electron';
+import { ElectronFroggiStore } from './store/storeFroggi';
 
 @injectable()
 export class AutoUpdater {
@@ -16,14 +17,16 @@ export class AutoUpdater {
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject('Dev') private dev: boolean,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(ElectronFroggiStore) private storeFroggi: ElectronFroggiStore,
 	) {
 		this.log.info('Initializing Auto Updater');
 		this.initListeners();
-
+		this.checkBetaOptIn();
 		autoUpdater.checkForUpdates();
 		autoUpdater.autoInstallOnAppQuit = true;
 		autoUpdater.autoDownload = false;
 		autoUpdater.autoDownload = false;
+		autoUpdater.disableDifferentialDownload = true;
 	}
 
 	private async initListeners() {
@@ -123,5 +126,11 @@ export class AutoUpdater {
 			'AutoUpdaterVersion',
 			autoUpdater.currentVersion.version,
 		);
+	}
+
+	private checkBetaOptIn() {
+		const betaOptIn = this.storeFroggi.getFroggiConfig().betaOptIn ?? false;
+		autoUpdater.allowPrerelease = betaOptIn;
+		this.log.info('Beta Opt In:', betaOptIn);
 	}
 }

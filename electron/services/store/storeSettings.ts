@@ -130,7 +130,7 @@ export class ElectronSettingsStore {
 		};
 	}
 
-	initStoreListeners() {
+	private initStoreListeners() {
 		this.store.onDidChange(`settings.currentPlayer`, async () => {
 			this.storeCurrentPlayer.updateCurrentPlayerConnectCode();
 		});
@@ -139,7 +139,7 @@ export class ElectronSettingsStore {
 		});
 	}
 
-	initEventListeners() {
+	private initEventListeners() {
 		this.clientEmitter.on('AuthorizationKeyUpdate', (key: string) => {
 			this.setAuthorizationKey(key);
 		});
