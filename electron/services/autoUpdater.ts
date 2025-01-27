@@ -129,8 +129,11 @@ export class AutoUpdater {
 	}
 
 	private checkBetaOptIn() {
-		const betaOptIn = this.storeFroggi.getFroggiConfig().betaOptIn ?? false;
+		const betaOptIn = Boolean(this.storeFroggi.getFroggiConfig().betaOptIn ?? false);
 		autoUpdater.allowPrerelease = betaOptIn;
+		if (betaOptIn) {
+			autoUpdater.channel = "beta"
+		}
 		this.log.info('Beta Opt In:', betaOptIn);
 	}
 }

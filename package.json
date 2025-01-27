@@ -1,11 +1,24 @@
 {
 	"name": "froggi",
-	"version": "0.9.0",
+	"version": "0.9.1-beta.2",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
 	"nodeIntegration": true,
 	"author": "Sindre Vatnaland",
+	"build": {
+		"build": {
+			"generateUpdatesFilesForAllChannels": true,
+			"files": [
+				"build/**/*"
+			]
+		},
+		"publish": {
+			"provider": "github",
+			"owner": "SindreVatnaland",
+			"repo": "Froggi"
+		}
+	},
 	"scripts": {
 		"dev": "cross-env NODE_ENV=dev && nodemon",
 		"dev:all": "concurrently -n=svelte,electron -c='#ff3e00',blue \"npm run dev:svelte\" \"npm run dev:electron\"",
@@ -101,17 +114,5 @@
 		"ts-node": "^10.9.2",
 		"tslib": "^2.6.2",
 		"typescript": "^5.6.3"
-	},
-	"build": {
-		"build": {
-			"files": [
-				"build/**/*"
-			]
-		},
-		"publish": {
-			"provider": "github",
-			"owner": "SindreVatnaland",
-			"repo": "Froggi"
-		}
 	}
 }
