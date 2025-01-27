@@ -416,12 +416,12 @@ export class ElectronOverlayStore {
 		for (const overlay of Object.values(overlays)) {
 			if (!overlay.isDemo) continue;
 			if (!semver.valid(overlay.froggiVersion)) {
-				console.error(`Invalid version: ${overlay.froggiVersion}`);
-				continue;
+				console.error(`Invalid version: ${overlay.froggiVersion}. Setting to 0.0.0`);
+				overlay.froggiVersion = "0.0.0";
 			}
 
 			if (
-				semver.satisfies(currentFroggiVersion, `${overlay.froggiVersion}`) || this.isDev
+				semver.satisfies(currentFroggiVersion, `>=${overlay.froggiVersion}`) || this.isDev
 			) {
 				await this.deleteOverlay(overlay.id);
 			}
