@@ -51,7 +51,7 @@ export class AutoUpdater {
 			this.log.verbose(`Update Available: ${info.version}`);
 			this.messageHandler.sendMessage(
 				'Notification',
-				'Update Available',
+				`Update Available - ${info.version}`,
 				NotificationType.Success,
 			);
 			this.messageHandler.sendMessage('AutoUpdaterStatus', AutoUpdaterStatus.UpdateAvailable);
