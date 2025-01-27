@@ -25,27 +25,15 @@ jobs:
               with:
                   node-version: 20.15.1
 
-            - name: Preprocess package.json and Generate Cache Key
-              id: generate_cache_key
-              shell: bash
-              run: |
-                  HASH_INPUT=""
-                  find . -name "package.json" | while read file; do
-                      PROCESSED_JSON=$(jq 'del(.version)' "$file" | base64)
-                      HASH_INPUT="${HASH_INPUT}${PROCESSED_JSON}"
-                  done
-                  CACHE_KEY=$(echo -n "$HASH_INPUT" | openssl dgst -sha256 | awk '{ print $2 }')
-                  echo "CACHE_KEY=$CACHE_KEY" >> $GITHUB_ENV
-
             - name: Cache NPM Dependencies
               uses: actions/cache@v3
               with:
                   path: |
                       node_modules
                       frontend/node_modules
-                  key: ${{ runner.os }}-node-modules-${{ env.CACHE_KEY }}
+                  key: ${{ runner.os }}-node-modules-${{ hashFiles('package.json') }}-${{ hashFiles('frontend/package.json') }}
                   restore-keys: |
-                      ${{ runner.os }}-node-modules-${{ env.CACHE_KEY }}
+                      ${{ runner.os }}-node-modules-${{ hashFiles('package.json') }}-${{ hashFiles('frontend/package.json') }}
 
             - name: Decode and import signing certificate
               if: runner.os == 'macOS'

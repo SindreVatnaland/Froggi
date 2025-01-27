@@ -5,6 +5,7 @@ import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import EventEmitter2 from 'eventemitter2';
 import { MessageHandler } from './../../services/messageHandler';
+import { NotificationType } from '../../../frontend/src/lib/models/enum';
 
 
 @singleton()
@@ -37,6 +38,7 @@ export class ElectronFroggiStore {
 
     private initEventListeners() {
         this.clientEmitter.on('BetaOptIn', (optIn: boolean) => {
+            this.messageHandler.sendMessage("Notification", "Restart required to apply changes", NotificationType.Info, 3000);
             this.setFroggiBeta(optIn);
         });
     }
