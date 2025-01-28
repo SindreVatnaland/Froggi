@@ -124,11 +124,12 @@ export class StatsDisplay {
 
 		this.log.info("Current players:", currentPlayers)
 
-		this.storeLiveStats.setGameState(InGameState.Running);
-		this.storeLiveStats.setStatsScene(LiveStatsScene.InGame);
 		if (currentPlayers.every((player) => "rank" in player)) {
 			this.storePlayers.setCurrentPlayers(currentPlayers);
 		}
+
+		this.storeLiveStats.setGameState(InGameState.Running);
+		this.storeLiveStats.setStatsScene(LiveStatsScene.InGame);
 		this.storeLiveStats.setGameSettings(settings);
 
 		if (!isNewGame) return;
