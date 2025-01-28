@@ -95,54 +95,58 @@
 					>
 						<div
 							use:tooltip={{
-								content: `<p>Leaderboard</p>`,
+								content: `<p>Join Discord</p>`,
 								html: true,
 								placement: 'right',
 								delay: [1000, 0],
 								offset: 25,
 							}}
 						>
-							<NavButton click={() => goto('/leaderboard')} disabled={true}>
-								<img src="/image/button-icons/leaderboard.png" alt="leaderboard" />
+							<NavButton click={() => openUrl('https://discord.gg/rX7aQmbrEa')}>
+								<img
+									class="object-cover"
+									src="/image/icons/discord.png"
+									alt="mobile"
+								/>
 							</NavButton>
 						</div>
 						<div
 							use:tooltip={{
-								content: `<p>Replays</p>`,
+								content: `<p>Github</p>`,
 								html: true,
 								placement: 'right',
 								delay: [1000, 0],
 								offset: 25,
 							}}
 						>
-							<NavButton click={() => goto('/replays')} disabled={true}>
-								<img src="/image/button-icons/replay.png" alt="replays" />
+							<NavButton
+								click={() => openUrl('https://github.com/SindreVatnaland/Froggi')}
+							>
+								<img
+									class="object-cover"
+									src="/image/icons/github.png"
+									alt="mobile"
+								/>
 							</NavButton>
 						</div>
 						<div
 							use:tooltip={{
-								content: `<p>Achievements</p>`,
+								content: `<p>Support Froggi</p>`,
 								html: true,
 								placement: 'right',
 								delay: [1000, 0],
 								offset: 25,
 							}}
 						>
-							<NavButton click={() => goto('/achievements')} disabled={true}>
-								<img src="/image/button-icons/trophy.png" alt="achievements" />
-							</NavButton>
-						</div>
-						<div
-							use:tooltip={{
-								content: `<p>Profile</p>`,
-								html: true,
-								placement: 'right',
-								delay: [1000, 0],
-								offset: 25,
-							}}
-						>
-							<NavButton click={() => goto('/profile')} disabled={true}>
-								<img src="/image/button-icons/profile.png" alt="profile" />
+							<NavButton
+								click={() => openUrl('https://buymeacoffee.com/sindrevatnw')}
+								style="border-color: #FFDD00; background-color: #FFDD00;"
+							>
+								<img
+									class="object-cover"
+									src="/image/icons/buy-me-a-coffee.svg"
+									alt="mobile"
+								/>
 							</NavButton>
 						</div>
 					</div>
@@ -160,64 +164,7 @@
 				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
 					<div
 						class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-start items-center rounded-2xl space-y-2 p-1"
-					>
-						<div
-							use:tooltip={{
-								content: `<p>Support Froggi</p>`,
-								html: true,
-								placement: 'left',
-								delay: [1000, 0],
-								offset: 25,
-							}}
-						>
-							<NavButton
-								click={() => openUrl('https://buymeacoffee.com/sindrevatnw')}
-								style="border-color: #FFDD00; background-color: #FFDD00;"
-							>
-								<img
-									class="object-cover"
-									src="/image/icons/buy-me-a-coffee.svg"
-									alt="mobile"
-								/>
-							</NavButton>
-						</div>
-						<div
-							use:tooltip={{
-								content: `<p>Join Discord</p>`,
-								html: true,
-								placement: 'left',
-								delay: [1000, 0],
-								offset: 25,
-							}}
-						>
-							<NavButton click={() => openUrl('https://discord.gg/rX7aQmbrEa')}>
-								<img
-									class="object-cover"
-									src="/image/icons/discord.png"
-									alt="mobile"
-								/>
-							</NavButton>
-						</div>
-						<div
-							use:tooltip={{
-								content: `<p>Github</p>`,
-								html: true,
-								placement: 'left',
-								delay: [1000, 0],
-								offset: 25,
-							}}
-						>
-							<NavButton
-								click={() => openUrl('https://github.com/SindreVatnaland/Froggi')}
-							>
-								<img
-									class="object-cover"
-									src="/image/icons/github.png"
-									alt="mobile"
-								/>
-							</NavButton>
-						</div>
-					</div>
+					/>
 				</div>
 
 				<div class="flex-1 flex flex-col gap-2 justify-center">
