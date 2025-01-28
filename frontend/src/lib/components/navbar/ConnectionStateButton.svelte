@@ -34,9 +34,9 @@
 	};
 </script>
 
-<div class="relative">
+<div class="relative flex justify-end items-center">
 	<button
-		class="transition opacity-60 hover:opacity-100 justify-center rounded-2xl text-center align-middle z-50 cursor-pointer"
+		class="transition w-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 rounded-2xl text-center align-middle z-50 cursor-pointer"
 		transition:fly={{ duration: 150, x: -50 }}
 		on:click={click}
 		use:tooltip={{
@@ -47,7 +47,7 @@
 			offset: 25,
 		}}
 	>
-		<span class={getAnimation(connectionState)} />
+		<div class={`${getAnimation(connectionState)} w-full h-full`} />
 		<button
 			class={`h-10 w-10 bg-gray-600 bg-opacity-75 justify-center rounded-2xl p-1 col-auto`}
 			style={`${getBorderStyle(connectionState)}`}

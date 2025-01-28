@@ -3,6 +3,7 @@
 	import { fly } from 'svelte/transition';
 	import {
 		dolphinState,
+		electronEmitter,
 		isElectron,
 		isIframe,
 		isMobile,
@@ -39,6 +40,10 @@
 		);
 	}
 
+	const openUrl = (url: string) => {
+		$electronEmitter.emit('OpenUrl', url);
+	};
+
 	let visibilityTimer: NodeJS.Timeout;
 	let isVisible = !$isOverlayPage && ($isElectron || $isMobile);
 
@@ -63,9 +68,11 @@
 				out:fly={{ x: -100, duration: 400 }}
 				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
-				<BackButton />
+				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
+					<BackButton />
+				</div>
 
-				<div class="flex flex-col gap-2">
+				<div class="flex flex-col gap-2 justify-center flex-1">
 					<div
 						class="h-12 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl p-1"
 					>
@@ -140,7 +147,9 @@
 						</div>
 					</div>
 				</div>
-				<ElectronVersionButton />
+				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
+					<ElectronVersionButton />
+				</div>
 			</div>
 
 			<div
@@ -148,93 +157,113 @@
 				out:fly={{ x: 100, duration: 400 }}
 				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-l-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
-				<div
-					class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
-				>
+				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
 					<div
-						use:tooltip={{
-							content: `<p>Support Froggi</p>`,
-							html: true,
-							placement: 'left',
-							delay: [1000, 0],
-							offset: 25,
-						}}
+						class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-start items-center rounded-2xl space-y-2 p-1"
 					>
-						<NavButton click={() => (isMobileOpen = true)}>
-							<img
-								class="object-cover"
-								src="/image/icons/buy-me-a-coffee.svg"
-								alt="mobile"
-							/>
-						</NavButton>
-					</div>
-					<div
-						use:tooltip={{
-							content: `<p>Join Discord</p>`,
-							html: true,
-							placement: 'left',
-							delay: [1000, 0],
-							offset: 25,
-						}}
-					>
-						<NavButton click={() => (isMobileOpen = true)}>
-							<img class="object-cover" src="/image/icons/discord.png" alt="mobile" />
-						</NavButton>
-					</div>
-					<div
-						use:tooltip={{
-							content: `<p>Github</p>`,
-							html: true,
-							placement: 'left',
-							delay: [1000, 0],
-							offset: 25,
-						}}
-					>
-						<NavButton click={() => (isMobileOpen = true)}>
-							<img class="object-cover" src="/image/icons/github.png" alt="mobile" />
-						</NavButton>
+						<div
+							use:tooltip={{
+								content: `<p>Support Froggi</p>`,
+								html: true,
+								placement: 'left',
+								delay: [1000, 0],
+								offset: 25,
+							}}
+						>
+							<NavButton
+								click={() => openUrl('https://buymeacoffee.com/sindrevatnw')}
+								style="border-color: #FFDD00; background-color: #FFDD00;"
+							>
+								<img
+									class="object-cover"
+									src="/image/icons/buy-me-a-coffee.svg"
+									alt="mobile"
+								/>
+							</NavButton>
+						</div>
+						<div
+							use:tooltip={{
+								content: `<p>Join Discord</p>`,
+								html: true,
+								placement: 'left',
+								delay: [1000, 0],
+								offset: 25,
+							}}
+						>
+							<NavButton click={() => openUrl('https://discord.gg/rX7aQmbrEa')}>
+								<img
+									class="object-cover"
+									src="/image/icons/discord.png"
+									alt="mobile"
+								/>
+							</NavButton>
+						</div>
+						<div
+							use:tooltip={{
+								content: `<p>Github</p>`,
+								html: true,
+								placement: 'left',
+								delay: [1000, 0],
+								offset: 25,
+							}}
+						>
+							<NavButton
+								click={() => openUrl('https://github.com/SindreVatnaland/Froggi')}
+							>
+								<img
+									class="object-cover"
+									src="/image/icons/github.png"
+									alt="mobile"
+								/>
+							</NavButton>
+						</div>
 					</div>
 				</div>
 
-				<div
-					class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
-				>
-					<ConnectionStateButton
-						iconPath="/image/button-icons/obs.png"
-						connectionState={$obsConnection.state}
-						click={() => goto('/obs')}
-					/>
+				<div class="flex-1 flex flex-col gap-2 justify-center">
 					<div
-						use:tooltip={{
-							content: `<p>Mobile App</p>`,
-							html: true,
-							placement: 'left',
-							delay: [1000, 0],
-							offset: 25,
-						}}
+						class="w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
 					>
-						<NavButton click={() => (isMobileOpen = true)}>
-							<img src="/image/button-icons/mobile.png" alt="mobile" />
-						</NavButton>
-					</div>
-					<div
-						use:tooltip={{
-							content: `<p>Settings</p>`,
-							html: true,
-							placement: 'left',
-							delay: [1000, 0],
-							offset: 25,
-						}}
-					>
-						<NavButton click={() => goto('/settings')}>
-							<img src="/image/button-icons/settings.png" alt="settings" />
-						</NavButton>
+						<ConnectionStateButton
+							iconPath="/image/button-icons/obs.png"
+							connectionState={$obsConnection.state}
+							click={() => goto('/obs')}
+						/>
+						<div
+							use:tooltip={{
+								content: `<p>Mobile App</p>`,
+								html: true,
+								placement: 'left',
+								delay: [1000, 0],
+								offset: 25,
+							}}
+						>
+							<NavButton click={() => (isMobileOpen = true)}>
+								<img src="/image/button-icons/mobile.png" alt="mobile" />
+							</NavButton>
+						</div>
+						<div
+							use:tooltip={{
+								content: `<p>Settings</p>`,
+								html: true,
+								placement: 'left',
+								delay: [1000, 0],
+								offset: 25,
+							}}
+						>
+							<NavButton click={() => goto('/settings')}>
+								<img src="/image/button-icons/settings.png" alt="settings" />
+							</NavButton>
+						</div>
 					</div>
 				</div>
-				<ConnectionStateButton
-					iconPath="/image/button-icons/dolphin.svg"
-					connectionState={$dolphinState}
-				/>
+
+				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
+					<ConnectionStateButton
+						iconPath="/image/button-icons/dolphin.svg"
+						connectionState={$dolphinState}
+					/>
+				</div>
 			</div>
 		{:else}
 			<div

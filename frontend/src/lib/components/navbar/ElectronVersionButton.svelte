@@ -70,7 +70,7 @@
 </script>
 
 <div
-	class="relative"
+	class="w-12 h-12 relative flex justify-center items-center"
 	use:tooltip={{
 		content: `<p>${$autoUpdater.status}</p>`,
 		html: true,
@@ -81,12 +81,12 @@
 >
 	{#if $isElectron}
 		<button
-			class="transition opacity-80 hover:opacity-100 justify-center rounded-2xl text-center align-middle z-50 cursor-pointer"
+			class="w-11 h-11 transition opacity-80 hover:opacity-100 rounded-2xl z-50 cursor-pointer flex justify-center items-center"
 			on:click={installUpdate}
 		>
-			<span class={getAnimation($autoUpdater)} />
+			<div class={`${getAnimation($autoUpdater)} w-full h-full`} />
 			<button
-				class={`h-10 w-10 bg-gray-600 bg-opacity-75 justify-center rounded-2xl p-1 col-auto`}
+				class={`w-full h-full bg-gray-600 bg-opacity-75 justify-center rounded-2xl col-auto p-2`}
 				style={`${getStyle($autoUpdater)}`}
 			>
 				<div class="max-h-2 w-full text-center">
