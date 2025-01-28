@@ -188,7 +188,7 @@ export function getPlayerRank(rating: number, regionalPlacement: number, globalP
 			return 'DIAMOND 2';
 		case rating < 2192:
 			return 'DIAMOND 3';
-		case rating >= 2192 && (regionalPlacement <= 100 || globalPlacement <= 300):
+		case rating >= 2192 && (Boolean(regionalPlacement && regionalPlacement <= 100) || Boolean(globalPlacement && globalPlacement <= 300)):
 			return 'GRANDMASTER';
 		case rating < 2275:
 			return 'MASTER 1';
