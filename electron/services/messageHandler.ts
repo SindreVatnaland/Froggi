@@ -23,6 +23,7 @@ import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
+import openurl from 'openurl';
 
 @singleton()
 export class MessageHandler {
@@ -231,5 +232,9 @@ export class MessageHandler {
 		this.clientEmitter.on('Notification', (message: string, type: NotificationType) => {
 			this.sendMessage('Notification', message, type);
 		});
+		this.clientEmitter.on('OpenUrl', (url: string) => {
+			openurl.open(url);
+		});
+
 	}
 }

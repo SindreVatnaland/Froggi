@@ -48,6 +48,7 @@ export interface MessageEvents {
 	BetaOptIn: (optIn: boolean) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
+	CurrentMatch: (match: Match) => void;
 	DolphinConnectionState: (state: ConnectionState | undefined) => void;
 	FroggiSettings: (settings: Froggi) => void;
 	GameFrame: (frame: FrameEntryType | undefined | null) => void;
@@ -59,9 +60,9 @@ export interface MessageEvents {
 	ImportCustomFile: (overlayId: string, directory: string, fileName: string, acceptedExtensions: string[]) => void;
 	ImportCustomFileComplete: (fileName: string) => void;
 	Log: (message: string, severity: LogType) => void;
-	CurrentMatch: (match: Match) => void;
 	MemoryControllerInput: (controllerInputs: PlayerController) => void;
 	Notification: (message: string, type: NotificationType, timeout?: number) => void;
+	OpenUrl: (url: string) => void;
 	PlayersUpdate: (players: Player[]) => void; // Here
 	PostGameStats: (stats: GameStats | undefined) => void;
 	RecentGames: (games: GameStats[][]) => void;
