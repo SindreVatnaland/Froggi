@@ -64,7 +64,6 @@
 				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
 				<BackButton />
-				<div />
 
 				<div class="flex flex-col gap-2">
 					<div
@@ -149,7 +148,54 @@
 				out:fly={{ x: 100, duration: 400 }}
 				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-l-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
-				<div />
+				<div
+					class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
+				>
+					<div
+						use:tooltip={{
+							content: `<p>Support Froggi</p>`,
+							html: true,
+							placement: 'left',
+							delay: [1000, 0],
+							offset: 25,
+						}}
+					>
+						<NavButton click={() => (isMobileOpen = true)}>
+							<img
+								class="object-cover"
+								src="/image/icons/buy-me-a-coffee.svg"
+								alt="mobile"
+							/>
+						</NavButton>
+					</div>
+					<div
+						use:tooltip={{
+							content: `<p>Join Discord</p>`,
+							html: true,
+							placement: 'left',
+							delay: [1000, 0],
+							offset: 25,
+						}}
+					>
+						<NavButton click={() => (isMobileOpen = true)}>
+							<img class="object-cover" src="/image/icons/discord.png" alt="mobile" />
+						</NavButton>
+					</div>
+					<div
+						use:tooltip={{
+							content: `<p>Github</p>`,
+							html: true,
+							placement: 'left',
+							delay: [1000, 0],
+							offset: 25,
+						}}
+					>
+						<NavButton click={() => (isMobileOpen = true)}>
+							<img class="object-cover" src="/image/icons/github.png" alt="mobile" />
+						</NavButton>
+					</div>
+				</div>
+
 				<div
 					class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
 				>
