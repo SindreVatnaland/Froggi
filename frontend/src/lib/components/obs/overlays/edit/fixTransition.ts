@@ -148,6 +148,36 @@ const fixSlippiStatsTransition = (item: GridContentItem) => {
     }
     if (
         [
+            CustomElement.SlippiRankPlayer1Rating,
+        ].includes(item.elementId)
+    ) {
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer1RatingChange] = true;
+    }
+    if (
+        [
+            CustomElement.SlippiRankPlayer2Rating,
+        ].includes(item.elementId)
+    ) {
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer2RatingChange] = true;
+    }
+    if (
+        [
+            CustomElement.SlippiRankPlayer1RankIcon,
+            CustomElement.SlippiRankPlayer1RankText,
+        ].includes(item.elementId)
+    ) {
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer1RankChange] = true;
+    }
+    if (
+        [
+            CustomElement.SlippiRankPlayer2RankIcon,
+            CustomElement.SlippiRankPlayer2RankText,
+        ].includes(item.elementId)
+    ) {
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankPlayer2RankChange] = true;
+    }
+    if (
+        [
             CustomElement.SlippiRankCurrentPlayerRankIcon,
         ].includes(item.elementId)
     ) {

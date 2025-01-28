@@ -14,6 +14,8 @@
 		AnimationTriggerCategory,
 		type SelectedAnimationTriggerCondition,
 	} from '$lib/models/types/animationOption';
+	import Player1DataAnimationTriggerSelect from './Player1DataAnimationTriggerSelect.svelte';
+	import Player2DataAnimationTriggerSelect from './Player2DataAnimationTriggerSelect.svelte';
 
 	export let selectedOption: SelectedAnimationTriggerCondition;
 
@@ -50,6 +52,14 @@
 		},
 		{
 			category: AnimationTriggerCategory.Player2State,
+			visible: [LiveStatsScene.InGame].includes($statsScene),
+		},
+		{
+			category: AnimationTriggerCategory.Player1Data,
+			visible: [LiveStatsScene.InGame].includes($statsScene),
+		},
+		{
+			category: AnimationTriggerCategory.Player2Data,
 			visible: [LiveStatsScene.InGame].includes($statsScene),
 		},
 		{
@@ -120,6 +130,12 @@
 			{/if}
 			{#if selectedCategory === AnimationTriggerCategory.Player2State}
 				<Player2StateAnimationTriggerSelect on:select={select} {selectedOption} />
+			{/if}
+			{#if selectedCategory === AnimationTriggerCategory.Player1Data}
+				<Player1DataAnimationTriggerSelect on:select={select} {selectedOption} />
+			{/if}
+			{#if selectedCategory === AnimationTriggerCategory.Player2Data}
+				<Player2DataAnimationTriggerSelect on:select={select} {selectedOption} />
 			{/if}
 			{#if selectedCategory === AnimationTriggerCategory.RankStats}
 				<RankStatsAnimationTriggerSelect on:select={select} {selectedOption} />

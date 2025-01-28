@@ -22,6 +22,10 @@ export enum AnimationTrigger {
 
     SlippiRankPlayer1ConnectCodeChange = "Player 1 Connect Code Change",
     SlippiRankPlayer2ConnectCodeChange = "Player 2 Connect Code Change",
+    SlippiRankPlayer1RatingChange = "Player 1 Rating Change",
+    SlippiRankPlayer2RatingChange = "Player 2 Rating Change",
+    SlippiRankPlayer1RankChange = "Player 1 Rank Change",
+    SlippiRankPlayer2RankChange = "Player 2 Rank Change",
 
     SlippiRankStatsWinsChange = "Slippi Stats Wins Change",
     SlippiRankStatsLossesChange = "Slippi Stats Losses Change",
@@ -178,6 +182,8 @@ export enum AnimationTriggerCategory {
     DolphinState = "Dolphin State",
     Player1State = "Player1 State",
     Player2State = "Player2 State",
+    Player1Data = "Player1 Data",
+    Player2Data = "Player2 Data",
     GameState = "Game State",
     MatchState = "Match State",
     RankStats = "Rank Stats",

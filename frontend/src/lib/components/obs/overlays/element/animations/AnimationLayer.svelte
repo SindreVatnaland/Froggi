@@ -28,6 +28,10 @@
 		SessionStats,
 	} from '$lib/models/types/slippiData';
 	import { sessionStatsTrigger } from './animationTriggers/SessionStatsTriggers';
+	import {
+		player1RankDataTrigger,
+		player2RankDataTrigger,
+	} from './animationTriggers/SlippiDataChangeTriggers';
 	export let animationIn: Function;
 	export let animationOut: Function;
 	export let dataItem: GridContentItem;
@@ -48,6 +52,10 @@
 		if (inGameStateTrigger(option, $gameSettings, $gameFrame, prevGameFrame))
 			return Math.random();
 		if (currentPlayerInGameTrigger(option, $currentPlayer, $gameFrame, prevGameFrame))
+			return Math.random();
+		if (player1RankDataTrigger(option, $currentPlayers?.at(0), prevPlayers?.at(0)))
+			return Math.random();
+		if (player2RankDataTrigger(option, $currentPlayers?.at(1), prevPlayers?.at(1)))
 			return Math.random();
 		if (player1InGameTrigger(option, $currentPlayers?.at(0), $gameFrame, prevGameFrame))
 			return Math.random();
