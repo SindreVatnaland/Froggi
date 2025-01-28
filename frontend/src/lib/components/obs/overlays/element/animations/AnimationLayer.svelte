@@ -53,9 +53,9 @@
 			return Math.random();
 		if (currentPlayerInGameTrigger(option, $currentPlayer, $gameFrame, prevGameFrame))
 			return Math.random();
-		if (player1RankDataTrigger(option, $currentPlayers?.at(0), prevPlayers?.at(0)))
+		if (player1RankDataTrigger(option, $currentPlayers?.at(0), prevPlayers?.[0]))
 			return Math.random();
-		if (player2RankDataTrigger(option, $currentPlayers?.at(1), prevPlayers?.at(1)))
+		if (player2RankDataTrigger(option, $currentPlayers?.at(1), prevPlayers?.[1]))
 			return Math.random();
 		if (player1InGameTrigger(option, $currentPlayers?.at(0), $gameFrame, prevGameFrame))
 			return Math.random();

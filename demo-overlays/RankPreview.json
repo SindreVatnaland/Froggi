@@ -1,13 +1,14 @@
 {
-	"id": "rank-preview",
-	"aspectRatio": { "width": 16, "height": 9 },
 	"isDemo": true,
 	"description": "Scene Description",
 	"froggiVersion": "0.0.0",
+	"id": "rank-preview",
+	"aspectRatio": { "width": 16, "height": 9 },
 	"title": "Rank Preview",
 	"waitingForDolphin": {
 		"active": false,
-		"id": 631,
+		"fallback": "rankChange",
+		"id": 9073,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -65,13 +66,13 @@
 				}
 			}
 		},
-		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1069, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 11991, "items": [] }]
 	},
 	"menu": {
 		"active": false,
-		"id": 632,
+		"fallback": "rankChange",
+		"id": 9074,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -129,20 +130,20 @@
 				}
 			}
 		},
-		"fallback": "rankChange",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
 				"index": 0,
-				"id": 1070,
+				"preview": true,
+				"id": 11992,
 				"items": [
 					{
 						"512": {
-							"fixed": false,
+							"fixed": true,
 							"resizable": true,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
 							"w": 512,
@@ -236,64 +237,47 @@
 					},
 					{
 						"512": {
-							"fixed": false,
+							"fixed": true,
 							"resizable": true,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
 							"w": 512,
-							"h": 59,
+							"h": 28,
 							"x": 0,
-							"y": 31,
-							"id": "cz0cv3hef"
+							"y": 94,
+							"id": "ci1qu177d"
 						},
-						"elementId": 6000,
-						"id": "cz0cv3hef",
+						"elementId": 4006,
+						"id": "ci1qu177d",
 						"data": {
 							"advancedStyling": false,
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": 2000,
-										"duration": 3000,
-										"easing": "cubicInOut",
+										"delay": 650,
+										"duration": 500,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": -50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"out": {
 									"options": {
-										"delay": 0,
-										"duration": 1000,
-										"easing": "cubicInOut",
+										"delay": 150,
+										"duration": 500,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": 50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
-								"selectedOptions": {
-									"Slippi Stats Rank Change": true,
-									"Player 2 Score Change": false,
-									"Player 1 Score Change": false,
-									"Player 2 Connect Code Change": false,
-									"Player 1 Connect Code Change": false,
-									"Player 2 Tag Change": false,
-									"Player 1 Tag Change": false,
-									"Match Game Mode Change": false,
-									"Match Best Of Change": false,
-									"Slippi Stats Rating Change": false,
-									"Slippi Stats Losses Change": false,
-									"Slippi Stats Wins Change": false,
-									"Session Rating Change": false,
-									"Session Games Number Change": false,
-									"Session Losses Change": false,
-									"Session Wins Change": false
-								}
+								"selectedOptions": { "Slippi Stats Rank Change": true }
 							},
 							"class": { "rounded": "", "alignment": "justify-center" },
 							"css": {
@@ -351,16 +335,16 @@
 					},
 					{
 						"512": {
-							"fixed": false,
+							"fixed": true,
 							"resizable": true,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 512,
+							"w": 511,
 							"h": 24,
-							"x": 0,
+							"x": 1,
 							"y": 122,
 							"id": "csd0g1jpk"
 						},
@@ -371,23 +355,23 @@
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": null,
-										"duration": 250,
+										"delay": 800,
+										"duration": 500,
 										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": -200
+										"y": -50
 									},
 									"type": "fly"
 								},
 								"out": {
 									"options": {
-										"delay": 0,
+										"delay": 300,
 										"duration": 250,
 										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 200
+										"y": 50
 									},
 									"type": "fly"
 								},
@@ -462,47 +446,64 @@
 					},
 					{
 						"512": {
-							"fixed": false,
+							"fixed": true,
 							"resizable": true,
 							"draggable": true,
 							"customDragger": false,
-							"customResizer": false,
+							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
 							"w": 512,
-							"h": 28,
+							"h": 59,
 							"x": 0,
-							"y": 94,
-							"id": "ci1qu177d"
+							"y": 31,
+							"id": "cz0cv3hef"
 						},
-						"elementId": 4006,
-						"id": "ci1qu177d",
+						"elementId": 6000,
+						"id": "cz0cv3hef",
 						"data": {
 							"advancedStyling": false,
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": 2000,
-										"duration": 3000,
+										"delay": 1000,
+										"duration": 500,
 										"easing": "cubicInOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": -50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"out": {
 									"options": {
 										"delay": 0,
-										"duration": 1000,
+										"duration": 500,
 										"easing": "cubicInOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": 50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
-								"selectedOptions": { "Slippi Stats Rank Change": true }
+								"selectedOptions": {
+									"Slippi Stats Rank Change": true,
+									"Player 2 Score Change": false,
+									"Player 1 Score Change": false,
+									"Player 2 Connect Code Change": false,
+									"Player 1 Connect Code Change": false,
+									"Player 2 Tag Change": false,
+									"Player 1 Tag Change": false,
+									"Match Game Mode Change": false,
+									"Match Best Of Change": false,
+									"Slippi Stats Rating Change": false,
+									"Slippi Stats Losses Change": false,
+									"Slippi Stats Wins Change": false,
+									"Session Rating Change": false,
+									"Session Games Number Change": false,
+									"Session Losses Change": false,
+									"Session Wins Change": false
+								}
 							},
 							"class": { "rounded": "", "alignment": "justify-center" },
 							"css": {
@@ -558,14 +559,14 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			}
 		]
 	},
 	"inGame": {
 		"active": false,
-		"id": 633,
+		"fallback": "rankChange",
+		"id": 9075,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -616,13 +617,13 @@
 				}
 			}
 		},
-		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1071, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 11993, "items": [] }]
 	},
 	"postGame": {
 		"active": false,
-		"id": 634,
+		"fallback": "rankChange",
+		"id": 9076,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -673,13 +674,13 @@
 				}
 			}
 		},
-		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1072, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 11994, "items": [] }]
 	},
 	"postSet": {
 		"active": false,
-		"id": 635,
+		"fallback": "rankChange",
+		"id": 9077,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -730,13 +731,13 @@
 				}
 			}
 		},
-		"fallback": "rankChange",
 		"font": { "family": "default", "src": "" },
-		"layers": [{ "index": 0, "id": 1073, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 11995, "items": [] }]
 	},
 	"rankChange": {
 		"active": true,
-		"id": 636,
+		"fallback": "menu",
+		"id": 9078,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -794,12 +795,12 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic", "src": "" },
 		"layers": [
 			{
 				"index": 0,
-				"id": 1074,
+				"preview": true,
+				"id": 11996,
 				"items": [
 					{
 						"512": {
@@ -908,41 +909,41 @@
 							"customResizer": true,
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
-							"w": 512,
-							"h": 59,
-							"x": 0,
-							"y": 31,
-							"id": "c40dzpw7p"
+							"w": 511,
+							"h": 24,
+							"x": 1,
+							"y": 122,
+							"id": "ctuiz3mci"
 						},
-						"elementId": 6000,
-						"id": "c40dzpw7p",
+						"elementId": 4009,
+						"id": "ctuiz3mci",
 						"data": {
 							"advancedStyling": false,
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": 2000,
-										"duration": 3000,
-										"easing": "cubicInOut",
+										"delay": 120,
+										"duration": 250,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": -100
+										"y": -50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"out": {
 									"options": {
-										"delay": null,
-										"duration": 1000,
-										"easing": "cubicInOut",
+										"delay": 0,
+										"duration": 250,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": 50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"selectedOptions": {
-									"Slippi Stats Rank Change": true,
+									"Slippi Stats Rating Change": true,
 									"Player 2 Score Change": false,
 									"Player 1 Score Change": false,
 									"Player 2 Connect Code Change": false,
@@ -951,7 +952,7 @@
 									"Player 1 Tag Change": false,
 									"Match Game Mode Change": false,
 									"Match Best Of Change": false,
-									"Slippi Stats Rating Change": false,
+									"Slippi Stats Rank Change": false,
 									"Slippi Stats Losses Change": false,
 									"Slippi Stats Wins Change": false
 								}
@@ -1032,25 +1033,25 @@
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": 2000,
-										"duration": 3000,
-										"easing": "cubicInOut",
+										"delay": 120,
+										"duration": 250,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": -50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"out": {
 									"options": {
 										"delay": 0,
-										"duration": 1000,
-										"easing": "cubicInOut",
+										"duration": 250,
+										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": 0
+										"y": 50
 									},
-									"type": "fade"
+									"type": "fly"
 								},
 								"selectedOptions": {
 									"Slippi Stats Rank Change": true,
@@ -1131,24 +1132,24 @@
 							"min": { "w": 1, "h": 1 },
 							"max": { "y": 511, "h": 513 },
 							"w": 512,
-							"h": 24,
+							"h": 59,
 							"x": 0,
-							"y": 122,
-							"id": "ctuiz3mci"
+							"y": 31,
+							"id": "c40dzpw7p"
 						},
-						"elementId": 4009,
-						"id": "ctuiz3mci",
+						"elementId": 6000,
+						"id": "c40dzpw7p",
 						"data": {
 							"advancedStyling": false,
 							"animationTrigger": {
 								"in": {
 									"options": {
-										"delay": 0,
+										"delay": 120,
 										"duration": 250,
 										"easing": "cubicOut",
 										"start": 0,
 										"x": 0,
-										"y": -100
+										"y": -50
 									},
 									"type": "fly"
 								},
@@ -1158,13 +1159,13 @@
 										"duration": 250,
 										"easing": "cubicOut",
 										"start": 0,
-										"x": 0,
-										"y": 100
+										"x": null,
+										"y": 50
 									},
 									"type": "fly"
 								},
 								"selectedOptions": {
-									"Slippi Stats Rating Change": true,
+									"Slippi Stats Rank Change": true,
 									"Player 2 Score Change": false,
 									"Player 1 Score Change": false,
 									"Player 2 Connect Code Change": false,
@@ -1173,7 +1174,7 @@
 									"Player 1 Tag Change": false,
 									"Match Game Mode Change": false,
 									"Match Best Of Change": false,
-									"Slippi Stats Rank Change": false,
+									"Slippi Stats Rating Change": false,
 									"Slippi Stats Losses Change": false,
 									"Slippi Stats Wins Change": false
 								}
@@ -1232,17 +1233,17 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 1,
-				"id": 1075,
+				"preview": true,
+				"id": 11997,
 				"items": [
 					{
 						"512": {
 							"fixed": true,
-							"resizable": true,
+							"resizable": false,
 							"draggable": true,
 							"customDragger": false,
 							"customResizer": true,
@@ -1333,7 +1334,7 @@
 								},
 								"out": {
 									"options": {
-										"delay": 0,
+										"delay": 800,
 										"duration": 250,
 										"easing": "cubicOut",
 										"start": 0,
@@ -1362,8 +1363,7 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			}
 		]
 	},
