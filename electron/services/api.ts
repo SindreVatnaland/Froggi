@@ -79,7 +79,7 @@ export class Api {
 			dailyRegionalPlacement: player.rankedNetplayProfile.dailyRegionalPlacement,
 			wins: player.rankedNetplayProfile.wins ?? 0,
 			losses: player.rankedNetplayProfile.losses ?? 0,
-			rating: player.rankedNetplayProfile.ratingOrdinal.toFixed(1),
+			rating: Number(player.rankedNetplayProfile.ratingOrdinal.toFixed(1)),
 
 			continent: player?.rankedNetplayProfile?.continent ?? '',
 			leaderboardPlacement: 0,
