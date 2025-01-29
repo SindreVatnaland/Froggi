@@ -66,13 +66,14 @@
 			// is offline or misbehaving.
 			async function checkNetworkAndReload() {
 				while (true) {
+					await new Promise((resolve) => setTimeout(resolve, 5000));
 					try {
 						const response = await fetch('.');
+						console.log(response.status);
 						if (response.status >= 200 && response.status < 500) {
 							window.location.reload();
 						}
 					} catch {}
-					await new Promise((resolve) => setTimeout(resolve, 5000));
 				}
 			}
 
