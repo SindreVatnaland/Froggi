@@ -241,6 +241,7 @@ export class ObsWebSocket {
 	}
 
 	private pauseProcessSearchInterval(timeout: number) {
+		this.log.info(`Pausing OBS Process Search for ${timeout}ms`);
 		clearInterval(this.obsProcessInterval);
 		setTimeout(() => {
 			this.startProcessSearchInterval();

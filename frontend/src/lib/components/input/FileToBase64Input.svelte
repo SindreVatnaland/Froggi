@@ -12,13 +12,13 @@
 	export let acceptedExtensions: string | undefined = undefined;
 </script>
 
-<div class="grid">
+<div class="flex flex-col relative">
 	{#if label}
-		<h1 class="text-secondary-color text-sm font-medium text-shadow">{label}</h1>
+		<p class="text-secondary-color text-sm font-medium absolute top-[-1.2rem]">{label}</p>
 	{/if}
 	<div class="flex flex-col items-center">
 		<button
-			class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 w-full px-2 xl:text-xl border  rounded`}
+			class={`transition background-color-primary px-4 border-secondary-color bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 w-full xl:text-xl border rounded`}
 			on:click={() => {
 				fileinput.click();
 			}}

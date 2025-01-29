@@ -188,7 +188,7 @@
 				>
 					Add new element
 				</button>
-				<div class="flex gap-4">
+				<div class="flex gap-4 w-full justify-between">
 					<SceneSelect />
 					<ExternalPreviewSettings bind:base64={tempBackgroundImage} />
 				</div>
