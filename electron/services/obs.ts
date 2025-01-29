@@ -205,6 +205,7 @@ export class ObsWebSocket {
 
 			if (!obsWebsocketConfig) {
 				this.log.error('Could not get OBS Websocket Config');
+				this.pauseProcessSearchInterval(60000);
 				return;
 			};
 			this.log.info('OBS WebSocket Config: ', obsWebsocketConfig);
@@ -219,11 +220,7 @@ export class ObsWebSocket {
 
 			if (obsWebsocketConfig?.server_enabled === false) {
 				this.log.error('OBS Websocket is not enabled');
-				clearInterval(this.obsProcessInterval);
-				await new Promise<void>((resolve) => setTimeout(() => {
-					resolve();
-					this.startProcessSearchInterval();
-				}, 120000));
+				this.pauseProcessSearchInterval(120000);
 			}
 
 			if (this.shouldSendNotification) {
@@ -234,11 +231,18 @@ export class ObsWebSocket {
 				);
 				this.shouldSendNotification = false;
 			}
-		}, 5000);
+		}, 15000);
 	}
 
 	private stopProcessSearchInterval() {
 		clearInterval(this.obsProcessInterval);
+	}
+
+	private pauseProcessSearchInterval(timeout: number) {
+		clearInterval(this.obsProcessInterval);
+		setTimeout(() => {
+			this.startProcessSearchInterval();
+		}, timeout);
 	}
 
 	executeCommand = async <T extends keyof OBSRequestTypes>(
