@@ -183,7 +183,7 @@
 						out:fade={{ duration: 300 }}
 					>
 						<div
-							class={`w-full h-[50%] bg-${i ? 'black' : 'white'} 'absolute'`}
+							class={`w-full h-[50%] ${i ? 'bg-black' : 'bg-white'} 'absolute'`}
 							style={`font-family: ${
 								getCurrentOverlay()?.[$statsScene]?.font?.family
 							}`}

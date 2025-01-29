@@ -93,7 +93,7 @@
 
 <img
 	class="rounded-sm border-secondary"
-	src="/image/tutorial/new-overlay/preview-game-end.png"
+	src="/image/tutorial/new-overlay/preview-game-end-layers.png"
 	alt="Preview game end"
 />
 
