@@ -12,7 +12,7 @@ export const sessionStatsTrigger = (
 	sessionStats: SessionStats | undefined,
 	prevSessionStats: SessionStats | undefined,
 ) => {
-	if (isNil(sessionStats) || isNil(prevSessionStats) || isNil(sessionStats.currentRankStats) || isNil(sessionStats.startRankStats)) return;
+	if (isNil(sessionStats) || isNil(prevSessionStats)) return;
 	if (isNil(sessionStats.currentRankStats) || isNil(sessionStats.startRankStats)) return;
 	if (isNil(prevSessionStats.currentRankStats) || isNil(prevSessionStats.startRankStats)) return;
 	let trigger = false;
@@ -27,6 +27,7 @@ export const sessionStatsTrigger = (
 	const prevTotalSessionLosses = prevSessionStats.startRankStats.losses - prevSessionStats.startRankStats.losses
 	const sessionRating = sessionStats.currentRankStats.rating - sessionStats.currentRankStats.rating
 	const prevSessionRating = prevSessionStats.startRankStats.rating - prevSessionStats.startRankStats.rating
+
 	if (option[AnimationTrigger.SessionGames])
 		trigger =
 			totalSessionGames !== prevTotalSessionGames ||

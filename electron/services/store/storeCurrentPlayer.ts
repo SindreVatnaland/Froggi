@@ -61,7 +61,6 @@ export class ElectronCurrentPlayerStore {
 		if (!rankStats || !connectCode) return;
 		this.log.info('Setting new rank stats', rankStats);
 		this.store.set(`player.${connectCode}.rank.new`, rankStats);
-		this.storeSession.updateSessionStats(rankStats);
 		this.updateCurrentPlayerRankHistory(rankStats);
 	}
 
@@ -116,6 +115,7 @@ export class ElectronCurrentPlayerStore {
 			this.unsubscribeListeners();
 			this.initListeners();
 		});
+		this.initListeners();
 	}
 
 	private initListeners() {
@@ -124,6 +124,9 @@ export class ElectronCurrentPlayerStore {
 		this.listeners = [
 			this.store.onDidChange(`player.${connectCode}`, (value) => {
 				this.messageHandler.sendMessage('CurrentPlayer', value as CurrentPlayer);
+			}),
+			this.store.onDidChange(`player.${connectCode}.rank.current`, async (rank) => {
+				this.storeSession.updateSessionStats(rank as RankedNetplayProfile);
 			}),
 			this.store.onDidChange(`player.${connectCode}.rank.new`, async () => {
 				await this.handleRankChange();

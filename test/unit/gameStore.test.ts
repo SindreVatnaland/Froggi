@@ -90,7 +90,7 @@ describe('ElectronGamesStore', () => {
         const slpStream: any = {
             on: () => { }
         }
-        const storeSession: ElectronSessionStore = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer)
+        const storeSession: ElectronSessionStore = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
 
         storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter, {} as any, {} as any);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode

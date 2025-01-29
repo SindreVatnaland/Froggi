@@ -14,7 +14,7 @@ export const getHoursDifference = (date1: Date, date2: Date): number => {
     const timeDifference = date1.getTime() - date2.getTime();
     const hoursDifference = timeDifference / (1000 * 60 * 60);
 
-    return hoursDifference;
+    return Math.abs(hoursDifference);
 }
 
 export const getGameMode = (settings: GameStartType | null): GameStartMode => {

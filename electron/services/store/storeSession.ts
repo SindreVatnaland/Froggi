@@ -6,6 +6,7 @@ import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
 import { dateTimeNow, getHoursDifference } from '../../utils/functions';
 import { ElectronCurrentPlayerStore } from './storeCurrentPlayer';
+import { ElectronSettingsStore } from './storeSettings';
 
 
 @singleton()
@@ -16,9 +17,10 @@ export class ElectronSessionStore {
         @inject("ElectronStore") private store: Store,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
         @inject(delay(() => ElectronCurrentPlayerStore)) private storeCurrentPlayer: ElectronCurrentPlayerStore,
+        @inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
     ) {
-        this.log.info("Initializing Session Store")
-        this.initPlayerListener()
+        this.log.info("Initializing Session Store");
+        this.initPlayerListener();
     }
 
     getSessionStats(): SessionStats | undefined {
@@ -43,12 +45,14 @@ export class ElectronSessionStore {
     }
 
     updateSessionStats(rankStats: RankedNetplayProfile | undefined) {
+        this.log.info("Updating Session Stats", rankStats)
         if (!rankStats) return;
         const player = this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
+        console.log("Player", `player.${player.connectCode}.session`)
         let session = this.getSessionStats();
         if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
-            this.resetSessionStats();
+            session = this.resetSessionStats();
             return
         }
         session.latestUpdate = dateTimeNow();
@@ -57,17 +61,19 @@ export class ElectronSessionStore {
     }
 
     private initPlayerListener() {
-        this.store.onDidChange(`stats.currentPlayers`, async () => {
+        this.store.onDidChange(`settings.currentPlayer.connectCode`, async () => {
             this.unsubscribeListeners()
             this.initListeners()
         })
+        this.initListeners();
     }
 
     private initListeners() {
-        const player = this.storeCurrentPlayer.getCurrentPlayer()
-        if (!player) return;
+        const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
+        if (!connectCode) return;
         this.listeners = [
-            this.store.onDidChange(`player.${player.connectCode}.session`, (value) => {
+            this.store.onDidChange(`player.${connectCode}.session`, (value) => {
+                console.log("SessionStats", value)
                 this.messageHandler.sendMessage("SessionStats", value as SessionStats)
             }),
         ]

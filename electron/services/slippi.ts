@@ -16,7 +16,6 @@ import { ElectronSettingsStore } from './store/storeSettings';
 import { findPlayKey } from '../utils/playkey';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { MemoryRead } from './memoryRead';
-import { ElectronSessionStore } from './store/storeSession';
 import { isDolphinRunning } from '../utils/dolphinProcess';
 import { MessageHandler } from './messageHandler';
 
@@ -31,7 +30,6 @@ export class SlippiJs {
 		@inject(ElectronCurrentPlayerStore) private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(ElectronDolphinStore) private storeDolphin: ElectronDolphinStore,
 		@inject(ElectronLiveStatsStore) private storeLiveStats: ElectronLiveStatsStore,
-		@inject(ElectronSessionStore) private storeSession: ElectronSessionStore,
 		@inject(ElectronSettingsStore) private storeSettings: ElectronSettingsStore,
 		@inject(MessageHandler) private messageHandler: MessageHandler,
 		@inject(MemoryRead) private memoryRead: MemoryRead,
@@ -109,7 +107,6 @@ export class SlippiJs {
 		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)
 		this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(rankedNetplayProfile);
 		this.storeCurrentPlayer.setCurrentPlayerNewRankStats(rankedNetplayProfile);
-		this.storeSession.updateSessionStats(rankedNetplayProfile);
 	}
 
 	private async startProcessSearchInterval() {
