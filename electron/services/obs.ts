@@ -194,6 +194,8 @@ export class ObsWebSocket {
 	};
 
 	private async startProcessSearchInterval() {
+		const connectionState = this.storeObs.getConnectionState();
+		if (connectionState === ConnectionState.Connected) return;
 		this.stopProcessSearchInterval();
 		this.storeObs.setConnectionState(ConnectionState.Searching);
 		this.log.info('Looking For OBS Process');
