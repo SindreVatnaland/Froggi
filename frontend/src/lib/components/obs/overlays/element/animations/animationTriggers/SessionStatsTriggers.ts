@@ -17,16 +17,14 @@ export const sessionStatsTrigger = (
 	if (isNil(prevSessionStats.currentRankStats) || isNil(prevSessionStats.startRankStats)) return;
 	let trigger = false;
 
-
-
-	const totalSessionGames = sessionStats.currentRankStats.totalGames - sessionStats.currentRankStats.totalGames
-	const prevTotalSessionGames = prevSessionStats.startRankStats.totalGames - prevSessionStats.startRankStats.totalGames
-	const totalSessionWins = sessionStats.currentRankStats.wins - sessionStats.currentRankStats.wins
-	const prevTotalSessionWins = prevSessionStats.startRankStats.wins - prevSessionStats.startRankStats.wins
-	const totalSessionLosses = sessionStats.currentRankStats.losses - sessionStats.currentRankStats.losses
-	const prevTotalSessionLosses = prevSessionStats.startRankStats.losses - prevSessionStats.startRankStats.losses
-	const sessionRating = sessionStats.currentRankStats.rating - sessionStats.currentRankStats.rating
-	const prevSessionRating = prevSessionStats.startRankStats.rating - prevSessionStats.startRankStats.rating
+	const totalSessionGames = sessionStats.currentRankStats.totalGames
+	const prevTotalSessionGames = prevSessionStats.currentRankStats.totalGames
+	const totalSessionWins = sessionStats.currentRankStats.wins
+	const prevTotalSessionWins = prevSessionStats.currentRankStats.wins
+	const totalSessionLosses = sessionStats.currentRankStats.losses
+	const prevTotalSessionLosses = prevSessionStats.currentRankStats.losses
+	const sessionRating = sessionStats.currentRankStats.rating
+	const prevSessionRating = prevSessionStats.currentRankStats.rating
 
 	if (option[AnimationTrigger.SessionGames])
 		trigger =
