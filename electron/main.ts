@@ -75,6 +75,7 @@ try {
 	let backgroundNotification: Notification;
 
 	app.commandLine.appendSwitch("disable-background-timer-throttling")
+	app.commandLine.appendSwitch('disable-renderer-backgrounding')
 
 	function createWindow(): BrowserWindow {
 		log.info('Creating window');
