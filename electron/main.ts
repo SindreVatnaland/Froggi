@@ -74,6 +74,8 @@ try {
 	let tray: Tray;
 	let backgroundNotification: Notification;
 
+	app.commandLine.appendSwitch("disable-background-timer-throttling")
+
 	function createWindow(): BrowserWindow {
 		log.info('Creating window');
 		let windowState = windowStateManager({
@@ -266,6 +268,15 @@ try {
 		hiddenWindow.loadURL('about:blank');
 	};
 
+	function setPriority() {
+		try {
+			os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
+		}
+		catch (err) {
+			mainLog.error(err);
+		}
+	}
+
 	app.on('second-instance', () => {
 		if (!mainWindow) return;
 		if (mainWindow.isMinimized()) mainWindow.restore();
@@ -274,7 +285,7 @@ try {
 
 	app.on('ready', async () => {
 		if (!dev) await performUpdate(app, mainLog);
-		os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
+		setPriority();
 		createMainWindow();
 		createHiddenWindow();
 	});
