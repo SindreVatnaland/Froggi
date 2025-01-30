@@ -274,9 +274,9 @@ try {
 
 	app.on('ready', async () => {
 		if (!dev) await performUpdate(app, mainLog);
+		os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
 		createMainWindow();
 		createHiddenWindow();
-		os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
 	});
 
 	app.on('activate', () => {
