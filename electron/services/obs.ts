@@ -80,6 +80,7 @@ export class ObsWebSocket {
 	};
 
 	private reloadBrowserSources = async () => {
+		this.log.info('Refreshing Browser Sources');
 		const scenes = await this.obs.call('GetSceneList');
 		const sceneList = scenes.scenes.map((scene) => scene.sceneName);
 		for (const scene of sceneList) {
@@ -91,7 +92,7 @@ export class ObsWebSocket {
 				itemsList.sceneItems.forEach(async (item) => {
 					if (item.inputKind === 'browser_source') {
 						try {
-
+							this.log.info(`Refreshing browser source: ${item.sourceName}`);
 							await this.obs.call('PressInputPropertiesButton', {
 								inputName: `${item.sourceName}`,
 								propertyName: 'refreshnocache',
