@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { app, BrowserWindow, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification } from 'electron';
+import { app, BrowserWindow, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification, powerSaveBlocker } from 'electron';
 import contextMenu from 'electron-context-menu';
 import { container } from 'tsyringe';
 import getAppDataPath from 'appdata-path';
@@ -76,6 +76,8 @@ try {
 
 	app.commandLine.appendSwitch("disable-background-timer-throttling")
 	app.commandLine.appendSwitch('disable-renderer-backgrounding')
+
+	powerSaveBlocker.start('prevent-display-sleep');
 
 	function createWindow(): BrowserWindow {
 		log.info('Creating window');
