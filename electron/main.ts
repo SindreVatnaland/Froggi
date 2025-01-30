@@ -70,6 +70,7 @@ try {
 	const port = dev ? `${VITE_PORT}` : `${BACKEND_PORT}`;
 
 	let mainWindow: BrowserWindow | any;
+	let hiddenWindow: BrowserWindow | any;
 	let tray: Tray;
 	let backgroundNotification: Notification;
 
@@ -86,6 +87,7 @@ try {
 			minHeight: 600,
 			minWidth: 800,
 			webPreferences: {
+				backgroundThrottling: false,
 				contextIsolation: true,
 				devTools: true, // dev,
 				nodeIntegration: true,
@@ -254,6 +256,16 @@ try {
 		});
 	}
 
+	function createHiddenWindow() {
+		hiddenWindow = new BrowserWindow({
+			show: false,
+			webPreferences: {
+				backgroundThrottling: false
+			}
+		});
+		hiddenWindow.loadURL('about:blank');
+	};
+
 	app.on('second-instance', () => {
 		if (!mainWindow) return;
 		if (mainWindow.isMinimized()) mainWindow.restore();
@@ -263,6 +275,7 @@ try {
 	app.on('ready', async () => {
 		if (!dev) await performUpdate(app, mainLog);
 		createMainWindow();
+		createHiddenWindow();
 		os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
 	});
 

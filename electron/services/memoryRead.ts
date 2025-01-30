@@ -32,6 +32,7 @@ export class MemoryRead {
 		clearInterval(this.dolphinProcessInterval);
 		this.memory = new DolphinMemory();
 		await this.memory.init();
+		this.log.info('Memory Read Initialized');
 		this.memoryReadInterval = setInterval(() => {
 			try {
 				if (isNil(this.memory)) {
