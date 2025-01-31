@@ -342,7 +342,6 @@
 
 		const emitElectronMessage = async (event: any, ...data: any) => {
 			const _authorizationKey = await getAuthorizationKey();
-			console.log(_authorizationKey, data);
 			socket.send(
 				JSON.stringify({
 					[event as string]: data,

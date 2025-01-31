@@ -200,27 +200,7 @@ export class StatsDisplay {
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 
 		if ((this.isDev || game.settings?.isSimulated) && playerConnectCode) {
-			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
-			await new Promise((resolve) => setTimeout(resolve, 2000));
-			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
-			if (!currentPlayerRankStats) return;
-			const didWin = Math.random() > 0.5;
-			const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
-			const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
-			const newMockRank = getPlayerRank(newMockRating, 0, 0);
-			const prevRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
-			currentPlayerRankStats = {
-				...currentPlayerRankStats,
-				rating: newMockRating,
-				rank: newMockRank,
-				wins: currentPlayerRankStats.wins + (didWin ? 1 : 0),
-				losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
-				isMock: true,
-			}
-			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
-			setTimeout(() => {
-				this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
-			}, 10000);
+			this.mockPostGameScene();
 			return;
 		}
 
@@ -243,6 +223,30 @@ export class StatsDisplay {
 				LiveStatsScene.Menu,
 				150000,
 			);
+	}
+
+	private async mockPostGameScene() {
+		this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+		let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		if (!currentPlayerRankStats) return;
+		const didWin = Math.random() > 0.5;
+		const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
+		const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
+		const newMockRank = getPlayerRank(newMockRating, 0, 0);
+		const prevRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		currentPlayerRankStats = {
+			...currentPlayerRankStats,
+			rating: newMockRating,
+			rank: newMockRank,
+			wins: currentPlayerRankStats.wins + (didWin ? 1 : 0),
+			losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
+			isMock: true,
+		}
+		this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+		setTimeout(() => {
+			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
+		}, 10000);
 	}
 
 	private handleInGameState(gameEnd: GameEndType | null, latestGameFrame: FrameEntryType | null) {
@@ -471,6 +475,8 @@ export class StatsDisplay {
 	}
 
 	simulateGameEnd = async () => {
+		const liveStatsScene = this.storeLiveStats.getStatsScene();
+		if (liveStatsScene === LiveStatsScene.RankChange) return;
 		const game = await this.getRecentReplay();
 		if (!game) return;
 		const gameEnd = game.getGameEnd();
