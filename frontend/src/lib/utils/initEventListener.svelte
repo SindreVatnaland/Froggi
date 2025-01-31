@@ -377,6 +377,6 @@
 		notifications.danger('Lost connection to Froggi', 2000);
 		setTimeout(() => {
 			initWebSocket();
-		}, 1000);
+		}, 3000);
 	};
 </script>

@@ -20,11 +20,6 @@
 
 	let base64: string;
 
-	$: isVerticalOverlay =
-		(curOverlay?.aspectRatio?.height ?? 1) > (curOverlay?.aspectRatio.width ?? 1);
-
-	$: isVerticalScreen = innerHeight > innerWidth;
-
 	$: url = $isElectron ? $urls?.local : $urls?.external;
 	$: src = `${url}/obs/overlay/${overlayId}/layers`;
 </script>
