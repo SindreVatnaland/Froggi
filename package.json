@@ -31,12 +31,13 @@
 		"build:win32": "npm run compile && electron-builder -w --config build.config.json",
 		"compile": "npm run build:svelte && npm run compile:electron && tsc --p ./electron/tsconfig.json",
 		"compile:electron": "npm run && tsc --p ./electron/tsconfig.json && npm run copy",
-		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend",
+		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend && npm run dependencies:copy",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles",
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
 		"copy": "npm run overlay:copy && npm run update:copy",
 		"overlay:copy": "shx mkdir -p ./build_electron/electron/demo-overlays && shx cp -r ./demo-overlays/* ./build_electron/electron/demo-overlays",
-		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update"
+		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update",
+		"dependencies:copy": "shx cp -r ./dependencies/* ./node_modules"
 	},
 	"engines": {
 		"npm": ">=7",

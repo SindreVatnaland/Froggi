@@ -55,6 +55,8 @@ export interface MessageEvents {
 	GameScore: (score: number[]) => void;
 	GameSettings: (settings: GameStartTypeExtended | undefined) => void;
 	GameState: (state: InGameState | undefined) => void;
+	InjectOverlay: (overlayId: string) => void;
+	CloseInjectedOverlay: (overlayId: string) => void;
 	InitElectron: () => void;
 	InitData: (socketId: string, authorizeKey: string | undefined) => void;
 	ImportCustomFile: (overlayId: string, directory: string, fileName: string, acceptedExtensions: string[]) => void;
@@ -72,7 +74,6 @@ export interface MessageEvents {
 	RecentRankedSets: (games: GameStats[]) => void;
 	RemoveDuplicateItems: () => void;
 	RemoveDuplicateItemsByOverlayId: (overlayId: string) => void;
-	SessionStats: (session: SessionStats | undefined) => void;
 	LiveStatsSceneChange: (scene: LiveStatsScene) => void;
 	LayerDelete: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, LayerDelete: number) => void;
 	LayerDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number) => void;
@@ -94,6 +95,7 @@ export interface MessageEvents {
 	SceneItemDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number, prevItemId: string) => void;
 	SceneUpdate: (overlayId: string, liveStatsScene: LiveStatsScene, scene: Scene) => void;
 	SelectedItemChange: (itemId: string) => void;
+	SessionStats: (session: SessionStats | undefined) => void;
 	SimulateGameStart: () => void;
 	SimulateGameEnd: () => void;
 
