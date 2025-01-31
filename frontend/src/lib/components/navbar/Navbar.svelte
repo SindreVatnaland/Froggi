@@ -200,7 +200,7 @@
 				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
 					<ConnectionStateButton
 						iconPath="/image/button-icons/dolphin.svg"
-						style="background-color: rgba(0, 0, 0, 0.1);"
+						class="bg-opacity-10 bg-black"
 						connectionState={$dolphinState}
 					/>
 				</div>

@@ -460,12 +460,12 @@ export class StatsDisplay {
 		this.storeLiveStats.setGameState(InGameState.Running);
 		await this.handleGameFrame(frames[0]);
 		this.handleGameStart(settings);
-		await this.waitWithCancel(1000);
-		for (const frame of Object.values(frames)) {
+		const sortedKeys = Object.keys(frames).map(Number).sort((a, b) => a - b);
+		for (const key of sortedKeys) {
 			if (this.abortController.signal.aborted) return;
-			frame.frame = (frame.frame ?? 0) - 123;
+			const frame = frames[key];
 			await this.handleGameFrame(frame);
-			await await this.waitWithCancel(16);
+			await this.waitWithCancel(16);
 		}
 
 		const gameEnd = game.getGameEnd();

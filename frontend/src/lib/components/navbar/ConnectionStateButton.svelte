@@ -6,7 +6,10 @@
 	export let connectionState: ConnectionState = ConnectionState.None;
 	export let iconPath: string = '';
 	export let style: string = '';
+	export { _class as class };
 	export let click = () => {};
+
+	let _class: string;
 
 	const getBorderStyle = (state: ConnectionState) => {
 		switch (state) {
@@ -37,7 +40,7 @@
 
 <div class="relative flex justify-end items-center">
 	<button
-		class="transition w-full flex flex-col items-center justify-center hover:opacity-100 rounded-2xl text-center align-middle z-50 cursor-pointer dark:bg-white"
+		class={`transition w-full flex flex-col items-center justify-center hover:opacity-100 rounded-2xl text-center align-middle z-50 cursor-pointer dark:bg-white ${_class}`}
 		style={`${style};`}
 		transition:fly={{ duration: 150, x: -50 }}
 		on:click={click}
