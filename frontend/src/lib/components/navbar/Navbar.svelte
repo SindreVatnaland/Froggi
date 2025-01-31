@@ -16,6 +16,7 @@
 	import ConnectionStateButton from './ConnectionStateButton.svelte';
 	import ElectronVersionButton from './ElectronVersionButton.svelte';
 	import { tooltip } from 'svooltip';
+	import BuyMeACoffee from './BuyMeACoffee.svelte';
 
 	function resetVisibilityTimer() {
 		if ($isElectron) {
@@ -138,16 +139,7 @@
 								offset: 25,
 							}}
 						>
-							<NavButton
-								click={() => openUrl('https://buymeacoffee.com/sindrevatnw')}
-								style="border-color: #FFDD00; background-color: #FFDD00;"
-							>
-								<img
-									class="object-cover"
-									src="/image/icons/buy-me-a-coffee.svg"
-									alt="mobile"
-								/>
-							</NavButton>
+							<BuyMeACoffee />
 						</div>
 					</div>
 				</div>
@@ -205,9 +197,10 @@
 					</div>
 				</div>
 
-				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%] background">
+				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
 					<ConnectionStateButton
 						iconPath="/image/button-icons/dolphin.svg"
+						style="background-color: rgba(0, 0, 0, 0.1);"
 						connectionState={$dolphinState}
 					/>
 				</div>
