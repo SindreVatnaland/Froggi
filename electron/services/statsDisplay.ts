@@ -36,31 +36,35 @@ import { Command } from '../../frontend/src/lib/models/types/overlay';
 import { MessageHandler } from './messageHandler';
 import path from 'path';
 import { PacketCapture } from './packetCapture';
+import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 
 @singleton()
 export class StatsDisplay {
 	private pauseInterval: NodeJS.Timeout;
 	private isWin: boolean = os.platform() === 'win32';
+	private abortController: AbortController = new AbortController();
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
+		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject('Dev') private isDev: boolean,
 		@inject('SlpParser') private slpParser: SlpParser,
 		@inject('SlpStream') private slpStream: SlpStream,
 		@inject(delay(() => Api)) private api: Api,
-		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => ElectronPlayersStore)) private storePlayers: ElectronPlayersStore,
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
+		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(PacketCapture) private packetCapture: PacketCapture,
 	) {
 		this.initStatDisplay();
+		this.initListeners();
 	}
 
 	private async initStatDisplay() {
-		this.log.info('Initializeing Dolphin Events');
+		this.log.info('Initializing Dolphin Events');
 		this.slpStream.on(SlpStreamEvent.COMMAND, async (event: SlpRawEventPayload) => {
 			this.slpParser.handleCommand(event.command, event.payload);
 			if (event.command === Command.GAME_START) {
@@ -192,7 +196,8 @@ export class StatsDisplay {
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
-		if (this.isDev && isPostSet && playerConnectCode) {
+
+		if ((this.isDev || game.settings?.isSimulated) && isPostSet && playerConnectCode) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
@@ -201,33 +206,40 @@ export class StatsDisplay {
 			const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
 			const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
 			const newMockRank = getPlayerRank(newMockRating, 0, 0);
+			const prevRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 			currentPlayerRankStats = {
 				...currentPlayerRankStats,
 				rating: newMockRating,
 				rank: newMockRank,
 				wins: currentPlayerRankStats.wins + (didWin ? 1 : 0),
 				losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
+				isMock: true,
 			}
-			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			setTimeout(() => {
+				this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
+			}, 5000);
+			return;
 		}
 
 		if (isPostSet && isRanked && playerConnectCode && oldRank) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
-			return this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			return;
 		}
 
 		if (isPostSet) {
 			return this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostSet,
 				LiveStatsScene.Menu,
-				60000,
+				150000,
 			);
 		} else
 			return this.storeLiveStats.setStatsSceneTimeout(
 				LiveStatsScene.PostGame,
 				LiveStatsScene.Menu,
-				60000,
+				150000,
 			);
 	}
 
@@ -416,5 +428,80 @@ export class StatsDisplay {
 		return {
 			...game.getStats(),
 		} as StatsTypeExtended;
+	}
+
+	private getRecentReplay = async (): Promise<SlippiGame | undefined> => {
+		const files = await this.getGameFiles();
+		if (!files || !files.length) return;
+		const file = files.find((file) => {
+			const settings = new SlippiGame(file).getSettings();
+			return settings?.players.some((player) => player?.connectCode);
+		});
+		if (!file) return;
+		const game = new SlippiGame(file);
+		return game;
+	};
+
+	simulateGame = async () => {
+		this.cancelSimulation();
+		const game = await this.getRecentReplay();
+		if (!game) return;
+		const settings = game.getSettings();
+		const frames = game.getFrames()
+		if (!settings || !frames) return;
+		settings.isSimulated = true;
+		this.stopPauseInterval();
+		this.storeLiveStats.setGameState(InGameState.Running);
+		await this.handleGameFrame(frames[0]);
+		this.handleGameStart(settings);
+		await this.waitWithCancel(1000);
+		for (const frame of Object.values(frames)) {
+			if (this.abortController.signal.aborted) return;
+			frame.frame = (frame.frame ?? 0) - 123;
+			await this.handleGameFrame(frame);
+			await await this.waitWithCancel(16);
+		}
+
+		const gameEnd = game.getGameEnd();
+		const latestFrame = game.getLatestFrame();
+		if (!gameEnd) return;
+		this.handleGameEnd(gameEnd, latestFrame, settings);
+	}
+
+	simulateGameEnd = async () => {
+		this.cancelSimulation();
+		const game = await this.getRecentReplay();
+		if (!game) return;
+		const gameEnd = game.getGameEnd();
+		const latestFrame = game.getLatestFrame();
+		const settings = game.getSettings();
+		if (!gameEnd || !settings) return;
+		settings.isSimulated = true;
+		this.handleGameEnd(gameEnd, latestFrame, settings);
+	}
+
+	private waitWithCancel = (ms: number) => {
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(resolve, ms);
+			if (this.abortController) {
+				this.abortController.signal.addEventListener("abort", () => {
+					clearTimeout(timeout);
+					reject(new Error("Simulation canceled"));
+				});
+			}
+		});
+	};
+
+	private cancelSimulation = () => {
+		if (this.abortController) {
+			this.abortController.abort();
+			console.log("Simulation stopped");
+		}
+		this.abortController = new AbortController();
+	};
+
+	private initListeners() {
+		this.clientEmitter.on('SimulateGameStart', this.simulateGame.bind(this));
+		this.clientEmitter.on('SimulateGameEnd', this.simulateGameEnd.bind(this));
 	}
 }

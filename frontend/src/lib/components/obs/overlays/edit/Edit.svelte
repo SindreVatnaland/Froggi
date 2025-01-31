@@ -25,6 +25,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import { onMount } from 'svelte';
 	import ExternalPreviewSettings from '../preview/ExternalPreviewSettings.svelte';
+	import SimulateGame from '$lib/components/commandButtons/SimulateGame.svelte';
 
 	const overlayId = $page.params.overlay;
 
@@ -190,6 +191,7 @@
 				</button>
 				<div class="flex gap-4 w-full justify-between">
 					<SceneSelect />
+					<SimulateGame />
 					<ExternalPreviewSettings bind:base64={tempBackgroundImage} />
 				</div>
 			</div>

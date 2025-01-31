@@ -148,6 +148,7 @@ export interface RankedNetplayProfile {
     totalSets: number;
     wins: number;
     winsPercent: number;
+    isMock?: boolean | undefined;
 }
 
 export interface SessionStats {

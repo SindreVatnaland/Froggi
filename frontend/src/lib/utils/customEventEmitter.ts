@@ -94,6 +94,8 @@ export interface MessageEvents {
 	SceneItemDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number, prevItemId: string) => void;
 	SceneUpdate: (overlayId: string, liveStatsScene: LiveStatsScene, scene: Scene) => void;
 	SelectedItemChange: (itemId: string) => void;
+	SimulateGameStart: () => void;
+	SimulateGameEnd: () => void;
 
 	AuthorizationKey: (key: string) => void;
 	AuthorizationKeyUpdate: (key: string) => void;

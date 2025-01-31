@@ -61,6 +61,7 @@ export class ElectronCurrentPlayerStore {
 		if (!rankStats || !connectCode) return;
 		this.log.info('Setting new rank stats', rankStats);
 		this.store.set(`player.${connectCode}.rank.new`, rankStats);
+		if (rankStats.isMock) return;
 		this.updateCurrentPlayerRankHistory(rankStats);
 	}
 
@@ -74,6 +75,8 @@ export class ElectronCurrentPlayerStore {
 	}
 
 	updateCurrentPlayerRankHistory(rankStats: RankedNetplayProfile) {
+		const prevRank = this.getCurrentPlayerCurrentRankStats();
+		if (prevRank?.totalGames === rankStats.totalGames) return;
 		return;
 		// TODO: Move this to sqlite
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
@@ -104,7 +107,7 @@ export class ElectronCurrentPlayerStore {
 				this.storeLiveStats.setStatsSceneTimeout(
 					LiveStatsScene.PostSet,
 					LiveStatsScene.Menu,
-					60000 - rankSceneTimeout - 100,
+					150000 - rankSceneTimeout - 100,
 				);
 			}, rankSceneTimeout)
 		}
