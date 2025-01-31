@@ -2,6 +2,15 @@
 	import { electronEmitter } from '$lib/utils/store.svelte';
 	import NavButton from './NavButton.svelte';
 
+	let gifSrc = '/image/icons/buy-me-a-coffee.gif';
+
+	const restartGif = () => {
+		gifSrc = '';
+		setTimeout(() => {
+			gifSrc = '/image/icons/buy-me-a-coffee.gif';
+		});
+	};
+
 	const openUrl = (url: string) => {
 		$electronEmitter.emit('OpenUrl', url);
 	};
@@ -11,17 +20,15 @@
 	click={() => openUrl('https://buymeacoffee.com/sindrevatnw')}
 	style="border-color: #FFDD00; background-color: #FFDD00;"
 >
-	<div class="image-container">
+	<div class="image-container overflow-hidden" on:mouseenter={restartGif}>
 		<img
-			class="static object-contain"
+			class="static object-contain scale-[0.80]"
 			src="/image/icons/buy-me-a-coffee.png"
 			alt="Buy me a coffee"
 		/>
-		<img
-			class="animated scale-150"
-			src="/image/icons/buy-me-a-coffee.gif"
-			alt="Buy me a coffee"
-		/>
+		{#key gifSrc}
+			<img class="animated scale-[1.4]" src={gifSrc} alt="Buy me a coffee" />
+		{/key}
 	</div>
 </NavButton>
 
