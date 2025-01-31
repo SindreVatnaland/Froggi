@@ -36,7 +36,7 @@
 
 <div class="relative flex justify-end items-center">
 	<button
-		class="transition w-full flex flex-col items-center justify-center opacity-60 hover:opacity-100 rounded-2xl text-center align-middle z-50 cursor-pointer"
+		class="transition w-full flex flex-col items-center justify-center hover:opacity-100 rounded-2xl text-center align-middle z-50 cursor-pointer dark:bg-white"
 		transition:fly={{ duration: 150, x: -50 }}
 		on:click={click}
 		use:tooltip={{
@@ -49,8 +49,8 @@
 	>
 		<div class={`${getAnimation(connectionState)} w-full h-full`} />
 		<button
-			class={`h-10 w-10 bg-gray-600 bg-opacity-75 justify-center rounded-2xl p-1 col-auto`}
-			style={`${getBorderStyle(connectionState)}`}
+			class={`h-10 w-10 bg-inherit justify-center rounded-2xl p-1 col-auto`}
+			style={`${getBorderStyle(connectionState)};`}
 		>
 			<img src={iconPath} alt="connection status" />
 		</button>

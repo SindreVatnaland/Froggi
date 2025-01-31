@@ -74,7 +74,7 @@
 
 				<div class="flex flex-col gap-2 justify-center flex-1">
 					<div
-						class="h-12 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl p-1"
+						class="h-12 w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl p-1"
 					>
 						<div
 							use:tooltip={{
@@ -91,7 +91,7 @@
 						</div>
 					</div>
 					<div
-						class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
+						class="h-100 w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl space-y-2 p-1"
 					>
 						<div
 							use:tooltip={{
@@ -163,13 +163,13 @@
 			>
 				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
 					<div
-						class="h-100 w-12 bg-gray-800 bg-opacity-75 justify-start items-center rounded-2xl space-y-2 p-1"
+						class="h-100 w-12 bg-black bg-opacity-30 justify-start items-center rounded-2xl space-y-2 p-1"
 					/>
 				</div>
 
 				<div class="flex-1 flex flex-col gap-2 justify-center">
 					<div
-						class="w-12 bg-gray-800 bg-opacity-75 justify-center items-center rounded-2xl space-y-2 p-1"
+						class="w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl space-y-2 p-1"
 					>
 						<ConnectionStateButton
 							iconPath="/image/button-icons/obs.png"

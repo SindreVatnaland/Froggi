@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="opacity-60 hover:opacity-100 border-gray-800 top-4 justify-center rounded-2xl text-center align-middle z-50"
+	class="opacity-60 hover:opacity-100 duration-100 border-gray-800 top-4 justify-center rounded-2xl text-center align-middle z-50"
 	transition:fly={{ duration: 150, x: -50 }}
 	use:tooltip={{
 		content: `<p>Back</p>`,
