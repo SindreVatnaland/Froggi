@@ -92,7 +92,7 @@ describe('ElectronGamesStore', () => {
         }
         const storeSession: ElectronSessionStore = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
 
-        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter, {} as any, {} as any);
+        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter, {} as any);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
         storeSettings.getSlippiLauncherSettings = (): SlippiLauncherSettings => {
             return {

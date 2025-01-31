@@ -20,8 +20,6 @@
 	};
 
 	let authKey: string = $authorizationKey;
-
-	$: $authorizationKey, (authKey = $authorizationKey);
 </script>
 
 <div
@@ -31,7 +29,7 @@
 		<h1 class="text-4xl font-bold text-secondary-color">Authorization</h1>
 	</div>
 	<h1 class="text-xl font-bold color-secondary">
-		Authentication - <span class={`${$isAuthorized ? 'text-success-color' : 'text-secondary'}`}>
+		<span class={`${$isAuthorized ? 'text-success-color' : 'text-secondary'}`}>
 			{!$isAuthorized ? 'Unauthorized' : 'Authorized'}
 		</span>
 	</h1>
@@ -49,7 +47,7 @@
 			Authorization Key
 		</h1>
 		<input
-			class="w-full background-primary-color text-white rounded-md p-2 disabled:grayscale border-secondary"
+			class="w-full background-primary-color text-secondary-color rounded-md p-2 disabled:grayscale border-secondary"
 			type="text"
 			placeholder="key"
 			bind:value={authKey}
@@ -65,7 +63,7 @@
 		{/if}
 		{#if !$isElectron}
 			<button
-				class="w-full rounded-md p-2 background-success-color text-secondary-color hover:cursor-pointer disabled:bg-gray-700 disabled:hover:scale-0 border-secondary"
+				class="w-full rounded-md p-2 background-success-color text-secondary-color hover:cursor-pointer disabled:opacity-50 disabled:hover:scale-0 border-secondary"
 				on:click={authenticate}
 				disabled={$isAuthorized}
 			>

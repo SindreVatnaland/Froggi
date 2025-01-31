@@ -26,12 +26,12 @@
 		authorizationKey,
 		sceneSwitch,
 		controller,
-		isElectron,
 		froggiSettings,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
 		getElectronEmitter,
+		getIsElectron,
 		getIsIframe,
 		getLocalEmitter,
 		getPage,
@@ -44,7 +44,6 @@
 	import type { MessageEvents } from './customEventEmitter';
 	import { debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
-	import { goto } from '$app/navigation';
 
 	const debouncedSetGameFrame = debounce(
 		(value: Parameters<MessageEvents['GameFrame']>[0]) => {
@@ -76,18 +75,12 @@
 				})();
 				break;
 			case 'Authorize':
-				(() => {
+				(async () => {
 					const value = payload[0] as Parameters<MessageEvents['Authorize']>[0];
+					const _isElectron = await getIsElectron();
+
 					if (isNil(value)) return;
-					isAuthorized.update(() => {
-						if (isElectron) return true;
-						if (value) {
-							notifications.success('Authorized', 1500);
-						} else {
-							notifications.danger('Unauthorized', 1500);
-						}
-						return value;
-					});
+					isAuthorized.set(value || _isElectron);
 				})();
 				break;
 			case 'AutoUpdaterStatus':
@@ -349,6 +342,7 @@
 
 		const emitElectronMessage = async (event: any, ...data: any) => {
 			const _authorizationKey = await getAuthorizationKey();
+			console.log(_authorizationKey, data);
 			socket.send(
 				JSON.stringify({
 					[event as string]: data,

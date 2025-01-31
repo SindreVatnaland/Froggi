@@ -6,7 +6,6 @@ const unauthorized: (keyof MessageEvents)[] = ["InitData", "InitElectron", "Init
 
 export let sendAuthenticatedMessage = <K extends keyof MessageEvents>(socketId: string, incomingKey: string = "", authorizationKey: string = "", emitter: TypedEmitter, webSocketWorker: Worker, topic: K, value: Parameters<MessageEvents[K]>) => {
     const isAuthorized = incomingKey === authorizationKey;
-    console.log('Websocket:', topic, value);
     if (isAuthorized) {
         emitter.emit(topic, ...value as any);
     } else if (unauthorized.includes(topic)) {

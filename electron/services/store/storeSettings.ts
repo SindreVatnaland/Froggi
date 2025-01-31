@@ -11,7 +11,6 @@ import os from 'os';
 import { ElectronCurrentPlayerStore } from './storeCurrentPlayer';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { BACKEND_PORT } from '../../../frontend/src/lib/models/const';
-import { MessageHandler } from './../messageHandler';
 import { getDolphinSettings } from './../../utils/dolphinSettings';
 import { DolphinSettings, DolphinSettingsMainline } from '../../../frontend/src/lib/models/types/dolphinTypes';
 
@@ -25,7 +24,6 @@ export class ElectronSettingsStore {
 		@inject('Port') private port: string,
 		@inject('ElectronStore') private store: Store,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
-		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 	) {
@@ -133,9 +131,6 @@ export class ElectronSettingsStore {
 	private initStoreListeners() {
 		this.store.onDidChange(`settings.currentPlayer`, async () => {
 			this.storeCurrentPlayer.updateCurrentPlayerConnectCode();
-		});
-		this.store.onDidChange(`settings.authorization.key`, async () => {
-			this.messageHandler.sendMessage("Authorize", false)
 		});
 	}
 

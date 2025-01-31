@@ -66,7 +66,7 @@
 			<div
 				in:fly={{ x: -100, duration: 150 }}
 				out:fly={{ x: -100, duration: 400 }}
-				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
+				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
 				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
 					<BackButton />

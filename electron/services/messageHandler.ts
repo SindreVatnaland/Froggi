@@ -133,6 +133,7 @@ export class MessageHandler {
 						value as any,
 					);
 					this.initData(parse['socketId']);
+					this.sendAuthorizedMessage(parse['socketId'], parse['AuthorizationKey']);
 				}
 			});
 		} catch (err) {
