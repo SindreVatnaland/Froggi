@@ -104,10 +104,11 @@ export interface OverallTypeExtended extends OverallType {
 
 
 export type GameStartTypeExtended = GameStartType & {
+    isSimulated: boolean | null;
     matchInfo: MatchInfoExtended;
 }
 
-export type GameStartMode = "ranked" | "unranked" | "direct" | "local"; // TODO: Verify these types
+export type GameStartMode = "ranked" | "unranked" | "direct" | "local";
 
 export type MatchInfoExtended = {
     matchId: string | null;

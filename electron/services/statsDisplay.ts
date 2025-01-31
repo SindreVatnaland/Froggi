@@ -15,6 +15,7 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { Api, getPlayerRank } from './api';
 import {
+	GameStartTypeExtended,
 	GameStats,
 	Player,
 	SlippiLauncherSettings,
@@ -395,7 +396,7 @@ export class StatsDisplay {
 		this.log.info("Analyzing game:", settings?.matchInfo)
 		this.log.debug('Analyzing recent game file:', file);
 		let game = new SlippiGame(file);
-		return this.getGameStats(game, gameEnd);
+		return this.createGameStats(game, gameEnd);
 	}
 
 	private async handleUndefinedPlayers(settings: GameStartType | null | undefined) {
@@ -404,7 +405,7 @@ export class StatsDisplay {
 		if (!players) this.storePlayers.setCurrentPlayers(settings.players);
 	}
 
-	private getGameStats(
+	private createGameStats(
 		game: SlippiGame | null,
 		gameEnd: GameEndType | undefined = undefined,
 	): GameStats | null {
@@ -452,7 +453,7 @@ export class StatsDisplay {
 		this.cancelSimulation();
 		const game = await this.getRecentReplay();
 		if (!game) return;
-		const settings = game.getSettings();
+		const settings = game.getSettings() as GameStartTypeExtended;
 		const frames = game.getFrames()
 		if (!settings || !frames) return;
 		settings.isSimulated = true;
@@ -467,7 +468,6 @@ export class StatsDisplay {
 			await this.handleGameFrame(frame);
 			await this.waitWithCancel(16);
 		}
-
 		const gameEnd = game.getGameEnd();
 		const latestFrame = game.getLatestFrame();
 		if (!gameEnd) return;
@@ -481,7 +481,7 @@ export class StatsDisplay {
 		if (!game) return;
 		const gameEnd = game.getGameEnd();
 		const latestFrame = game.getLatestFrame();
-		const settings = game.getSettings();
+		const settings = game.getSettings() as GameStartTypeExtended;
 		if (!gameEnd || !settings) return;
 		settings.isSimulated = true;
 		this.handleGameEnd(gameEnd, latestFrame, settings);
