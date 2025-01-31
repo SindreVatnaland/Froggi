@@ -1,13 +1,14 @@
 {
-	"id": "hud",
-	"aspectRatio": { "width": 16, "height": 9 },
 	"isDemo": true,
 	"description": "Scene Description",
 	"froggiVersion": "0.0.0",
+	"id": "hud",
+	"aspectRatio": { "width": 16, "height": 9 },
 	"title": "HUD",
 	"waitingForDolphin": {
 		"active": true,
-		"id": 613,
+		"fallback": "menu",
+		"id": 11083,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -51,13 +52,13 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
-		"layers": [{ "index": 0, "id": 1037, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 14801, "items": [] }]
 	},
 	"menu": {
 		"active": true,
-		"id": 614,
+		"fallback": "menu",
+		"id": 11084,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -108,13 +109,13 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
-		"layers": [{ "index": 0, "id": 1038, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 14802, "items": [] }]
 	},
 	"inGame": {
 		"active": true,
-		"id": 615,
+		"fallback": "menu",
+		"id": 11085,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -172,12 +173,12 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
 		"layers": [
 			{
 				"index": 0,
-				"id": 1039,
+				"preview": true,
+				"id": 14803,
 				"items": [
 					{
 						"512": {
@@ -310,12 +311,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 1,
-				"id": 1040,
+				"preview": true,
+				"id": 14804,
 				"items": [
 					{
 						"512": {
@@ -440,196 +441,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 2,
-				"id": 1041,
-				"items": [
-					{
-						"512": {
-							"fixed": true,
-							"resizable": false,
-							"draggable": true,
-							"customDragger": false,
-							"customResizer": true,
-							"min": { "w": 1, "h": 1 },
-							"max": { "y": 511, "h": 513 },
-							"w": 139,
-							"h": 86,
-							"x": 369,
-							"y": 3,
-							"id": "co1i8adqq"
-						},
-						"elementId": 3200,
-						"id": "co1i8adqq",
-						"data": {
-							"advancedStyling": false,
-							"animationTrigger": {
-								"in": {
-									"options": {
-										"delay": 0,
-										"duration": 0,
-										"easing": "",
-										"start": 0,
-										"x": 0,
-										"y": 0
-									},
-									"type": "none"
-								},
-								"out": {
-									"options": {
-										"delay": 0,
-										"duration": 0,
-										"easing": "",
-										"start": 0,
-										"x": 0,
-										"y": 0
-									},
-									"type": "none"
-								},
-								"selectedOptions": { "Game Countdown": false }
-							},
-							"class": { "rounded": "rounded-md", "alignment": "justify-center" },
-							"css": {
-								"background": "#00000000",
-								"borderLeft": "0.1rem solid",
-								"borderRight": "0.1rem solid",
-								"borderTop": "0.1rem solid",
-								"borderBottom": "0.1rem solid",
-								"borderColor": "#ffffff00",
-								"color": "#ffffffff",
-								"opacity": 1,
-								"fill": "#ff000000",
-								"stroke": "#ffffff",
-								"strokeWidth": 4,
-								"fillOpacity": 1
-							},
-							"description": "",
-							"percent": { "startColor": "#ffffff", "endColor": "#6f1622" },
-							"font": {},
-							"image": { "objectFit": "contain" },
-							"visibility": {
-								"in": {
-									"options": {
-										"delay": 0,
-										"duration": 500,
-										"easing": "expoIn",
-										"start": 0,
-										"x": 0,
-										"y": 0
-									},
-									"type": "fly"
-								},
-								"out": {
-									"options": {
-										"delay": 1000,
-										"duration": 500,
-										"easing": "expoIn",
-										"start": 0,
-										"x": 0,
-										"y": 0
-									},
-									"type": "fly"
-								},
-								"selectedOptions": [
-									{
-										"Session Positive Net Rating": 0,
-										"Session Positive Win Rate": 0,
-										"Player 1 Combo": 0,
-										"Player 1 Stock 4": 0,
-										"Player 1 Stock 3": 0,
-										"Player 1 Stock 2": 0,
-										"Player 1 Stock 1": 0,
-										"Player 1 Off Stage": 1,
-										"Player 1 Alive": 0,
-										"Player 2 Combo": 0,
-										"Player 2 Stock 4": 0,
-										"Player 2 Stock 3": 0,
-										"Player 2 Stock 2": 0,
-										"Player 2 Stock 1": 0,
-										"Player 2 Off Stage": 1,
-										"Player 2 Alive": 0,
-										"Game Tie": 0,
-										"Game Time": 0,
-										"Game End": 0,
-										"Game Countdown": 0,
-										"Game Go": 0,
-										"Game Ready": 0,
-										"Game Paused": 0,
-										"Game Running": 0,
-										"Player 1 Entering Halo": 0,
-										"Player 2 Score 3": 0,
-										"Player 2 Score 2": 0,
-										"Player 2 Score 1": 0,
-										"Player 1 Score 3": 0,
-										"Player 1 Score 2": 0,
-										"Player 1 Score 1": 0
-									},
-									{
-										"Session Positive Net Rating": 0,
-										"Session Positive Win Rate": 0,
-										"Game Tie": 0,
-										"Game Time": 0,
-										"Game End": 0,
-										"Game Countdown": 0,
-										"Game Go": 0,
-										"Game Ready": 0,
-										"Game Paused": 2,
-										"Game Running": 0
-									},
-									{
-										"Session Positive Net Rating": 0,
-										"Session Positive Win Rate": 0,
-										"Game Tie": 0,
-										"Game Time": 0,
-										"Game End": 0,
-										"Game Countdown": 0,
-										"Game Go": 0,
-										"Game Ready": 0,
-										"Game Paused": 0,
-										"Game Running": 1,
-										"Player 1 Combo": 0,
-										"Player 1 Stock 4": 0,
-										"Player 1 Stock 3": 0,
-										"Player 1 Stock 2": 0,
-										"Player 1 Stock 1": 0,
-										"Player 1 Off Stage": 0,
-										"Player 1 Entering Halo": 0,
-										"Player 1 Alive": 0,
-										"Player 2 Combo": 0,
-										"Player 2 Stock 4": 0,
-										"Player 2 Stock 3": 0,
-										"Player 2 Stock 2": 0,
-										"Player 2 Stock 1": 0,
-										"Player 2 Off Stage": 0,
-										"Player 2 Alive": 0,
-										"Player 2 Score 3": 0,
-										"Player 2 Score 2": 0,
-										"Player 2 Score 1": 0,
-										"Player 1 Score 3": 0,
-										"Player 1 Score 2": 0,
-										"Player 1 Score 1": 0
-									}
-								]
-							},
-							"shadow": { "x": 0, "y": 0, "spread": 0, "color": "#000000ff" },
-							"string": "",
-							"textStroke": { "size": 1, "color": "#000000ff" },
-							"transform": {
-								"rotate": 0,
-								"scale": "1, 1",
-								"translate": { "x": 0, "y": 0 }
-							}
-						}
-					}
-				],
-				"preview": true
-			},
-			{
-				"index": 3,
-				"id": 1042,
+				"preview": true,
+				"id": 14806,
 				"items": [
 					{
 						"512": {
@@ -869,12 +686,196 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
+			},
+			{
+				"index": 3,
+				"preview": true,
+				"id": 14805,
+				"items": [
+					{
+						"512": {
+							"fixed": true,
+							"resizable": true,
+							"draggable": true,
+							"customDragger": false,
+							"customResizer": true,
+							"min": { "w": 1, "h": 1 },
+							"max": { "y": 511, "h": 513 },
+							"w": 128,
+							"h": 74,
+							"x": 376,
+							"y": 8,
+							"id": "co1i8adqq"
+						},
+						"elementId": 3200,
+						"id": "co1i8adqq",
+						"data": {
+							"advancedStyling": false,
+							"animationTrigger": {
+								"in": {
+									"options": {
+										"delay": 0,
+										"duration": 0,
+										"easing": "",
+										"start": 0,
+										"x": 0,
+										"y": 0
+									},
+									"type": "none"
+								},
+								"out": {
+									"options": {
+										"delay": 0,
+										"duration": 0,
+										"easing": "",
+										"start": 0,
+										"x": 0,
+										"y": 0
+									},
+									"type": "none"
+								},
+								"selectedOptions": { "Game Countdown": false }
+							},
+							"class": { "rounded": "rounded-sm", "alignment": "justify-center" },
+							"css": {
+								"background": "#0000005d",
+								"borderLeft": "0.1rem solid",
+								"borderRight": "0.1rem solid",
+								"borderTop": "0.1rem solid",
+								"borderBottom": "0.1rem solid",
+								"borderColor": "#ffffff00",
+								"color": "#ffffffff",
+								"opacity": 1,
+								"fill": "#ff000000",
+								"stroke": "#ffffff",
+								"strokeWidth": 4,
+								"fillOpacity": 1
+							},
+							"description": "",
+							"percent": { "startColor": "#ffffff", "endColor": "#6f1622" },
+							"font": {},
+							"image": { "objectFit": "contain" },
+							"visibility": {
+								"in": {
+									"options": {
+										"delay": 0,
+										"duration": 500,
+										"easing": "expoIn",
+										"start": 0,
+										"x": 0,
+										"y": 0
+									},
+									"type": "fly"
+								},
+								"out": {
+									"options": {
+										"delay": 1000,
+										"duration": 500,
+										"easing": "expoIn",
+										"start": 0,
+										"x": 0,
+										"y": 0
+									},
+									"type": "fly"
+								},
+								"selectedOptions": [
+									{
+										"Session Positive Net Rating": 0,
+										"Session Positive Win Rate": 0,
+										"Player 1 Combo": 0,
+										"Player 1 Stock 4": 0,
+										"Player 1 Stock 3": 0,
+										"Player 1 Stock 2": 0,
+										"Player 1 Stock 1": 0,
+										"Player 1 Off Stage": 1,
+										"Player 1 Alive": 0,
+										"Player 2 Combo": 0,
+										"Player 2 Stock 4": 0,
+										"Player 2 Stock 3": 0,
+										"Player 2 Stock 2": 0,
+										"Player 2 Stock 1": 0,
+										"Player 2 Off Stage": 1,
+										"Player 2 Alive": 0,
+										"Game Tie": 0,
+										"Game Time": 0,
+										"Game End": 0,
+										"Game Countdown": 0,
+										"Game Go": 0,
+										"Game Ready": 0,
+										"Game Paused": 0,
+										"Game Running": 0,
+										"Player 1 Entering Halo": 0,
+										"Player 2 Score 3": 0,
+										"Player 2 Score 2": 0,
+										"Player 2 Score 1": 0,
+										"Player 1 Score 3": 0,
+										"Player 1 Score 2": 0,
+										"Player 1 Score 1": 0
+									},
+									{
+										"Session Positive Net Rating": 0,
+										"Session Positive Win Rate": 0,
+										"Game Tie": 0,
+										"Game Time": 0,
+										"Game End": 0,
+										"Game Countdown": 0,
+										"Game Go": 0,
+										"Game Ready": 0,
+										"Game Paused": 2,
+										"Game Running": 0
+									},
+									{
+										"Session Positive Net Rating": 0,
+										"Session Positive Win Rate": 0,
+										"Game Tie": 0,
+										"Game Time": 0,
+										"Game End": 0,
+										"Game Countdown": 0,
+										"Game Go": 0,
+										"Game Ready": 0,
+										"Game Paused": 0,
+										"Game Running": 1,
+										"Player 1 Combo": 0,
+										"Player 1 Stock 4": 0,
+										"Player 1 Stock 3": 0,
+										"Player 1 Stock 2": 0,
+										"Player 1 Stock 1": 0,
+										"Player 1 Off Stage": 0,
+										"Player 1 Entering Halo": 0,
+										"Player 1 Alive": 0,
+										"Player 2 Combo": 0,
+										"Player 2 Stock 4": 0,
+										"Player 2 Stock 3": 0,
+										"Player 2 Stock 2": 0,
+										"Player 2 Stock 1": 0,
+										"Player 2 Off Stage": 0,
+										"Player 2 Alive": 0,
+										"Player 2 Score 3": 0,
+										"Player 2 Score 2": 0,
+										"Player 2 Score 1": 0,
+										"Player 1 Score 3": 0,
+										"Player 1 Score 2": 0,
+										"Player 1 Score 1": 0
+									}
+								]
+							},
+							"shadow": { "x": 0, "y": 0, "spread": 0, "color": "#000000ff" },
+							"string": "",
+							"textStroke": { "size": 1, "color": "#000000ff" },
+							"transform": {
+								"rotate": 0,
+								"scale": "1, 1",
+								"translate": { "x": 0, "y": 0 }
+							}
+						}
+					}
+				]
 			},
 			{
 				"index": 4,
-				"id": 1043,
+				"preview": true,
+				"id": 14807,
 				"items": [
 					{
 						"512": {
@@ -2455,12 +2456,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 5,
-				"id": 1044,
+				"preview": true,
+				"id": 14808,
 				"items": [
 					{
 						"512": {
@@ -3292,12 +3293,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 6,
-				"id": 1045,
+				"preview": true,
+				"id": 14809,
 				"items": [
 					{
 						"512": {
@@ -3417,12 +3418,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 7,
-				"id": 1046,
+				"preview": true,
+				"id": 14810,
 				"items": [
 					{
 						"512": {
@@ -3729,12 +3730,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 8,
-				"id": 1047,
+				"preview": true,
+				"id": 14811,
 				"items": [
 					{
 						"512": {
@@ -5111,12 +5112,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 9,
-				"id": 1048,
+				"preview": true,
+				"id": 14812,
 				"items": [
 					{
 						"512": {
@@ -5428,12 +5429,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 10,
-				"id": 1049,
+				"preview": true,
+				"id": 14813,
 				"items": [
 					{
 						"512": {
@@ -5553,12 +5554,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 11,
-				"id": 1050,
+				"preview": true,
+				"id": 14814,
 				"items": [
 					{
 						"512": {
@@ -5671,12 +5672,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 12,
-				"id": 1051,
+				"preview": true,
+				"id": 14815,
 				"items": [
 					{
 						"512": {
@@ -5789,12 +5790,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 13,
-				"id": 1052,
+				"preview": true,
+				"id": 14816,
 				"items": [
 					{
 						"512": {
@@ -5928,12 +5929,12 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			},
 			{
 				"index": 14,
-				"id": 1053,
+				"preview": true,
+				"id": 14817,
 				"items": [
 					{
 						"512": {
@@ -6171,14 +6172,14 @@
 							}
 						}
 					}
-				],
-				"preview": true
+				]
 			}
 		]
 	},
 	"postGame": {
 		"active": false,
-		"id": 616,
+		"fallback": "menu",
+		"id": 11086,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -6229,13 +6230,13 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
-		"layers": [{ "index": 0, "id": 1054, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 14818, "items": [] }]
 	},
 	"postSet": {
 		"active": false,
-		"id": 617,
+		"fallback": "menu",
+		"id": 11087,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -6279,13 +6280,13 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
-		"layers": [{ "index": 0, "id": 1055, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 14819, "items": [] }]
 	},
 	"rankChange": {
 		"active": false,
-		"id": 618,
+		"fallback": "menu",
+		"id": 11088,
 		"animation": {
 			"duration": 250,
 			"in": {
@@ -6336,9 +6337,8 @@
 				}
 			}
 		},
-		"fallback": "menu",
 		"font": { "family": "Roboto Bold Italic" },
-		"layers": [{ "index": 0, "id": 1056, "items": [], "preview": true }]
+		"layers": [{ "index": 0, "preview": true, "id": 14820, "items": [] }]
 	},
 	"customFiles": {}
 }

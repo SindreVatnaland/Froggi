@@ -12,7 +12,6 @@
 
 {#if !isNil(stage)}
 	<rect
-		class="fill-black opacity-[0.3]"
 		x={stage.blastZones[0][0]}
 		y={stage.blastZones[0][1]}
 		width={stage.blastZones[1][0] - stage.blastZones[0][0]}
