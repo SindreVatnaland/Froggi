@@ -117,6 +117,7 @@ export class StatsDisplay {
 
 	async handleGameStart(settings: GameStartType | null) {
 		this.log.info("Game start:", settings)
+		this.cancelSimulation();
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
@@ -147,6 +148,7 @@ export class StatsDisplay {
 		settings: GameStartType,
 	) {
 		this.log.info("Game end:", gameEnd)
+		this.cancelSimulation();
 		this.packetCapture.startPacketCapture();
 		this.stopPauseInterval();
 		this.handleInGameState(gameEnd, latestGameFrame);
@@ -197,7 +199,7 @@ export class StatsDisplay {
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 
-		if ((this.isDev || game.settings?.isSimulated) && isPostSet && playerConnectCode) {
+		if ((this.isDev || game.settings?.isSimulated) && playerConnectCode) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 			let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
@@ -218,7 +220,7 @@ export class StatsDisplay {
 			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 			setTimeout(() => {
 				this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
-			}, 5000);
+			}, 10000);
 			return;
 		}
 
@@ -469,7 +471,6 @@ export class StatsDisplay {
 	}
 
 	simulateGameEnd = async () => {
-		this.cancelSimulation();
 		const game = await this.getRecentReplay();
 		if (!game) return;
 		const gameEnd = game.getGameEnd();

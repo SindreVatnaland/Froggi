@@ -25,12 +25,12 @@
 	<div class="flex items-center font-bold">
 		{startCase(LiveStatsScene.PostGame)}
 	</div>
-	<div class="flex items-center">- 60 seconds after a game is finished</div>
+	<div class="flex items-center">- 150 seconds after a game is finished</div>
 	<div class="flex items-center font-bold">
 		{startCase(LiveStatsScene.PostSet)}
 	</div>
 	<div class="flex items-center">
-		- 60 seconds after a game is finished and its registered a set winner (eg. bo3). Or 50
+		- 150 seconds after a game is finished and its registered a set winner (eg. bo3). Or 140
 		seconds after rank change.
 	</div>
 	<div class="flex items-center font-bold">
