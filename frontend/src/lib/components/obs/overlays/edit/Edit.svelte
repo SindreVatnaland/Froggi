@@ -39,9 +39,9 @@
 	let isEmbedModalOpen = false;
 
 	function resetSelectedItem(selectedLayerIndex: number, overlayEditor: OverlayEditor) {
-		if (selectedLayerIndex === $currentOverlayEditor.layerIndex) return;
+		if (selectedLayerIndex === overlayEditor.layerIndex) return;
 		$electronEmitter.emit('CurrentOverlayEditor', {
-			...$currentOverlayEditor,
+			...overlayEditor,
 			itemId: undefined,
 		});
 	}

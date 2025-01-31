@@ -205,7 +205,7 @@
 					</div>
 				</div>
 
-				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
+				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%] background">
 					<ConnectionStateButton
 						iconPath="/image/button-icons/dolphin.svg"
 						connectionState={$dolphinState}
@@ -225,15 +225,6 @@
 				>
 					<NavButton click={() => goto('/')}>
 						<img src="/image/button-icons/home.png" alt="home" />
-					</NavButton>
-					<NavButton click={() => goto('/leaderboard')} disabled={true}>
-						<img src="/image/button-icons/leaderboard.png" alt="leaderboard" />
-					</NavButton>
-					<NavButton click={() => goto('/achievements')} disabled={true}>
-						<img src="/image/button-icons/trophy.png" alt="achievements" />
-					</NavButton>
-					<NavButton click={() => goto('/profile')}>
-						<img src="/image/button-icons/profile.png" alt="profile" />
 					</NavButton>
 
 					<ConnectionStateButton

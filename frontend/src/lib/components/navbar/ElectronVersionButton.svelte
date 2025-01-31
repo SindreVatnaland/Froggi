@@ -81,12 +81,12 @@
 >
 	{#if $isElectron}
 		<button
-			class="w-11 h-11 transition opacity-80 hover:opacity-100 rounded-2xl z-50 cursor-pointer flex justify-center items-center"
+			class="w-11 h-11 transition rounded-2xl z-50 cursor-pointer flex justify-center items-center bg-white"
 			on:click={installUpdate}
 		>
 			<div class={`${getAnimation($autoUpdater)} w-full h-full`} />
 			<button
-				class={`w-full h-full bg-gray-600 bg-opacity-75 justify-center rounded-2xl col-auto p-2`}
+				class={`w-full h-full bg-black bg-opacity-30 justify-center rounded-2xl col-auto p-2`}
 				style={`${getStyle($autoUpdater)}`}
 			>
 				<div class="max-h-2 w-full text-center">
