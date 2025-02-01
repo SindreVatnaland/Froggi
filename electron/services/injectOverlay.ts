@@ -14,6 +14,7 @@ export class InjectOverlay {
 		@inject("ClientEmitter") private clientEmitter: TypedEmitter,
 	) {
 		this.log.info('Initializing Overlay Injection Service');
+		return;
 		if (os.platform() !== 'win32') return;
 		this.initializeInjection();
 		this.initEventListeners();
