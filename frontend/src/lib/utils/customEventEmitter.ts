@@ -67,7 +67,7 @@ export interface MessageEvents {
 	OpenUrl: (url: string) => void;
 	PlayersUpdate: (players: Player[]) => void; // Here
 	PostGameStats: (stats: GameStats | undefined) => void;
-	RecentGames: (games: GameStats[][]) => void;
+	RecentGames: (games: GameStats[]) => void;
 	RecentGamesDelete: (gameIndex: number) => void; // Here
 	RecentGamesReset: () => void; // Here
 	RecentGamesMock: (game: GameStats, index: number) => void; // Here

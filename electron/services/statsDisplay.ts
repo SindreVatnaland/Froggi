@@ -264,11 +264,11 @@ export class StatsDisplay {
 			this.storeLiveStats.setGameState(InGameState.Tie);
 	}
 
-	private handleGameSetStats(gameStats: GameStats | null) {
+	private async handleGameSetStats(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.storeLiveStats.setGameStats(gameStats);
 		// this.storeGames.setGameMatch(gameStats);
-		const games = this.storeGames.getRecentGames();
+		const games = await this.storeGames.getRecentGames();
 		if (!games || !games?.length) return;
 
 		const matchStats = analyzeMatch(games.flat().filter((game) => !game.isMock));

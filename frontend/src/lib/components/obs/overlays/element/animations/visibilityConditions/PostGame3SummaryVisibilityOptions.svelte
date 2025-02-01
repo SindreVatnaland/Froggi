@@ -10,11 +10,11 @@
 	export const postGame3SummaryVisibilityOption = (
 		option: SelectedVisibilityCondition,
 		players: Player[],
-		player: CurrentPlayer | undefined,
-		recentGames: GameStats[][],
+		player: Player | undefined,
+		recentGames: GameStats[],
 	) => {
 		const gameIndex = recentGames.length > 5 ? 2 : 2;
-		const game = recentGames.at(gameIndex)?.at(-1);
+		const game = recentGames.at(gameIndex);
 
 		const winnerIndex = getWinnerIndex(game);
 

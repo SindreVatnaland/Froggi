@@ -49,7 +49,7 @@
 		gameScore: number[],
 		gameFrame: FrameEntryType | null | undefined,
 		postGame: GameStats,
-		recentGames: GameStats[][],
+		recentGames: GameStats[],
 		currentPlayer: CurrentPlayer | undefined,
 		currentPlayers: Player[],
 		sessionStats: SessionStats | undefined,

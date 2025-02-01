@@ -2,9 +2,9 @@ import { inject, singleton } from "tsyringe";
 import { ElectronLog } from "electron-log";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
-import { CurrentPlayerEntity } from "./entities/currentPlayer";
+import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntity";
 import { CurrentPlayer, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
-import { CurrentPlayerRankEntity } from "./entities/currentPlayerRank";
+import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
 
 @singleton()
 export class SqliteCurrentPlayer {

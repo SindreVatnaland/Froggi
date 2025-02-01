@@ -199,7 +199,7 @@ export class MessageHandler {
 		);
 		this.sendInitMessage(socketId, 'SceneSwitchCommands', this.storeObsCommands.getSceneCommands());
 		this.sendInitMessage(socketId, 'PostGameStats', this.storeLiveStats.getGameStats());
-		this.sendInitMessage(socketId, 'RecentGames', this.storeGames.getRecentGames());
+		this.sendInitMessage(socketId, 'RecentGames', await this.storeGames.getRecentGames());
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 	}

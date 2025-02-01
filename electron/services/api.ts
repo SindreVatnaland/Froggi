@@ -88,7 +88,7 @@ export class Api {
 			rank: 'UNRANKED',
 			seasons: player?.netplayProfiles,
 			totalSets: 0,
-			winsPercent: 0
+			winsPercent: 0,
 		};
 
 		return this.enrichData(rankData);

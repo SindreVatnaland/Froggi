@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { CurrentPlayerRank, RankedNetplayProfile } from '../../../../frontend/src/lib/models/types/slippiData';
-import { CurrentPlayerEntity } from "./currentPlayer";
+import { CurrentPlayerRank, RankedNetplayProfile } from '../../../../../frontend/src/lib/models/types/slippiData';
+import { CurrentPlayerEntity } from "./currentPlayerEntity";
 
 @Entity()
 export class CurrentPlayerRankEntity implements CurrentPlayerRank {

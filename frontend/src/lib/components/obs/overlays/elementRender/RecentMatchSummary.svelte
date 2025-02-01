@@ -11,17 +11,11 @@
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
-	export let recentGames: GameStats[][];
+	export let recentGames: GameStats[];
 	export let currentPlayers: Player[];
 </script>
 
-<RecentGame
-	{dataItem}
-	{defaultPreview}
-	{style}
-	game={recentGames.at(-1)?.at(-1)}
-	{currentPlayers}
-/>
+<RecentGame {dataItem} {defaultPreview} {style} game={recentGames.at(-1)} {currentPlayers} />
 <Game1 {dataItem} {defaultPreview} {style} {recentGames} {currentPlayers} />
 <Game2 {dataItem} {defaultPreview} {style} {recentGames} {currentPlayers} />
 <Game3 {dataItem} {defaultPreview} {style} {recentGames} {currentPlayers} />

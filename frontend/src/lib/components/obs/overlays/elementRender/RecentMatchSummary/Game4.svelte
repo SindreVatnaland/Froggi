@@ -12,11 +12,11 @@
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
-	export let recentGames: GameStats[][];
+	export let recentGames: GameStats[];
 	export let currentPlayers: Player[];
 
 	$: gameNumber = recentGames.length > 5 ? -5 : 0;
-	$: game = recentGames.at(gameNumber)?.at(0);
+	$: game = recentGames.at(gameNumber);
 
 	$: player1 = game?.settings?.players.at(currentPlayers?.at(0)?.playerIndex ?? 0);
 	$: player2 = game?.settings?.players.at(currentPlayers?.at(1)?.playerIndex ?? 1);

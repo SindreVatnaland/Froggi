@@ -164,8 +164,8 @@
 		});
 	}
 
-	export async function getRecentGames(): Promise<GameStats[][]> {
-		return new Promise<GameStats[][]>((resolve) => {
+	export async function getRecentGames(): Promise<GameStats[]> {
+		return new Promise<GameStats[]>((resolve) => {
 			const unsubscribe = recentGames.subscribe((rg) => {
 				resolve(rg);
 			});

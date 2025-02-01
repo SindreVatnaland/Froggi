@@ -81,7 +81,7 @@
 	export const postGame = writable<GameStats>({} as GameStats);
 	export const currentMatch = writable<Match>({} as Match);
 	export const recentRankedSets = writable<GameStats[]>([]);
-	export const recentGames = writable<GameStats[][]>([]);
+	export const recentGames = writable<GameStats[]>([]);
 	export const sessionStats = writable<SessionStats | undefined>();
 	export const statsScene = writable<LiveStatsScene>(LiveStatsScene.WaitingForDolphin);
 

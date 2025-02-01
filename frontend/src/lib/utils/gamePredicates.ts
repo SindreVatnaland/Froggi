@@ -29,8 +29,8 @@ export const isTiedGame = (game: GameStats | undefined | null) => {
     return false
 }
 
-export const getGameScore = (recentGames: GameStats[][]) => {
-    const gameScore = recentGames?.map(recentGame => recentGame.at(-1))
+export const getGameScore = (recentGames: GameStats[]) => {
+    const gameScore = recentGames
         .reduce((score: number[], game: GameStats | undefined) => {
             if (!game) return score
 

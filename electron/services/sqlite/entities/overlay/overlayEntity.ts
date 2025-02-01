@@ -1,4 +1,4 @@
-import { AspectRatio, Overlay } from '../../../../frontend/src/lib/models/types/overlay';
+import { AspectRatio, Overlay } from '../../../../../frontend/src/lib/models/types/overlay';
 import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
 import { SceneEntity } from './sceneEntity';
 

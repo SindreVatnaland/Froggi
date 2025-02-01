@@ -1,5 +1,5 @@
-import { LiveStatsScene } from '../../../../frontend/src/lib/models/enum';
-import { Background, Font, Scene, SceneAnimation, } from '../../../../frontend/src/lib/models/types/overlay';
+import { LiveStatsScene } from '../../../../../frontend/src/lib/models/enum';
+import { Background, Font, Scene, SceneAnimation, } from '../../../../../frontend/src/lib/models/types/overlay';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { LayerEntity } from './layerEntity';
 

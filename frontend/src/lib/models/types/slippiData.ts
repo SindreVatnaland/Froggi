@@ -15,7 +15,7 @@ export interface Character {
     gameCountPercent: number;
 }
 
-export interface CurrentPlayer {
+export interface CurrentPlayer extends Player {
     connectCode: string;
     rank: CurrentPlayerRank | undefined
 }

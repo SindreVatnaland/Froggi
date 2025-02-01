@@ -1,10 +1,10 @@
 import { inject, singleton } from "tsyringe";
-import { OverlayEntity } from "./entities/overlayEntity";
+import { OverlayEntity } from "./entities/overlay/overlayEntity";
 import { ElectronLog } from "electron-log";
 import { Overlay, Scene } from "../../../frontend/src/lib/models/types/overlay";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
-import { SceneEntity } from "./entities/sceneEntity";
+import { SceneEntity } from "./entities/overlay/sceneEntity";
 import { LiveStatsScene } from "../../../frontend/src/lib/models/enum";
 
 @singleton()

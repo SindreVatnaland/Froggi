@@ -16,7 +16,6 @@ import { SqliteCurrentPlayer } from './../../services/sqlite/sqliteCurrentPlayer
 
 @singleton()
 export class ElectronCurrentPlayerStore {
-	private listeners: Function[];
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ElectronStore') private store: Store,
@@ -27,8 +26,6 @@ export class ElectronCurrentPlayerStore {
 		@inject(delay(() => SqliteCurrentPlayer)) private sqliteCurrentPlayer: SqliteCurrentPlayer,
 	) {
 		this.log.info('Initializing Current Player Store');
-		this.initPlayerListener();
-		this.initListeners();
 	}
 
 	// Rank
@@ -120,27 +117,5 @@ export class ElectronCurrentPlayerStore {
 				);
 			}, rankSceneTimeout)
 		}
-	}
-
-	private initPlayerListener() {
-		this.store.onDidChange(`settings.currentPlayer.connectCode`, async () => {
-			this.unsubscribeListeners();
-			this.initListeners();
-		});
-		this.initListeners();
-	}
-
-	private initListeners() {
-		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		if (!connectCode) return;
-		this.listeners = [
-			this.store.onDidChange(`player.${connectCode}`, (value) => {
-				this.messageHandler.sendMessage('CurrentPlayer', value as CurrentPlayer);
-			}),
-		];
-	}
-
-	private unsubscribeListeners() {
-		this.listeners?.forEach((unsubscribe) => unsubscribe());
 	}
 }

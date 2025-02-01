@@ -12,8 +12,8 @@
 	let deleteGameModalOpen = false;
 	let selectedGameIndex = 0;
 
-	let games: GameStats[][] = $recentGames;
-	const updateGames = (recentGames: GameStats[][]) => {
+	let games: GameStats[] = $recentGames;
+	const updateGames = (recentGames: GameStats[]) => {
 		games = recentGames;
 	};
 	$: updateGames($recentGames);
@@ -68,7 +68,7 @@
 			>
 				<h1 class="text-secondary-color text-shadow-md">+</h1>
 			</button>
-			{#each games.map((game) => game.at(-1)) as game, i}
+			{#each games.map((game) => game) as game, i}
 				<h1 class="color-secondary text-center text-xl font-semibold">
 					Game {i + 1}
 					<span class={`${game?.isMock ? 'text-danger-color' : 'text-secondary-color'}`}>

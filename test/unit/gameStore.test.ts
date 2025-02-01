@@ -15,6 +15,7 @@ import { BestOf, LiveStatsScene } from "../../frontend/src/lib/models/enum";
 import { PacketCapture } from "../../electron/services/packetCapture";
 import { SqliteOrm } from "../../electron/services/sqlite/initiSqlite";
 import { SqliteCurrentPlayer } from "../../electron/services/sqlite/sqliteCurrentPlayer";
+import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
@@ -27,6 +28,8 @@ describe('ElectronGamesStore', () => {
     let storeCurrentPlayer: ElectronCurrentPlayerStore
     let storePlayers: ElectronPlayersStore
     let storeSettings: ElectronSettingsStore;
+
+    let sqliteGame: SqliteGame;
 
     let store: Store;
 
@@ -96,6 +99,7 @@ describe('ElectronGamesStore', () => {
 
         const sqlite = new SqliteOrm("./", true, log)
         const sqliteCurrentPlayer = new SqliteCurrentPlayer(log, sqlite)
+        sqliteGame = new SqliteGame(log, sqlite)
 
         storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
@@ -124,7 +128,7 @@ describe('ElectronGamesStore', () => {
 
         storePlayers = new ElectronPlayersStore(log, store, eventEmitter, messageHandler)
 
-        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, storeSettings, storeCurrentPlayer, store);
+        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, sqliteGame, store);
 
         packetCapture = new PacketCapture(log, storeSettings)
         packetCapture.startPacketCapture = () => { }
@@ -158,7 +162,7 @@ describe('ElectronGamesStore', () => {
             if (!currentGameEnd || !currentGameSettings) return;
             await statsDisplay.handleGameStart(currentGameSettings)
             await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGame = electronGamesStore.getRecentGames()?.at(-1)?.at(0)
+            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
             expect(currentGameSettings.matchInfo?.matchId?.replace(/[.:]/g, '-')).toStrictEqual(recentGame?.settings?.matchInfo?.matchId)
             expect(currentGameSettings.matchInfo?.gameNumber).toStrictEqual(recentGame?.settings?.matchInfo?.gameNumber);
         }
@@ -214,8 +218,8 @@ describe('ElectronGamesStore', () => {
             if (!currentGameEnd || !currentGameSettings) return;
             await statsDisplay.handleGameStart(currentGameSettings)
             await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGame = electronGamesStore.getRecentGames()?.at(0)?.at(0)
-            const matchGames = electronGamesStore.getGameMatch(recentGame?.settings?.matchInfo.matchId)
+            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
+            const matchGames = sqliteGame.getGamesById(recentGame?.settings?.matchInfo.matchId ?? "")
             expect(matchGames).toHaveLength(gameTest.expectedLength);
         }
     })
@@ -233,7 +237,7 @@ describe('ElectronGamesStore', () => {
             if (!currentGameEnd || !currentGameSettings) return;
             await statsDisplay.handleGameStart(currentGameSettings)
             await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGame = electronGamesStore.getRecentGames()?.at(0)?.at(0)
+            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
             expect(gameTest.expectedMode).toStrictEqual(recentGame?.settings?.matchInfo.mode)
         }
     })

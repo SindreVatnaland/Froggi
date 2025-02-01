@@ -17,7 +17,7 @@ import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
-import { OverlayEntity } from 'services/sqlite/entities/overlayEntity';
+import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
 import { getNewOverlay } from './../../utils/overlayHandler';
 
 
