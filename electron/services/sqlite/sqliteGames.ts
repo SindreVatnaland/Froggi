@@ -27,7 +27,7 @@ export class SqliteGame {
     const game = this.gameStatsRepo.create(gameStats);
 
     try {
-      await this.gameStatsRepo.save(game);
+      await this.gameStatsRepo.insert(game);
       return gameStats;
     } catch (error) {
       this.log.error("Error saving game stats:", error);
@@ -37,16 +37,21 @@ export class SqliteGame {
 
   async getGamesById(matchId: string): Promise<GameStats[] | null> {
     await this.sqlite.initializing;
-    const games = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
-    if (!games) return null;
-    return games as GameStats[];
+    try {
+      const games = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
+      if (!games) return null;
+      return games as GameStats[];
+    } catch (error) {
+      this.log.error("Error getting games by id:", error);
+      return [];
+    }
   }
 
   async deleteGameStats(matchId: string): Promise<boolean> {
     await this.sqlite.initializing;
-    const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
-    if (!game) return false;
     try {
+      const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
+      if (!game) return false;
       await this.gameStatsRepo.remove(game);
       return true;
     } catch (error) {
@@ -57,9 +62,9 @@ export class SqliteGame {
 
   async deleteGameStatsWithoutMatchId(): Promise<boolean> {
     await this.sqlite.initializing;
-    const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: IsNull() } } } });
-    if (!game) return false;
     try {
+      const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: IsNull() } } } });
+      if (!game) return false;
       await this.gameStatsRepo.remove(game);
       return true;
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { FrameStartType } from "@slippi/slippi-js";
 import { FrameEntryTypeEntity } from "./frameEntryTypeEntity";
 import { GameSettingsEntity } from "./gameSettingsEntity";
@@ -17,12 +17,10 @@ export class FrameStartTypeEntity implements FrameStartType {
   @Column({ type: "integer", nullable: true })
   sceneFrameCounter: number | null;
 
-  @OneToOne(() => FrameEntryTypeEntity, { cascade: true, eager: true })
-  @JoinColumn()
+  @OneToOne(() => FrameEntryTypeEntity)
   frameEntry: FrameStartType | undefined;
 
-  @OneToOne(() => GameSettingsEntity, { cascade: true, eager: true })
-  @JoinColumn()
+  @OneToOne(() => GameSettingsEntity)
   gameSettings: GameSettingsEntity | undefined;
 }
 

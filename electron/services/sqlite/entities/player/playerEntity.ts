@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { GameSettingsEntity } from "../game/gameSettingsEntity";
 
 
 @Entity()
@@ -33,28 +34,28 @@ export class PlayerTypeEntity {
   @Column({ type: "integer", nullable: true })
   teamId: number | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   staminaMode: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   silentCharacter: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   invisible: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   lowGravity: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   blackStockIcon: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   metal: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   startOnAngelPlatform: boolean | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   rumbleEnabled: boolean | null;
 
   @Column({ type: "integer", nullable: true })
@@ -83,4 +84,7 @@ export class PlayerTypeEntity {
 
   @Column({ type: "varchar" })
   userId: string;
+
+  @ManyToOne(() => GameSettingsEntity, (settings) => settings.players)
+  gameSettings: GameSettingsEntity;
 }

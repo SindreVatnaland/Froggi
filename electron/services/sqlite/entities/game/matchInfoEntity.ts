@@ -20,7 +20,5 @@ export class MatchInfoEntity implements MatchInfoExtended {
 
   @Column({ type: "integer", nullable: true })
   bestOf: number | undefined;
-
-
 }
 

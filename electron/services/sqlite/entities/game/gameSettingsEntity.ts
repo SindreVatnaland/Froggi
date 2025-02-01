@@ -1,10 +1,9 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { GameInfoType, GameMode, ItemSpawnType, Language, TimerType } from "@slippi/slippi-js";
-import { GameStatsEntity } from "./gameStatsEntity";
-import { FrameStartTypeEntity } from "./frameStartTypeEntity";
+import { GameMode, ItemSpawnType, Language, TimerType } from "@slippi/slippi-js";
 import { GameStartTypeExtended } from "../../../../../frontend/src/lib/models/types/slippiData";
 import { PlayerTypeEntity } from "../player/playerEntity";
 import { MatchInfoEntity } from "./matchInfoEntity";
+import { GameInfoTypeEntity } from "./gameInfoBlockEntity";
 
 @Entity()
 export class GameSettingsEntity implements GameStartTypeExtended {
@@ -54,9 +53,13 @@ export class GameSettingsEntity implements GameStartTypeExtended {
   @Column({ type: "simple-json", nullable: true })
   language: Language | null;
 
-  @OneToOne(() => FrameStartTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
+  @OneToOne(() => GameInfoTypeEntity, {
+    cascade: true,
+    onDelete: "CASCADE",
+    eager: true,
+  })
   @JoinColumn()
-  gameInfoBlock: GameInfoType | null;
+  gameInfoBlock: GameInfoTypeEntity | null;
 
   @Column({ type: "integer", nullable: true })
   randomSeed: number | null;
@@ -67,26 +70,11 @@ export class GameSettingsEntity implements GameStartTypeExtended {
   @Column({ type: "integer", nullable: true })
   isFrozenPS: boolean | null;
 
-  @OneToOne(() => GameStatsEntity, (gameStats) => gameStats.settings, {
-    cascade: true,
-    onDelete: "CASCADE",
-    eager: true,
-  })
+  @OneToOne(() => MatchInfoEntity)
   @JoinColumn()
   matchInfo: MatchInfoEntity;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   isSimulated: boolean | null;
-
-  @Column({ type: "integer" })
-  frame: number;
-
-  @OneToOne(() => GameStatsEntity, (gameStats) => gameStats.settings, {
-    cascade: true,
-    onDelete: "CASCADE",
-    eager: true,
-  })
-  @JoinColumn()
-  gameStats: GameStatsEntity;
 }
 

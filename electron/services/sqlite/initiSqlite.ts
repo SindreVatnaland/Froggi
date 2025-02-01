@@ -6,8 +6,6 @@ import fs from 'fs';
 import { LayerEntity } from "./entities/overlay/layerEntity";
 import { OverlayEntity } from "./entities/overlay/overlayEntity";
 import { SceneEntity } from "./entities/overlay/sceneEntity";
-import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntity";
-import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
 import { PlayerTypeEntity } from "./entities/player/playerEntity";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 import { GameSettingsEntity } from "./entities/game/gameSettingsEntity";
@@ -16,6 +14,9 @@ import { MatchInfoEntity } from "./entities/game/matchInfoEntity";
 import { PostGameStatsEntity } from "./entities/game/postGameStatsEntity";
 import { FrameEntryTypeEntity } from "./entities/game/frameEntryTypeEntity";
 import { FrameStartTypeEntity } from "./entities/game/frameStartTypeEntity";
+import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntity";
+import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
+import { GameInfoTypeEntity } from "./entities/game/gameInfoBlockEntity";
 
 @singleton()
 export class SqliteOrm {
@@ -45,7 +46,7 @@ export class SqliteOrm {
     const overlayEntities = [OverlayEntity, SceneEntity, LayerEntity];
     const currentPlayerEntities = [CurrentPlayerEntity, CurrentPlayerRankEntity];
     const playerEntities = [PlayerTypeEntity];
-    const gameEntities = [GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, GameStatsEntity, MatchInfoEntity, PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity];
+    const gameEntities = [GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, GameStatsEntity, MatchInfoEntity, PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity, GameInfoTypeEntity];
 
     this.AppDataSource = new DataSource({
       type: 'sqlite',

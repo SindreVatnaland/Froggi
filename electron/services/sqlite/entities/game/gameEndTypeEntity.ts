@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { GameEndType, GameEndMethod, PlacementType } from "@slippi/slippi-js";
 import { GameStatsEntity } from "./gameStatsEntity";
 
@@ -16,8 +16,7 @@ export class GameEndTypeEntity implements GameEndType {
   @Column({ type: "int", nullable: true })
   placements: PlacementType[];
 
-  @OneToOne(() => GameStatsEntity, gameStats => gameStats.gameEnd, { cascade: true, onDelete: "CASCADE", eager: true })
-  @JoinColumn()
+  @OneToOne(() => GameStatsEntity, gameStats => gameStats.gameEnd)
   gameStats: GameStatsEntity | null;
 }
 

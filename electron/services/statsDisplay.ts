@@ -267,7 +267,7 @@ export class StatsDisplay {
 	private async handleGameSetStats(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.storeLiveStats.setGameStats(gameStats);
-		// this.storeGames.setGameMatch(gameStats);
+		this.storeGames.setGameMatch(gameStats);
 		const games = await this.storeGames.getRecentGames();
 		if (!games || !games?.length) return;
 

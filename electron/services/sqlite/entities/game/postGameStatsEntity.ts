@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { ActionCountsType, ComboType, ConversionType, OverallType, StatsType, StockType } from "@slippi/slippi-js";
 import { GameEndTypeEntity } from "./gameEndTypeEntity";
 
@@ -7,7 +7,7 @@ export class PostGameStatsEntity implements StatsType {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "boolean" })
+  @Column({ type: "integer" })
   gameComplete: boolean;
 
   @Column({ type: "integer" })
@@ -31,8 +31,7 @@ export class PostGameStatsEntity implements StatsType {
   @Column({ type: "simple-json" })
   overall: OverallType[];
 
-  @OneToOne(() => GameEndTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
-  @JoinColumn()
+  @OneToOne(() => GameEndTypeEntity)
   gameEnd: GameEndTypeEntity;
 }
 

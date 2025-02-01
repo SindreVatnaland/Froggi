@@ -1,23 +1,23 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { GameStartTypeExtended, GameStats } from '../../../../../frontend/src/lib/models/types/slippiData';
-import { StatsType } from "@slippi/slippi-js";
+import { GameStats } from '../../../../../frontend/src/lib/models/types/slippiData';
 import { GameEndTypeEntity } from "./gameEndTypeEntity";
 import { FrameEntryTypeEntity } from "./frameEntryTypeEntity";
 import { PostGameStatsEntity } from "./postGameStatsEntity";
+import { GameSettingsEntity } from "./gameSettingsEntity";
 
 @Entity()
 export class GameStatsEntity implements GameStats {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => GameEndTypeEntity)
+  @OneToOne(() => GameEndTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   gameEnd: GameEndTypeEntity;
 
-  @Column({ type: "boolean" })
+  @Column({ type: "integer", default: false })
   isMock: boolean;
 
-  @Column({ type: "boolean" })
+  @Column({ type: "integer", default: false })
   isReplay: boolean;
 
   @OneToOne(() => FrameEntryTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
@@ -26,16 +26,17 @@ export class GameStatsEntity implements GameStats {
 
   @OneToOne(() => PostGameStatsEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
-  postGameStats: StatsType | null;
+  postGameStats: PostGameStatsEntity | null;
 
-  @Column({ type: "simple-json" })
+  @Column({ type: "simple-json", default: "[0,0]" })
   score: number[];
 
-  @OneToOne(() => FrameEntryTypeEntity)
+  @OneToOne(() => GameSettingsEntity, { cascade: true, eager: false, onDelete: "CASCADE" })
   @JoinColumn()
-  settings: GameStartTypeExtended | null;
+  settings: GameSettingsEntity | null;
 
   @Column({ type: "datetime", nullable: true })
   timestamp: Date | null;
+
 }
 

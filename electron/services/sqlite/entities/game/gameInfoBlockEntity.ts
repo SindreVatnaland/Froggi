@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { GameSettingsEntity } from "./gameSettingsEntity";
 
 @Entity()
 export class GameInfoTypeEntity {
@@ -17,7 +18,7 @@ export class GameInfoTypeEntity {
   @Column({ type: "integer", nullable: true })
   gameBitfield4: number | null;
 
-  @Column({ type: "boolean", nullable: true })
+  @Column({ type: "integer", nullable: true })
   bombRainEnabled: boolean | null;
 
   @Column({ type: "integer", nullable: true })
@@ -40,5 +41,8 @@ export class GameInfoTypeEntity {
 
   @Column({ type: "float", nullable: true })
   damageRatio: number | null;
+
+  @OneToOne(() => GameSettingsEntity)
+  gameSettings: GameSettingsEntity | undefined;
 }
 

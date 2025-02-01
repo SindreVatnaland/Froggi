@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { CurrentPlayerRank, RankedNetplayProfile } from '../../../../../frontend/src/lib/models/types/slippiData';
 import { CurrentPlayerEntity } from "./currentPlayerEntity";
 
@@ -13,8 +13,7 @@ export class CurrentPlayerRankEntity implements CurrentPlayerRank {
   @Column({ type: "simple-json", nullable: true })
   current: RankedNetplayProfile | undefined;
 
-  @OneToOne(() => CurrentPlayerEntity, (player) => player.rank, { onDelete: "CASCADE" })
-  @JoinColumn()
+  @OneToOne(() => CurrentPlayerEntity, (player) => player.rank)
   player: CurrentPlayerEntity;
 }
 
