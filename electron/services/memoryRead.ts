@@ -23,11 +23,9 @@ export class MemoryRead {
 		@inject(delay(() => ElectronLiveStatsStore))
 		private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
-	) {
-		this.initMemoryRead();
-	}
+	) { }
 
-	private initMemoryRead() {
+	initMemoryRead() {
 		this.log.info('Initializing Memory Read Service');
 		if (!this.isWindows) return;
 		this.startProcessSearchInterval();
@@ -119,7 +117,7 @@ export class MemoryRead {
 					}
 					setTimeout(() => {
 						this.startMemoryRead();
-					}, 0);
+					});
 				}
 			} catch (err) {
 				this.log.error('Error checking if Dolphin is running:', err);
