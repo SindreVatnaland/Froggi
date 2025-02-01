@@ -179,7 +179,7 @@ export class MessageHandler {
 
 	private async initData(socketId: string | undefined = undefined) {
 		console.log("Init Data", socketId)
-		this.sendInitMessage(socketId, 'CurrentPlayer', this.storeCurrentPlayer.getCurrentPlayer());
+		this.sendInitMessage(socketId, 'CurrentPlayer', await this.storeCurrentPlayer.getCurrentPlayer());
 		this.sendInitMessage(socketId, 'CurrentPlayers', this.storePlayers.getCurrentPlayers());
 		this.sendInitMessage(
 			socketId,
@@ -201,7 +201,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'PostGameStats', this.storeLiveStats.getGameStats());
 		this.sendInitMessage(socketId, 'RecentGames', this.storeGames.getRecentGames());
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
-		this.sendInitMessage(socketId, 'SessionStats', this.storeSession.getSessionStats());
+		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string) {

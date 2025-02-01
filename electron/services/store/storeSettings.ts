@@ -3,12 +3,11 @@ import ip from 'ip';
 import Store from 'electron-store';
 import type { Url } from '../../../frontend/src/lib/models/types/overlay';
 import type { SlippiLauncherSettings } from '../../../frontend/src/lib/models/types/slippiData';
-import { delay, inject, singleton } from 'tsyringe';
+import { inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import getAppDataPath from 'appdata-path';
 import fs from 'fs';
 import os from 'os';
-import { ElectronCurrentPlayerStore } from './storeCurrentPlayer';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { BACKEND_PORT } from '../../../frontend/src/lib/models/const';
 import { getDolphinSettings } from './../../utils/dolphinSettings';
@@ -24,11 +23,8 @@ export class ElectronSettingsStore {
 		@inject('Port') private port: string,
 		@inject('ElectronStore') private store: Store,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
-		@inject(delay(() => ElectronCurrentPlayerStore))
-		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 	) {
 		this.log.info('Initializing Settings Store');
-		this.initStoreListeners();
 		this.initEventListeners();
 		this.updateSlippiSettings();
 		this.updateDolphinSettings();
@@ -126,12 +122,6 @@ export class ElectronSettingsStore {
 			local: `http://localhost:${this.port}`,
 			localResource: `http://localhost:${BACKEND_PORT}`,
 		};
-	}
-
-	private initStoreListeners() {
-		this.store.onDidChange(`settings.currentPlayer`, async () => {
-			this.storeCurrentPlayer.updateCurrentPlayerConnectCode();
-		});
 	}
 
 	private initEventListeners() {

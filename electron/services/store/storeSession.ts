@@ -23,14 +23,14 @@ export class ElectronSessionStore {
         this.initPlayerListener();
     }
 
-    getSessionStats(): SessionStats | undefined {
-        const player = this.storeCurrentPlayer.getCurrentPlayer();
+    async getSessionStats(): Promise<SessionStats | undefined> {
+        const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
         return this.store.get(`player.${player.connectCode}.session`) as SessionStats;
     }
 
-    resetSessionStats() {
-        const player = this.storeCurrentPlayer.getCurrentPlayer();
+    async resetSessionStats() {
+        const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
         const currentRankedStats = player.rank?.current;
         if (!currentRankedStats) return;
@@ -44,15 +44,15 @@ export class ElectronSessionStore {
         return session;
     }
 
-    updateSessionStats(rankStats: RankedNetplayProfile | undefined) {
+    async updateSessionStats(rankStats: RankedNetplayProfile | undefined) {
         this.log.info("Updating Session Stats", rankStats)
         if (!rankStats) return;
-        const player = this.storeCurrentPlayer.getCurrentPlayer();
+        const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
         console.log("Player", `player.${player.connectCode}.session`)
-        let session = this.getSessionStats();
+        let session = await this.getSessionStats();
         if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
-            session = this.resetSessionStats();
+            session = await this.resetSessionStats();
             return
         }
         session.latestUpdate = dateTimeNow();

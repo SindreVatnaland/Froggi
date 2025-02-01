@@ -13,6 +13,8 @@ import { ElectronSettingsStore } from "../../electron/services/store/storeSettin
 import log from 'electron-log';
 import { BestOf, LiveStatsScene } from "../../frontend/src/lib/models/enum";
 import { PacketCapture } from "../../electron/services/packetCapture";
+import { SqliteOrm } from "../../electron/services/sqlite/initiSqlite";
+import { SqliteCurrentPlayer } from "../../electron/services/sqlite/sqliteCurrentPlayer";
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
@@ -92,7 +94,10 @@ describe('ElectronGamesStore', () => {
         }
         const storeSession: ElectronSessionStore = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
 
-        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter, {} as any);
+        const sqlite = new SqliteOrm("./", true, log)
+        const sqliteCurrentPlayer = new SqliteCurrentPlayer(log, sqlite)
+
+        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
         storeSettings.getSlippiLauncherSettings = (): SlippiLauncherSettings => {
             return {
@@ -107,7 +112,7 @@ describe('ElectronGamesStore', () => {
 
         storeLiveStats = new ElectronLiveStatsStore(log, store, eventEmitter, messageHandler)
 
-        storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler)
+        storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer)
         storeCurrentPlayer.getCurrentPlayer = (): any => {
             return {
                 connectCode: connectCode,

@@ -198,7 +198,7 @@ export class StatsDisplay {
 		const isPostSet = game.score.some((score) => score >= Math.ceil(bestOf / 2));
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
-		const oldRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		const oldRank = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 
 		if ((this.isDev || game.settings?.isSimulated) && playerConnectCode) {
 			this.mockPostGameScene();
@@ -229,13 +229,13 @@ export class StatsDisplay {
 	private async mockPostGameScene() {
 		this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 		await new Promise((resolve) => setTimeout(resolve, 2000));
-		let currentPlayerRankStats = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		let currentPlayerRankStats = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 		if (!currentPlayerRankStats) return;
 		const didWin = Math.random() > 0.5;
 		const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
 		const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
 		const newMockRank = getPlayerRank(newMockRating, 0, 0);
-		const prevRank = this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		const prevRank = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 		currentPlayerRankStats = {
 			...currentPlayerRankStats,
 			rating: newMockRating,
@@ -267,7 +267,7 @@ export class StatsDisplay {
 	private handleGameSetStats(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.storeLiveStats.setGameStats(gameStats);
-		this.storeGames.setGameMatch(gameStats);
+		// this.storeGames.setGameMatch(gameStats);
 		const games = this.storeGames.getRecentGames();
 		if (!games || !games?.length) return;
 
@@ -285,7 +285,7 @@ export class StatsDisplay {
 			if (previousPlayers) return previousPlayers;
 		}
 
-		const currentPlayer = this.storeCurrentPlayer.getCurrentPlayer();
+		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
 
 		return (
 			await Promise.all(

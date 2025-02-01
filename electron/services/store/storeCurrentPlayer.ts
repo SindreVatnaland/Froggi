@@ -12,6 +12,7 @@ import { ElectronLiveStatsStore } from './storeLiveStats';
 import { MessageHandler } from '../messageHandler';
 import { ElectronSessionStore } from './storeSession';
 import { isMatch } from 'lodash';
+import { SqliteCurrentPlayer } from './../../services/sqlite/sqliteCurrentPlayer';
 
 @singleton()
 export class ElectronCurrentPlayerStore {
@@ -23,6 +24,7 @@ export class ElectronCurrentPlayerStore {
 		@inject(delay(() => ElectronSessionStore)) private storeSession: ElectronSessionStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => SqliteCurrentPlayer)) private sqliteCurrentPlayer: SqliteCurrentPlayer,
 	) {
 		this.log.info('Initializing Current Player Store');
 		this.initPlayerListener();
@@ -30,10 +32,12 @@ export class ElectronCurrentPlayerStore {
 	}
 
 	// Rank
-	getCurrentPlayer(): CurrentPlayer | undefined {
+	async getCurrentPlayer(): Promise<CurrentPlayer | undefined> {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		if (!connectCode) return;
-		return this.store.get(`player.${connectCode}`) as CurrentPlayer;
+		const player = await this.sqliteCurrentPlayer.getCurrentPlayer(connectCode);
+		if (!player) return;
+		return player;
 	}
 
 	updateCurrentPlayerConnectCode() {
@@ -43,24 +47,29 @@ export class ElectronCurrentPlayerStore {
 		this.store.set(`player.${connectCode}.connectCode`, connectCode);
 	}
 
-	getCurrentPlayerCurrentRankStats(): RankedNetplayProfile | undefined {
+	async getCurrentPlayerCurrentRankStats(): Promise<RankedNetplayProfile | undefined> {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		if (!connectCode) return;
-		return this.store.get(`player.${connectCode}.rank.current`) as RankedNetplayProfile;
+		const player = await this.sqliteCurrentPlayer.getCurrentPlayer(connectCode);
+		return player?.rank?.current;
 	}
 
-	setCurrentPlayerCurrentRankStats(rankStats: RankedNetplayProfile | undefined) {
-		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		if (!rankStats || !connectCode) return;
+	async setCurrentPlayerCurrentRankStats(rankStats: RankedNetplayProfile | undefined) {
+		if (!rankStats) return;
 		this.log.info('Setting current rank stats', rankStats);
-		this.store.set(`player.${connectCode}.rank.current`, rankStats);
+		this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
+		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerCurrentRankStats(rankStats);
+		if (!player) return;
+		this.messageHandler.sendMessage('CurrentPlayer', player);
 	}
 
-	setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {
-		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		if (!rankStats || !connectCode) return;
+	async setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {
+		if (!rankStats) return;
 		this.log.info('Setting new rank stats', rankStats);
-		this.store.set(`player.${connectCode}.rank.new`, rankStats);
+		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerNewRankStats(rankStats);
+		if (!player) return;
+		this.messageHandler.sendMessage('CurrentPlayer', player);
+		await this.handleRankChange();
 		if (rankStats.isMock) return;
 		this.updateCurrentPlayerRankHistory(rankStats);
 	}
@@ -74,8 +83,8 @@ export class ElectronCurrentPlayerStore {
 			[]) as RankedNetplayProfile[];
 	}
 
-	updateCurrentPlayerRankHistory(rankStats: RankedNetplayProfile) {
-		const prevRank = this.getCurrentPlayerCurrentRankStats();
+	async updateCurrentPlayerRankHistory(rankStats: RankedNetplayProfile) {
+		const prevRank = await this.getCurrentPlayerCurrentRankStats();
 		if (prevRank?.totalGames === rankStats.totalGames) return;
 		return;
 		// TODO: Move this to sqlite
@@ -87,7 +96,7 @@ export class ElectronCurrentPlayerStore {
 	}
 
 	private async handleRankChange() {
-		const player = this.getCurrentPlayer();
+		const player = await this.getCurrentPlayer();
 		if (!player) return;
 		this.log.info('Handling rank change');
 		this.log.info(`Previous rating: ${player.rank?.current?.rating}. New rating: ${player.rank?.new?.rating}`);
@@ -127,12 +136,6 @@ export class ElectronCurrentPlayerStore {
 		this.listeners = [
 			this.store.onDidChange(`player.${connectCode}`, (value) => {
 				this.messageHandler.sendMessage('CurrentPlayer', value as CurrentPlayer);
-			}),
-			this.store.onDidChange(`player.${connectCode}.rank.current`, async (rank) => {
-				this.storeSession.updateSessionStats(rank as RankedNetplayProfile);
-			}),
-			this.store.onDidChange(`player.${connectCode}.rank.new`, async () => {
-				await this.handleRankChange();
 			}),
 		];
 	}

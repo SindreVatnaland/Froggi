@@ -15,14 +15,13 @@ export interface Character {
     gameCountPercent: number;
 }
 
-export interface CurrentPlayer extends Player {
-    game: PlayerGame
+export interface CurrentPlayer {
+    connectCode: string;
     rank: CurrentPlayerRank | undefined
 }
 
 export interface CurrentPlayerRank extends Rank {
     new: RankedNetplayProfile | undefined;
-    history: RankedNetplayProfile[] | undefined;
 }
 
 export interface EdgeGuard {
@@ -56,10 +55,6 @@ export interface Player extends PlayerType {
 export interface PlayerFrameType {
     pre: PreFrameUpdateType;
     post: PostFrameUpdateType;
-}
-
-export type PlayerGame = {
-    [mode in GameStartMode]: { [matchId: string]: GameStats[] };
 }
 
 export interface Rank {

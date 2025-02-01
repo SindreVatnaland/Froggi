@@ -1,0 +1,91 @@
+import { inject, singleton } from "tsyringe";
+import { ElectronLog } from "electron-log";
+import { SqliteOrm } from "./initiSqlite";
+import { Repository } from "typeorm";
+import { CurrentPlayerEntity } from "./entities/currentPlayer";
+import { CurrentPlayer, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayerRankEntity } from "./entities/currentPlayerRank";
+
+@singleton()
+export class SqliteCurrentPlayer {
+  private currentPlayerRepo: Repository<CurrentPlayerEntity>
+  constructor(
+    @inject('ElectronLog') private log: ElectronLog,
+    @inject(SqliteOrm) private sqlite: SqliteOrm,
+  ) {
+    this.initializeRepositories();
+  }
+
+  async initializeRepositories() {
+    await this.sqlite.initializing;
+    this.currentPlayerRepo = this.sqlite.AppDataSource.getRepository(CurrentPlayerEntity);
+  }
+
+  async getCurrentPlayer(connectCode: string): Promise<CurrentPlayer | null> {
+    await this.sqlite.initializing;
+    const currentPlayer = await this.currentPlayerRepo.findOne({ where: { connectCode: connectCode } });
+    return currentPlayer as CurrentPlayer;
+  }
+
+  async addOrUpdateCurrentPlayerCurrentRankStats(rank: RankedNetplayProfile): Promise<CurrentPlayer | null> {
+    await this.sqlite.initializing;
+
+    this.log.info("Add or update current rank:", rank.connectCode);
+
+    try {
+      const currentPlayer = await this.currentPlayerRepo.findOne({
+        where: { connectCode: rank.connectCode },
+        relations: ["rank"],
+      });
+
+      if (!currentPlayer) {
+        this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
+        return null;
+      }
+
+      if (!currentPlayer.rank) {
+        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
+        currentPlayer.rank = { current: rank, new: undefined } as CurrentPlayerRankEntity;
+      } else {
+        currentPlayer.rank.current = rank;
+      }
+
+      await this.currentPlayerRepo.save(currentPlayer);
+      return currentPlayer;
+    } catch (error) {
+      this.log.error("Error saving current rank:", error);
+      return null;
+    }
+  }
+
+  async addOrUpdateCurrentPlayerNewRankStats(rank: RankedNetplayProfile) {
+    await this.sqlite.initializing;
+
+    this.log.info("Add or update new rank:", rank.connectCode);
+
+    try {
+      const currentPlayer = await this.currentPlayerRepo.findOne({
+        where: { connectCode: rank.connectCode },
+        relations: ["rank"],
+      });
+
+      if (!currentPlayer) {
+        this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
+        return null;
+      }
+
+      if (!currentPlayer.rank) {
+        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
+        currentPlayer.rank = { new: rank, current: undefined } as any;
+      } else {
+        currentPlayer.rank.new = rank;
+      }
+
+      await this.currentPlayerRepo.save(currentPlayer);
+      return currentPlayer;
+    } catch (error) {
+      this.log.error("Error saving new rank:", error);
+      return null;
+    }
+  }
+}

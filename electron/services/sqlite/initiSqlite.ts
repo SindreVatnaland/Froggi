@@ -6,6 +6,8 @@ import fs from 'fs';
 import { LayerEntity } from "./entities/layerEntity";
 import { OverlayEntity } from "./entities/overlayEntity";
 import { SceneEntity } from "./entities/sceneEntity";
+import { CurrentPlayerEntity } from "./entities/currentPlayer";
+import { CurrentPlayerRankEntity } from "./entities/currentPlayerRank";
 
 @singleton()
 export class SqliteOrm {
@@ -35,7 +37,7 @@ export class SqliteOrm {
     this.AppDataSource = new DataSource({
       type: 'sqlite',
       database: dbPath,
-      entities: [OverlayEntity, SceneEntity, LayerEntity],
+      entities: [OverlayEntity, SceneEntity, LayerEntity, CurrentPlayerEntity, CurrentPlayerRankEntity],
       synchronize: true,
       logging: false,
     });

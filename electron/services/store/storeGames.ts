@@ -4,7 +4,6 @@ import type {
 	GameStartMode,
 	GameStartTypeExtended,
 	GameStats,
-	PlayerGame,
 	Sets,
 } from '../../../frontend/src/lib/models/types/slippiData';
 import { delay, inject, singleton } from 'tsyringe';
@@ -59,10 +58,10 @@ export class ElectronGamesStore {
 		this.store.set('stats.game.score', score ?? [0, 0]);
 	}
 
-	setGameMatch(gameStats: GameStats | null) {
+	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.addRecentGames(gameStats);
-		const player = this.storeCurrentPlayer.getCurrentPlayer();
+		const player = await this.storeCurrentPlayer.getCurrentPlayer();
 		if (
 			!player ||
 			!gameStats?.settings?.players.some(
@@ -104,7 +103,7 @@ export class ElectronGamesStore {
 	getAllSetsByMode(mode: GameStartMode): { [matchId: string]: GameStats[] } {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		if (!connectCode) return {};
-		const playerGame = this.store.get(`player.${connectCode}.game`) as PlayerGame;
+		const playerGame = this.store.get(`player.${connectCode}.game`) as any;
 		if (!playerGame) return {};
 		return playerGame[mode];
 	}

@@ -21,7 +21,10 @@ export const migrateStore = (log: ElectronLog): Store.Options<Record<string, unk
 			},
 			'>=0.6.15': (store) => {
 				store.delete('obs.layout.overlays')
-			}
+			},
+			'>=0.9.15': (store) => {
+				store.delete("player")
+			},
 		},
 	};
 };

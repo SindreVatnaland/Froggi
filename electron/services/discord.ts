@@ -49,12 +49,12 @@ export class DiscordRpc {
 			this.setMenuActivity('Menu');
 		});
 
-		this.localEmitter.on("GameSettings", (settings: GameStartType | undefined) => {
+		this.localEmitter.on("GameSettings", async (settings: GameStartType | undefined) => {
 			if (!settings) return;
 			const mode = startCase(this.storeLiveStats.getGameSettings()?.matchInfo.mode ?? 'Local');
 			const score = this.storeGames.getGameScore() ?? [0, 0];
 
-			const currentPlayer = this.storeCurrentPlayer.getCurrentPlayer();
+			const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
 			const players = this.storePlayers.getCurrentPlayers();
 			const player1 = players?.at(0);
 			const player2 = players?.at(1);
@@ -149,9 +149,9 @@ export class DiscordRpc {
 		});
 	};
 
-	setMenuActivity = (menuActivity: string, state: string | undefined = undefined) => {
+	setMenuActivity = async (menuActivity: string, state: string | undefined = undefined) => {
 		this.log.info('Discord menu');
-		const currentPlayer = this.storeCurrentPlayer.getCurrentPlayer();
+		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
 		this.activity = {
 			...this.activity,
 			buttons: [
