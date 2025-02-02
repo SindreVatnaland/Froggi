@@ -4,6 +4,7 @@ import { inject, injectable } from 'tsyringe';
 import { Character, Player, RankedNetplayProfile, SlippiCharacter } from '../../frontend/src/lib/models/types/slippiData';
 import { PlayerType } from '@slippi/slippi-js';
 import { CHARACTERS } from '../../frontend/src/lib/models/constants/characterData';
+import { dateTimeNow } from '../utils/functions';
 
 @injectable()
 export class Api {
@@ -90,6 +91,7 @@ export class Api {
 			totalSets: 0,
 			winsPercent: 0,
 			userId: player.fbUid,
+			timestamp: dateTimeNow(),
 		};
 
 		return this.enrichData(rankData);

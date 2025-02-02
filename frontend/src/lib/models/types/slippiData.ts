@@ -146,6 +146,7 @@ export interface RankedNetplayProfile {
     winsPercent: number;
     isMock?: boolean | undefined;
     userId: string;
+    timestamp: Date;
 }
 
 export interface SessionStats {

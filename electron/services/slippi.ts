@@ -18,6 +18,8 @@ import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { MemoryRead } from './memoryRead';
 import { isDolphinRunning } from '../utils/dolphinProcess';
 import { MessageHandler } from './messageHandler';
+import { SqliteCurrentPlayer } from './sqlite/sqliteCurrentPlayer';
+import { dateTimeNow } from 'utils/functions';
 
 @singleton()
 export class SlippiJs {
@@ -27,6 +29,7 @@ export class SlippiJs {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('SlpStream') private slpStream: SlpStream,
 		@inject(Api) private api: Api,
+		@inject(SqliteCurrentPlayer) private sqliteCurrentPlayer: SqliteCurrentPlayer,
 		@inject(ElectronCurrentPlayerStore) private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(ElectronDolphinStore) private storeDolphin: ElectronDolphinStore,
 		@inject(ElectronLiveStatsStore) private storeLiveStats: ElectronLiveStatsStore,
@@ -103,7 +106,10 @@ export class SlippiJs {
 		const connectCode = (await findPlayKey()).connectCode;
 		this.log.info("User connect code:", connectCode)
 		this.storeSettings.setCurrentPlayerConnectCode(connectCode);
-		const rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
+		let rankedNetplayProfile = (await this.sqliteCurrentPlayer.getCurrentPlayer(connectCode))?.rank?.current;
+		if (dateTimeNow().getTime() - new Date(rankedNetplayProfile?.timestamp ?? 0).getTime() < (60 * 60 * 1000)) {
+			rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
+		}
 		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)
 		this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(rankedNetplayProfile);
 		this.storeCurrentPlayer.setCurrentPlayerNewRankStats(rankedNetplayProfile);

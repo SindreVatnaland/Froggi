@@ -4,6 +4,7 @@ import { CurrentPlayerEntity } from "./currentPlayerEntity";
 
 @Entity()
 export class CurrentPlayerRankEntity implements CurrentPlayerRank {
+
   @PrimaryGeneratedColumn()
   id: number;
 
