@@ -20,8 +20,9 @@ export class GameStatsEntity implements GameStats {
   @Column({ type: "integer", default: false })
   isReplay: boolean;
 
-  @OneToOne(() => FrameEntryTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
-  @JoinColumn()
+  // @OneToOne(() => FrameEntryTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
+  // @JoinColumn()
+  @Column({ type: "simple-json", nullable: true })
   lastFrame: FrameEntryTypeEntity | null;
 
   @OneToOne(() => PostGameStatsEntity, { cascade: true, onDelete: "CASCADE", eager: true })

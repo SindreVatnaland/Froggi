@@ -27,7 +27,7 @@ export class SqliteGame {
     const game = this.gameStatsRepo.create(gameStats);
 
     try {
-      await this.gameStatsRepo.insert(game);
+      await this.gameStatsRepo.save(game);
       return gameStats;
     } catch (error) {
       this.log.error("Error saving game stats:", error);

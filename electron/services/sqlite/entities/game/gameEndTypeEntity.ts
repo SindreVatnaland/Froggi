@@ -1,6 +1,5 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { GameEndType, GameEndMethod, PlacementType } from "@slippi/slippi-js";
-import { GameStatsEntity } from "./gameStatsEntity";
 
 @Entity()
 export class GameEndTypeEntity implements GameEndType {
@@ -13,10 +12,7 @@ export class GameEndTypeEntity implements GameEndType {
   @Column({ type: "int", nullable: true })
   lrasInitiatorIndex: number | null;
 
-  @Column({ type: "int", nullable: true })
+  @Column({ type: "simple-json", nullable: true })
   placements: PlacementType[];
-
-  @OneToOne(() => GameStatsEntity, gameStats => gameStats.gameEnd)
-  gameStats: GameStatsEntity | null;
 }
 

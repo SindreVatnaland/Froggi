@@ -89,6 +89,7 @@ export class Api {
 			seasons: player?.netplayProfiles,
 			totalSets: 0,
 			winsPercent: 0,
+			userId: player.fbUid,
 		};
 
 		return this.enrichData(rankData);

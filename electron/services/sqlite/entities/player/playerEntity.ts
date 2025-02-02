@@ -1,9 +1,10 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { GameSettingsEntity } from "../game/gameSettingsEntity";
+import { PlayerType } from "@slippi/slippi-js";
 
 
 @Entity()
-export class PlayerTypeEntity {
+export class PlayerTypeEntity implements PlayerType {
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -13,7 +13,7 @@ export class FrameEntryTypeEntity implements FrameEntryType {
 
   @OneToOne(() => FrameStartTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
-  start?: FrameStartTypeEntity | undefined;
+  start: FrameStartTypeEntity | undefined;
 
   @Column({ type: "simple-json", nullable: true })
   players: { [playerIndex: number]: { pre: PreFrameUpdateType; post: PostFrameUpdateType; } | null; };
@@ -22,7 +22,7 @@ export class FrameEntryTypeEntity implements FrameEntryType {
   followers: { [playerIndex: number]: { pre: PreFrameUpdateType; post: PostFrameUpdateType; } | null; };
 
   @Column({ type: "simple-json", nullable: true })
-  items?: ItemUpdateType[] | undefined;
+  items: ItemUpdateType[] | undefined;
 
   @OneToOne(() => GameStatsEntity, gameStats => gameStats.lastFrame)
   gameStats: GameStatsEntity | null;

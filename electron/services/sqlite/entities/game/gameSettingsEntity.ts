@@ -42,6 +42,7 @@ export class GameSettingsEntity implements GameStartTypeExtended {
     onDelete: "CASCADE",
     eager: true,
   })
+  @JoinColumn()
   players: PlayerTypeEntity[];
 
   @Column({ type: "integer", nullable: true })
@@ -70,7 +71,7 @@ export class GameSettingsEntity implements GameStartTypeExtended {
   @Column({ type: "integer", nullable: true })
   isFrozenPS: boolean | null;
 
-  @OneToOne(() => MatchInfoEntity)
+  @OneToOne(() => MatchInfoEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   matchInfo: MatchInfoEntity;
 

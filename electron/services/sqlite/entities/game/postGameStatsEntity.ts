@@ -1,6 +1,5 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { ActionCountsType, ComboType, ConversionType, OverallType, StatsType, StockType } from "@slippi/slippi-js";
-import { GameEndTypeEntity } from "./gameEndTypeEntity";
 
 @Entity()
 export class PostGameStatsEntity implements StatsType {
@@ -30,8 +29,5 @@ export class PostGameStatsEntity implements StatsType {
 
   @Column({ type: "simple-json" })
   overall: OverallType[];
-
-  @OneToOne(() => GameEndTypeEntity)
-  gameEnd: GameEndTypeEntity;
 }
 

@@ -73,6 +73,7 @@ export class ElectronOverlayStore {
 		scene.layers.sort((a, b) => a.index - b.index);
 
 		const updatedScene = await this.sqliteOverlay.addOrUpdateScene(scene);
+		if (!updatedScene) return;
 		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, updatedScene);
 	}
 

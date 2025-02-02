@@ -57,35 +57,56 @@ export class SqliteOverlay {
   async deleteOverlayById(overlayId: string) {
     await this.sqlite.initializing;
     this.log.info("Deleting overlay:", overlayId)
-    const overlay = await this.overlayRepo.findOne({ where: { id: overlayId } })
-    if (!overlay) return;
 
-    for (const key of Object.keys(LiveStatsScene)) {
-      if (!isNaN(Number(key))) continue;
-      const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
-      await this.sceneRepo.delete({ id: overlay[statsScene]?.id });
+    try {
+      const overlay = await this.overlayRepo.findOne({ where: { id: overlayId } })
+      if (!overlay) return;
+
+      for (const key of Object.keys(LiveStatsScene)) {
+        if (!isNaN(Number(key))) continue;
+        const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+        await this.sceneRepo.delete({ id: overlay[statsScene]?.id });
+      }
+      await this.overlayRepo.delete({ id: overlayId })
+    } catch (error) {
+      this.log.error("Error deleting overlay:", error);
     }
-    await this.overlayRepo.delete({ id: overlayId })
   }
 
   async getScene(sceneId: number): Promise<SceneEntity | null> {
     await this.sqlite.initializing;
-    const scenes = await this.sceneRepo.findOneBy({ id: sceneId })
-    scenes?.layers.sort((a, b) => a.index - b.index);
-    return scenes;
+    try {
+
+      const scenes = await this.sceneRepo.findOneBy({ id: sceneId })
+      scenes?.layers.sort((a, b) => a.index - b.index);
+      return scenes;
+    } catch (error) {
+      this.log.error("Error getting scene:", error);
+      return null;
+    }
   }
 
-  async addOrUpdateScene(scene: Scene): Promise<SceneEntity> {
+  async addOrUpdateScene(scene: Scene): Promise<SceneEntity | null> {
     await this.sqlite.initializing;
     this.log.debug("Adding scene:", scene.id);
     const sceneEntity = this.sceneRepo.create(scene);
-    return await this.sceneRepo.save(sceneEntity);
+    try {
+      return await this.sceneRepo.save(sceneEntity);
+    } catch (error) {
+      this.log.error("Error saving scene:", error);
+    }
+    return null
   }
 
   async deleteLayer(layerId: number) {
     await this.sqlite.initializing;
     this.log.info("Deleting layer:", layerId)
-    const deleted = await this.sceneRepo.delete({ id: layerId })
-    return deleted
+    try {
+      const deleted = await this.sceneRepo.delete({ id: layerId })
+      return deleted
+    } catch (error) {
+      this.log.error("Error deleting layer:", error);
+      return null
+    }
   }
 }
