@@ -1,6 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { GameSettingsEntity } from "../game/gameSettingsEntity";
 import { PlayerType } from "@slippi/slippi-js";
+import { GameSettingsEntity } from "../game/gameSettingsEntity";
 
 
 @Entity()
@@ -86,6 +86,8 @@ export class PlayerTypeEntity implements PlayerType {
   @Column({ type: "varchar" })
   userId: string;
 
-  @ManyToOne(() => GameSettingsEntity, (settings) => settings.players)
-  gameSettings: GameSettingsEntity;
+  @ManyToOne(() => GameSettingsEntity, (settings) => settings.players, {
+    onDelete: "CASCADE",
+  })
+  settings: GameSettingsEntity;
 }

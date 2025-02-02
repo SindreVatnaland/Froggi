@@ -37,12 +37,11 @@ export class GameSettingsEntity implements GameStartTypeExtended {
   @Column({ type: "integer", nullable: true })
   enabledItems: number | null;
 
-  @OneToMany(() => PlayerTypeEntity, (player) => player, {
+  @OneToMany(() => PlayerTypeEntity, (player: PlayerTypeEntity) => player.settings, {
     cascade: true,
     onDelete: "CASCADE",
     eager: true,
   })
-  @JoinColumn()
   players: PlayerTypeEntity[];
 
   @Column({ type: "integer", nullable: true })

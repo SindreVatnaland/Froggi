@@ -32,7 +32,7 @@ export class GameStatsEntity implements GameStats {
   @Column({ type: "simple-json", default: "[0,0]" })
   score: number[];
 
-  @OneToOne(() => GameSettingsEntity, { cascade: true, eager: false, onDelete: "CASCADE" })
+  @OneToOne(() => GameSettingsEntity, { cascade: true, eager: true, onDelete: "CASCADE" })
   @JoinColumn()
   settings: GameSettingsEntity | null;
 

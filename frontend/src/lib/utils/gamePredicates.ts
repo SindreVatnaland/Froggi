@@ -128,7 +128,7 @@ export const isHandwarmers = (gameStats: GameStats): boolean => {
 
     let weight = 0;
 
-    const startStocks = gameStats.settings.players[0].startStocks ?? 4;
+    const startStocks = gameStats.settings.players[0]?.startStocks ?? 4;
 
     if (gameStats.postGameStats.overall.every(t => t.totalDamage < 50)) {
         weight += 1;

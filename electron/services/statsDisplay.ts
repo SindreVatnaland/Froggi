@@ -32,7 +32,6 @@ import { dateTimeNow, getGameMode } from '../utils/functions';
 import { analyzeMatch } from '../utils/analyzeMatch';
 import os from 'os';
 import { debounce, isNil } from 'lodash';
-import { getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
 import { Command } from '../../frontend/src/lib/models/types/overlay';
 import { MessageHandler } from './messageHandler';
 import path from 'path';
@@ -166,25 +165,12 @@ export class StatsDisplay {
 			gameStats.isReplay = true;
 		}
 
-		let score = this.storeGames.getGameScore();
-
-		gameStats.score = this.handleScore(gameStats, score)
-
-		this.storeGames.setGameScore(gameStats.score);
-		this.handleGameSetStats(gameStats);
+		await this.handleGameSetStats(gameStats);
 		this.handlePostGameScene(gameStats);
 		this.storeLiveStats.deleteGameFrame();
 		setTimeout(() => {
 			this.storeLiveStats.setGameState(InGameState.Inactive);
 		}, 5000)
-	}
-
-	private handleScore(gameStats: GameStats, score: number[]): number[] {
-		const winnerIndex = getWinnerIndex(gameStats);
-		if (isNil(winnerIndex)) return score;
-		score[winnerIndex ?? 0] += 1;
-		this.log.info("Player", winnerIndex + 1, "won the game. Score:", score)
-		return score
 	}
 
 	private async handlePostGameScene(game: GameStats | null) {

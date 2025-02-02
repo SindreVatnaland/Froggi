@@ -14,6 +14,7 @@ import {
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { ElectronLiveStatsStore } from './storeLiveStats';
 import { SqliteGame } from './../../services/sqlite/sqliteGames';
+import { isNil } from 'lodash';
 
 @singleton()
 export class ElectronGamesStore {
@@ -30,7 +31,6 @@ export class ElectronGamesStore {
 		this.initStoreListeners();
 	}
 
-	// GAME
 	getGameScore(): number[] {
 		return (this.store.get('stats.game.score') ?? [0, 0]) as number[];
 	}
@@ -41,7 +41,7 @@ export class ElectronGamesStore {
 
 	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
-		this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? null);
+		this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
 		this.addRecentGames(gameStats);
 	}
 
@@ -49,24 +49,28 @@ export class ElectronGamesStore {
 		return (this.store.get('game.recent.matchId') ?? "") as string;
 	}
 
-	private setRecentGameId(matchId: string | null) {
+	private setRecentGameId(matchId: string) {
 		const recentGameId = this.getRecentGameId();
 		if (recentGameId === matchId) return;
-		this.sqliteGame.deleteGameStatsWithoutMatchId();
+		this.clearRecentGames();
 		this.store.set('game.recent.matchId', matchId);
 	}
 
 	async getRecentGames(): Promise<GameStats[]> {
 		const recentGameId = this.getRecentGameId();
-		if (!recentGameId) return [];
+		if (isNil(recentGameId)) return [];
 		const recentGames = await this.sqliteGame.getGamesById(recentGameId);
 		if (!recentGames) return [];
 		return recentGames
 	}
 
-	addRecentGames(newGame: GameStats) {
-		if (newGame.settings?.matchInfo.matchId) this.handleOnlineGame(newGame);
-		if (!newGame.settings?.matchInfo.matchId) this.handleOfflineGame(newGame);
+	async addRecentGames(newGame: GameStats) {
+		const isOnline = Boolean(newGame.settings?.matchInfo.matchId);
+		let games = isOnline ? await this.getOnlineGames(newGame) : await this.getOfflineGames(newGame);
+		if (!games) return;
+		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
+		this.applyGamesScore(games);
+		this.sqliteGame.addGameStats(games.at(-1) ?? newGame);
 	}
 
 	async insertMockGame(newGame: GameStats) {
@@ -76,23 +80,23 @@ export class ElectronGamesStore {
 		this.sqliteGame.addGameStats(newGame)
 	}
 
-	private async handleOnlineGame(newGame: GameStats) {
+	private async getOnlineGames(newGame: GameStats) {
 		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "");
-		if (!games) return;
-		games = this.applyRecentGameScore(games);
-		this.sqliteGame.addGameStats(newGame);
+		return games;
 	}
 
-	private async handleOfflineGame(newGame: GameStats) {
-		if (hasGameBombRain(newGame)) return;
-		this.sqliteGame.addGameStats(newGame);
+	private async getOfflineGames(newGame: GameStats): Promise<GameStats[]> {
+		if (hasGameBombRain(newGame)) return [];
+		let games = await this.getRecentGames();
+		return games;
 	}
 
 	clearRecentGames() {
-		this.store.set(`player.any.game.recent`, this.applyRecentGameScore([]));
+		this.sqliteGame.deleteGameStatsWithoutMatchId();
+		this.setGameScore([0, 0]);
 	}
 
-	private applyRecentGameScore(games: GameStats[]) {
+	private applyGamesScore(games: GameStats[]) {
 		for (let i = 0; i < games.length; i++) {
 			games[i].score = getGameScore(games.slice(0, i + 1));
 		}
@@ -100,8 +104,13 @@ export class ElectronGamesStore {
 		return games;
 	}
 
-	private deleteRecentGame() {
+	private async deleteRecentGame(gameIndex: number) {
+		let games = await this.getRecentGames();
 		this.sqliteGame.deleteGameStatsWithoutMatchId();
+		if (!games) return;
+		games.splice(gameIndex, 1);
+		games = this.applyGamesScore(games);
+		games.forEach((game) => this.sqliteGame.addGameStats(game));
 	}
 
 	private initEventListeners() {
@@ -113,10 +122,6 @@ export class ElectronGamesStore {
 	private initStoreListeners() {
 		this.store.onDidChange(`stats.game.score`, async (value) => {
 			this.messageHandler.sendMessage('GameScore', value as number[]);
-		});
-		this.store.onDidChange('player.any.game.recent', async (value) => {
-			const recentGames = (value ?? []) as GameStats[];
-			this.messageHandler.sendMessage('RecentGames', recentGames);
 		});
 	}
 }

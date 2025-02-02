@@ -1,7 +1,7 @@
 import { inject, singleton } from "tsyringe";
 import { ElectronLog } from "electron-log";
 import { SqliteOrm } from "./initiSqlite";
-import { IsNull, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import { GameStats } from "../../../frontend/src/lib/models/types/slippiData";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 
@@ -35,11 +35,11 @@ export class SqliteGame {
     }
   }
 
-  async getGamesById(matchId: string): Promise<GameStats[] | null> {
+  async getGamesById(matchId: string): Promise<GameStats[]> {
     await this.sqlite.initializing;
     try {
       const games = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
-      if (!games) return null;
+      if (!games) return [];
       return games as GameStats[];
     } catch (error) {
       this.log.error("Error getting games by id:", error);
@@ -63,7 +63,7 @@ export class SqliteGame {
   async deleteGameStatsWithoutMatchId(): Promise<boolean> {
     await this.sqlite.initializing;
     try {
-      const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: IsNull() } } } });
+      const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: "" } } } });
       if (!game) return false;
       await this.gameStatsRepo.remove(game);
       return true;
