@@ -42,7 +42,7 @@ export class ElectronGamesStore {
 	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
-		this.addRecentGames(gameStats);
+		await this.addRecentGames(gameStats);
 	}
 
 	private getRecentGameId(): string | null {
@@ -70,7 +70,7 @@ export class ElectronGamesStore {
 		if (!games) return;
 		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
 		this.applyGamesScore(games);
-		this.sqliteGame.addGameStats(games.at(-1) ?? newGame);
+		await this.sqliteGame.addGameStats(games.at(-1) ?? newGame);
 	}
 
 	async insertMockGame(newGame: GameStats) {

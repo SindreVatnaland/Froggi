@@ -19,7 +19,7 @@ import { MemoryRead } from './memoryRead';
 import { isDolphinRunning } from '../utils/dolphinProcess';
 import { MessageHandler } from './messageHandler';
 import { SqliteCurrentPlayer } from './sqlite/sqliteCurrentPlayer';
-import { dateTimeNow } from 'utils/functions';
+import { dateTimeNow } from './../utils/functions';
 
 @singleton()
 export class SlippiJs {
