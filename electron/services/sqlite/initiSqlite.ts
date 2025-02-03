@@ -33,9 +33,7 @@ export class SqliteOrm {
   private async initOrm() {
     this.log.info("Initializing SqliteOrm")
 
-    const dbPath = this.isDev
-      ? path.resolve("./database.sqlite")
-      : path.join(this.appDir, "database.sqlite");
+    const dbPath = path.join(this.appDir, "database.sqlite");
 
     const directory = path.dirname(dbPath);
     if (!fs.existsSync(directory)) {
@@ -65,6 +63,25 @@ export class SqliteOrm {
       this.log.info("SqliteOrm successfully initialized.");
     } catch (error) {
       this.log.error("Error during DataSource initialization:", error);
+    }
+  }
+
+  async clearAllTables() {
+    if (!this.isDev) return;
+    await this.initializing;
+    try {
+      const queryRunner = this.AppDataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.query('PRAGMA foreign_keys = OFF;'); // Disable foreign key constraints
+      const tables = await queryRunner.getTables();
+      for (const table of tables) {
+        await queryRunner.clearTable(table.name);
+      }
+      await queryRunner.query('PRAGMA foreign_keys = ON;'); // Re-enable foreign key constraints
+      await queryRunner.release();
+      this.log.info("All tables cleared successfully.");
+    } catch (error) {
+      this.log.error("Error clearing tables:", error);
     }
   }
 

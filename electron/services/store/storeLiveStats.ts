@@ -3,7 +3,7 @@ import Store from 'electron-store';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
-import { FrameEntryType, GameStartType } from '@slippi/slippi-js';
+import { FrameEntryType } from '@slippi/slippi-js';
 import { BestOf, InGameState, LiveStatsScene } from '../../../frontend/src/lib/models/enum';
 import {
 	GameStartMode,
@@ -70,7 +70,7 @@ export class ElectronLiveStatsStore {
 	}
 
 	getGameState(): InGameState {
-		return (this.gameState as InGameState) ?? InGameState.Inactive;
+		return (this.gameState) ?? InGameState.Inactive;
 	}
 
 	setGameState(state: InGameState) {
@@ -80,17 +80,6 @@ export class ElectronLiveStatsStore {
 
 	getGameSettings(): GameStartTypeExtended | undefined {
 		return this.store.get('stats.game.settings') as GameStartTypeExtended;
-	}
-
-	setGameSettings(settings: GameStartType) {
-		const gameMode =
-			(settings?.matchInfo?.matchId?.match(/mode\.(\w+)/)?.at(1) as GameStartMode) ?? 'local';
-		const bestOf = this.getBestOf();
-		this.store.set('stats.game.settings', {
-			...settings,
-			matchInfo: { ...settings.matchInfo, mode: gameMode, bestOf: bestOf },
-		});
-		if (gameMode === 'ranked') this.setBestOf(BestOf.BestOf3);
 	}
 
 	getGameMode(): GameStartMode {

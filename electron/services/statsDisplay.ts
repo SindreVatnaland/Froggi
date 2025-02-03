@@ -121,7 +121,9 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		const previousSettings = this.storeLiveStats.getGameSettings();
+		const resentGames = await this.getPreviousGameStats();
+
+		const previousSettings = resentGames?.settings;
 
 		const isNewGame = Boolean(settings.matchInfo?.matchId) && previousSettings?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 
@@ -135,7 +137,6 @@ export class StatsDisplay {
 
 		this.storeLiveStats.setGameState(InGameState.Running);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.InGame);
-		this.storeLiveStats.setGameSettings(settings);
 
 		if (!isNewGame) return;
 		this.log.info("New game detected. Clearing recent games.")
@@ -153,7 +154,7 @@ export class StatsDisplay {
 		this.stopPauseInterval();
 		this.handleInGameState(gameEnd, latestGameFrame);
 
-		let gameStats = await this.getRecentGameStats(settings, gameEnd);
+		let gameStats = await this.getPreviousGameStats(settings, gameEnd);
 		if (!gameStats) {
 			this.log.info("Did not find the recently played game.")
 			this.storeLiveStats.setStatsScene(LiveStatsScene.Menu)
@@ -166,7 +167,7 @@ export class StatsDisplay {
 		}
 
 		await this.handleGameSetStats(gameStats);
-		this.handlePostGameScene(gameStats);
+		await this.handlePostGameScene(gameStats);
 		this.storeLiveStats.deleteGameFrame();
 		setTimeout(() => {
 			this.storeLiveStats.setGameState(InGameState.Inactive);
@@ -252,7 +253,6 @@ export class StatsDisplay {
 
 	private async handleGameSetStats(gameStats: GameStats | null) {
 		if (!gameStats) return;
-		this.storeLiveStats.setGameStats(gameStats);
 		this.storeGames.setGameMatch(gameStats);
 		const games = await this.storeGames.getRecentGames();
 		if (!games || !games?.length) return;
@@ -355,7 +355,7 @@ export class StatsDisplay {
 		return [...(filesFromRoot || []), ...(filesFromSpectate || [])];
 	};
 
-	private async getRecentGameStats(
+	private async getPreviousGameStats(
 		settings: GameStartType | undefined = undefined,
 		gameEnd: GameEndType | undefined = undefined,
 	): Promise<GameStats | null> {
@@ -406,7 +406,7 @@ export class StatsDisplay {
 				matchInfo: {
 					...settings?.matchInfo,
 					mode: getGameMode(settings),
-					matchId: settings?.matchInfo?.matchId?.replace(/[.:]/g, '-'),
+					matchId: settings?.matchInfo?.matchId,
 					bestOf: this.storeLiveStats.getBestOf(),
 				},
 			},
