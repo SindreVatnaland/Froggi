@@ -118,8 +118,7 @@ describe('ElectronGamesStore', () => {
         }
 
         storeLiveStats = new ElectronLiveStatsStore(log, store, eventEmitter, messageHandler)
-        storeLiveStats.setStatsScene = () => { }
-        storeLiveStats.setStatsSceneTimeout = () => { }
+        storeLiveStats.setStatsSceneTimeout = (liveStatsScene) => { storeLiveStats.setStatsScene(liveStatsScene) }
 
         storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer)
         storeCurrentPlayer.getCurrentPlayer = (): any => {
@@ -243,7 +242,7 @@ describe('ElectronGamesStore', () => {
             await statsDisplay.handleGameStart(currentGameSettings)
             await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
             const gameScore = electronGamesStore.getGameScore()
-            expect(gameTest.expectedScore).toStrictEqual(gameScore)
+            expect(gameScore).toStrictEqual(gameTest.expectedScore)
         },
         10000 // Set a timeout of 10 seconds for each test
     );

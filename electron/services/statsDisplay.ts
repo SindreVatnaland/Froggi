@@ -121,7 +121,7 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		const resentGames = await this.getPreviousGameStats();
+		const resentGames = await this.getPreviousGameStats(settings);
 
 		const previousSettings = resentGames?.settings;
 
@@ -166,7 +166,7 @@ export class StatsDisplay {
 			gameStats.isReplay = true;
 		}
 
-		await this.handleGameSetStats(gameStats);
+		gameStats = await this.handleGameSetStats(gameStats);
 		await this.handlePostGameScene(gameStats);
 		this.storeLiveStats.deleteGameFrame();
 		setTimeout(() => {
@@ -174,7 +174,7 @@ export class StatsDisplay {
 		}, 5000)
 	}
 
-	private async handlePostGameScene(game: GameStats | null) {
+	private async handlePostGameScene(game: GameStats | undefined) {
 		if (isNil(game)) return;
 		this.log.info("Handle post game scene:")
 
@@ -251,7 +251,7 @@ export class StatsDisplay {
 			this.storeLiveStats.setGameState(InGameState.Tie);
 	}
 
-	private async handleGameSetStats(gameStats: GameStats | null) {
+	private async handleGameSetStats(gameStats: GameStats | null): Promise<GameStats | undefined> {
 		if (!gameStats) return;
 		await this.storeGames.setGameMatch(gameStats);
 		const games = await this.storeGames.getRecentGames();
@@ -259,6 +259,7 @@ export class StatsDisplay {
 
 		const matchStats = analyzeMatch(games.flat().filter((game) => !game.isMock));
 		this.storeLiveStats.setMatchStats(matchStats);
+		return games.at(-1);
 	}
 
 	private async getCurrentPlayersWithRankStats(settings: GameStartType, isNewGame: boolean): Promise<Player[]> {
@@ -356,11 +357,11 @@ export class StatsDisplay {
 	};
 
 	private async getPreviousGameStats(
-		settings: GameStartType | undefined = undefined,
+		settings: GameStartType | undefined,
 		gameEnd: GameEndType | undefined = undefined,
-	): Promise<GameStats | null> {
+	): Promise<GameStats | undefined> {
 		const files = await this.getGameFiles();
-		if (!files || !files.length) return null;
+		if (!files || !files.length) return;
 		const matchId = settings?.matchInfo?.matchId ?? '';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
@@ -377,7 +378,7 @@ export class StatsDisplay {
 		});
 		if (!file) {
 			this.log.error("Could not find recent replay")
-			return null
+			return
 		};
 		this.log.info("Analyzing game:", settings?.matchInfo)
 		this.log.debug('Analyzing recent game file:', file);
@@ -392,11 +393,12 @@ export class StatsDisplay {
 	}
 
 	private createGameStats(
-		game: SlippiGame | null,
+		game: SlippiGame | undefined,
 		gameEnd: GameEndType | undefined = undefined,
-	): GameStats | null {
-		if (!game) return null;
+	): GameStats | undefined {
+		if (!game) return;
 		const settings = game.getSettings();
+		const matchId = settings?.matchInfo?.matchId;
 		const gameStats = {
 			gameEnd: gameEnd ?? game?.getGameEnd(),
 			lastFrame: game.getLatestFrame(),
@@ -406,7 +408,7 @@ export class StatsDisplay {
 				matchInfo: {
 					...settings?.matchInfo,
 					mode: getGameMode(settings),
-					matchId: settings?.matchInfo?.matchId,
+					matchId: matchId ? matchId : "local",
 					bestOf: this.storeLiveStats.getBestOf(),
 				},
 			},

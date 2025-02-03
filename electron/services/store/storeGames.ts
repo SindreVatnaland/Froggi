@@ -42,7 +42,7 @@ export class ElectronGamesStore {
 	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
 		this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
-		await this.addRecentGames(gameStats);
+		await this.addMatchGame(gameStats);
 	}
 
 	private getRecentGameId(): string | null {
@@ -64,9 +64,9 @@ export class ElectronGamesStore {
 		return recentGames
 	}
 
-	async addRecentGames(newGame: GameStats) {
-		const isOnline = Boolean(newGame.settings?.matchInfo.matchId);
-		let games = isOnline ? await this.getOnlineGames(newGame) : await this.getOfflineGames(newGame);
+	async addMatchGame(newGame: GameStats) {
+		if (hasGameBombRain(newGame)) return;
+		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "");
 		if (!games) return;
 		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
 		this.applyGamesScore(games);
@@ -80,19 +80,8 @@ export class ElectronGamesStore {
 		this.sqliteGame.addGameStats(newGame)
 	}
 
-	private async getOnlineGames(newGame: GameStats) {
-		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "");
-		return games;
-	}
-
-	private async getOfflineGames(newGame: GameStats): Promise<GameStats[]> {
-		if (hasGameBombRain(newGame)) return [];
-		let games = await this.getRecentGames();
-		return games;
-	}
-
 	clearRecentGames() {
-		this.sqliteGame.deleteGameStatsWithoutMatchId();
+		this.sqliteGame.deleteLocalGameStats();
 		this.setGameScore([0, 0]);
 	}
 
@@ -106,7 +95,7 @@ export class ElectronGamesStore {
 
 	private async deleteRecentGame(gameIndex: number) {
 		let games = await this.getRecentGames();
-		this.sqliteGame.deleteGameStatsWithoutMatchId();
+		this.sqliteGame.deleteLocalGameStats();
 		if (!games) return;
 		games.splice(gameIndex, 1);
 		games = this.applyGamesScore(games);

@@ -60,7 +60,7 @@ export class SqliteGame {
     }
   }
 
-  async deleteGameStatsWithoutMatchId(): Promise<boolean> {
+  async deleteLocalGameStats(): Promise<boolean> {
     await this.sqlite.initializing;
     try {
       const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: "" } } } });

@@ -6,7 +6,7 @@ export class MatchInfoEntity implements MatchInfoExtended {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "varchar", nullable: true, default: "" })
+  @Column({ type: "varchar", nullable: true })
   matchId: string | null;
 
   @Column({ type: "integer", nullable: true })
