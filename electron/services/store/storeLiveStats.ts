@@ -11,7 +11,6 @@ import {
 	GameStats,
 	Match,
 	MatchStats,
-	Player,
 } from '../../../frontend/src/lib/models/types/slippiData';
 import { isNil } from 'lodash';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
@@ -22,6 +21,7 @@ export class ElectronLiveStatsStore {
 	private rankChangeSceneTimeout: NodeJS.Timeout;
 	private gameState: InGameState = InGameState.Inactive;
 	private gameFrame: FrameEntryType | null | undefined;
+	private liveStatsScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ElectronStore') private store: Store,
@@ -34,24 +34,23 @@ export class ElectronLiveStatsStore {
 	}
 
 	getStatsScene(): LiveStatsScene {
-		return (
-			(this.store.get('stats.scene') as LiveStatsScene) ?? LiveStatsScene.WaitingForDolphin
-		);
+		return this.liveStatsScene;
 	}
 
 	setStatsScene(scene: LiveStatsScene) {
 		this.log.info('Setting scene to', scene);
 		clearTimeout(this.sceneTimeout);
 		clearTimeout(this.rankChangeSceneTimeout)
-		this.store.set('stats.scene', scene ?? LiveStatsScene.WaitingForDolphin);
+		this.liveStatsScene = scene;
+		this.messageHandler.sendMessage('LiveStatsSceneChange', this.liveStatsScene as LiveStatsScene);
 	}
 
 	setStatsSceneTimeout(firstScene: LiveStatsScene, secondScene: LiveStatsScene, ms: number) {
 		clearTimeout(this.sceneTimeout);
 		this.log.info('Setting scene to', firstScene, "for", ms, "ms,", "then to", secondScene);
-		this.store.set('stats.scene', firstScene);
+		this.setStatsScene(firstScene);
 		this.sceneTimeout = setTimeout(() => {
-			this.store.set('stats.scene', secondScene);
+			this.setStatsScene(secondScene);
 		}, ms);
 	}
 
@@ -111,12 +110,6 @@ export class ElectronLiveStatsStore {
 	}
 
 	initListeners() {
-		this.store.onDidChange('stats.scene', (value) => {
-			this.messageHandler.sendMessage('LiveStatsSceneChange', value as LiveStatsScene);
-		});
-		this.store.onDidChange(`stats.currentPlayers`, async (value) => {
-			this.messageHandler.sendMessage('CurrentPlayers', value as Player[]);
-		});
 		this.store.onDidChange(`stats.game.settings`, async (value) => {
 			this.messageHandler.sendMessage('GameSettings', value as GameStartTypeExtended);
 		});

@@ -445,6 +445,7 @@ export class StatsDisplay {
 		const frames = game.getFrames()
 		if (!settings || !frames) return;
 		settings.isSimulated = true;
+		settings.matchInfo.matchId = "local";
 		this.stopPauseInterval();
 		this.storeLiveStats.setGameState(InGameState.Running);
 		await this.handleGameFrame(frames[0]);
@@ -472,6 +473,7 @@ export class StatsDisplay {
 		const settings = game.getSettings() as GameStartTypeExtended;
 		if (!gameEnd || !settings) return;
 		settings.isSimulated = true;
+		settings.matchInfo.matchId = "local";
 		this.handleGameEnd(gameEnd, latestFrame, settings);
 	}
 

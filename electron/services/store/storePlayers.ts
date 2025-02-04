@@ -5,15 +5,13 @@ import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
 import { PlayerType } from '@slippi/slippi-js';
-import os from 'os';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
+import { isNil } from 'lodash';
 
 
 @singleton()
 export class ElectronPlayersStore {
-    isMac: boolean = os.platform() === 'darwin';
-    isWindows: boolean = os.platform() === 'win32';
-    isLinux: boolean = os.platform() === 'linux';
+    private players: Player[] = [];
     constructor(
         @inject("ElectronLog") private log: ElectronLog,
         @inject("ElectronStore") private store: Store,
@@ -26,12 +24,13 @@ export class ElectronPlayersStore {
     }
 
     getCurrentPlayers(): Player[] | undefined {
-        return this.store.get('stats.currentPlayers') as Player[];
+        return this.players;
     }
 
-    setCurrentPlayers(players: (Player | PlayerType)[]) {
+    setCurrentPlayers(newPlayers: (Player | PlayerType)[]) {
+        this.players = newPlayers.filter(player => isNil(player));
         this.log.info("Setting current players")
-        this.store.set('stats.currentPlayers', players?.filter(player => player));
+        this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
     }
 
     initEventListeners() {
