@@ -60,7 +60,7 @@ export class MemoryRead {
 
 		this.memoryReadInterval = setInterval(() => {
 			try {
-				if (isNil(this.memory)) {
+				if (isNil(this.memory) || !this.isReading) {
 					this.stopMemoryRead();
 					return;
 				}

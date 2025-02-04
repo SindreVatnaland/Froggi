@@ -366,6 +366,7 @@ export class StatsDisplay {
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
 		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed)
+		await new Promise((resolve) => setTimeout(resolve, 100));
 		const file = files.find((file) => {
 			const settings = new SlippiGame(file).getSettings();
 			return matchId
