@@ -107,7 +107,7 @@ export class SlippiJs {
 		this.log.info("User connect code:", connectCode)
 		this.storeSettings.setCurrentPlayerConnectCode(connectCode);
 		let rankedNetplayProfile = (await this.sqliteCurrentPlayer.getCurrentPlayer(connectCode))?.rank?.current;
-		if (dateTimeNow().getTime() - new Date(rankedNetplayProfile?.timestamp ?? 0).getTime() < (60 * 60 * 1000)) {
+		if ((dateTimeNow().getTime() - new Date(rankedNetplayProfile?.timestamp ?? 0).getTime()) > (60 * 60 * 1000)) {
 			rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
 		}
 		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)

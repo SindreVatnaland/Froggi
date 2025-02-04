@@ -33,22 +33,12 @@ export class SqliteCurrentPlayer {
     this.log.info("Add or update current rank:", rank.connectCode);
 
     try {
-      const currentPlayer = await this.currentPlayerRepo.findOne({
+      let currentPlayer = await this.currentPlayerRepo.findOne({
         where: { connectCode: rank.connectCode },
         relations: ["rank"],
       });
 
-      if (!currentPlayer) {
-        this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
-        return null;
-      }
-
-      if (!currentPlayer.rank) {
-        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
-        currentPlayer.rank = { current: rank, new: undefined } as CurrentPlayerRankEntity;
-      } else {
-        currentPlayer.rank.current = rank;
-      }
+      currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
 
       await this.currentPlayerRepo.save(currentPlayer);
       return currentPlayer;
@@ -64,22 +54,12 @@ export class SqliteCurrentPlayer {
     this.log.info("Add or update new rank:", rank.connectCode);
 
     try {
-      const currentPlayer = await this.currentPlayerRepo.findOne({
+      let currentPlayer = await this.currentPlayerRepo.findOne({
         where: { connectCode: rank.connectCode },
         relations: ["rank"],
       });
 
-      if (!currentPlayer) {
-        this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
-        return null;
-      }
-
-      if (!currentPlayer.rank) {
-        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
-        currentPlayer.rank = { new: rank, current: undefined } as any;
-      } else {
-        currentPlayer.rank.new = rank;
-      }
+      currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
 
       await this.currentPlayerRepo.save(currentPlayer);
       return currentPlayer;
@@ -87,5 +67,22 @@ export class SqliteCurrentPlayer {
       this.log.error("Error saving new rank:", error);
       return null;
     }
+  }
+
+  private fixCurrentPlayer = (currentPlayer: CurrentPlayerEntity | null, rank: RankedNetplayProfile) => {
+    if (!currentPlayer) {
+      currentPlayer = {
+        connectCode: rank.connectCode,
+      } as CurrentPlayerEntity;
+      this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
+    }
+
+    if (!currentPlayer.rank) {
+      this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
+      currentPlayer.rank = { current: rank, new: undefined } as CurrentPlayerRankEntity;
+    } else {
+      currentPlayer.rank.current = rank;
+    }
+    return currentPlayer;
   }
 }
