@@ -181,94 +181,94 @@ describe('ElectronGamesStore', () => {
         10000 // Set a timeout of 10 seconds for each test
     );
 
-    // test.each(rankedGameTest)(
-    //     'Is Returned Match Games Length As Expected for %s',
-    //     async (gameTest) => {
-    //         statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-    //             resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-    //         }));
+    test.each(rankedGameTest)(
+        'Is Returned Match Games Length As Expected for %s',
+        async (gameTest) => {
+            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
+                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
+            }));
 
-    //         if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
+            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
 
-    //         connectCode = gameTest.connectCode
-    //         const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-    //         const currentGameEnd = game.getGameEnd();
-    //         const currentGameSettings = game.getSettings();
-    //         if (!currentGameEnd || !currentGameSettings) return;
-    //         await statsDisplay.handleGameStart(currentGameSettings)
-    //         await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-    //         const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
-    //         const matchGames = await sqliteGame.getGamesById(recentGame?.settings?.matchInfo.matchId ?? "")
-    //         expect(matchGames).toHaveLength(gameTest.expectedLength);
-    //     },
-    //     10000 // Set a timeout of 10 seconds for each test
-    // );
+            connectCode = gameTest.connectCode
+            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
+            const currentGameEnd = game.getGameEnd();
+            const currentGameSettings = game.getSettings();
+            if (!currentGameEnd || !currentGameSettings) return;
+            await statsDisplay.handleGameStart(currentGameSettings)
+            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
+            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
+            const matchGames = await sqliteGame.getGamesById(recentGame?.settings?.matchInfo.matchId ?? "")
+            expect(matchGames).toHaveLength(gameTest.expectedLength);
+        },
+        10000 // Set a timeout of 10 seconds for each test
+    );
 
-    // test.each(rankedGameTest)(
-    //     'Is Post Game Scene As Expected for %s',
-    //     async (gameTest) => {
-    //         statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-    //             resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-    //         }));
+    test.each(rankedGameTest)(
+        'Is Post Game Scene As Expected for %s',
+        async (gameTest) => {
+            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
+                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
+            }));
 
-    //         if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
+            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
 
-    //         storeLiveStats.setBestOf(gameTest.setBestOf)
-    //         const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-    //         const currentGameEnd = game.getGameEnd();
-    //         const currentGameSettings = game.getSettings();
-    //         if (!currentGameEnd || !currentGameSettings) return;
-    //         await statsDisplay.handleGameStart(currentGameSettings)
-    //         await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-    //         const liveScene = storeLiveStats.getStatsScene();
-    //         console.log(gameTest.file, liveScene)
-    //         expect(liveScene).toStrictEqual(gameTest.expectedScene);
-    //     },
-    //     10000 // Set a timeout of 10 seconds for each test
-    // );
+            storeLiveStats.setBestOf(gameTest.setBestOf)
+            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
+            const currentGameEnd = game.getGameEnd();
+            const currentGameSettings = game.getSettings();
+            if (!currentGameEnd || !currentGameSettings) return;
+            await statsDisplay.handleGameStart(currentGameSettings)
+            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
+            const liveScene = storeLiveStats.getStatsScene();
+            console.log(gameTest.file, liveScene)
+            expect(liveScene).toStrictEqual(gameTest.expectedScene);
+        },
+        10000 // Set a timeout of 10 seconds for each test
+    );
 
-    // test.each(rankedGameTest)(
-    //     'Set Score Is As Expected for %s',
-    //     async (gameTest) => {
-    //         statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-    //             resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-    //         }));
+    test.each(rankedGameTest)(
+        'Set Score Is As Expected for %s',
+        async (gameTest) => {
+            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
+                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
+            }));
 
-    //         if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
+            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
 
-    //         connectCode = gameTest.connectCode
-    //         const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-    //         const currentGameEnd = game.getGameEnd();
-    //         const currentGameSettings = game.getSettings();
-    //         if (!currentGameEnd || !currentGameSettings) return;
-    //         await statsDisplay.handleGameStart(currentGameSettings)
-    //         await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-    //         const gameScore = electronGamesStore.getGameScore()
-    //         expect(gameScore).toStrictEqual(gameTest.expectedScore)
-    //     },
-    //     10000 // Set a timeout of 10 seconds for each test
-    // );
+            connectCode = gameTest.connectCode
+            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
+            const currentGameEnd = game.getGameEnd();
+            const currentGameSettings = game.getSettings();
+            if (!currentGameEnd || !currentGameSettings) return;
+            await statsDisplay.handleGameStart(currentGameSettings)
+            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
+            const gameScore = electronGamesStore.getGameScore()
+            expect(gameScore).toStrictEqual(gameTest.expectedScore)
+        },
+        10000 // Set a timeout of 10 seconds for each test
+    );
 
-    // test.each(rankedGameTest)(
-    //     'Game Mode As Expected for %s',
-    //     async (gameTest) => {
-    //         statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-    //             resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-    //         }));
+    test.each(rankedGameTest)(
+        'Game Mode As Expected for %s',
+        async (gameTest) => {
+            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
+                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
+            }));
 
-    //         if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
+            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
 
-    //         connectCode = gameTest.connectCode
-    //         const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-    //         const currentGameEnd = game.getGameEnd();
-    //         const currentGameSettings = game.getSettings();
-    //         if (!currentGameEnd || !currentGameSettings) return;
-    //         await statsDisplay.handleGameStart(currentGameSettings)
-    //         await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-    //         const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
-    //         expect(recentGame?.settings?.matchInfo.mode).toStrictEqual(gameTest.expectedMode)
-    //     },
-    //     10000
-    //     // Set a timeout of 10 seconds for each test
-    // );
+            connectCode = gameTest.connectCode
+            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
+            const currentGameEnd = game.getGameEnd();
+            const currentGameSettings = game.getSettings();
+            if (!currentGameEnd || !currentGameSettings) return;
+            await statsDisplay.handleGameStart(currentGameSettings)
+            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
+            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
+            expect(recentGame?.settings?.matchInfo.mode).toStrictEqual(gameTest.expectedMode)
+        },
+        10000
+        // Set a timeout of 10 seconds for each test
+    );
 });
