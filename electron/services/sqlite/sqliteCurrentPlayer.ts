@@ -40,6 +40,13 @@ export class SqliteCurrentPlayer {
 
       currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
 
+      if (!currentPlayer.rank) {
+        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
+        currentPlayer.rank = { current: rank, new: undefined } as CurrentPlayerRankEntity;
+      } else {
+        currentPlayer.rank.current = rank;
+      }
+
       await this.currentPlayerRepo.save(currentPlayer);
       return currentPlayer;
     } catch (error) {
@@ -61,6 +68,13 @@ export class SqliteCurrentPlayer {
 
       currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
 
+      if (!currentPlayer.rank) {
+        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
+        currentPlayer.rank = { current: undefined, new: rank } as CurrentPlayerRankEntity;
+      } else {
+        currentPlayer.rank.new = rank;
+      }
+
       await this.currentPlayerRepo.save(currentPlayer);
       return currentPlayer;
     } catch (error) {
@@ -78,11 +92,9 @@ export class SqliteCurrentPlayer {
     }
 
     if (!currentPlayer.rank) {
-      this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
-      currentPlayer.rank = { current: rank, new: undefined } as CurrentPlayerRankEntity;
-    } else {
-      currentPlayer.rank.current = rank;
+      currentPlayer.rank = { current: undefined, new: undefined } as CurrentPlayerRankEntity;
     }
+
     return currentPlayer;
   }
 }

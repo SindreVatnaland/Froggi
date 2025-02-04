@@ -223,7 +223,7 @@ export class StatsDisplay {
 		const newMockRating = Number((currentPlayerRankStats.rating + ratingChange).toFixed(1));
 		const newMockRank = getPlayerRank(newMockRating, 0, 0);
 		const prevRank = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
-		currentPlayerRankStats = {
+		const currentPlayerNewRankStats = {
 			...currentPlayerRankStats,
 			rating: newMockRating,
 			rank: newMockRank,
@@ -231,7 +231,7 @@ export class StatsDisplay {
 			losses: currentPlayerRankStats.losses + (didWin ? 0 : 1),
 			isMock: true,
 		}
-		this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerNewRankStats);
 		setTimeout(() => {
 			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
 		}, 10000);
@@ -462,7 +462,6 @@ export class StatsDisplay {
 		const frames = game.getFrames()
 		if (!settings || !frames) return;
 		settings.isSimulated = true;
-		settings.matchInfo.matchId = "local";
 		this.stopPauseInterval();
 		this.storeLiveStats.setGameState(InGameState.Running);
 		await this.handleGameFrame(frames[0]);
@@ -490,7 +489,6 @@ export class StatsDisplay {
 		const settings = game.getSettings() as GameStartTypeExtended;
 		if (!gameEnd || !settings) return;
 		settings.isSimulated = true;
-		settings.matchInfo.matchId = "local";
 		this.handleGameEnd(gameEnd, latestFrame, settings);
 	}
 

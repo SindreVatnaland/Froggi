@@ -63,9 +63,11 @@ export class SqliteGame {
   async deleteLocalGameStats(): Promise<boolean> {
     await this.sqlite.initializing;
     try {
-      const game = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: "" } } } });
-      if (!game) return false;
-      await this.gameStatsRepo.remove(game);
+      const localGames = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: "" } } } });
+      const simulatedGames = await this.gameStatsRepo.find({ where: { settings: { isSimulated: true } } });
+      const games = [...localGames, ...simulatedGames];
+      if (!localGames) return false;
+      await this.gameStatsRepo.remove(games);
       return true;
     } catch (error) {
       this.log.error("Error deleting game stats:", error);

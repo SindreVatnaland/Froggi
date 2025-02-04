@@ -28,8 +28,8 @@ export class ElectronPlayersStore {
     }
 
     setCurrentPlayers(newPlayers: (Player | PlayerType)[]) {
-        this.players = newPlayers.filter(player => isNil(player));
-        this.log.info("Setting current players")
+        this.players = newPlayers.filter(player => !isNil(player)).map(player => player as Player);
+        this.log.info("Setting current players", this.players);
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
     }
 
