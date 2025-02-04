@@ -358,7 +358,7 @@ export class StatsDisplay {
 
 	private async getPreviousGameStats(
 		settings: GameStartType | undefined,
-		gameEnd: GameEndType | undefined = undefined,
+		gameEnd: GameEndType | undefined,
 	): Promise<GameStats | undefined> {
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
