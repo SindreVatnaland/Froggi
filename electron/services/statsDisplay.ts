@@ -360,23 +360,39 @@ export class StatsDisplay {
 		settings: GameStartType | undefined,
 		gameEnd: GameEndType | undefined,
 	): Promise<GameStats | undefined> {
+		const MAX_RETRIES = 5;
+		let attempt = 0;
+		let file: string | undefined;
+
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
+
 		const matchId = settings?.matchInfo?.matchId ?? '';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
-		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed)
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		const file = files.find((file) => {
-			const settings = new SlippiGame(file).getSettings();
-			return matchId
-				? (
-					(settings?.matchInfo?.matchId === matchId &&
+		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed);
+
+		while (attempt < MAX_RETRIES) {
+			file = files.find((file) => {
+				const settings = new SlippiGame(file).getSettings();
+				return matchId
+					? (
+						settings?.matchInfo?.matchId === matchId &&
 						settings?.matchInfo?.gameNumber === gameNumber &&
-						settings?.matchInfo?.tiebreakerNumber === 0)
-				)
-				: settings?.randomSeed === randomSeed;
-		});
+						settings?.matchInfo?.tiebreakerNumber === 0
+					)
+					: settings?.randomSeed === randomSeed;
+			});
+
+			if (file) break;
+			attempt++;
+
+			if (attempt < MAX_RETRIES) {
+				this.log.warn(`Retrying... Attempt ${attempt}/${MAX_RETRIES}`);
+				await new Promise((resolve) => setTimeout(resolve, 10 * attempt));
+			}
+		}
+
 		if (!file) {
 			this.log.error("Could not find recent replay")
 			return
