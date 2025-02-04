@@ -30,6 +30,10 @@ export class ElectronPlayersStore {
     setCurrentPlayers(newPlayers: (Player | PlayerType)[]) {
         this.players = newPlayers.filter(player => !isNil(player)).map(player => player as Player);
         this.log.info("Setting current players", this.players);
+        this.players.forEach(player => {
+            player.connectCode = player.rank?.current?.connectCode ?? "";
+            player.displayName = player.rank?.current?.displayName ?? "";
+        });
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
     }
 
