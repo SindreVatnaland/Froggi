@@ -121,9 +121,9 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		const resentGames = await this.getPreviousGameStats(settings);
+		const resentGames = await this.storeGames.getRecentGames();
 
-		const previousSettings = resentGames?.settings;
+		const previousSettings = resentGames?.at(-1)?.settings;
 
 		const isNewGame = Boolean(settings.matchInfo?.matchId) && previousSettings?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 
