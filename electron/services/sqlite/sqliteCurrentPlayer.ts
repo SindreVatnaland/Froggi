@@ -5,6 +5,7 @@ import { Repository } from "typeorm";
 import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntity";
 import { CurrentPlayer, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
 import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
+import { fixCurrentPlayer } from "../../utils/playerHelp";
 
 @singleton()
 export class SqliteCurrentPlayer {
@@ -38,7 +39,7 @@ export class SqliteCurrentPlayer {
         relations: ["rank"],
       });
 
-      currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
+      currentPlayer = fixCurrentPlayer(currentPlayer, rank);
 
       if (!currentPlayer.rank) {
         this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
@@ -66,7 +67,7 @@ export class SqliteCurrentPlayer {
         relations: ["rank"],
       });
 
-      currentPlayer = this.fixCurrentPlayer(currentPlayer, rank);
+      currentPlayer = fixCurrentPlayer(currentPlayer, rank);
 
       if (!currentPlayer.rank) {
         this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
@@ -81,17 +82,5 @@ export class SqliteCurrentPlayer {
       this.log.error("Error saving new rank:", error);
       return null;
     }
-  }
-
-  private fixCurrentPlayer = (currentPlayer: CurrentPlayerEntity | null, rank: RankedNetplayProfile) => {
-    if (!currentPlayer) {
-      this.log.warn(`Player with connectCode ${rank.connectCode} not found. Creating a new one.`);
-      currentPlayer = {
-        connectCode: rank.connectCode,
-        displayName: rank.displayName,
-      } as CurrentPlayerEntity;
-    }
-
-    return currentPlayer;
   }
 }

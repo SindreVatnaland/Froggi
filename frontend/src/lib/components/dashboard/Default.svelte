@@ -17,6 +17,8 @@
 	let isTagModalOpen = false;
 	let isResetRecentGamesModalOpen = false;
 
+	$: console.log('currentPlayers', $currentPlayers);
+
 	const getDisplayName = (player: Player | undefined) => {
 		const displayName = player?.displayName;
 		return displayName?.length ? displayName : `Player${player?.playerIndex ?? 0 + 1}`;

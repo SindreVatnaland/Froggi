@@ -16,7 +16,6 @@ export interface Character {
 }
 
 export interface CurrentPlayer extends Player {
-    connectCode: string;
     rank: CurrentPlayerRank | undefined
 }
 

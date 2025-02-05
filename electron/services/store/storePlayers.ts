@@ -1,4 +1,3 @@
-// https://www.npmjs.com/package/electron-store
 import Store from 'electron-store';
 import type { Player } from '../../../frontend/src/lib/models/types/slippiData';
 import { delay, inject, singleton } from 'tsyringe';
@@ -7,6 +6,7 @@ import { MessageHandler } from '../messageHandler';
 import { PlayerType } from '@slippi/slippi-js';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { isNil } from 'lodash';
+import { createPlayer } from '../../utils/playerHelp';
 
 
 @singleton()
@@ -24,6 +24,12 @@ export class ElectronPlayersStore {
     }
 
     getCurrentPlayers(): Player[] | undefined {
+        if (this.players.length === 0) {
+            this.players = [
+                createPlayer(0),
+                createPlayer(1),
+            ]
+        }
         return this.players;
     }
 
@@ -31,8 +37,8 @@ export class ElectronPlayersStore {
         this.players = newPlayers.filter(player => !isNil(player)).map(player => player as Player);
         this.log.info("Setting current players", this.players);
         this.players.forEach(player => {
-            player.connectCode = player.rank?.current?.connectCode ?? "";
-            player.displayName = player.rank?.current?.displayName ?? "";
+            player.connectCode ||= player.rank?.current?.connectCode ?? "";
+            player.displayName ||= player.rank?.current?.displayName ?? "";
         });
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
     }
