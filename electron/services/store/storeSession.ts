@@ -49,7 +49,6 @@ export class ElectronSessionStore {
         if (!rankStats) return;
         const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
-        console.log("Player", `player.${player.connectCode}.session`)
         let session = await this.getSessionStats();
         if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
             session = await this.resetSessionStats();

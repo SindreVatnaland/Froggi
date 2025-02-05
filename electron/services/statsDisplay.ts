@@ -266,10 +266,13 @@ export class StatsDisplay {
 		this.log.info("Getting current players with rank stats")
 
 		const currentPlayers = settings.players.filter((player) => player);
+		const previousPlayers = this.storePlayers.getCurrentPlayers();
 
-		if (!isNewGame || currentPlayers.some((player) => !player.connectCode)) {
-			const previousPlayers = this.storePlayers.getCurrentPlayers();
-			if (previousPlayers) return previousPlayers;
+		if ((!isNewGame || currentPlayers.some((player) => !player.connectCode)) && previousPlayers) {
+			previousPlayers.forEach((player, i) => {
+				player.displayName ||= currentPlayers[i]?.displayName;
+			});
+			return previousPlayers;
 		}
 
 		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
