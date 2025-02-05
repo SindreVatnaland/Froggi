@@ -11,7 +11,10 @@ import { createPlayer } from '../../utils/playerHelp';
 
 @singleton()
 export class ElectronPlayersStore {
-    private players: Player[] = [];
+    private players: Player[] = [
+        createPlayer(0),
+        createPlayer(1),
+    ]
     constructor(
         @inject("ElectronLog") private log: ElectronLog,
         @inject("ElectronStore") private store: Store,
@@ -24,12 +27,6 @@ export class ElectronPlayersStore {
     }
 
     getCurrentPlayers(): Player[] | undefined {
-        if (this.players.length === 0) {
-            this.players = [
-                createPlayer(0),
-                createPlayer(1),
-            ]
-        }
         return this.players;
     }
 

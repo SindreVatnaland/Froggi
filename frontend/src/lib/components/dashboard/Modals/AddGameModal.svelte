@@ -62,20 +62,28 @@
 		postGameStats: null,
 		score: [0, 0],
 		settings:
-			$recentGames.at(-1)?.at(-1)?.settings ??
+			$recentGames.at(-1)?.settings ??
 			({
 				players: [
 					{
 						playerIndex: 0,
+						port: 1,
 						characterId: Character.Falcon,
 						startStocks: 4,
 						characterColor: 0,
+						connectCode: '',
+						displayName: 'Player 1',
+						userId: '',
 					},
 					{
 						playerIndex: 1,
+						port: 2,
 						characterId: Character.Falcon,
 						startStocks: 4,
 						characterColor: 0,
+						connectCode: '',
+						displayName: 'Player 2',
+						userId: '',
 					},
 				] as PlayerType[],
 				matchInfo: {} as MatchInfoExtended,
@@ -84,6 +92,7 @@
 				startingTimerSeconds: 480,
 			} as GameStartTypeExtended),
 		timestamp: null,
+		isReplay: false,
 	};
 
 	const handleStockChange = (playerIndex: number, stockNumber: number) => {

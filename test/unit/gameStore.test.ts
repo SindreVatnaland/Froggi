@@ -102,7 +102,7 @@ describe('ElectronGamesStore', () => {
         sqlite = new SqliteOrm(`${__dirname}/..`, true, log)
 
         const sqliteCurrentPlayer = new SqliteCurrentPlayer(log, sqlite)
-        sqliteGame = new SqliteGame(log, sqlite)
+        sqliteGame = new SqliteGame(log, {} as any, {} as any, sqlite)
 
         storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode

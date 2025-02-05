@@ -15,9 +15,11 @@ import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter
 import { ElectronLiveStatsStore } from './storeLiveStats';
 import { SqliteGame } from './../../services/sqlite/sqliteGames';
 import { isNil } from 'lodash';
+import { dateTimeNow } from '../../utils/functions';
 
 @singleton()
 export class ElectronGamesStore {
+	private gameScore: number[] = [0, 0];
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
@@ -28,15 +30,15 @@ export class ElectronGamesStore {
 	) {
 		this.log.info('Initializing Game Store');
 		this.initEventListeners();
-		this.initStoreListeners();
 	}
 
 	getGameScore(): number[] {
-		return (this.store.get('stats.game.score') ?? [0, 0]) as number[];
+		return this.gameScore;
 	}
 
 	setGameScore(score: number[] | undefined) {
-		this.store.set('stats.game.score', score ?? [0, 0]);
+		this.gameScore = score ?? [0, 0];
+		this.messageHandler.sendMessage('GameScore', this.gameScore);
 	}
 
 	async setGameMatch(gameStats: GameStats | null) {
@@ -45,11 +47,11 @@ export class ElectronGamesStore {
 		await this.addMatchGame(gameStats);
 	}
 
-	private getRecentGameId(): string | null {
-		return (this.store.get('game.recent.matchId') ?? "") as string;
+	getRecentGameId(): string {
+		return (this.store.get('game.recent.matchId') ?? "local") as string;
 	}
 
-	private setRecentGameId(matchId: string) {
+	setRecentGameId(matchId: string) {
 		const recentGameId = this.getRecentGameId();
 		if (recentGameId === matchId) return;
 		this.clearRecentGames();
@@ -73,15 +75,28 @@ export class ElectronGamesStore {
 		await this.sqliteGame.addGameStats(games.at(-1) ?? newGame);
 	}
 
-	async insertMockGame(newGame: GameStats) {
+	async insertMockGame(newGame: GameStats, index: number) {
 		let recentGames = await this.getRecentGames()
 		const recentGame = recentGames.at(-1) ?? null
-		newGame = { ...newGame, isMock: true, settings: { ...newGame.settings, matchInfo: { ...(recentGame?.settings?.matchInfo ?? { gameNumber: null, matchId: "", tiebreakerNumber: 0, mode: "local", }), ...{ gameNumber: null, bestOf: this.storeLiveStats.getBestOf() } } } as GameStartTypeExtended }
-		this.sqliteGame.addGameStats(newGame)
+
+		newGame = { ...newGame, isMock: true, settings: { ...newGame.settings, matchInfo: { ...(recentGame?.settings?.matchInfo ?? { gameNumber: null, matchId: "local", tiebreakerNumber: 0, mode: "local" }), ...{ gameNumber: null, bestOf: this.storeLiveStats.getBestOf(), id: undefined } } } as GameStartTypeExtended }
+		let games = [...recentGames.slice(0, index), newGame, ...recentGames.slice(index)];
+
+		await this.sqliteGame.deleteGameStatsByMatchId(recentGame?.settings?.matchInfo.matchId ?? "local");
+
+		games = this.applyGamesScore(games);
+
+		let timestamp = dateTimeNow();
+
+		games.forEach((game, index) => {
+			game.timestamp = new Date(timestamp.getTime() + index * 3 * 60 * 1000);
+		});
+
+		await this.sqliteGame.addGameStatsBatch(games)
 	}
 
-	clearRecentGames() {
-		this.sqliteGame.deleteLocalGameStats();
+	async clearRecentGames() {
+		await this.sqliteGame.deleteLocalGameStats();
 		this.setGameScore([0, 0]);
 	}
 
@@ -99,18 +114,12 @@ export class ElectronGamesStore {
 		if (!games) return;
 		games.splice(gameIndex, 1);
 		games = this.applyGamesScore(games);
-		games.forEach((game) => this.sqliteGame.addGameStats(game));
+		await this.sqliteGame.addGameStatsBatch(games);
 	}
 
 	private initEventListeners() {
 		this.clientEmitter.on('RecentGamesDelete', this.deleteRecentGame.bind(this));
 		this.clientEmitter.on('RecentGamesReset', this.clearRecentGames.bind(this));
 		this.clientEmitter.on('RecentGamesMock', this.insertMockGame.bind(this));
-	}
-
-	private initStoreListeners() {
-		this.store.onDidChange(`stats.game.score`, async (value) => {
-			this.messageHandler.sendMessage('GameScore', value as number[]);
-		});
 	}
 }
