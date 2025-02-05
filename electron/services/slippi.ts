@@ -111,8 +111,8 @@ export class SlippiJs {
 			rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
 		}
 		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)
-		this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(rankedNetplayProfile);
-		this.storeCurrentPlayer.setCurrentPlayerNewRankStats(rankedNetplayProfile);
+		await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(rankedNetplayProfile);
+		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(rankedNetplayProfile);
 	}
 
 	private async startProcessSearchInterval() {

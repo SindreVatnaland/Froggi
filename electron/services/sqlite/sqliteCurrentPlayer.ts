@@ -85,14 +85,11 @@ export class SqliteCurrentPlayer {
 
   private fixCurrentPlayer = (currentPlayer: CurrentPlayerEntity | null, rank: RankedNetplayProfile) => {
     if (!currentPlayer) {
+      this.log.warn(`Player with connectCode ${rank.connectCode} not found. Creating a new one.`);
       currentPlayer = {
         connectCode: rank.connectCode,
+        displayName: rank.displayName,
       } as CurrentPlayerEntity;
-      this.log.warn(`Player with connectCode ${rank.connectCode} not found.`);
-    }
-
-    if (!currentPlayer.rank) {
-      currentPlayer.rank = { current: undefined, new: undefined } as CurrentPlayerRankEntity;
     }
 
     return currentPlayer;
