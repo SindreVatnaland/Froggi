@@ -102,7 +102,6 @@ describe('ElectronGamesStore', () => {
         sqlite = new SqliteOrm(`${__dirname}/..`, true, log)
 
         const sqliteCurrentPlayer = new SqliteCurrentPlayer(log, sqlite)
-        sqliteGame = new SqliteGame(log, {} as any, {} as any, sqlite)
 
         storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
@@ -132,7 +131,11 @@ describe('ElectronGamesStore', () => {
 
         storePlayers = new ElectronPlayersStore(log, store, eventEmitter, messageHandler)
 
-        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, sqliteGame, store);
+        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as any, store);
+
+        sqliteGame = new SqliteGame(log, electronGamesStore, {} as any, sqlite)
+
+        electronGamesStore["sqliteGame"] = sqliteGame
 
         packetCapture = new PacketCapture(log, storeSettings)
         packetCapture.startPacketCapture = () => { }

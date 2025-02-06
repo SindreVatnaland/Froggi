@@ -4,7 +4,7 @@ import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
 import { GameStats } from "../../../frontend/src/lib/models/types/slippiData";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
-import { ElectronGamesStore } from "./../../services/store/storeGames";
+import { ElectronGamesStore } from "../../services/store/storeGames";
 import { MessageHandler } from "../../services/messageHandler";
 
 @singleton()
