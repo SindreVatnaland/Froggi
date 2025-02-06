@@ -43,7 +43,7 @@ export class ElectronGamesStore {
 
 	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
-		this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
+		await this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
 		await this.addMatchGame(gameStats);
 	}
 
@@ -51,10 +51,10 @@ export class ElectronGamesStore {
 		return (this.store.get('game.recent.matchId') ?? "local") as string;
 	}
 
-	setRecentGameId(matchId: string) {
+	async setRecentGameId(matchId: string) {
 		const recentGameId = this.getRecentGameId();
 		if (recentGameId === matchId) return;
-		this.clearRecentGames();
+		await this.clearRecentGames();
 		this.store.set('game.recent.matchId', matchId);
 	}
 
