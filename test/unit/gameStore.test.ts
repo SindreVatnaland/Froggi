@@ -133,7 +133,7 @@ describe('ElectronGamesStore', () => {
 
         electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as any, store);
 
-        sqliteGame = new SqliteGame(log, electronGamesStore, {} as any, sqlite)
+        sqliteGame = new SqliteGame(log, electronGamesStore, messageHandler, sqlite)
 
         electronGamesStore["sqliteGame"] = sqliteGame
 
