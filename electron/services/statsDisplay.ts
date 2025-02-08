@@ -121,7 +121,6 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		this.storeLiveStats.setGameSettings(settings);
 
 		const resentGames = await this.storeGames.getRecentGames();
 

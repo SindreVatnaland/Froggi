@@ -3,7 +3,7 @@ import Store from 'electron-store';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
-import { FrameEntryType, GameStartType } from '@slippi/slippi-js';
+import { FrameEntryType } from '@slippi/slippi-js';
 import { BestOf, InGameState, LiveStatsScene } from '../../../frontend/src/lib/models/enum';
 import {
 	GameStartMode,
@@ -11,6 +11,7 @@ import {
 	GameStats,
 	Match,
 	MatchStats,
+	Player,
 } from '../../../frontend/src/lib/models/types/slippiData';
 import { isNil } from 'lodash';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
@@ -81,8 +82,8 @@ export class ElectronLiveStatsStore {
 		return this.store.get('stats.game.settings') as GameStartTypeExtended;
 	}
 
-	setGameSettings(settings: GameStartTypeExtended | GameStartType | undefined) {
-		this.store.set('stats.game.settings', settings);
+	setGamePlayers(players: Player[] | undefined) {
+		this.store.set('stats.game.settings.players', players);
 	}
 
 	getGameMode(): GameStartMode {

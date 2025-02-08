@@ -129,7 +129,7 @@ describe('ElectronGamesStore', () => {
             }
         };
 
-        storePlayers = new ElectronPlayersStore(log, store, eventEmitter, messageHandler)
+        storePlayers = new ElectronPlayersStore(log, store, eventEmitter, messageHandler, storeLiveStats)
 
         electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as any, store);
 
