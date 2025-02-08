@@ -75,7 +75,6 @@ export class StatsDisplay {
 		});
 
 		this.slpParser.on(SlpParserEvent.END, async (gameEnd: GameEndType) => {
-			await new Promise((resolve) => setTimeout(resolve, 0));
 			const settings = this.slpParser.getSettings();
 			const latestFrame = this.slpParser.getLatestFrame();
 			if (isNil(settings) || isNil(latestFrame) || isNil(gameEnd)) return;
@@ -121,10 +120,11 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
+		this.storeLiveStats.setGameSettings(settings);
 
-		const resentGames = await this.storeGames.getRecentGames();
+		const recentGames = await this.storeGames.getRecentGames();
 
-		const previousSettings = resentGames?.at(-1)?.settings;
+		const previousSettings = recentGames?.at(-1)?.settings;
 
 		const isNewGame = Boolean(settings.matchInfo?.matchId) && previousSettings?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
 

@@ -129,7 +129,7 @@ export class Api {
 		}
 	}
 
-	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 2000, backoffMultiplier: number = 1): Promise<RankedNetplayProfile> {
+	async getNewRankWithBackoff(oldRank: RankedNetplayProfile, connectCode: string, maxRetries: number = 3, delay: number = 3000, backoffMultiplier: number = 1): Promise<RankedNetplayProfile> {
 		for (let attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
 				if (attempt <= maxRetries) {

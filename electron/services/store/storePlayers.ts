@@ -7,7 +7,6 @@ import { PlayerType } from '@slippi/slippi-js';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { isNil } from 'lodash';
 import { createPlayer } from '../../utils/playerHelp';
-import { ElectronLiveStatsStore } from './storeLiveStats';
 
 
 @singleton()
@@ -21,7 +20,6 @@ export class ElectronPlayersStore {
         @inject("ElectronStore") private store: Store,
         @inject("ClientEmitter") private clientEmitter: TypedEmitter,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
-        @inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
     ) {
         this.log.info("Initializing Players Store")
         this.initEventListeners();
@@ -40,7 +38,6 @@ export class ElectronPlayersStore {
             player.displayName ||= player.rank?.current?.displayName ?? "";
         });
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
-        this.storeLiveStats.setGamePlayers(this.players);
     }
 
     initEventListeners() {
