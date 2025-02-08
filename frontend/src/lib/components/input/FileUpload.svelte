@@ -23,7 +23,7 @@
 		);
 	};
 
-	const handleComplete = (reportedFileName) => {
+	const handleComplete = (reportedFileName: string) => {
 		if (!acceptedExtensions.some((extension) => reportedFileName.includes(extension))) return;
 		dispatch('change', reportedFileName);
 	};

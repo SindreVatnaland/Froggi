@@ -184,7 +184,7 @@
 							selected={id ===
 								`${
 									game.settings?.players.at(
-										$currentPlayers.at(0)?.playerIndex ?? 0,
+										$currentPlayers.at(0)?.characterId ?? 0,
 									)?.characterId
 								}`}
 							value={id}

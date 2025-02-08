@@ -2,7 +2,7 @@
 	import { CHARACTERS_INTERNAL_EXTERNAL } from '$lib/models/constants/characterData';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
-	import { gameFrame, gameSettings } from '$lib/utils/store.svelte';
+	import { currentPlayers, gameFrame, gameSettings } from '$lib/utils/store.svelte';
 	import { isNil } from 'lodash';
 
 	export let dataItem: GridContentItem;
@@ -18,7 +18,7 @@
 		: CHARACTERS_INTERNAL_EXTERNAL[postFrame?.internalCharacterId ?? -1] ?? 0;
 	$: characterColorId = preview
 		? 0
-		: $gameSettings.players[player?.playerIndex ?? 0].characterColor ?? 0;
+		: $currentPlayers[player?.playerIndex ?? 0].characterColor ?? 0;
 </script>
 
 {#key $gameSettings}
