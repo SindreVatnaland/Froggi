@@ -1,4 +1,3 @@
-import Store from 'electron-store';
 import type { Player } from '../../../frontend/src/lib/models/types/slippiData';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
@@ -17,13 +16,11 @@ export class ElectronPlayersStore {
     ]
     constructor(
         @inject("ElectronLog") private log: ElectronLog,
-        @inject("ElectronStore") private store: Store,
         @inject("ClientEmitter") private clientEmitter: TypedEmitter,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
     ) {
         this.log.info("Initializing Players Store")
         this.initEventListeners();
-        this.initListeners();
     }
 
     getCurrentPlayers(): Player[] | undefined {
@@ -43,12 +40,6 @@ export class ElectronPlayersStore {
     initEventListeners() {
         this.clientEmitter.on("PlayersUpdate", (players: Player[]) => {
             this.setCurrentPlayers(players);
-        })
-    }
-
-    initListeners() {
-        this.store.onDidChange(`stats.currentPlayers`, async (value) => {
-            this.messageHandler.sendMessage("CurrentPlayers", value as Player[]);
         })
     }
 }

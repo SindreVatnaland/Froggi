@@ -26,7 +26,7 @@ import type {
 	CurrentPlayer,
 	GameStartTypeExtended,
 	GameStats,
-	Match,
+	MatchStats,
 	Player,
 	SessionStats,
 } from '../models/types/slippiData';
@@ -48,7 +48,7 @@ export interface MessageEvents {
 	BetaOptIn: (optIn: boolean) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
-	CurrentMatch: (match: Match) => void;
+	CurrentMatch: (matchStats: MatchStats) => void;
 	DolphinConnectionState: (state: ConnectionState | undefined) => void;
 	FroggiSettings: (settings: Froggi) => void;
 	GameFrame: (frame: FrameEntryType | undefined | null) => void;

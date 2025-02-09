@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { currentPlayer, currentMatch } from '$lib/utils/store.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import { MatchStats } from '$lib/models/types/slippiData';
 

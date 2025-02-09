@@ -14,12 +14,10 @@
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
 	export let style: GridContentItemStyle;
-	export let match: Match;
+	export let matchStats: MatchStats;
 	export let currentPlayer: CurrentPlayer;
 
 	$: currentPlayerIndex = currentPlayer?.playerIndex;
-
-	$: stats = match?.stats;
 </script>
 
 <CurrentPlayerAttackCount
@@ -27,27 +25,27 @@
 	{defaultPreview}
 	{style}
 	playerIndex={currentPlayerIndex}
-	{stats}
+	stats={matchStats}
 />
 <CurrentPlayerActionCount
 	{dataItem}
 	{defaultPreview}
 	{style}
 	playerIndex={currentPlayerIndex}
-	{stats}
+	stats={matchStats}
 />
 <CurrentPlayerOverallStats
 	{dataItem}
 	{defaultPreview}
 	{style}
 	playerIndex={currentPlayerIndex}
-	{stats}
+	stats={matchStats}
 />
 
-<Player1AttackCount {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
-<Player1ActionCount {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
-<Player1OverallStats {dataItem} {defaultPreview} {style} playerIndex={0} {stats} />
+<Player1AttackCount {dataItem} {defaultPreview} {style} playerIndex={0} stats={matchStats} />
+<Player1ActionCount {dataItem} {defaultPreview} {style} playerIndex={0} stats={matchStats} />
+<Player1OverallStats {dataItem} {defaultPreview} {style} playerIndex={0} stats={matchStats} />
 
-<Player2AttackCount {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />
-<Player2ActionCount {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />
-<Player2OverallStats {dataItem} {defaultPreview} {style} playerIndex={1} {stats} />
+<Player2AttackCount {dataItem} {defaultPreview} {style} playerIndex={1} stats={matchStats} />
+<Player2ActionCount {dataItem} {defaultPreview} {style} playerIndex={1} stats={matchStats} />
+<Player2OverallStats {dataItem} {defaultPreview} {style} playerIndex={1} stats={matchStats} />

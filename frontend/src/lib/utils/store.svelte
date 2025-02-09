@@ -14,6 +14,7 @@
 		GameStartTypeExtended,
 		GameStats,
 		Match,
+		MatchStats,
 		Player,
 		SessionStats,
 	} from '$lib/models/types/slippiData';
@@ -79,7 +80,7 @@
 	export const overlays = writable<Record<string, Overlay>>({});
 	export const currentOverlayEditor = writable<OverlayEditor>({ layerIndex: 0 } as OverlayEditor);
 	export const postGame = writable<GameStats>({} as GameStats);
-	export const currentMatch = writable<Match>({} as Match);
+	export const currentMatch = writable<MatchStats>({} as MatchStats);
 	export const recentRankedSets = writable<GameStats[]>([]);
 	export const recentGames = writable<GameStats[]>([]);
 	export const sessionStats = writable<SessionStats | undefined>();

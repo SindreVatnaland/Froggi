@@ -116,7 +116,7 @@ describe('ElectronGamesStore', () => {
             }
         }
 
-        storeLiveStats = new ElectronLiveStatsStore(log, store, eventEmitter, messageHandler)
+        storeLiveStats = new ElectronLiveStatsStore(log, eventEmitter, messageHandler)
         storeLiveStats.setStatsSceneTimeout = (liveStatsScene) => { storeLiveStats.setStatsScene(liveStatsScene) }
 
         storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer)
@@ -129,7 +129,7 @@ describe('ElectronGamesStore', () => {
             }
         };
 
-        storePlayers = new ElectronPlayersStore(log, store, eventEmitter, messageHandler)
+        storePlayers = new ElectronPlayersStore(log, eventEmitter, messageHandler)
 
         electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as any, store);
 

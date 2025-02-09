@@ -1,5 +1,4 @@
 // https://www.npmjs.com/package/electron-store
-import Store from 'electron-store';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
@@ -9,7 +8,6 @@ import {
 	GameStartMode,
 	GameStartTypeExtended,
 	GameStats,
-	Match,
 	MatchStats,
 } from '../../../frontend/src/lib/models/types/slippiData';
 import { isNil, merge } from 'lodash';
@@ -21,16 +19,18 @@ export class ElectronLiveStatsStore {
 	private rankChangeSceneTimeout: NodeJS.Timeout;
 	private gameState: InGameState = InGameState.Inactive;
 	private gameFrame: FrameEntryType | null | undefined;
+	private gameSettings: GameStartTypeExtended | undefined;
+	private gameStats: GameStats | undefined;
+	private matchStats: MatchStats;
 	private liveStatsScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
+
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
-		@inject('ElectronStore') private store: Store,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
 		this.log.info('Initializing Live Stats Store');
 		this.initListeners();
-		this.initSvelteListeners();
 	}
 
 	getStatsScene(): LiveStatsScene {
@@ -75,59 +75,52 @@ export class ElectronLiveStatsStore {
 	setGameState(state: InGameState) {
 		this.gameState = state;
 		this.messageHandler.sendMessage('GameState', state as InGameState);
+
 	}
 
 	getGameSettings(): GameStartTypeExtended | undefined {
-		return this.store.get('stats.game.settings') as GameStartTypeExtended;
+		return this.gameSettings
 	}
 
 	setGameSettings(settings: GameStartTypeExtended | GameStartType) {
 		const prevSettings = this.getGameSettings();
-		const newSettings = merge(prevSettings, settings)
-		this.store.set('stats.game.settings', newSettings);
+		this.gameSettings = merge(prevSettings, settings)
+		this.messageHandler.sendMessage('GameSettings', this.gameSettings);
 	}
 
 	getGameMode(): GameStartMode {
-		return this.store.get('stats.game.settings.matchInfo.mode') as GameStartMode;
+		return this.gameSettings?.matchInfo.mode ?? "local";
 	}
 
 	getGameStats(): GameStats | undefined {
-		return (this.store.get('stats.game.stats') ?? {}) as GameStats;
+		return this.gameStats;
 	}
 
 	setGameStats(gameStats: GameStats | null) {
 		if (!gameStats) return;
-		this.store.set('stats.game.stats', gameStats);
+		this.gameStats = gameStats;
+		this.messageHandler.sendMessage('PostGameStats', this.gameStats);
 	}
 
 	setMatchStats(matchStats: MatchStats | undefined | null) {
 		if (!matchStats) return;
-		this.store.set('stats.match.stats', matchStats);
+		this.matchStats = matchStats;
+		this.messageHandler.sendMessage('CurrentMatch', this.matchStats);
 	}
 
 	setBestOf(bestOf: BestOf | undefined) {
 		if (isNil(bestOf)) return;
-		this.store.set('stats.game.settings.matchInfo.bestOf', bestOf);
+		if (isNil(this.gameSettings?.matchInfo)) return;
+		this.gameSettings.matchInfo.bestOf = bestOf;
 	}
 
 	getBestOf(): BestOf {
-		const bestOf = this.store.get('stats.game.settings.matchInfo.bestOf') as BestOf;
+		const bestOf = this.gameSettings?.matchInfo.bestOf;
 		return bestOf ?? BestOf.BestOf3;
 	}
 
-	initListeners() {
-		this.store.onDidChange(`stats.game.settings`, async (value) => {
-			this.messageHandler.sendMessage('GameSettings', value as GameStartTypeExtended);
-		});
-		this.store.onDidChange(`stats.game.stats`, async (value) => {
-			this.messageHandler.sendMessage('PostGameStats', value as GameStats);
-		});
-		this.store.onDidChange(`stats.match`, async (value) => {
-			this.messageHandler.sendMessage('CurrentMatch', value as Match);
-		});
-	}
 
-	initSvelteListeners() {
+	initListeners() {
 		this.clientEmitter.on('LiveStatsSceneChange', (value: LiveStatsScene | undefined) => {
 			if (!value) return;
 			this.setStatsScene(value);

@@ -143,7 +143,7 @@
 				{dataItem}
 				{defaultPreview}
 				{style}
-				match={$currentMatch}
+				matchStats={$currentMatch}
 				currentPlayer={$currentPlayer}
 			/>
 
