@@ -37,13 +37,6 @@ export class ElectronCurrentPlayerStore {
 		return player;
 	}
 
-	updateCurrentPlayerConnectCode() {
-		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		if (!connectCode) return;
-		this.log.info('Setting current connect code', connectCode);
-		this.store.set(`player.${connectCode}.connectCode`, connectCode);
-	}
-
 	async getCurrentPlayerCurrentRankStats(): Promise<RankedNetplayProfile | undefined> {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		if (!connectCode) return;
