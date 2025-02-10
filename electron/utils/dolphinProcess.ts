@@ -20,21 +20,40 @@ export const isDolphinRunning = async () => {
 	const isWindows = os.platform() === 'win32';
 	const validProcesses = getValidProcesses();
 	const exec = child_process.exec;
-	const command = isWindows
-		? `tasklist /FO CSV`
-		: `ps -e -o comm=`;
 	const shell = isWindows ? 'powershell.exe' : '/bin/bash';
-	return await new Promise((resolve) => {
-		exec(command, { shell: shell }, (_: ExecException | null, stdout: string) => {
-			if (stdout) {
-				const lines = stdout.split('\n').map(line => line.toLowerCase());
-				for (const process of validProcesses) {
-					if (lines.some(line => line.includes(process.toLowerCase()))) {
-						return resolve(true);
-					}
+
+	const windowsCommand = `
+		try { 
+			Get-CimInstance Win32_Process | Select-Object -ExpandProperty Name
+		} catch { 
+			tasklist /FO CSV | ForEach-Object { $_ -split ',' } | ForEach-Object { $_ -replace '"', '' }
+		}
+	`;
+	const linuxCommand = `ps -e -o comm=`;
+
+	const command = isWindows ? windowsCommand : linuxCommand;
+
+	return new Promise((resolve) => {
+		exec(command, { shell }, (_: ExecException | null, stdout: string) => {
+			if (!stdout.trim()) {
+				console.log("Dolphin is not running");
+				return resolve(false);
+			}
+
+			const runningProcesses = stdout
+				.split('\n')
+				.map(line => line.trim().toLowerCase())
+				.filter(Boolean);
+
+			for (const process of validProcesses) {
+				if (runningProcesses.some(p => p.includes(process.toLowerCase()))) {
+					console.log(`Dolphin is running: ${process}`);
+					return resolve(true);
 				}
 			}
-			return resolve(false);
+
+			console.log("Dolphin is not running");
+			resolve(false);
 		});
 	});
 };
