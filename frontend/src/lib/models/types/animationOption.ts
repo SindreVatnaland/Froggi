@@ -30,6 +30,7 @@ export enum AnimationTrigger {
     SlippiRankStatsWinsChange = "Slippi Stats Wins Change",
     SlippiRankStatsLossesChange = "Slippi Stats Losses Change",
     SlippiRankStatsRatingChange = "Slippi Stats Rating Change",
+    SlippiRankStatsRatingDifferenceChange = "Slippi Stats Rating Difference Change",
     SlippiRankStatsRankChange = "Slippi Stats Rank Change",
 
     SessionWins = "Session Wins Change",

@@ -46,3 +46,12 @@
 >
 	Rating Change
 </SelectAnimationTriggerOption>
+
+<SelectAnimationTriggerOption
+	description="When Rank Rating Diff Changes"
+	value={AnimationTrigger.SlippiRankStatsRatingDifferenceChange}
+	bind:selected={selectedOption[AnimationTrigger.SlippiRankStatsRatingDifferenceChange]}
+	on:select={select}
+>
+	Rating Diff Change
+</SelectAnimationTriggerOption>

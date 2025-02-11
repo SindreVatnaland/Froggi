@@ -36,6 +36,7 @@ export const isDolphinRunning = async () => {
 	return new Promise((resolve) => {
 		exec(command, { shell }, (_: ExecException | null, stdout: string) => {
 			if (!stdout.trim()) {
+				console.log("stdout:", stdout);
 				console.log("Dolphin is not running");
 				return resolve(false);
 			}

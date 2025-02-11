@@ -18,6 +18,9 @@ export const rankStateTrigger = (
 	if (option[AnimationTrigger.SlippiRankStatsRatingChange])
 		trigger = rank.current?.rating !== prevRank.current?.rating || trigger;
 
+	if (option[AnimationTrigger.SlippiRankStatsRatingDifferenceChange])
+		trigger = rank.current?.rating !== rank.new?.rating || trigger;
+
 	if (option[AnimationTrigger.SlippiRankStatsWinsChange])
 		trigger = rank.current?.wins !== prevRank.current?.wins || trigger;
 

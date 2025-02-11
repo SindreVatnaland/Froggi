@@ -214,6 +214,14 @@ const fixSlippiStatsTransition = (item: GridContentItem) => {
         item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsLossesChange] = true;
     }
 
+    if (
+        [
+            CustomElement.SlippiRankChangeRatingDifference,
+        ].includes(item.elementId)
+    ) {
+        item.data.animationTrigger.selectedOptions[AnimationTrigger.SlippiRankStatsRatingDifferenceChange] = true;
+    }
+
 
     return item
 }
