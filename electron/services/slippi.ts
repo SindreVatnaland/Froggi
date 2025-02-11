@@ -20,6 +20,7 @@ import { isDolphinRunning } from '../utils/dolphinProcess';
 import { MessageHandler } from './messageHandler';
 import { SqliteCurrentPlayer } from './sqlite/sqliteCurrentPlayer';
 import { dateTimeNow } from './../utils/functions';
+import { ElectronSessionStore } from './store/storeSession';
 
 @singleton()
 export class SlippiJs {
@@ -33,6 +34,7 @@ export class SlippiJs {
 		@inject(ElectronCurrentPlayerStore) private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(ElectronDolphinStore) private storeDolphin: ElectronDolphinStore,
 		@inject(ElectronLiveStatsStore) private storeLiveStats: ElectronLiveStatsStore,
+		@inject(ElectronSessionStore) private storeSession: ElectronSessionStore,
 		@inject(ElectronSettingsStore) private storeSettings: ElectronSettingsStore,
 		@inject(MessageHandler) private messageHandler: MessageHandler,
 		@inject(MemoryRead) private memoryRead: MemoryRead,
@@ -97,6 +99,7 @@ export class SlippiJs {
 		this.handleUserSlippiData();
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Connected);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.Menu);
+		this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
 		this.stopProcessSearchInterval();
 	}

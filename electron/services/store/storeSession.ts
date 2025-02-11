@@ -44,16 +44,23 @@ export class ElectronSessionStore {
         return session;
     }
 
+    async checkAndResetSessionStats(): Promise<boolean> {
+        const session = await this.getSessionStats();
+        if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
+            await this.resetSessionStats();
+            return true;
+        }
+        return false;
+    }
+
     async updateSessionStats(rankStats: RankedNetplayProfile | undefined) {
         this.log.info("Updating Session Stats", rankStats)
+        if (await this.checkAndResetSessionStats()) return;
         if (!rankStats) return;
         const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
         let session = await this.getSessionStats();
-        if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
-            session = await this.resetSessionStats();
-            return
-        }
+        if (!session) return;
         session.latestUpdate = dateTimeNow();
         session.currentRankStats = rankStats;
         this.store.set(`player.${player.connectCode}.session`, session);

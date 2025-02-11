@@ -29,6 +29,7 @@ describe('ElectronGamesStore', () => {
     let storeCurrentPlayer: ElectronCurrentPlayerStore;
     let storePlayers: ElectronPlayersStore;
     let storeSettings: ElectronSettingsStore;
+    let storeSession: ElectronSessionStore;
 
     let sqlite: SqliteOrm;
     let sqliteGame: SqliteGame;
@@ -97,7 +98,8 @@ describe('ElectronGamesStore', () => {
         const slpStream: any = {
             on: () => { }
         }
-        const storeSession: ElectronSessionStore = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
+
+        storeSession = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
 
         sqlite = new SqliteOrm(`${__dirname}/..`, true, log)
 
@@ -141,7 +143,9 @@ describe('ElectronGamesStore', () => {
         packetCapture.startPacketCapture = () => { }
         packetCapture.stopPacketCapture = () => { }
 
-        statsDisplay = new StatsDisplay(log, eventEmitter, false, slpParser, slpStream, api, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, messageHandler, packetCapture)
+
+
+        statsDisplay = new StatsDisplay(log, eventEmitter, false, slpParser, slpStream, api, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, storeSession, messageHandler, packetCapture)
         statsDisplay["getCurrentPlayersWithRankStats"] = async (settings: GameStartType): Promise<Player[]> => (new Promise<Player[]>(resolve => {
             const players = settings.players.filter(player => player)
             resolve([{ connectCode: players.at(0)?.connectCode, rank: {}, playerIndex: players.at(0)?.playerIndex } as Player, { connectCode: players.at(1)?.connectCode, rank: {}, playerIndex: players.at(1)?.playerIndex } as Player])

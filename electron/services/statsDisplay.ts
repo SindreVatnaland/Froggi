@@ -37,6 +37,7 @@ import { MessageHandler } from './messageHandler';
 import path from 'path';
 import { PacketCapture } from './packetCapture';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { ElectronSessionStore } from './store/storeSession';
 
 @singleton()
 export class StatsDisplay {
@@ -56,6 +57,7 @@ export class StatsDisplay {
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
+		@inject(delay(() => ElectronSessionStore)) private storeSession: ElectronSessionStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(PacketCapture) private packetCapture: PacketCapture,
 	) {
@@ -120,6 +122,7 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
+		this.storeSession.checkAndResetSessionStats()
 		this.storeLiveStats.setGameSettings(settings);
 
 		const recentGames = await this.storeGames.getRecentGames();
@@ -467,9 +470,8 @@ export class StatsDisplay {
 		if (!settings || !frames) return;
 		settings.isSimulated = true;
 		this.stopPauseInterval();
-		this.storeLiveStats.setGameState(InGameState.Running);
 		await this.handleGameFrame(frames[0]);
-		this.handleGameStart(settings);
+		await this.handleGameStart(settings);
 		const sortedKeys = Object.keys(frames).map(Number).sort((a, b) => a - b);
 		for (const key of sortedKeys) {
 			if (this.abortController.signal.aborted) return;
