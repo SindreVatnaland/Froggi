@@ -12,7 +12,7 @@ import { ConnectionState } from '../../../frontend/src/lib/models/enum';
 @singleton()
 export class ElectronObsStore {
     private store: Store = new Store();
-    private obsConnectionState: ConnectionState = this.store.get('obs.connection.state') as ConnectionState;
+    private obsConnectionState: ConnectionState = ConnectionState.Disconnected;
     constructor(
         @inject("ElectronLog") private log: ElectronLog,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
