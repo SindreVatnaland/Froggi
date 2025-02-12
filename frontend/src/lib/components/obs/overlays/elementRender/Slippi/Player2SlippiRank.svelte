@@ -111,7 +111,7 @@
 		{style}
 		{player}
 		preview={defaultPreview}
-		characterNumber={1}
+		characterNumber={0}
 		defaultPreviewId={Number(CHARACTERS['marth'])}
 	/>
 {/if}

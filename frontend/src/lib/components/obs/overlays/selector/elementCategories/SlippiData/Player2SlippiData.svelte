@@ -118,7 +118,7 @@
 	</SelectOption>
 	<SelectOption
 		description="Player 2 Most Played Character - Icon"
-		value={CustomElement.SlippiRankPlayer2Character2Icon}
+		value={CustomElement.SlippiRankPlayer2Character1Icon}
 		on:select={select}
 	>
 		Most Played Character - Icon

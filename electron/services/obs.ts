@@ -55,7 +55,7 @@ export class ObsWebSocket {
 					volume: { ...volume },
 				};
 			} catch (err) {
-				this.log.error(`Could not get input volume from: ${input.inputName}`, err);
+				this.log.error(`Could not get input volume from: ${input.inputName}`);
 			}
 
 		}
