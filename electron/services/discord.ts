@@ -157,7 +157,7 @@ export class DiscordRpc {
 			buttons: [
 				{
 					label: `Get Froggi`,
-					url: `https://slippi.gg/user/${currentPlayer?.connectCode?.replace('#', '-')}`,
+					url: `https://github.com/SindreVatnaland/Froggi`,
 				},
 			],
 			details: menuActivity,

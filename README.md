@@ -6,6 +6,14 @@
 
 https://buymeacoffee.com/sindrevatnw
 
+## Download
+
+Latest version can be downloaded [here](https://github.com/SindreVatnaland/Froggi/releases/latest)
+
+## Discord
+
+Got any questions or feedback. Maybe want to contribute? Join our [Discord](https://discord.gg/rX7aQmbrEa)
+
 ## Installation
 
 1. Make sure to have [Node](https://nodejs.org/en) installed
