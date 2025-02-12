@@ -2,6 +2,10 @@
   <img style="width: 50; height: 50" src="frontend/static/icon.png" />
 </p>
 
+## Support the project
+
+https://buymeacoffee.com/sindrevatnw
+
 ## Installation
 
 1. Make sure to have [Node](https://nodejs.org/en) installed
@@ -10,9 +14,11 @@
 
 ## Electron
 
-Electron is used as the source of the application and stores all data in `Electron Store` (Json database). All data displayed in the frontend comes from Electron and Electron as the source of truth gives us consistency between all devices, even if it got connected in a different state.
+Electron is used as the source of the application and stores settings and temporary data in `Electron Store` (Json database). All data displayed in the frontend comes from Electron. Electron is the source of truth and provides consistency between all devices.
 
-Any data sent from Electron to the client is using a generalized `EventListener` that sends any event to both the Electron and external clients using Ipc or WebSockets respectfully.
+For larger data structure `Froggi` uses a `SQLite` database. It is light weight and allows for storing lots of data without slowing the application down. It is currently being used to store overlays, player data and game history.
+
+Any data sent from Electron to the client is using a generalized `EventListener` which emits any event to both Electron and the external clients using Ipc and WebSockets respectfully.
 
 ## Svelte
 
@@ -24,6 +30,4 @@ Being able to open the app on external devices requires the electron app to serv
 
 ## Build Targets
 
-Windows: `npm run build:win`\
-Mac: `npm run build:mac`\
-Linux: `npm run build:linux`
+`npm run build` should automatically target your OS and build the application.
