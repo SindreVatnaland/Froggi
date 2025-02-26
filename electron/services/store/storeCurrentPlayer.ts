@@ -2,6 +2,7 @@
 import Store from 'electron-store';
 import type {
 	CurrentPlayer,
+	Player,
 	RankedNetplayProfile,
 } from '../../../frontend/src/lib/models/types/slippiData';
 import { delay, inject, singleton } from 'tsyringe';
@@ -44,9 +45,14 @@ export class ElectronCurrentPlayerStore {
 		return player?.rank?.current;
 	}
 
+	async setCurrentPlayerBaseData(basePlayer: Player) {
+		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerBaseData(basePlayer);
+		if (!player) return;
+		this.messageHandler.sendMessage('CurrentPlayer', player);
+	}
+
 	async setCurrentPlayerCurrentRankStats(rankStats: RankedNetplayProfile | undefined) {
 		if (!rankStats) return;
-		this.log.info('Setting current rank stats', rankStats);
 		this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerCurrentRankStats(rankStats);
 		if (!player) return;
@@ -55,7 +61,6 @@ export class ElectronCurrentPlayerStore {
 
 	async setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {
 		if (!rankStats) return;
-		this.log.info('Setting new rank stats', rankStats);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerNewRankStats(rankStats);
 		if (!player) return;
 		this.messageHandler.sendMessage('CurrentPlayer', player);

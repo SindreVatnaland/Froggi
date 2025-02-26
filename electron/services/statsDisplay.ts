@@ -133,6 +133,13 @@ export class StatsDisplay {
 
 		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
 
+		const currentPlayerConnectCode = this.storeSettings.getCurrentPlayerConnectCode();
+		const currentPlayer = currentPlayers.find((player) => player.connectCode === currentPlayerConnectCode);
+
+		if (currentPlayer) {
+			this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
+		}
+
 		this.log.info("Current players:", currentPlayers)
 
 		if (currentPlayers.every((player) => "rank" in player)) {

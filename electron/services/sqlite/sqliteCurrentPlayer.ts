@@ -3,7 +3,7 @@ import { ElectronLog } from "electron-log";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
 import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntity";
-import { CurrentPlayer, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayer, Player, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
 import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
 import { fixCurrentPlayer } from "../../utils/playerHelp";
 
@@ -26,6 +26,27 @@ export class SqliteCurrentPlayer {
     await this.sqlite.initializing;
     const currentPlayer = await this.currentPlayerRepo.findOne({ where: { connectCode: connectCode } });
     return currentPlayer as CurrentPlayer;
+  }
+
+  async addOrUpdateCurrentPlayerBaseData(player: Player): Promise<CurrentPlayer | null> {
+    await this.sqlite.initializing;
+
+    this.log.info("Add or update current player:", player);
+
+    try {
+      let currentPlayer = await this.currentPlayerRepo.findOne({
+        where: { connectCode: player.connectCode },
+        relations: ["rank"],
+      });
+
+      const updatedPlayer = { ...player, ...currentPlayer } as CurrentPlayerEntity;
+
+      await this.currentPlayerRepo.save(updatedPlayer);
+      return updatedPlayer;
+    } catch (error) {
+      this.log.error("Error saving player:", error);
+      return null;
+    }
   }
 
   async addOrUpdateCurrentPlayerCurrentRankStats(rank: RankedNetplayProfile): Promise<CurrentPlayer | null> {
