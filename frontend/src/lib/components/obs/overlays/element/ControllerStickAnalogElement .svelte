@@ -25,13 +25,13 @@
 >
 	<img
 		class="w-full h-full absolute object-contain"
-		src="/image/controller-buttons/joystick-gate.png"
+		src="/image/controller-buttons-component/joystick-gate.png"
 		alt="Joystick Gate"
 	/>
 	<img
 		class="w-full h-full absolute object-contain"
 		style={`transform: translate(${analogXValuePercent}px, ${analogYValuePercent}px);`}
-		src={`/image/controller-buttons/joystick${ribs ? '-ribs' : ''}-filled.png`}
+		src={`/image/controller-buttons-component/joystick${ribs ? '-ribs' : ''}-filled.png`}
 		alt="Joystick Mask"
 	/>
 </div>

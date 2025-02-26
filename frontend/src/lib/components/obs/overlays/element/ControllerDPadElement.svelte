@@ -11,14 +11,14 @@
 	<img
 		class="w-full h-full absolute object-contain"
 		style={` ${style.cssValue}; ${dataItem?.data.advancedStyling}; ${style.shadow};`}
-		src={`/image/controller-buttons/DPadGate.png`}
+		src={`/image/controller-buttons-component/DPadGate.png`}
 		alt="DPadGate"
 	/>
 	{#if buttonPresses?.isDPadUpPressed}
 		<img
 			class="w-full h-full absolute object-contain"
 			style={`absolute ${style.cssValue}; ${dataItem?.data.advancedStyling}; ${style.shadow}`}
-			src={`/image/controller-buttons/DPadUp.png`}
+			src={`/image/controller-buttons-component/DPadUp.png`}
 			alt="DPadUp"
 		/>
 	{/if}
@@ -26,7 +26,7 @@
 		<img
 			class="w-full h-full absolute object-contain"
 			style={`absolute ${style.cssValue}; ${dataItem?.data.advancedStyling}; ${style.shadow}`}
-			src={`/image/controller-buttons/DPadDown.png`}
+			src={`/image/controller-buttons-component/DPadDown.png`}
 			alt="DPadDown"
 		/>
 	{/if}
@@ -34,7 +34,7 @@
 		<img
 			class="w-full h-full absolute object-contain"
 			style={`absolute ${style.cssValue}; ${dataItem?.data.advancedStyling}; ${style.shadow}`}
-			src={`/image/controller-buttons/DPadLeft.png`}
+			src={`/image/controller-buttons-component/DPadLeft.png`}
 			alt="DPadLeft"
 		/>
 	{/if}
@@ -42,7 +42,7 @@
 		<img
 			class="w-full h-full absolute object-contain"
 			style={`absolute ${style.cssValue}; ${dataItem?.data.advancedStyling}; ${style.shadow}`}
-			src={`/image/controller-buttons/DPadRight.png`}
+			src={`/image/controller-buttons-component/DPadRight.png`}
 			alt="DPadRight"
 		/>
 	{/if}
