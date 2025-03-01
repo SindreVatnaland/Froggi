@@ -2,10 +2,11 @@ import { delay, inject, singleton } from "tsyringe";
 import { ElectronLog } from "electron-log";
 import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
-import { GameStats } from "../../../frontend/src/lib/models/types/slippiData";
+import { GameStartMode, GameStats } from "../../../frontend/src/lib/models/types/slippiData";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 import { ElectronGamesStore } from "../../services/store/storeGames";
 import { MessageHandler } from "../../services/messageHandler";
+import { isNil } from "lodash";
 
 @singleton()
 export class SqliteGame {
@@ -32,7 +33,7 @@ export class SqliteGame {
 
     try {
       await this.gameStatsRepo.save(game);
-      await this.storeGames.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "local");
+      await this.storeGames.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
       await this.sendRecentGames();
       return gameStats;
     } catch (error) {
@@ -50,7 +51,7 @@ export class SqliteGame {
 
     try {
       await this.gameStatsRepo.save(games); // Bulk save
-      await this.storeGames.setRecentGameId(gameStatsList[0].settings?.matchInfo.matchId ?? "local");
+      await this.storeGames.setRecentGameId(gameStatsList[0].settings?.matchInfo.matchId ?? "");
       await this.sendRecentGames();
       return gameStatsList;
     } catch (error) {
@@ -60,12 +61,17 @@ export class SqliteGame {
   }
 
 
-  async getGamesById(matchId: string): Promise<GameStats[]> {
+  async getGamesById(matchId: string, mode?: GameStartMode): Promise<GameStats[]> {
     await this.sqlite.initializing;
     try {
-      const games = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: matchId } } } });
-      if (!games) return [];
-      return games as GameStats[];
+      const query: any = { settings: { matchInfo: { matchId } } };
+
+      if (!isNil(mode)) {
+        query.settings.matchInfo.mode = mode;
+      }
+
+      const games = await this.gameStatsRepo.find({ where: query });
+      return games || [];
     } catch (error) {
       this.log.error("Error getting games by id:", error);
       return [];
@@ -88,7 +94,7 @@ export class SqliteGame {
   async deleteLocalGameStats(): Promise<boolean> {
     await this.sqlite.initializing;
     try {
-      const localGames = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { matchId: "" } } } });
+      const localGames = await this.gameStatsRepo.find({ where: { settings: { matchInfo: { mode: "local" } } } });
       const simulatedGames = await this.gameStatsRepo.find({ where: { settings: { isSimulated: true } } });
       const mockedGames = await this.gameStatsRepo.find({ where: { isMock: true } });
       const games = [...localGames, ...simulatedGames, ...mockedGames];

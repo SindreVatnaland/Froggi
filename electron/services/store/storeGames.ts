@@ -38,6 +38,7 @@ export class ElectronGamesStore {
 
 	setGameScore(score: number[] | undefined) {
 		this.gameScore = score ?? [0, 0];
+		console.log('Game Score:', this.gameScore);
 		this.messageHandler.sendMessage('GameScore', this.gameScore);
 	}
 
@@ -68,7 +69,7 @@ export class ElectronGamesStore {
 
 	async addMatchGame(newGame: GameStats) {
 		if (hasGameBombRain(newGame)) return;
-		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "");
+		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "", newGame.settings?.matchInfo.mode ?? "local");
 		if (!games) return;
 		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
 		this.applyGamesScore(games);
@@ -79,10 +80,10 @@ export class ElectronGamesStore {
 		let recentGames = await this.getRecentGames()
 		const recentGame = recentGames.at(-1) ?? null
 
-		newGame = { ...newGame, isMock: true, settings: { ...newGame.settings, matchInfo: { ...(recentGame?.settings?.matchInfo ?? { gameNumber: null, matchId: "local", tiebreakerNumber: 0, mode: "local" }), ...{ gameNumber: null, bestOf: this.storeLiveStats.getBestOf(), id: undefined } } } as GameStartTypeExtended }
+		newGame = { ...newGame, isMock: true, settings: { ...newGame.settings, matchInfo: { ...(recentGame?.settings?.matchInfo ?? { gameNumber: null, matchId: "", tiebreakerNumber: 0, mode: "local" }), ...{ gameNumber: null, bestOf: this.storeLiveStats.getBestOf(), id: undefined } } } as GameStartTypeExtended }
 		let games = [...recentGames.slice(0, index), newGame, ...recentGames.slice(index)];
 
-		await this.sqliteGame.deleteGameStatsByMatchId(recentGame?.settings?.matchInfo.matchId ?? "local");
+		await this.sqliteGame.deleteGameStatsByMatchId(recentGame?.settings?.matchInfo.matchId ?? "");
 
 		games = this.applyGamesScore(games);
 

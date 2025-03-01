@@ -89,7 +89,7 @@
 		prevSessionStats = { ...($sessionStats ?? {}) } as SessionStats;
 	};
 
-	$: $gameFrame, $currentPlayer, $gameSettings, $sessionStats, updateTriggerValues();
+	$: $gameFrame, $currentPlayer, $gameSettings, $sessionStats, $gameScore, updateTriggerValues();
 
 	onMount(() => {
 		if (!isDemo) return;

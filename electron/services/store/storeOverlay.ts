@@ -64,7 +64,7 @@ export class ElectronOverlayStore {
 	}
 
 	async setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
-		this.log.info("Set scene", overlayId, statsScene, scene.id);
+		this.log.info("Update scene", overlayId, statsScene, scene.id);
 
 		for (const [index, layer] of scene.layers.entries()) {
 			layer.index = index;

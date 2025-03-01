@@ -272,6 +272,7 @@ try {
 	};
 
 	function setPriority() {
+		if (dev) return;
 		try {
 			os.setPriority(process.pid, os.constants.priority.PRIORITY_HIGHEST);
 		}

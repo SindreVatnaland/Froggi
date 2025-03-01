@@ -47,7 +47,6 @@ export class StatsDisplay {
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
-		@inject('Dev') private isDev: boolean,
 		@inject('SlpParser') private slpParser: SlpParser,
 		@inject('SlpStream') private slpStream: SlpStream,
 		@inject(delay(() => Api)) private api: Api,
@@ -129,7 +128,15 @@ export class StatsDisplay {
 
 		const previousSettings = recentGames?.at(-1)?.settings;
 
-		const isNewGame = Boolean(settings.matchInfo?.matchId) && previousSettings?.matchInfo?.matchId !== settings?.matchInfo?.matchId;
+		const replay = await this.findGameFromSettings(settings);
+		const replaySettings = replay?.getSettings();
+
+		const isNewGame = Boolean((replaySettings?.matchInfo?.matchId) && (previousSettings?.matchInfo?.matchId !== replaySettings?.matchInfo?.matchId))
+
+		if (replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId) {
+			this.log.info("Replay found. Using replay settings.")
+			settings = replaySettings;
+		}
 
 		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
 
@@ -157,7 +164,7 @@ export class StatsDisplay {
 	async handleGameEnd(
 		gameEnd: GameEndType,
 		latestGameFrame: FrameEntryType | null,
-		settings: GameStartType,
+		settings: GameStartType | GameStartTypeExtended,
 	) {
 		this.log.info("Game end:", gameEnd)
 		this.cancelSimulation();
@@ -175,6 +182,7 @@ export class StatsDisplay {
 		if (!settings.matchInfo?.matchId && gameStats.settings?.matchInfo?.matchId) {
 			this.log.info("Settings matchId does not match replay matchId. Assuming replay.")
 			gameStats.isReplay = true;
+			gameStats.settings.matchInfo.mode = "local";
 		}
 
 		gameStats = await this.handleGameSetStats(gameStats);
@@ -198,12 +206,12 @@ export class StatsDisplay {
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const oldRank = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 
-		if ((this.isDev || game.settings?.isSimulated) && playerConnectCode) {
+		if ((game.settings?.isSimulated) && playerConnectCode) {
 			this.mockPostGameScene();
 			return;
 		}
 
-		if (isPostSet && isRanked && playerConnectCode && oldRank) {
+		if (isPostSet && isRanked && playerConnectCode && oldRank && !game.isReplay) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
 			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
@@ -370,14 +378,34 @@ export class StatsDisplay {
 		return [...(filesFromRoot || []), ...(filesFromSpectate || [])];
 	};
 
+	private findGameFromSettings = async (settings: GameStartType | undefined): Promise<SlippiGame | undefined> => {
+		if (!settings) return;
+		const matchId = settings.matchInfo?.matchId;
+		const gameNumber = settings.matchInfo?.gameNumber;
+		const randomSeed = settings.randomSeed;
+		const files = await this.getGameFiles();
+		if (!files || !files.length) return;
+		const file = files.find((file) => {
+			const settings = new SlippiGame(file).getSettings();
+			return matchId
+				? (
+					settings?.matchInfo?.matchId === matchId &&
+					settings?.matchInfo?.gameNumber === gameNumber &&
+					settings?.matchInfo?.tiebreakerNumber === 0
+				)
+				: settings?.randomSeed === randomSeed;
+		});
+		if (!file) return;
+		return new SlippiGame(file);
+	}
+
 	private async getPreviousGameStats(
-		settings: GameStartType | undefined,
+		settings: GameStartType | GameStartTypeExtended | undefined,
 		gameEnd: GameEndType | undefined,
 	): Promise<GameStats | undefined> {
 		const MAX_RETRIES = 5;
 		let attempt = 0;
-		let file: string | undefined;
-
+		let game: SlippiGame | undefined;
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 
@@ -387,18 +415,9 @@ export class StatsDisplay {
 		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed);
 
 		while (attempt < MAX_RETRIES) {
-			file = files.find((file) => {
-				const settings = new SlippiGame(file).getSettings();
-				return matchId
-					? (
-						settings?.matchInfo?.matchId === matchId &&
-						settings?.matchInfo?.gameNumber === gameNumber &&
-						settings?.matchInfo?.tiebreakerNumber === 0
-					)
-					: settings?.randomSeed === randomSeed;
-			});
+			game = await this.findGameFromSettings(settings)
 
-			if (file) break;
+			if (game) break;
 			attempt++;
 
 			if (attempt < MAX_RETRIES) {
@@ -407,14 +426,18 @@ export class StatsDisplay {
 			}
 		}
 
-		if (!file) {
+		if (!game) {
 			this.log.error("Could not find recent replay")
 			return
 		};
+
 		this.log.info("Analyzing game:", settings?.matchInfo)
-		this.log.debug('Analyzing recent game file:', file);
-		let game = new SlippiGame(file);
-		return this.createGameStats(game, gameEnd);
+		this.log.debug('Analyzing recent game file:');
+
+		const gameStats = this.createGameStats(game, gameEnd);
+		if (!gameStats || !gameStats.settings) return;
+		gameStats.settings = { ...settings, ...gameStats.settings };
+		return gameStats;
 	}
 
 	private async handleUndefinedPlayers(settings: GameStartType | null | undefined) {

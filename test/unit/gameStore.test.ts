@@ -145,7 +145,7 @@ describe('ElectronGamesStore', () => {
 
 
 
-        statsDisplay = new StatsDisplay(log, eventEmitter, false, slpParser, slpStream, api, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, storeSession, messageHandler, packetCapture)
+        statsDisplay = new StatsDisplay(log, eventEmitter, slpParser, slpStream, api, electronGamesStore, storeLiveStats, storePlayers, storeCurrentPlayer, storeSettings, storeSession, messageHandler, packetCapture)
         statsDisplay["getCurrentPlayersWithRankStats"] = async (settings: GameStartType): Promise<Player[]> => (new Promise<Player[]>(resolve => {
             const players = settings.players.filter(player => player)
             resolve([{ connectCode: players.at(0)?.connectCode, rank: {}, playerIndex: players.at(0)?.playerIndex } as Player, { connectCode: players.at(1)?.connectCode, rank: {}, playerIndex: players.at(1)?.playerIndex } as Player])
