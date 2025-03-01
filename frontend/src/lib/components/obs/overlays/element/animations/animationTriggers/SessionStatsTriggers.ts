@@ -9,7 +9,7 @@ import { isNil } from 'lodash';
 
 export const sessionStatsTrigger = (
 	option: SelectedAnimationTriggerCondition,
-	sessionStats: SessionStats | undefined,
+	sessionStats: SessionStats | undefined | null,
 	prevSessionStats: SessionStats | undefined,
 ) => {
 	if (isNil(sessionStats) || isNil(prevSessionStats)) return;

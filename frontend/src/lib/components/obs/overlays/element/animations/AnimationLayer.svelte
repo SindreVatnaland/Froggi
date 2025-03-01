@@ -45,51 +45,79 @@
 	let prevPlayers: Player[] | undefined;
 	let prevSettings: GameStartTypeExtended | undefined;
 	let prevSessionStats: SessionStats | undefined;
-	const updateKeyValue = (): number | undefined => {
+	const updateKeyValue = (
+		gameFrame: FrameEntryType | undefined | null,
+		currentPlayer: CurrentPlayer,
+		currentPlayers: Player[],
+		gameSettings: GameStartTypeExtended,
+		sessionStats: SessionStats | undefined | null,
+		gameScore: number[],
+	): number | undefined => {
 		if (!dataItem || $isIframe || $isElectron) return;
 		const option = dataItem.data.animationTrigger.selectedOptions;
 
-		if (inGameStateTrigger(option, $gameSettings, $gameFrame, prevGameFrame))
+		if (inGameStateTrigger(option, gameSettings, gameFrame, prevGameFrame))
 			return Math.random();
-		if (currentPlayerInGameTrigger(option, $currentPlayer, $gameFrame, prevGameFrame))
+		if (currentPlayerInGameTrigger(option, currentPlayer, gameFrame, prevGameFrame))
 			return Math.random();
-		if (player1RankDataTrigger(option, $currentPlayers?.at(0), prevPlayers?.[0]))
+		if (player1RankDataTrigger(option, currentPlayers?.at(0), prevPlayers?.[0]))
 			return Math.random();
-		if (player2RankDataTrigger(option, $currentPlayers?.at(1), prevPlayers?.[1]))
+		if (player2RankDataTrigger(option, currentPlayers?.at(1), prevPlayers?.[1]))
 			return Math.random();
-		if (player1InGameTrigger(option, $currentPlayers?.at(0), $gameFrame, prevGameFrame))
+		if (player1InGameTrigger(option, currentPlayers?.at(0), gameFrame, prevGameFrame))
 			return Math.random();
-		if (player2InGameTrigger(option, $currentPlayers?.at(1), $gameFrame, prevGameFrame))
+		if (player2InGameTrigger(option, currentPlayers?.at(1), gameFrame, prevGameFrame))
 			return Math.random();
 		if (
 			matchStateTrigger(
 				option,
-				$currentPlayers,
+				currentPlayers,
 				prevPlayers,
-				$gameScore,
+				gameScore,
 				prevScore,
-				$gameSettings,
+				gameSettings,
 				prevSettings,
 			)
 		)
 			return Math.random();
-		if (rankStateTrigger(option, $currentPlayer.rank, prevPlayer?.rank)) return Math.random();
-		if (sessionStatsTrigger(option, $sessionStats, prevSessionStats)) return Math.random();
+		if (rankStateTrigger(option, currentPlayer.rank, prevPlayer?.rank)) return Math.random();
+		if (sessionStatsTrigger(option, sessionStats, prevSessionStats)) return Math.random();
 
 		return key;
 	};
 
-	const updateTriggerValues = () => {
-		key = updateKeyValue();
-		prevGameFrame = { ...($gameFrame ?? {}) } as FrameEntryType;
-		prevScore = { ...$gameScore };
-		prevSettings = { ...$gameSettings };
-		prevPlayer = { ...$currentPlayer };
-		prevPlayers = { ...$currentPlayers };
-		prevSessionStats = { ...($sessionStats ?? {}) } as SessionStats;
+	const updateTriggerValues = (
+		gameFrame: FrameEntryType | undefined | null,
+		currentPlayer: CurrentPlayer,
+		currentPlayers: Player[],
+		gameSettings: GameStartTypeExtended,
+		sessionStats: SessionStats | undefined | null,
+		gameScore: number[],
+	) => {
+		key = updateKeyValue(
+			gameFrame,
+			currentPlayer,
+			currentPlayers,
+			gameSettings,
+			sessionStats,
+			gameScore,
+		);
+		prevGameFrame = { ...(gameFrame ?? {}) } as FrameEntryType;
+		prevScore = { ...gameScore };
+		prevSettings = { ...gameSettings };
+		prevPlayer = { ...currentPlayer };
+		prevPlayers = { ...currentPlayers };
+		prevSessionStats = { ...(sessionStats ?? {}) } as SessionStats;
 	};
 
-	$: $gameFrame, $currentPlayer, $gameSettings, $sessionStats, $gameScore, updateTriggerValues();
+	$: updateTriggerValues(
+		$gameFrame,
+		$currentPlayer,
+		$currentPlayers,
+		$gameSettings,
+		$sessionStats,
+		$gameScore,
+	);
 
 	onMount(() => {
 		if (!isDemo) return;
