@@ -75,7 +75,6 @@ export class ElectronLiveStatsStore {
 	setGameState(state: InGameState) {
 		this.gameState = state;
 		this.messageHandler.sendMessage('GameState', state as InGameState);
-
 	}
 
 	getGameSettings(): GameStartTypeExtended | undefined {

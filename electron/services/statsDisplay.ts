@@ -94,7 +94,7 @@ export class StatsDisplay {
 	}
 
 	private resetPauseInterval() {
-		let intervalTime = this.isWin ? 320 : 160;
+		const intervalTime = this.isWin ? 320 : 160;
 		this.stopPauseInterval();
 		this.pauseInterval = setTimeout(() => {
 			this.handleGamePaused();
@@ -121,7 +121,7 @@ export class StatsDisplay {
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		this.storeSession.checkAndResetSessionStats()
+		await this.storeSession.checkAndResetSessionStats()
 
 		const recentGames = await this.storeGames.getRecentGames();
 
@@ -130,15 +130,16 @@ export class StatsDisplay {
 		const replay = await this.findGameFromSettings(settings);
 		const replaySettings = replay?.getSettings();
 
-		const isFirstReplay = recentGames.filter((game) => game.isReplay).length === 0;
-		const isNewMatchId = ![replaySettings?.matchInfo?.matchId, "local"].includes(previousSettings?.matchInfo?.matchId)
-		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
-		const isReplay = replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId;
-		if (isReplay) {
+		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
+		if (isReplay && replaySettings?.matchInfo) {
 			this.log.info("Replay found. Using replay settings.")
 			settings = replaySettings;
 		}
+
+		const isFirstReplay = Boolean(isReplay && recentGames.filter((game) => game.isReplay).length === 0);
+		const isNewMatchId = replaySettings?.matchInfo?.matchId != previousSettings?.matchInfo?.matchId;
+		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
 		this.storeLiveStats.setGameSettings(settings);
 
@@ -148,7 +149,7 @@ export class StatsDisplay {
 		const currentPlayer = currentPlayers.find((player) => player.connectCode === currentPlayerConnectCode);
 
 		if (currentPlayer) {
-			this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
+			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
 		}
 
 		this.log.info("Current players:", currentPlayers)
@@ -162,7 +163,7 @@ export class StatsDisplay {
 
 		if (!isNewGame) return;
 		this.log.info("New game detected. Clearing recent games.")
-		this.storeGames.clearRecentGames();
+		await this.storeGames.clearRecentGames();
 	}
 
 	async handleGameEnd(
@@ -239,7 +240,7 @@ export class StatsDisplay {
 	private async mockPostGameScene() {
 		this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 		await new Promise((resolve) => setTimeout(resolve, 2000));
-		let currentPlayerRankStats = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		const currentPlayerRankStats = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
 		if (!currentPlayerRankStats) return;
 		const didWin = Math.random() > 0.5;
 		const ratingChange = (didWin ? 1 : -1) * Math.random() * 500;
@@ -268,7 +269,7 @@ export class StatsDisplay {
 		if (
 			latestGameFrame &&
 			Object.entries(latestGameFrame.players).every(
-				([_, player]) => isNil(player) || player.post.stocksRemaining === 0,
+				([, player]) => isNil(player) || player.post.stocksRemaining === 0,
 			)
 		)
 			this.storeLiveStats.setGameState(InGameState.Tie);
@@ -413,7 +414,7 @@ export class StatsDisplay {
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 
-		const matchId = settings?.matchInfo?.matchId ?? 'local';
+		const matchId = settings?.matchInfo?.matchId ?? '';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
 		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed);
@@ -466,7 +467,7 @@ export class StatsDisplay {
 				matchInfo: {
 					...settings?.matchInfo,
 					mode: getGameMode(settings),
-					matchId: matchId ? matchId : "local",
+					matchId: matchId ? matchId : "",
 					bestOf: this.storeLiveStats.getBestOf(),
 				},
 			},
@@ -516,7 +517,7 @@ export class StatsDisplay {
 		const gameEnd = game.getGameEnd();
 		const latestFrame = game.getLatestFrame();
 		if (!gameEnd) return;
-		this.handleGameEnd(gameEnd, latestFrame, settings);
+		await this.handleGameEnd(gameEnd, latestFrame, settings);
 	}
 
 	simulateGameEnd = async () => {
@@ -529,7 +530,7 @@ export class StatsDisplay {
 		const settings = game.getSettings() as GameStartTypeExtended;
 		if (!gameEnd || !settings) return;
 		settings.isSimulated = true;
-		this.handleGameEnd(gameEnd, latestFrame, settings);
+		await this.handleGameEnd(gameEnd, latestFrame, settings);
 	}
 
 	private waitWithCancel = (ms: number) => {
