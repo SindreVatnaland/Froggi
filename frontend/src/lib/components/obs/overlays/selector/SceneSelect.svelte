@@ -2,13 +2,8 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import { electronEmitter, statsScene } from '$lib/utils/store.svelte';
 	import { tooltip } from 'svooltip';
-	import { notifyDisabledScene } from '../edit/OverlayHandler.svelte';
-	import { page } from '$app/stores';
-
-	$: overlayId = $page.params.overlay;
 
 	function updateLiveScene(scene: LiveStatsScene) {
-		notifyDisabledScene(overlayId, $statsScene);
 		$electronEmitter.emit('LiveStatsSceneChange', scene);
 	}
 

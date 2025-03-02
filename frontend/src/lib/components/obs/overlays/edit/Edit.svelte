@@ -9,7 +9,10 @@
 		statsScene,
 	} from '$lib/utils/store.svelte';
 	import BoardEdit from '$lib/components/obs/overlays/edit/BoardEdit.svelte';
-	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
+	import {
+		getOverlayById,
+		notifyDisabledScene,
+	} from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import Preview from './Preview.svelte';
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import SelectedEditor from './SelectedEditor.svelte';
@@ -28,6 +31,8 @@
 	import SimulateGame from '$lib/components/commandButtons/SimulateGame.svelte';
 
 	const overlayId = $page.params.overlay;
+
+	$: notifyDisabledScene(overlayId, $statsScene);
 
 	$: selectedLayerIndex = $currentOverlayEditor?.layerIndex ?? 0;
 	let selectedLayer: Layer | undefined = undefined;

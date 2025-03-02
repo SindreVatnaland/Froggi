@@ -18,6 +18,7 @@
 	import isNil from 'lodash/isNil';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { newId } from '$lib/utils/helper';
+	import { startCase } from 'lodash';
 
 	export function generateNewItem(
 		elementId: CustomElement,
@@ -234,6 +235,6 @@
 	) {
 		const overlay = await getOverlayById(overlayId);
 		if (overlay?.[statsScene]?.active) return;
-		notifications.warning(`Selected scene ${statsScene} is disabled`, 3000);
+		notifications.warning(`Selected scene ${startCase(statsScene)} is disabled`, 3000);
 	}
 </script>
