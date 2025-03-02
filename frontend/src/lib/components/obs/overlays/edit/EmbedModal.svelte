@@ -20,7 +20,12 @@
 	const addToObs = async () => {
 		const overlay = await getOverlayById(overlayId);
 		if (!overlay) return;
-		$electronEmitter.emit('ObsCreateBrowserSource', localUrl, overlayId, overlay.aspectRatio);
+		$electronEmitter.emit(
+			'ObsCreateBrowserSource',
+			localUrl,
+			overlay.title,
+			overlay.aspectRatio,
+		);
 	};
 
 	export let open: boolean;
