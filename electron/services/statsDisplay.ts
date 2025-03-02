@@ -122,7 +122,6 @@ export class StatsDisplay {
 		if (!settings) return;
 
 		this.storeSession.checkAndResetSessionStats()
-		this.storeLiveStats.setGameSettings(settings);
 
 		const recentGames = await this.storeGames.getRecentGames();
 
@@ -131,12 +130,17 @@ export class StatsDisplay {
 		const replay = await this.findGameFromSettings(settings);
 		const replaySettings = replay?.getSettings();
 
-		const isNewGame = Boolean((replaySettings?.matchInfo?.matchId) && (previousSettings?.matchInfo?.matchId !== replaySettings?.matchInfo?.matchId))
+		const isFirstReplay = recentGames.filter((game) => game.isReplay).length === 1;
+		const isNewMatchId = previousSettings?.matchInfo?.matchId !== replaySettings?.matchInfo?.matchId
+		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
-		if (replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId) {
+		const isReplay = replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId;
+		if (isReplay) {
 			this.log.info("Replay found. Using replay settings.")
 			settings = replaySettings;
 		}
+
+		this.storeLiveStats.setGameSettings(settings);
 
 		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
 

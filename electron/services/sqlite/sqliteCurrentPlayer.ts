@@ -40,7 +40,7 @@ export class SqliteCurrentPlayer {
         relations: ["rank"],
       });
 
-      const updatedPlayer = mergeWith({}, player, currentPlayer, (objValue, srcValue) => {
+      const updatedPlayer = mergeWith({}, currentPlayer, player, (objValue, srcValue) => {
         return srcValue === null ? objValue : undefined;
       }) as CurrentPlayerEntity;
 

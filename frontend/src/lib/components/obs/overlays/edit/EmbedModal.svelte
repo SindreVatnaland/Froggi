@@ -106,7 +106,7 @@
 					use:tooltip={isObsConnected
 						? {}
 						: {
-								content: `<p>OBS Websockets needs to be connected</p>`,
+								content: `<p>OBS Websockets needs to be connected</p> <p>OBS: Tools -> Websocket Server Settings -> Enable Websocket Server</p>`,
 								html: true,
 								placement: 'top',
 								delay: [250, 0],
