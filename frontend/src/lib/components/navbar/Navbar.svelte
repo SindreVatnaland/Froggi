@@ -50,10 +50,14 @@
 
 	let isMobileOpen: boolean;
 	let width: number;
+	let height: number;
+
+	$: isVertical = width < height;
 </script>
 
 <svelte:window
 	bind:innerWidth={width}
+	bind:innerHeight={height}
 	on:click={resetVisibilityTimer}
 	on:touchstart={resetVisibilityTimer}
 	on:touchmove={resetVisibilityTimer}
@@ -63,11 +67,11 @@
 
 <div>
 	{#if isVisible}
-		{#if !$isMobile}
+		{#if !isVertical}
 			<div
 				in:fly={{ x: -100, duration: 150 }}
 				out:fly={{ x: -100, duration: 400 }}
-				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
+				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
 			>
 				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
 					<BackButton />
@@ -151,7 +155,7 @@
 			<div
 				in:fly={{ x: 100, duration: 150 }}
 				out:fly={{ x: 100, duration: 400 }}
-				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-l-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50"
+				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-color-primary bg-opacity-25 border-l-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
 			>
 				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
 					<div
@@ -209,7 +213,7 @@
 			<div
 				in:fly={{ y: 100, duration: 150 }}
 				out:fly={{ y: 100, duration: 400 }}
-				class={`fixed grid justify-center w-screen h-16 m-0 background-color-primary bg-opacity-60 border-t-1 border-opacity-25 bottom-0 border-white z-50 p-1`}
+				class={`fixed grid justify-center w-screen h-16 m-0 background-color-primary bg-opacity-60 border-t-1 border-opacity-25 bottom-0 border-secondary-color z-50 p-1 background-primary-color`}
 			>
 				<div
 					class={`flex justify-evenly content-center items-center w-screen ${
@@ -225,6 +229,12 @@
 						connectionState={$obsConnection.state}
 						click={() => goto('/obs')}
 					/>
+
+					<BuyMeACoffee />
+
+					<NavButton click={() => goto('/settings')}>
+						<img src="/image/button-icons/settings.png" alt="settings" />
+					</NavButton>
 				</div>
 			</div>
 		{/if}
