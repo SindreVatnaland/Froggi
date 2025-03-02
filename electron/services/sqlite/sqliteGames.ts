@@ -33,7 +33,7 @@ export class SqliteGame {
 
     try {
       await this.gameStatsRepo.save(game);
-      await this.storeGames.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
+      await this.storeGames.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "local");
       await this.sendRecentGames();
       return gameStats;
     } catch (error) {
@@ -51,7 +51,7 @@ export class SqliteGame {
 
     try {
       await this.gameStatsRepo.save(games); // Bulk save
-      await this.storeGames.setRecentGameId(gameStatsList[0].settings?.matchInfo.matchId ?? "");
+      await this.storeGames.setRecentGameId(gameStatsList[0].settings?.matchInfo.matchId ?? "local");
       await this.sendRecentGames();
       return gameStatsList;
     } catch (error) {

@@ -130,8 +130,8 @@ export class StatsDisplay {
 		const replay = await this.findGameFromSettings(settings);
 		const replaySettings = replay?.getSettings();
 
-		const isFirstReplay = recentGames.filter((game) => game.isReplay).length === 1;
-		const isNewMatchId = previousSettings?.matchInfo?.matchId !== replaySettings?.matchInfo?.matchId
+		const isFirstReplay = recentGames.filter((game) => game.isReplay).length === 0;
+		const isNewMatchId = ![replaySettings?.matchInfo?.matchId, "local"].includes(previousSettings?.matchInfo?.matchId)
 		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
 		const isReplay = replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId;
@@ -413,7 +413,7 @@ export class StatsDisplay {
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 
-		const matchId = settings?.matchInfo?.matchId ?? '';
+		const matchId = settings?.matchInfo?.matchId ?? 'local';
 		const gameNumber = settings?.matchInfo?.gameNumber ?? 0;
 		const randomSeed = settings?.randomSeed;
 		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed);

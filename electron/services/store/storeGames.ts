@@ -44,7 +44,7 @@ export class ElectronGamesStore {
 
 	async setGameMatch(gameStats: GameStats | null) {
 		if (!gameStats) return;
-		await this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "");
+		await this.setRecentGameId(gameStats.settings?.matchInfo.matchId ?? "local");
 		await this.addMatchGame(gameStats);
 	}
 
@@ -69,7 +69,7 @@ export class ElectronGamesStore {
 
 	async addMatchGame(newGame: GameStats) {
 		if (hasGameBombRain(newGame)) return;
-		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "", newGame.settings?.matchInfo.mode ?? "local");
+		let games = await this.sqliteGame.getGamesById(newGame.settings?.matchInfo.matchId ?? "local", newGame.settings?.matchInfo.mode ?? "local");
 		if (!games) return;
 		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
 		this.applyGamesScore(games);
@@ -83,7 +83,7 @@ export class ElectronGamesStore {
 		newGame = { ...newGame, isMock: true, settings: { ...newGame.settings, matchInfo: { ...(recentGame?.settings?.matchInfo ?? { gameNumber: null, matchId: "", tiebreakerNumber: 0, mode: "local" }), ...{ gameNumber: null, bestOf: this.storeLiveStats.getBestOf(), id: undefined } } } as GameStartTypeExtended }
 		let games = [...recentGames.slice(0, index), newGame, ...recentGames.slice(index)];
 
-		await this.sqliteGame.deleteGameStatsByMatchId(recentGame?.settings?.matchInfo.matchId ?? "");
+		await this.sqliteGame.deleteGameStatsByMatchId(recentGame?.settings?.matchInfo.matchId ?? "local");
 
 		games = this.applyGamesScore(games);
 
