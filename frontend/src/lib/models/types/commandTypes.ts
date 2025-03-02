@@ -8,7 +8,7 @@ import { ControllerButtons } from "./controller"
 export enum CommandType {
     Obs = "Obs",
     ObsCustom = "ObsCustom",
-    // Overlay = "Overlay", // This is unnecessary, but keeping it as reference
+    Overlay = "Overlay",
 }
 
 export interface Command {

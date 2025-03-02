@@ -45,7 +45,7 @@ export class ObsWebSocket {
 
 	private updateInputs = async () => {
 		const inputList = await this.obs.call('GetInputList');
-		let inputs = inputList.inputs as unknown as ObsInputs[];
+		const inputs = inputList.inputs as unknown as ObsInputs[];
 		for (const [index, input] of inputs.entries()) {
 			try {
 				const volume = await this.obs.call('GetInputVolume', {

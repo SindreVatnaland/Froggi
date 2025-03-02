@@ -84,7 +84,7 @@ export class ElectronCurrentPlayerStore {
 		return;
 		// TODO: Move this to sqlite
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		let history = this.getPlayerRankHistory();
+		const history = this.getPlayerRankHistory();
 		if (isMatch(history.at(-1) ?? {}, rankStats)) return;
 		if (!rankStats || !connectCode || !history) return;
 		this.store.set(`player.${connectCode}.rank.history`, [...history, rankStats]);

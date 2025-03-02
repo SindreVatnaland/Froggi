@@ -1,12 +1,11 @@
 import { delay, inject, singleton } from "tsyringe";
 import { ElectronLog } from "electron-log";
 import { SqliteOrm } from "./initiSqlite";
-import { Repository } from "typeorm";
+import { FindOptionsWhere, Repository } from "typeorm";
 import { GameStartMode, GameStats } from "../../../frontend/src/lib/models/types/slippiData";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 import { ElectronGamesStore } from "../../services/store/storeGames";
 import { MessageHandler } from "../../services/messageHandler";
-import { isNil } from "lodash";
 
 @singleton()
 export class SqliteGame {
@@ -64,11 +63,7 @@ export class SqliteGame {
   async getGamesById(matchId: string, mode?: GameStartMode): Promise<GameStats[]> {
     await this.sqlite.initializing;
     try {
-      const query: any = { settings: { matchInfo: { matchId } } };
-
-      if (!isNil(mode)) {
-        query.settings.matchInfo.mode = mode;
-      }
+      const query = { settings: { matchInfo: { matchId, mode } } } as FindOptionsWhere<GameStatsEntity>;
 
       const games = await this.gameStatsRepo.find({ where: query });
       return games || [];

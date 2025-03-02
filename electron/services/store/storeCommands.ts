@@ -159,7 +159,7 @@ export class ElectronCommandStore {
 		);
 		const lowestActiveControllerIndex = Number(
 			Object.entries(playerControllerInputs)?.find(
-				([_, controller]) => controller.isConnected,
+				([, controller]) => controller.isConnected,
 			)?.[0],
 		);
 		const lowestIndex = isGameActive
@@ -205,7 +205,7 @@ export class ElectronCommandStore {
 	executeCommand = async <Type extends keyof PayloadType>(
 		type: CommandType,
 		requestType: RequestType,
-		payload: PayloadType[Type] | any,
+		payload: PayloadType[Type],
 	) => {
 		if (type === CommandType.Obs)
 			await this.executeObsCommand(requestType as keyof OBSRequestTypes, payload);

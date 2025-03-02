@@ -35,7 +35,7 @@ export class SqliteCurrentPlayer {
     this.log.info("Add or update current player:", player);
 
     try {
-      let currentPlayer = await this.currentPlayerRepo.findOne({
+      const currentPlayer = await this.currentPlayerRepo.findOne({
         where: { connectCode: player.connectCode },
         relations: ["rank"],
       });

@@ -37,14 +37,14 @@
 					},
 				} as Command;
 				break;
-			case CommandType.Overlay:
-				command = {
-					type: CommandType.Overlay,
-					requestType: 'ChangeScene',
-					payload: {
-						liveStatsScene: LiveStatsScene.WaitingForDolphin,
-					},
-				} as Command;
+				// case CommandType.Overlay:
+				// 	command = {
+				// 		type: CommandType.Overlay,
+				// 		requestType: 'ChangeScene',
+				// 		payload: {
+				// 			liveStatsScene: LiveStatsScene.WaitingForDolphin,
+				// 		},
+				// 	} as Command;
 				break;
 		}
 	};
