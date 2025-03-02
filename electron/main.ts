@@ -69,8 +69,8 @@ try {
 	const serveURL = serve({ directory: 'build' });
 	const port = dev ? `${VITE_PORT}` : `${BACKEND_PORT}`;
 
-	let mainWindow: BrowserWindow | any;
-	let hiddenWindow: BrowserWindow | any;
+	let mainWindow: BrowserWindow;
+	let hiddenWindow: BrowserWindow;
 	let tray: Tray;
 	let backgroundNotification: Notification;
 
@@ -81,7 +81,7 @@ try {
 
 	function createWindow(): BrowserWindow {
 		log.info('Creating window');
-		let windowState = windowStateManager({
+		const windowState = windowStateManager({
 			defaultWidth: 800,
 			defaultHeight: 600,
 		});
@@ -195,7 +195,7 @@ try {
 			{
 				label: 'Dev',
 				click: () => {
-					mainWindow.openDevTools();
+					mainWindow.webContents.openDevTools();
 					console.log(defaultActions, params, browserWindow);
 				},
 			},
@@ -204,7 +204,7 @@ try {
 
 	function loadVite(port: string) {
 		log.info('Loading Vite');
-		mainWindow.loadURL(`http://localhost:${port}`).catch((e: any) => {
+		mainWindow.loadURL(`http://localhost:${port}`).catch((e: Error) => {
 			mainLog.error('Error loading URL, retrying', e);
 			setTimeout(() => {
 				loadVite(port);
@@ -255,7 +255,9 @@ try {
 			container.resolve(PacketCapture);
 		});
 
-		mainWindow.on('close', (event: Event) => {
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-expect-error
+		mainWindow.on("close", (event: Event) => {
 			event.preventDefault();
 			if (isWindows) mainWindow.minimize();
 			else app.hide();

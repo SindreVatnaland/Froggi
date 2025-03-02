@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import { ElectronGamesStore } from '../../electron/services/store/storeGames';
 import { StatsDisplay } from '../../electron/services/statsDisplay';
-import { GameStartType, SlippiGame } from '@slippi/slippi-js';
+import { GameStartType, SlippiGame, SlpParser, SlpStream } from '@slippi/slippi-js';
 import Store from "electron-store";
 import { Api } from "../../electron/services/api";
 import { ElectronSessionStore } from "../../electron/services/store/storeSession";
 import { ElectronPlayersStore } from "../../electron/services/store/storePlayers";
 import { ElectronCurrentPlayerStore } from "../../electron/services/store/storeCurrentPlayer";
-import { GameStartMode, Player, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayer, GameStartMode, Player, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
 import { ElectronLiveStatsStore } from "../../electron/services/store/storeLiveStats";
 import { ElectronSettingsStore } from "../../electron/services/store/storeSettings";
 import log from 'electron-log';
@@ -17,6 +17,8 @@ import { SqliteOrm } from "../../electron/services/sqlite/initiSqlite";
 import { SqliteCurrentPlayer } from "../../electron/services/sqlite/sqliteCurrentPlayer";
 import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
+import { MessageHandler } from "services/messageHandler";
+import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
@@ -83,21 +85,21 @@ describe('ElectronGamesStore', () => {
         store.delete("stats")
 
         const api: Api = new Api(log)
-        const messageHandler: any = {
+        const messageHandler = {
             sendMessage: () => { }
-        };
+        } as unknown as MessageHandler;
 
-        const eventEmitter: any = {
+        const eventEmitter = {
             on: () => { },
             emit: () => { }
-        };
+        } as unknown as TypedEmitter;
 
-        const slpParser: any = {
+        const slpParser = {
             on: () => { }
-        }
-        const slpStream: any = {
+        } as unknown as SlpParser;
+        const slpStream = {
             on: () => { }
-        }
+        } as unknown as SlpStream;
 
         storeSession = new ElectronSessionStore(log, store, messageHandler, storeCurrentPlayer, storeSettings)
 
@@ -105,7 +107,7 @@ describe('ElectronGamesStore', () => {
 
         const sqliteCurrentPlayer = new SqliteCurrentPlayer(log, sqlite)
 
-        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter);
+        storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter as TypedEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
         storeSettings.getSlippiLauncherSettings = (): SlippiLauncherSettings => {
             return {
@@ -122,18 +124,16 @@ describe('ElectronGamesStore', () => {
         storeLiveStats.setStatsSceneTimeout = (liveStatsScene) => { storeLiveStats.setStatsScene(liveStatsScene) }
 
         storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer)
-        storeCurrentPlayer.getCurrentPlayer = (): any => {
+        storeCurrentPlayer.getCurrentPlayer = async (): Promise<CurrentPlayer | undefined> => {
             return {
                 connectCode: connectCode,
-                rank: {
-
-                }
-            }
+                rank: {}
+            } as CurrentPlayer;
         };
 
         storePlayers = new ElectronPlayersStore(log, eventEmitter, messageHandler)
 
-        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as any, store);
+        electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as SqliteGame, store);
 
         sqliteGame = new SqliteGame(log, electronGamesStore, messageHandler, sqlite)
 

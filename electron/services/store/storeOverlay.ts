@@ -12,7 +12,6 @@ import { LiveStatsScene } from '../../../frontend/src/lib/models/enum';
 import { camelCase, cloneDeep, isNil, kebabCase, startCase } from 'lodash';
 import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
 import { COL } from '../../../frontend/src/lib/models/const';
-//@ts-ignore
 import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
@@ -83,17 +82,17 @@ export class ElectronOverlayStore {
 	}
 
 	async createOverlay(aspectRatio: AspectRatio): Promise<void> {
-		let overlay = getNewOverlay(aspectRatio);
+		const overlay = getNewOverlay(aspectRatio);
 		this.setOverlay(overlay)
 	}
 
 	removeDuplicateItems(): void {
-		let overlays = Object.values(this.getOverlays())
+		const overlays = Object.values(this.getOverlays())
 		overlays.forEach(this.removeDuplicateOverlayItems.bind(this))
 	}
 
 	async removeDuplicateItemsByOverlayId(overlayId: string): Promise<void> {
-		let overlay = await this.getOverlayById(overlayId)
+		const overlay = await this.getOverlayById(overlayId)
 		if (isNil(overlay)) return;
 		this.removeDuplicateOverlayItems(overlay)
 	}
@@ -120,7 +119,7 @@ export class ElectronOverlayStore {
 	}
 
 	cleanupCustomResources() {
-		let overlays = Object.values(this.getOverlays())
+		const overlays = Object.values(this.getOverlays())
 		overlays.forEach((overlay) => this.cleanupCustomResourceByOverlayId(overlay.id))
 	}
 
@@ -321,7 +320,7 @@ export class ElectronOverlayStore {
 		relativeSwap: number
 	) {
 		this.log.debug("Moving layer", overlayId, statsScene, sceneId, layerIndex, relativeSwap);
-		let scene = await this.sqliteOverlay.getScene(sceneId);
+		const scene = await this.sqliteOverlay.getScene(sceneId);
 		if (!scene) return;
 
 		const newIndex = layerIndex + relativeSwap;
