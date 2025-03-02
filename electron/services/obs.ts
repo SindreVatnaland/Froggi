@@ -9,6 +9,7 @@ import { MessageHandler } from './messageHandler';
 import { NotificationType, ConnectionState } from '../../frontend/src/lib/models/enum';
 import { getObsWebsocketConfig, isObsRunning } from '../utils/obsProcess';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 
 @singleton()
 export class ObsWebSocket {
@@ -79,11 +80,14 @@ export class ObsWebSocket {
 		}
 	};
 
-	private addBrowserSource = async (url: string, inputName: string) => {
+	private addBrowserSource = async (url: string, inputName: string, aspectRatio: AspectRatio) => {
 		this.log.info(`Adding Browser Source: ${inputName}`);
 		try {
 			const programScene = await this.obs.call('GetCurrentProgramScene');
 			const videoInfo = await this.obs.call("GetVideoSettings");
+
+			const width = videoInfo.baseHeight * aspectRatio.width / aspectRatio.height;
+			const height = videoInfo.baseHeight;
 
 			const params = {
 				sceneName: programScene.currentProgramSceneName,
@@ -91,19 +95,22 @@ export class ObsWebSocket {
 				inputKind: 'browser_source',
 				inputSettings: {
 					url: url,
-					width: videoInfo.baseWidth,
-					height: videoInfo.baseHeight,
+					width: width,
+					height: height,
 				},
 				sceneItemEnabled: true
 			};
 
-			// Call the CreateSource request.
 			const response = await this.obs.call("CreateInput", params);
-			console.log(response);
+			this.log.info(`Browser Source Added: ${response}`);
+
+			await this.reloadBrowserSources();
+
+			this.messageHandler.sendMessage("Notification", "Browser Source Added", NotificationType.Success, 2000);
 		} catch (err) {
 			this.log.error(`Could not add browser source`, err);
+			this.messageHandler.sendMessage("Notification", "Browser Source Could Not Be Added", NotificationType.Success, 2000);
 		}
-
 	};
 
 	private reloadBrowserSources = async () => {
@@ -298,8 +305,8 @@ export class ObsWebSocket {
 		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {
 			this.connectToObs(auth.ipAddress, auth.port, auth.password);
 		})
-		this.clientEmitter.on("ObsCreateBrowserSource", (url: string, inputName: string) => {
-			this.addBrowserSource(url, inputName);
+		this.clientEmitter.on("ObsCreateBrowserSource", (url: string, inputName: string, aspectRatio: AspectRatio) => {
+			this.addBrowserSource(url, inputName, aspectRatio);
 		})
 	}
 }

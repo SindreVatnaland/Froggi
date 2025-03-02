@@ -2,15 +2,26 @@
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { urls } from '$lib/utils/store.svelte';
+	import { electronEmitter, obsConnection, urls } from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import Clipboard from 'svelte-clipboard';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
+	import { getOverlayById } from './OverlayHandler.svelte';
+	import { tooltip } from 'svooltip';
+	import { ConnectionState } from '$lib/models/enum';
 
 	export let overlayId: string = $page.params.overlay;
 	$: localUrl = `${$urls?.local}/obs/overlay/${overlayId}`;
 	$: externalUrl = `${$urls?.external}/obs/overlay/${overlayId}`;
+
+	$: isObsConnected = $obsConnection?.state === ConnectionState.Connected;
+
+	const addToObs = async () => {
+		const overlay = await getOverlayById(overlayId);
+		if (!overlay) return;
+		$electronEmitter.emit('ObsCreateBrowserSource', localUrl, overlayId, overlay.aspectRatio);
+	};
 
 	export let open: boolean;
 </script>
@@ -63,7 +74,11 @@
 						}}
 					>
 						<button on:click={copy} class="w-5 h-5 invert transition">
-							<img src="/image/button-icons/copy.png" alt="copy" />
+							<img
+								src="/image/button-icons/copy.png"
+								class="invert dark:invert-0"
+								alt="copy"
+							/>
 						</button>
 					</Clipboard>
 				</div>
@@ -81,6 +96,21 @@
 						Copy local URL
 					</button>
 				</Clipboard>
+				<button
+					on:click={addToObs}
+					use:tooltip={isObsConnected
+						? {}
+						: {
+								content: `<p>OBS Websockets needs to be connected</p>`,
+								html: true,
+								placement: 'top',
+								delay: [250, 0],
+								offset: 25,
+						  }}
+					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary disabled:opacity-50"
+				>
+					Add to OBS
+				</button>
 			</div>
 			<h1 class="color-secondary text-md font-medium w-full">
 				This URL can only be used on the current local device.
@@ -117,7 +147,11 @@
 					}}
 				>
 					<button on:click={copy} class="w-5 h-5 invert transition">
-						<img src="/image/button-icons/copy.png" alt="copy" />
+						<img
+							src="/image/button-icons/copy.png"
+							class="invert dark:invert-0"
+							alt="copy"
+						/>
 					</button>
 				</Clipboard>
 			</div>
