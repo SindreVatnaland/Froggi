@@ -72,7 +72,7 @@
 		"lodash": "^4.17.21",
 		"node-fetch": "^3.3.2",
 		"nodemon": "^2.0.22",
-		"obs-websocket-js": "^5.0.4",
+		"obs-websocket-js": "^5.0.6",
 		"openurl": "^1.1.1",
 		"reflect-metadata": "^0.1.14",
 		"run-script-os": "^1.1.6",

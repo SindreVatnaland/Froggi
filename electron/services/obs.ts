@@ -79,6 +79,33 @@ export class ObsWebSocket {
 		}
 	};
 
+	private addBrowserSource = async (url: string, inputName: string) => {
+		this.log.info(`Adding Browser Source: ${inputName}`);
+		try {
+			const programScene = await this.obs.call('GetCurrentProgramScene');
+			const videoInfo = await this.obs.call("GetVideoSettings");
+
+			const params = {
+				sceneName: programScene.currentProgramSceneName,
+				inputName: inputName,
+				inputKind: 'browser_source',
+				inputSettings: {
+					url: url,
+					width: videoInfo.baseWidth,
+					height: videoInfo.baseHeight,
+				},
+				sceneItemEnabled: true
+			};
+
+			// Call the CreateSource request.
+			const response = await this.obs.call("CreateInput", params);
+			console.log(response);
+		} catch (err) {
+			this.log.error(`Could not add browser source`, err);
+		}
+
+	};
+
 	private reloadBrowserSources = async () => {
 		this.log.info('Refreshing Browser Sources');
 		const scenes = await this.obs.call('GetSceneList');
@@ -162,13 +189,14 @@ export class ObsWebSocket {
 			this.startProcessSearchInterval();
 			this.log.error('OBS Connection Error');
 		});
-		this.obs.on('ConnectionOpened', () => {
+		this.obs.on('ConnectionOpened', async () => {
 			clearInterval(this.obsConnectionInterval);
 			clearInterval(this.obsProcessInterval);
 			this.storeObs.setConnectionState(ConnectionState.Connected);
 			this.messageHandler.sendMessage("Notification", "OBS Connected", NotificationType.Success, 2000);
 			setTimeout(this.initConnection.bind(this), 1000);
 			this.log.info('OBS Connection Opened');
+
 		});
 
 		this.obs.on('CurrentProgramSceneChanged', () => {
@@ -269,6 +297,9 @@ export class ObsWebSocket {
 	initEventListeners() {
 		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {
 			this.connectToObs(auth.ipAddress, auth.port, auth.password);
+		})
+		this.clientEmitter.on("ObsCreateBrowserSource", (url: string, inputName: string) => {
+			this.addBrowserSource(url, inputName);
 		})
 	}
 }
