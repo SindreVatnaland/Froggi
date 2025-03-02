@@ -244,9 +244,10 @@ export class ElectronCommandStore {
 		command: T,
 		payload: OverlayPayload<T>,
 	) => {
+		this.log.info('Executing Overlay Command', command, payload);
 		switch (command) {
-			case 'ChangeScene':
-				this.storeLiveStats.setStatsScene(payload.liveStatsScene);
+			// case 'ChangeScene':
+			// 	this.storeLiveStats.setStatsScene(payload.liveStatsScene);
 		}
 	};
 

@@ -8,7 +8,7 @@ import { ControllerButtons } from "./controller"
 export enum CommandType {
     Obs = "Obs",
     ObsCustom = "ObsCustom",
-    Overlay = "Overlay",
+    // Overlay = "Overlay", // This is unnecessary, but keeping it as reference
 }
 
 export interface Command {
@@ -64,9 +64,9 @@ export type ObsCustomPayload<T extends ObsCustomRequest> = typeof ObsCustomReque
 
 
 export const OverlayRequestOptions = {
-    ChangeScene: {
-        liveStatsScene: LiveStatsScene.WaitingForDolphin
-    },
+    // ChangeScene: {
+    //     liveStatsScene: LiveStatsScene.WaitingForDolphin
+    // }, // This is unnecessary, but keeping it as reference
 }
 export type OverlayRequest = keyof typeof OverlayRequestOptions
 export type OverlayPayload<T extends OverlayRequest> = typeof OverlayRequestOptions[T]
