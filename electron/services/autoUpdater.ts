@@ -21,16 +21,18 @@ export class AutoUpdater {
 	) {
 		this.log.info('Initializing Auto Updater');
 		this.initListeners();
-		this.checkBetaOptIn();
-		autoUpdater.checkForUpdates();
-		autoUpdater.autoInstallOnAppQuit = true;
-		autoUpdater.autoDownload = false;
-		autoUpdater.autoDownload = false;
-		autoUpdater.disableDifferentialDownload = true;
+
 	}
 
 	private async initListeners() {
 		if (this.dev) return;
+		this.checkBetaOptIn();
+		autoUpdater.checkForUpdates();
+		autoUpdater.autoInstallOnAppQuit = true;
+		autoUpdater.autoRunAppAfterInstall = true;
+		autoUpdater.autoDownload = false;
+		autoUpdater.autoDownload = false;
+		autoUpdater.disableDifferentialDownload = true;
 		this.log.verbose('Current Version:', autoUpdater.currentVersion);
 		this.messageHandler.sendMessage('AutoUpdaterVersion', autoUpdater.currentVersion.version);
 
@@ -101,8 +103,9 @@ export class AutoUpdater {
 		this.clientEmitter.on('AutoUpdaterInstall', async () => {
 			if (this.status !== AutoUpdaterStatus.DownloadComplete) return;
 			this.log.warn('Quit and install');
+			this.messageHandler.sendMessage("Notification", "Installing Update", NotificationType.Success);
 			autoUpdater.quitAndInstall();
-			setTimeout(this.app.exit.bind(this), 1000)
+			setTimeout(this.app.exit.bind(this), 5000)
 		});
 
 		this.clientEmitter.on('AutoUpdaterCheckForUpdate', async () => {
