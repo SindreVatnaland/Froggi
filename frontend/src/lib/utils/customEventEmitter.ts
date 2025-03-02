@@ -49,6 +49,7 @@ export interface MessageEvents {
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;
+	CurrentOverlayEditor: (overlay: OverlayEditor) => void;
 	DolphinConnectionState: (state: ConnectionState | undefined) => void;
 	FroggiSettings: (settings: Froggi) => void;
 	GameFrame: (frame: FrameEntryType | undefined | null) => void;
@@ -80,7 +81,8 @@ export interface MessageEvents {
 	LayerNew: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number) => void;
 	LayerMove: (overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerIndex: number, relativeSwap: number) => void;
 	Url: (url: Url) => void;
-	CurrentOverlayEditor: (overlay: OverlayEditor) => void;
+	LogsSave: () => void;
+	LogsCopy: () => void;
 	Obs: (obs: Obs | undefined) => void;
 	ObsConnection: (connection: ObsConnection) => void;
 	ObsManualConnect: (auth: ObsAuth) => void;
@@ -92,7 +94,6 @@ export interface MessageEvents {
 	OverlayDuplicate: (overlayId: string) => void;
 	OverlayUpdate: (overlay: Overlay) => void;
 	OverlayUpload: () => void;
-	SaveLogs: () => void;
 	SceneItemDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number, prevItemId: string) => void;
 	SceneUpdate: (overlayId: string, liveStatsScene: LiveStatsScene, scene: Scene) => void;
 	SelectedItemChange: (itemId: string) => void;

@@ -2,9 +2,10 @@ import { delay, inject, singleton } from "tsyringe";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
 import { MessageHandler } from "./messageHandler";
 import { ElectronLog } from "electron-log";
-import { BrowserWindow, dialog } from "electron";
+import { BrowserWindow, clipboard, dialog } from "electron";
 import fs from "fs";
 import path from "path";
+import { NotificationType } from "../../frontend/src/lib/models/enum";
 
 @singleton()
 export class FileHandler {
@@ -51,11 +52,26 @@ export class FileHandler {
 
 		fs.copyFileSync(logPath, filePath)
 	}
-	
+
+	async copyLogs() {
+		const logPath = path.join(this.appDir, "main.log");
+
+		fs.readFile(logPath, 'utf8', (err, data) => {
+			if (err) {
+				console.error("Error reading the log file:", err);
+				return;
+			}
+			clipboard.writeText(data);
+		});
+
+		this.messageHandler.sendMessage("Notification", "Logs copied to clipboard", NotificationType.Success)
+	}
+
 	private initEventListeners() {
 		this.clientEmitter.on("ImportCustomFile", (overlayId: string, directory: string, fileName: string, acceptedExtensions: string[]) => {
 			this.uploadFile(overlayId, directory, fileName, acceptedExtensions)
 		});
-		this.clientEmitter.on("SaveLogs", this.saveLogs.bind(this));
+		this.clientEmitter.on("LogsCopy", this.copyLogs.bind(this));
+		this.clientEmitter.on("LogsSave", this.saveLogs.bind(this));
 	}
 }
