@@ -6,6 +6,7 @@ import { CurrentPlayerEntity } from "./entities/currentPlayer/currentPlayerEntit
 import { CurrentPlayer, Player, RankedNetplayProfile } from "../../../frontend/src/lib/models/types/slippiData";
 import { CurrentPlayerRankEntity } from "./entities/currentPlayer/currentPlayerRankEntity";
 import { fixCurrentPlayer } from "../../utils/playerHelp";
+import { mergeWith } from "lodash";
 
 @singleton()
 export class SqliteCurrentPlayer {
@@ -39,7 +40,9 @@ export class SqliteCurrentPlayer {
         relations: ["rank"],
       });
 
-      const updatedPlayer = { ...player, ...currentPlayer } as CurrentPlayerEntity;
+      const updatedPlayer = mergeWith({}, player, currentPlayer, (objValue, srcValue) => {
+        return srcValue === null ? objValue : undefined;
+      }) as CurrentPlayerEntity;
 
       await this.currentPlayerRepo.save(updatedPlayer);
       return updatedPlayer;
