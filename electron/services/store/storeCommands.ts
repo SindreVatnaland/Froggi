@@ -11,8 +11,6 @@ import {
 	RequestType,
 	ObsCustomRequest,
 	PayloadType,
-	OverlayRequest,
-	OverlayPayload,
 	ObsCustomPayload,
 } from '../../../frontend/src/lib/models/types/commandTypes';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
@@ -216,11 +214,11 @@ export class ElectronCommandStore {
 				requestType as ObsCustomRequest,
 				payload as ObsCustomPayload<ObsCustomRequest>,
 			);
-		if (type === CommandType.Overlay)
-			await this.executeOverlayCommand(
-				requestType as OverlayRequest,
-				payload as OverlayPayload<OverlayRequest>,
-			);
+		// if (type === CommandType.Overlay)
+		// 	await this.executeOverlayCommand(
+		// 		requestType as OverlayRequest,
+		// 		payload as OverlayPayload<OverlayRequest>,
+		// 	);
 	};
 
 	private executeObsCommand = async <T extends keyof OBSRequestTypes>(
@@ -240,16 +238,16 @@ export class ElectronCommandStore {
 		}
 	};
 
-	private executeOverlayCommand = async <T extends OverlayRequest>(
-		command: T,
-		payload: OverlayPayload<T>,
-	) => {
-		this.log.info('Executing Overlay Command', command, payload);
-		switch (command) {
-			// case 'ChangeScene':
-			// 	this.storeLiveStats.setStatsScene(payload.liveStatsScene);
-		}
-	};
+	// private executeOverlayCommand = async <T extends OverlayRequest>(
+	// 	command: T,
+	// 	payload: OverlayPayload<T>,
+	// ) => {
+	// 	this.log.info('Executing Overlay Command', command, payload);
+	// 	switch (command) {
+	// 		// case 'ChangeScene':
+	// 		// 	this.storeLiveStats.setStatsScene(payload.liveStatsScene);
+	// 	}
+	// };
 
 	private toggleSceneItem = async (itemName: string) => {
 		try {
