@@ -180,16 +180,60 @@
 	{#if !isNil(selectedItem)}
 		<div class="w-full flex gap-2">
 			<div transition:fly={{ duration: 250, y: 30 }}>
-				<NumberInput bind:value={selectedItem[COL].x} max={COL} label={`X - ${COL}`} />
+				<NumberInput
+					bind:value={selectedItem[COL].x}
+					max={COL}
+					label={`X - ${COL}`}
+					on:change={() =>
+						updateSelectItem(
+							curOverlay,
+							$statsScene,
+							overlayEditor?.layerIndex,
+							selectedItem,
+						)}
+				/>
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 30 }}>
-				<NumberInput bind:value={selectedItem[COL].y} max={ROW} label={`Y - ${ROW}`} />
+				<NumberInput
+					bind:value={selectedItem[COL].y}
+					max={ROW}
+					label={`Y - ${ROW}`}
+					on:change={() =>
+						updateSelectItem(
+							curOverlay,
+							$statsScene,
+							overlayEditor?.layerIndex,
+							selectedItem,
+						)}
+				/>
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 100 }}>
-				<NumberInput bind:value={selectedItem[COL].h} max={ROW} label={`H`} />
+				<NumberInput
+					bind:value={selectedItem[COL].h}
+					max={ROW}
+					label={`H`}
+					on:change={() =>
+						updateSelectItem(
+							curOverlay,
+							$statsScene,
+							overlayEditor?.layerIndex,
+							selectedItem,
+						)}
+				/>
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 150 }}>
-				<NumberInput bind:value={selectedItem[COL].w} max={COL} label={`W`} />
+				<NumberInput
+					bind:value={selectedItem[COL].w}
+					max={COL}
+					label={`W`}
+					on:change={() =>
+						updateSelectItem(
+							curOverlay,
+							$statsScene,
+							overlayEditor?.layerIndex,
+							selectedItem,
+						)}
+				/>
 			</div>
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 200 }}>
 				<button
