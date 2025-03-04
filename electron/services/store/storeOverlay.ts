@@ -9,7 +9,7 @@ import { BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { LiveStatsScene } from '../../../frontend/src/lib/models/enum';
-import { camelCase, cloneDeep, isNil, kebabCase, startCase } from 'lodash';
+import { cloneDeep, isNil, kebabCase } from 'lodash';
 import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
 import { COL } from '../../../frontend/src/lib/models/const';
 import gridHelp from "../../utils/gridHelp.js"
@@ -440,41 +440,33 @@ export class ElectronOverlayStore {
 	}
 
 	private async migrateOverlays(): Promise<void> {
-		const jsonOverlays = (this.store.get(`obs.layout.overlays`) ?? {}) as Record<string, Overlay>;
-
-		for (const overlay of Object.values(jsonOverlays)) {
-			if (overlay.isDemo) continue;
-			this.convertAndClearOverlay(overlay);
-			await this.setOverlay(overlay);
-		}
-
 		this.store.delete(`obs.layout.overlays`);
 
 		const overlays = this.getOverlays();
 		Object.values(overlays).forEach(overlay => {
+			const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
 			if (!overlay.froggiVersion) {
-				overlay.froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
+				overlay.froggiVersion = froggiVersion;
 			}
-			// Migrate overlay
-			// Compare version and migrate
-		})
+			if (semver.satisfies("0.9.20", `>${overlay.froggiVersion}`)) {
+				this.reverseLayers(overlay);
+			}
 
+			overlay.froggiVersion = froggiVersion;
+			this.setOverlay(overlay);
+		})
 	}
 
-	private convertAndClearOverlay(overlay: Overlay) {
+
+
+	private reverseLayers(overlay: Overlay) {
+		this.log.info("Reversing layers for overlay", overlay.id);
 		for (const key of Object.keys(LiveStatsScene)) {
 			if (!isNaN(Number(key))) continue;
-
-			const oldConventionScene = startCase(camelCase(LiveStatsScene[key as keyof typeof LiveStatsScene])) as LiveStatsScene;
-			const newConventionScene = camelCase(oldConventionScene) as LiveStatsScene;
-
-			if (overlay[oldConventionScene] && overlay[oldConventionScene].layers) {
-				overlay[newConventionScene] = overlay[oldConventionScene];
-				delete overlay[oldConventionScene];
-			}
-
+			const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+			const scene = overlay[statsScene];
+			scene.layers.reverse();
 		}
-		this.clearOverlay(overlay);
 	}
 
 	private clearOverlay(overlay: Overlay) {

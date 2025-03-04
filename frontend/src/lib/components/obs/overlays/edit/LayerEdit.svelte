@@ -34,9 +34,6 @@
 				{#each scene?.layers as layer, i}
 					<option selected={i === 0} value={layer}>Layer {i + 1}</option>
 				{/each}
-				{#each scene?.layers as layer, i}
-					<option selected={i === 0} value={layer}>Layer {i + 1}</option>
-				{/each}
 			</Select>
 		</div>
 		<div>

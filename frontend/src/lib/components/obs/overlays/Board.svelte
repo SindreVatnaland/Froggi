@@ -7,7 +7,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import BoardContainer from '$lib/components/obs/overlays/BoardContainer.svelte';
 	import { updateFont } from './CustomFontHandler.svelte';
-	import { debounce, isNil } from 'lodash';
+	import { debounce, isNil, reverse, slice } from 'lodash';
 	import { onMount } from 'svelte';
 
 	export let curOverlay: Overlay;
@@ -104,7 +104,7 @@
 				bind:boardHeight={innerHeight}
 				bind:boardWidth={innerWidth}
 			/>
-			{#each fixedLayers as layer, i}
+			{#each fixedLayers.slice().reverse() as layer, i}
 				<div class="w-full h-full z-2 absolute">
 					<Grid
 						items={layer.items}
