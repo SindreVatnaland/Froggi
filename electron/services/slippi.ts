@@ -67,9 +67,11 @@ export class SlippiJs {
 					this.log.info('Connected: ' + message);
 					break;
 				case DolphinMessageType.GAME_EVENT:
-					var decoded = Buffer.from(message.payload, 'base64');
-					this.slpStream.write(decoded);
-					break;
+					{
+						const decoded = Buffer.from(message.payload, 'base64');
+						this.slpStream.write(decoded);
+						break;
+					}
 			}
 		});
 

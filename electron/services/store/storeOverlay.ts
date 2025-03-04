@@ -55,7 +55,7 @@ export class ElectronOverlayStore {
 		const froggiVersion = this.isDev ? "0.0.0" : froggiConfig.version
 		const overlay = { ...value, froggiVersion: froggiVersion } as Overlay
 		await this.sqliteOverlay.addOrUpdateOverlay(overlay)
-		this.emitOverlayUpdate()
+		await this.emitOverlayUpdate()
 	}
 
 	getScene(overlayId: string, statsScene: string): Scene {
@@ -440,21 +440,24 @@ export class ElectronOverlayStore {
 	}
 
 	private async migrateOverlays(): Promise<void> {
-		this.store.delete(`obs.layout.overlays`);
+		if (this.isDev) return;
+		this.log.info("Migrating overlays");
+		const overlays = await this.getOverlays();
 
-		const overlays = this.getOverlays();
-		Object.values(overlays).forEach(overlay => {
+		for (const overlay of Object.values(overlays)) {
+			this.log.info("Migrating overlay", overlay.id, overlay.froggiVersion);
 			const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
 			if (!overlay.froggiVersion) {
 				overlay.froggiVersion = froggiVersion;
 			}
-			if (semver.satisfies("0.9.20", `>${overlay.froggiVersion}`)) {
+			overlay.froggiVersion = "0.0.0";
+			if (semver.gt("0.9.20-beta.1", overlay.froggiVersion)) {
 				this.reverseLayers(overlay);
 			}
 
 			overlay.froggiVersion = froggiVersion;
-			this.setOverlay(overlay);
-		})
+			await this.setOverlay(overlay);
+		}
 	}
 
 
@@ -465,7 +468,11 @@ export class ElectronOverlayStore {
 			if (!isNaN(Number(key))) continue;
 			const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
 			const scene = overlay[statsScene];
+			scene.layers.sort((a, b) => a.index - b.index);
 			scene.layers.reverse();
+			for (const [index, layer] of scene.layers.entries()) {
+				layer.index = index;
+			}
 		}
 	}
 
