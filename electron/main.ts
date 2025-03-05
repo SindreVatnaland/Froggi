@@ -30,6 +30,7 @@ import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
 
 let mainLog: ElectronLog = log
+let isQuitting = false;
 
 function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
 	try {
@@ -176,7 +177,8 @@ try {
 			{
 				label: 'Quit',
 				click: () => {
-					app.exit();
+					isQuitting = true;
+					app.quit();
 				},
 			},
 		]);
@@ -255,12 +257,12 @@ try {
 			container.resolve(PacketCapture);
 		});
 
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-expect-error
-		mainWindow.on("close", (event: Event) => {
-			event.preventDefault();
-			if (isWindows) mainWindow.minimize();
-			else app.hide();
+		mainWindow.on('close', (event) => {
+			if (!isQuitting) {
+				event.preventDefault();
+				mainWindow.hide();
+				backgroundNotification.show();
+			}
 		});
 	}
 
@@ -284,11 +286,16 @@ try {
 		}
 	}
 
-	app.on('second-instance', () => {
-		if (!mainWindow) return;
-		if (mainWindow.isMinimized()) mainWindow.restore();
-		mainWindow.focus();
-	});
+	const gotTheLock = app.requestSingleInstanceLock();
+	if (!gotTheLock) {
+		app.quit();
+	} else {
+		app.on('second-instance', () => {
+			if (!mainWindow) return;
+			if (mainWindow.isMinimized()) mainWindow.restore();
+			mainWindow.focus();
+		});
+	}
 
 	app.on('ready', async () => {
 		if (!dev) await performUpdate(app, mainLog);
@@ -303,7 +310,7 @@ try {
 
 	app.on('before-quit', () => {
 		mainLog.info('Quitting app');
-		setTimeout(app.exit, 1000)
+		isQuitting = true;
 	});
 
 	process.on('uncaughtException', (error) => {
