@@ -71,7 +71,6 @@ try {
 	const port = dev ? `${VITE_PORT}` : `${BACKEND_PORT}`;
 
 	let mainWindow: BrowserWindow;
-	let hiddenWindow: BrowserWindow;
 	let tray: Tray;
 	let backgroundNotification: Notification;
 
@@ -260,21 +259,11 @@ try {
 		mainWindow.on('close', (event) => {
 			if (!isQuitting) {
 				event.preventDefault();
-				mainWindow.hide();
+				mainWindow.minimize();
 				backgroundNotification.show();
 			}
 		});
 	}
-
-	function createHiddenWindow() {
-		hiddenWindow = new BrowserWindow({
-			show: false,
-			webPreferences: {
-				backgroundThrottling: false
-			}
-		});
-		hiddenWindow.loadURL('about:blank');
-	};
 
 	function setPriority() {
 		if (dev) return;
@@ -301,7 +290,6 @@ try {
 		if (!dev) await performUpdate(app, mainLog);
 		setPriority();
 		createMainWindow();
-		createHiddenWindow();
 	});
 
 	app.on('activate', () => {

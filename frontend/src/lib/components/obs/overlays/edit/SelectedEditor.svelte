@@ -181,7 +181,7 @@
 		<div class="w-full flex gap-2">
 			<div transition:fly={{ duration: 250, y: 30 }}>
 				<NumberInput
-					bind:value={selectedItem[COL].x}
+					value={selectedItem[COL].x}
 					max={COL}
 					label={`X - ${COL}`}
 					on:change={() =>
@@ -195,7 +195,7 @@
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 30 }}>
 				<NumberInput
-					bind:value={selectedItem[COL].y}
+					value={selectedItem[COL].y}
 					max={ROW}
 					label={`Y - ${ROW}`}
 					on:change={() =>
@@ -209,7 +209,7 @@
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 100 }}>
 				<NumberInput
-					bind:value={selectedItem[COL].h}
+					value={selectedItem[COL].h}
 					max={ROW}
 					label={`H`}
 					on:change={() =>
@@ -223,7 +223,7 @@
 			</div>
 			<div transition:fly={{ duration: 250, y: 30, delay: 150 }}>
 				<NumberInput
-					bind:value={selectedItem[COL].w}
+					value={selectedItem[COL].w}
 					max={COL}
 					label={`W`}
 					on:change={() =>
