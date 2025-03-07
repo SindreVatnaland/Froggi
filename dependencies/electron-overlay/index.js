@@ -1,8 +1,15 @@
 const os = require('os');
 
-let Overlay = {};
+let Overlay = null;
+
 if (os.platform() === 'win32') {
-	Overlay = require('./electron-overlay.node');
+	try {
+		Overlay = require('./electron-overlay.node');
+	} catch (error) {
+		console.error('Failed to load electron-overlay on Windows:', error);
+	}
+} else {
+	console.warn('electron-overlay is only supported on Windows. Skipping module load.');
 }
 
 module.exports = Overlay;

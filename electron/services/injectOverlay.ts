@@ -1,5 +1,5 @@
 import type { ElectronLog } from 'electron-log';
-import { inject, singleton } from 'tsyringe';
+import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { BrowserWindow } from 'electron';
 import IOverlay from 'electron-overlay';
@@ -9,12 +9,13 @@ import { MessageHandler } from './messageHandler';
 
 @singleton()
 export class InjectOverlay {
+	private windows: Map<string, BrowserWindow> = new Map();
+
 	constructor(
-		private windows = new Map<string, BrowserWindow>(),
 		@inject('Dev') private isDev: boolean,
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject("ClientEmitter") private clientEmitter: TypedEmitter,
-		@inject("MessageHandler") private messageHandler: MessageHandler,
+		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler
 	) {
 		this.log.info('Initializing Overlay Injection Service');
 		if (os.platform() !== 'win32') return;
