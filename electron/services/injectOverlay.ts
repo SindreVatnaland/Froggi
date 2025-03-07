@@ -4,6 +4,8 @@ import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { BrowserWindow } from 'electron';
 import IOverlay from 'electron-overlay';
 import os from 'os';
+import { NotificationType } from '../../frontend/src/lib/models/enum';
+import { MessageHandler } from './messageHandler';
 
 @singleton()
 export class InjectOverlay {
@@ -12,9 +14,9 @@ export class InjectOverlay {
 		@inject('Dev') private isDev: boolean,
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject("ClientEmitter") private clientEmitter: TypedEmitter,
+		@inject("MessageHandler") private messageHandler: MessageHandler,
 	) {
 		this.log.info('Initializing Overlay Injection Service');
-		return;
 		if (os.platform() !== 'win32') return;
 		this.initializeInjection();
 		this.initEventListeners();
@@ -39,6 +41,7 @@ export class InjectOverlay {
 	}
 
 	private injectOverlay = async (overlayId: string) => {
+		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '3200' : '5173';
 		const window = this.createWindow(`http://localhost:${port}/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
@@ -69,6 +72,7 @@ export class InjectOverlay {
 		});
 
 		this.log.info(`Overlay injected: ${overlayId}`);
+		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
 
 	private closeOverlay = (overlayId: string) => {

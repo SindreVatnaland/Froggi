@@ -7,6 +7,7 @@
 		statsScene,
 		isMobile,
 		electronEmitter,
+		dolphinState,
 	} from '$lib/utils/store.svelte';
 	import SceneSelect from './selector/SceneSelect.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -19,6 +20,7 @@
 	import type { Overlay } from '$lib/models/types/overlay';
 	import EmbedModal from './edit/EmbedModal.svelte';
 	import { tooltip } from 'svooltip';
+	import { ConnectionState } from '$lib/models/enum';
 
 	export let open = false;
 	export let overlay: Overlay | undefined;
@@ -39,6 +41,10 @@
 		duplicateOverlay(overlay);
 		console.log('Duplicate');
 		open = false;
+	};
+
+	const injectOverlay = (overlayId: string) => {
+		$electronEmitter.emit('InjectOverlay', overlayId);
 	};
 
 	const handleDelete = () => {
@@ -143,6 +149,29 @@
 			{#if $isElectron}
 				<button class={availableClass} on:click={() => (isEmbedModalOpen = true)}>
 					Embed
+				</button>
+			{/if}
+			{#if $isElectron}
+				<button
+					class={availableClass}
+					on:click={() => injectOverlay(overlay?.id)}
+					use:tooltip={$dolphinState === ConnectionState.Connected
+						? {
+								content: `<p>Inject overlay to dolphin</p>`,
+								html: true,
+								placement: 'top',
+								delay: [250, 0],
+								offset: 25,
+						  }
+						: {
+								content: `<p>Dolphin needs to be running</p>`,
+								html: true,
+								placement: 'top',
+								delay: [250, 0],
+								offset: 25,
+						  }}
+				>
+					Inject
 				</button>
 			{/if}
 			{#if $isElectron}
