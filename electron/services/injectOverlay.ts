@@ -43,7 +43,7 @@ export class InjectOverlay {
 	private injectOverlay = async (overlayId: string) => {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/overlay/${overlayId}`);
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
 		IOverlay.addWindow(window.id, {
 			name: overlayId,
