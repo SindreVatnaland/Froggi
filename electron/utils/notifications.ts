@@ -1,7 +1,7 @@
 import { Notification, BrowserWindow } from 'electron';
 import { BACKEND_PORT, WEBSOCKET_PORT } from '../../frontend/src/lib/models/const';
 
-export function createBackgroundNotification(app: Electron.App, mainWindow: BrowserWindow): Notification {
+export function createBackgroundNotification(_: Electron.App, mainWindow: BrowserWindow): Notification {
   const notification = new Notification({
     title: "App running",
     body: 'The window has been closed, but the app is still running in the background.',
@@ -23,11 +23,11 @@ export function createBackgroundNotification(app: Electron.App, mainWindow: Brow
     mainWindow.hide();
   })
 
-  notification.addListener("action", (_, index) => {
-    if (index === 0) {
-      app.exit();
-    }
-  });
+  // notification.addListener("action", (_, index) => {
+  //   if (index === 0) {
+  //     app.exit();
+  //   }
+  // });
 
   return notification
 }
