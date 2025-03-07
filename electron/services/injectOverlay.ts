@@ -27,24 +27,30 @@ export class InjectOverlay {
 		IOverlay.start();
 	}
 
-	private createWindow(url: string) {
+	private createWindow() {
 		const window = new BrowserWindow({
 			width: 1920,
 			height: 1080,
+			frame: false,
 			show: false,
+			transparent: true,
+			resizable: false,
+			x: 0,
+			y: 0,
 			webPreferences: {
-				nodeIntegration: true,
 				offscreen: true,
+				nodeIntegration: true,
 			},
 		});
-		window.loadURL(url);
+
 		return window;
 	}
 
 	private injectOverlay = async (overlayId: string) => {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
+		const url = `http://localhost:${port}/obs/overlay/${overlayId}`;
+		const window = this.createWindow();
 		this.windows.set(overlayId, window);
 		IOverlay.addWindow(window.id, {
 			name: overlayId,
@@ -62,6 +68,8 @@ export class InjectOverlay {
 			},
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
+
+		window.loadURL(url);
 
 		window.webContents.on("paint", (_, __, image) => {
 			IOverlay.sendFrameBuffer(
