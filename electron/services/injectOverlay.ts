@@ -17,9 +17,9 @@ export class InjectOverlay {
 		@inject("MessageHandler") private messageHandler: MessageHandler,
 	) {
 		this.log.info('Initializing Overlay Injection Service');
+		if (os.platform() !== 'win32') return;
 		this.initializeInjection();
 		this.initEventListeners();
-
 	}
 
 	private initializeInjection = async () => {

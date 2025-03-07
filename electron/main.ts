@@ -255,7 +255,6 @@ try {
 			container.resolve(FileHandler);
 			container.resolve(FrontendLogger);
 			container.resolve(PacketCapture);
-			if (os.platform() !== 'win32') return;
 			container.resolve(InjectOverlay);
 		});
 
