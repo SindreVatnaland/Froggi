@@ -23,7 +23,7 @@
 		"dev": "cross-env NODE_ENV=dev && nodemon",
 		"dev:all": "concurrently -n=svelte,electron -c='#ff3e00',blue \"npm run dev:svelte\" \"npm run dev:electron\"",
 		"dev:svelte": "cd frontend && npm run dev",
-		"dev:electron": "npm run dependencies:copy && npm run compile:electron && electron --inspect=9229 --remote-debugging-port=9222 build_electron/electron/main.js",
+		"dev:electron": "npm run compile:electron && electron --inspect=9229 --remote-debugging-port=9222 build_electron/electron/main.js",
 		"build:svelte": "cd frontend && npm run build",
 		"build": "run-script-os",
 		"build:linux": "npm run compile && electron-builder -l --config build.config.json",
@@ -36,8 +36,7 @@
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
 		"copy": "npm run overlay:copy && npm run update:copy",
 		"overlay:copy": "shx mkdir -p ./build_electron/electron/demo-overlays && shx cp -r ./demo-overlays/* ./build_electron/electron/demo-overlays",
-		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update",
-		"dependencies:copy": "shx cp -r ./dependencies/* ./node_modules"
+		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update"
 	},
 	"engines": {
 		"npm": ">=7",
@@ -82,7 +81,8 @@
 		"tsyringe": "^4.8.0",
 		"typed-emitter": "^2.1.0",
 		"typeorm": "^0.3.20",
-		"ws": "^8.16.0"
+		"ws": "^8.16.0",
+		"electron-overlay": "./dependencies/electron-overlay"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.21.0",

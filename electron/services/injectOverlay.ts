@@ -71,6 +71,7 @@ export class InjectOverlay {
 			);
 		});
 
+		this.injectIntoGame("Dolphin");
 		this.log.info(`Overlay injected: ${overlayId}`);
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
