@@ -31,9 +31,10 @@ export class InjectOverlay {
 		const window = new BrowserWindow({
 			width: 1920,
 			height: 1080,
+			show: false,
 			webPreferences: {
 				nodeIntegration: true,
-				offscreen: false,
+				offscreen: true,
 			},
 		});
 		window.loadURL(url);
@@ -71,7 +72,6 @@ export class InjectOverlay {
 			);
 		});
 
-		this.injectIntoGame("Dolphin");
 		this.log.info(`Overlay injected: ${overlayId}`);
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
