@@ -33,7 +33,7 @@ export class InjectOverlay {
 			height: 1080,
 			webPreferences: {
 				nodeIntegration: true,
-				offscreen: true,
+				offscreen: false,
 			},
 		});
 		window.loadURL(url);
@@ -42,7 +42,7 @@ export class InjectOverlay {
 
 	private injectOverlay = async (overlayId: string) => {
 		this.log.info(`Injecting overlay: ${overlayId}`);
-		const port = this.isDev ? '3200' : '5173';
+		const port = this.isDev ? '5173' : '3200';
 		const window = this.createWindow(`http://localhost:${port}/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
 		IOverlay.addWindow(window.id, {
