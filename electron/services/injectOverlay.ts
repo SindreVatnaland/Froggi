@@ -97,32 +97,23 @@ export class OverlayInjection {
 			name: overlayId,
 			resizable: false,
 			transparent: true,
-			maxWidth: window.isResizable()
-				? display.bounds.width
-				: window.getBounds().width,
-			maxHeight: window.isResizable()
-				? display.bounds.height
-				: window.getBounds().height,
-			minWidth: window.isResizable() ? 100 : window.getBounds().width,
-			minHeight: window.isResizable() ? 100 : window.getBounds().height,
+			maxWidth: 1920,
+			maxHeight: 1080,
+			minWidth: 1920,
+			minHeight: 1080,
 			rect: {
 				x: 0,
 				y: 0,
 				width: 1920,
 				height: 1080,
 			},
-			caption: {
-				left: Math.floor(0),
-				right: Math.floor(0),
-				top: Math.floor(0),
-				height: Math.floor(0),
-			},
-
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
 		const processPaintEvent = throttle((image: Electron.NativeImage) => {
-			console.log("paint", image.getSize());
+			console.log("paint to window", window.id);
+			console.log("windows", this.windows);
+
 			this.overlayInjector.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
@@ -133,6 +124,10 @@ export class OverlayInjection {
 
 		window.webContents.on("paint", (_, __, image) => {
 			processPaintEvent(image);
+		});
+
+		window.on("ready-to-show", () => {
+			window.focusOnWebView();
 		});
 
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
