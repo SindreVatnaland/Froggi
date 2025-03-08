@@ -1,7 +1,7 @@
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow } from 'electron';
 import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
@@ -83,10 +83,6 @@ export class OverlayInjection {
 			this.log.warn('No game window found');
 			return;
 		}
-
-		const display = screen.getDisplayNearestPoint(
-			screen.getCursorScreenPoint()
-		);
 
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
