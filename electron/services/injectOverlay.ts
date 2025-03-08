@@ -52,6 +52,10 @@ export class OverlayInjection {
 			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
 			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
 		}, 16)
+		this.overlayInjector.sendCommand({
+			command: "input.intercept",
+			intercept: true,
+		});
 	}
 
 	private createWindow(url: string) {
