@@ -107,7 +107,7 @@ export class SlippiJs {
 		this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
 		this.stopProcessSearchInterval();
-		this.overlayInjection.injectIntoGame('Dolphin');
+		await this.overlayInjection.injectIntoGame('Dolphin');
 	}
 
 	private async handleUserSlippiData() {

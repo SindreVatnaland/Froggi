@@ -126,6 +126,8 @@ export class OverlayInjection {
 			window.focusOnWebView();
 		});
 
+		await this.injectIntoGame("Dolphin");
+
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
 
