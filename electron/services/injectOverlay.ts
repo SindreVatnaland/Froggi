@@ -1,7 +1,7 @@
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
@@ -70,6 +70,10 @@ export class OverlayInjection {
 			return;
 		}
 
+		const display = screen.getDisplayNearestPoint(
+			screen.getCursorScreenPoint()
+		);
+
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
 		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
@@ -79,10 +83,14 @@ export class OverlayInjection {
 			name: overlayId,
 			resizable: false,
 			transparent: true,
-			maxWidth: 1920,
-			maxHeight: 1080,
-			minWidth: 0,
-			minHeight: 0,
+			maxWidth: window.isResizable()
+				? display.bounds.width
+				: window.getBounds().width,
+			maxHeight: window.isResizable()
+				? display.bounds.height
+				: window.getBounds().height,
+			minWidth: window.isResizable() ? 100 : window.getBounds().width,
+			minHeight: window.isResizable() ? 100 : window.getBounds().height,
 			rect: {
 				x: 0,
 				y: 0,
