@@ -27,9 +27,22 @@ export class OverlayInjection {
 	}
 
 	private initializeInjection = async () => {
+		this.log.info('Initializing overlay injection');
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback((event: string, payload: any) => {
 			this.log.info(`Overlay event: ${event}`, payload);
+			if (event === "game.window.focused") {
+				console.log("focusWindowId", payload.focusWindowId);
+
+				BrowserWindow.getAllWindows().forEach((window) => {
+					window.blurWebView();
+				});
+
+				const focusWin = BrowserWindow.fromId(payload.focusWindowId);
+				if (focusWin) {
+					focusWin.focusOnWebView();
+				}
+			}
 			if (event === "game.window.focused") {
 				console.log("focusWindowId", payload.focusWindowId);
 
@@ -115,15 +128,6 @@ export class OverlayInjection {
 			processPaintEvent(image);
 		});
 
-		this.log.info(`Overlay injected: ${overlayId}`);
-		const topWindows = this.overlayInjector.getTopWindows();
-		this.gameWindow = topWindows.find(win => win.title?.includes("Dolphin"));
-		if (!this.gameWindow) {
-			this.log.warn(`No matching game window found for: Dolphin`);
-			return;
-		}
-		this.log.info(`Injecting overlay into game: ${JSON.stringify(this.gameWindow)}`);
-		this.overlayInjector.injectProcess(this.gameWindow);
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
 
@@ -146,14 +150,14 @@ export class OverlayInjection {
 
 	injectIntoGame = async (windowTitle: string) => {
 		this.log.info(`Searching for game window: ${windowTitle}`);
-		// const topWindows = this.overlayInjector.getTopWindows();
-		// this.gameWindow = topWindows.find(win => win.title?.includes(windowTitle));
-		// if (!this.gameWindow) {
-		// 	this.log.warn(`No matching game window found for: ${windowTitle}`);
-		// 	return;
-		// }
-		// this.log.info(`Injecting overlay into game: ${JSON.stringify(this.gameWindow)}`);
-		// this.overlayInjector.injectProcess(this.gameWindow);
+		const topWindows = this.overlayInjector.getTopWindows();
+		this.gameWindow = topWindows.find(win => win.title?.includes(windowTitle));
+		if (!this.gameWindow) {
+			this.log.warn(`No matching game window found for: ${windowTitle}`);
+			return;
+		}
+		this.log.info(`Injecting overlay into game: ${JSON.stringify(this.gameWindow)}`);
+		this.overlayInjector.injectProcess(this.gameWindow);
 	};
 
 	initEventListeners() {
