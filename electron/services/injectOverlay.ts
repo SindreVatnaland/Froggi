@@ -6,7 +6,7 @@ import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
-import { throttle } from 'lodash';
+// import { throttle } from 'lodash';
 
 @singleton()
 export class OverlayInjection {
