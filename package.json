@@ -1,6 +1,6 @@
 {
-	"name": "gelectron",
-	"version": "1.0.1",
+	"name": "froggi",
+	"version": "0.9.20-beta.7",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -120,5 +120,9 @@
 		"tslib": "^2.6.2",
 		"typescript": "^5.6.3",
 		"typescript-eslint": "^8.25.0"
+	},
+	"cmake-js": {
+		"runtime": "electron",
+		"runtimeVersion": "32.2.0"
 	}
 }
