@@ -111,10 +111,10 @@ export class OverlayInjection {
 			console.log("injector", this.overlayInjector);
 
 			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
-			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
+			this.overlayInjector.sendFrameBuffer(window.id, testBuffer, 800, 600);
 
 			this.overlayInjector.sendFrameBuffer(
-				1,
+				window.id,
 				image.getBitmap(),
 				image.getSize().width,
 				image.getSize().height
