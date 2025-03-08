@@ -58,6 +58,7 @@ export interface MessageEvents {
 	GameState: (state: InGameState | undefined) => void;
 	InjectOverlay: (overlayId: string) => void;
 	CloseInjectedOverlay: (overlayId: string) => void;
+	CloseAllInjectedOverlays: (overlayId: string) => void;
 	InitElectron: () => void;
 	InitData: (socketId: string, authorizeKey: string | undefined) => void;
 	ImportCustomFile: (overlayId: string, directory: string, fileName: string, acceptedExtensions: string[]) => void;

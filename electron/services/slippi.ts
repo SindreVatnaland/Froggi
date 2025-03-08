@@ -21,7 +21,7 @@ import { MessageHandler } from './messageHandler';
 import { SqliteCurrentPlayer } from './sqlite/sqliteCurrentPlayer';
 import { dateTimeNow } from './../utils/functions';
 import { ElectronSessionStore } from './store/storeSession';
-import { InjectOverlay } from './injectOverlay';
+import { OverlayInjection } from './injectOverlay';
 
 @singleton()
 export class SlippiJs {
@@ -39,7 +39,7 @@ export class SlippiJs {
 		@inject(ElectronSettingsStore) private storeSettings: ElectronSettingsStore,
 		@inject(MessageHandler) private messageHandler: MessageHandler,
 		@inject(MemoryRead) private memoryRead: MemoryRead,
-		@inject(InjectOverlay) private injectOverlay: InjectOverlay
+		@inject(OverlayInjection) private overlayInjection: OverlayInjection
 	) {
 		this.initSlippiJs();
 	}
@@ -90,6 +90,7 @@ export class SlippiJs {
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Disconnected);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.WaitingForDolphin);
 		this.memoryRead.stopMemoryRead();
+		this.overlayInjection.closeAllOverlays();
 		setTimeout(() => {
 			this.startProcessSearchInterval();
 		}, 1000);
@@ -106,7 +107,7 @@ export class SlippiJs {
 		this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
 		this.stopProcessSearchInterval();
-		this.injectOverlay.injectIntoGame('Dolphin');
+		this.overlayInjection.injectIntoGame('Dolphin');
 	}
 
 	private async handleUserSlippiData() {
