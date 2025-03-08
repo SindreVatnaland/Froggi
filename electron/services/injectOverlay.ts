@@ -135,7 +135,7 @@ export class OverlayInjection {
 			this.log.warn(`No matching game window found for: ${windowTitle}`);
 			return;
 		}
-		this.log.info(`Injecting overlay into game: ${JSON.stringify(window)}`);
+		this.log.info(`Injecting overlay into game: ${JSON.stringify(this.gameWindow)}`);
 		this.overlayInjector.injectProcess(this.gameWindow);
 	};
 
