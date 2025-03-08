@@ -6,7 +6,7 @@ import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
-// import { throttle } from 'lodash';
+import { throttle } from 'lodash';
 
 @singleton()
 export class OverlayInjection {
@@ -87,7 +87,7 @@ export class OverlayInjection {
 		this.overlayInjector.addWindow(window.id, {
 			name: overlayId,
 			resizable: false,
-			transparent: true,
+			transparent: false,
 			maxWidth: 1920,
 			maxHeight: 1080,
 			minWidth: 0,
@@ -101,19 +101,19 @@ export class OverlayInjection {
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
-		// const processPaintEvent = throttle((image: Electron.NativeImage) => {
-		// 	console.log("paint", image.getSize());
-		// 	this.overlayInjector.sendFrameBuffer(
-		// 		window.id,
-		// 		image.getBitmap(),
-		// 		image.getSize().width,
-		// 		image.getSize().height
-		// 	);
-		// }, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
+		const processPaintEvent = throttle((image: Electron.NativeImage) => {
+			console.log("paint", image.getSize());
+			this.overlayInjector.sendFrameBuffer(
+				window.id,
+				image.getBitmap(),
+				image.getSize().width,
+				image.getSize().height
+			);
+		}, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
 
-		// window.webContents.on("paint", (_, __, image) => {
-		// 	processPaintEvent(image);
-		// });
+		window.webContents.on("paint", (_, __, image) => {
+			processPaintEvent(image);
+		});
 
 		this.log.info(`Overlay injected: ${overlayId}`);
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
