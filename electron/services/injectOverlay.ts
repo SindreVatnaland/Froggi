@@ -111,6 +111,13 @@ export class OverlayInjection {
 				width: 1920,
 				height: 1080,
 			},
+			caption: {
+				left: Math.floor(0),
+				right: Math.floor(0),
+				top: Math.floor(0),
+				height: Math.floor(0),
+			},
+
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
