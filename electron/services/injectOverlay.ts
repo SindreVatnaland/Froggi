@@ -107,8 +107,11 @@ export class OverlayInjection {
 		});
 
 		const processPaintEvent = throttle((image: Electron.NativeImage) => {
-			console.log("paint to window", window.id);
-			console.log("windows", this.windows);
+			console.log("paint from window", window.id);
+			console.log("injector", this.overlayInjector);
+
+			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
+			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
 
 			this.overlayInjector.sendFrameBuffer(
 				window.id,
@@ -121,12 +124,6 @@ export class OverlayInjection {
 		window.webContents.on("paint", (_, __, image) => {
 			processPaintEvent(image);
 		});
-
-		window.on("ready-to-show", () => {
-			window.focusOnWebView();
-		});
-
-		await this.injectIntoGame("Dolphin");
 
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
