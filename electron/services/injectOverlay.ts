@@ -2,7 +2,7 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { BrowserWindow } from 'electron';
-import IOverlay from 'electron-overlay';
+import GOverlay from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
@@ -12,6 +12,7 @@ import { throttle } from 'lodash';
 @singleton()
 export class InjectOverlay {
 	private windows: Map<string, BrowserWindow> = new Map();
+	private overlayInjector = GOverlay;
 
 	constructor(
 		@inject('Dev') private isDev: boolean,
@@ -26,10 +27,10 @@ export class InjectOverlay {
 	}
 
 	private initializeInjection = async () => {
-		IOverlay.start();
+		this.overlayInjector.start();
 	}
 
-	private createWindow() {
+	private createWindow(url: string) {
 		const window = new BrowserWindow({
 			width: 1920,
 			height: 1080,
@@ -44,17 +45,16 @@ export class InjectOverlay {
 				nodeIntegration: true,
 			},
 		});
-
+		window.loadURL(url);
 		return window;
 	}
 
 	private injectOverlay = async (overlayId: string) => {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
-		const url = `http://localhost:${port}/obs/overlay/${overlayId}`;
-		const window = this.createWindow();
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
-		IOverlay.addWindow(window.id, {
+		this.overlayInjector.addWindow(window.id, {
 			name: overlayId,
 			resizable: false,
 			transparent: true,
@@ -71,13 +71,10 @@ export class InjectOverlay {
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
-		window.loadURL(url);
-
 		const processPaintEvent = throttle((image) => {
 			console.log("paint", image);
-			fs.writeFileSync("screenshot.png", image.toPNG());
-
-			IOverlay.sendFrameBuffer(
+			fs.writeFileSync("screenshot.png", image.getSize());
+			this.overlayInjector.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
 				image.getSize().width,
@@ -99,21 +96,21 @@ export class InjectOverlay {
 			window.removeAllListeners();
 			window.close();
 			this.windows.delete(overlayId);
-			// IOverlay.closeWindow(window.id);
+			this.overlayInjector.closeWindow(window.id);
 			this.log.info(`Overlay closed: ${overlayId}`);
 		}
 	};
 
 	injectIntoGame = async (windowTitle: string) => {
 		this.log.info(`Searching for game window: ${windowTitle}`);
-		const topWindows = IOverlay.getTopWindows();
+		const topWindows = this.overlayInjector.getTopWindows();
 		const gameWindow = topWindows.find(win => win.title?.includes(windowTitle));
 		if (!gameWindow) {
 			this.log.warn(`No matching game window found for: ${windowTitle}`);
 			return;
 		}
 		this.log.info(`Injecting overlay into game: ${gameWindow.title}`);
-		IOverlay.injectProcess(gameWindow);
+		this.overlayInjector.injectProcess(gameWindow);
 	};
 
 	initEventListeners() {
