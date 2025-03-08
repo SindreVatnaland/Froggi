@@ -82,7 +82,7 @@
 		"typed-emitter": "^2.1.0",
 		"typeorm": "^0.3.20",
 		"ws": "^8.16.0",
-		"electron-overlay": "./dependencies/electron-overlay"
+		"electron-overlay": "./electron-overlay"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.21.0",
