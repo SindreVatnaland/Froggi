@@ -29,43 +29,8 @@ export class OverlayInjection {
 	private initializeInjection = async () => {
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback((event: string, payload: any) => {
-			if (event === "game.input") {
-				const window = BrowserWindow.fromId(payload.windowId);
-				if (window) {
-					const inputEvent = this.overlayInjector.translateInputEvent(payload);
-
-					if (inputEvent) {
-						if ("x" in inputEvent)
-							inputEvent["x"] = Math.round(inputEvent["x"]);
-						if ("y" in inputEvent)
-							inputEvent["y"] = Math.round(inputEvent["y"]);
-						window.webContents.sendInputEvent(inputEvent);
-					}
-				}
-			}
 			this.log.info(`Overlay event: ${event}`, payload);
-		})
-		const mockWindow = this.createWindow('http://localhost:3200/obs/overlay/mock');
-		this.overlayInjector.addWindow(1, {
-			name: 'Test',
-			resizable: false,
-			transparent: false,
-			maxWidth: 1920,
-			maxHeight: 1080,
-			minWidth: 0,
-			minHeight: 0,
-			rect: {
-				x: 0,
-				y: 0,
-				width: 1920,
-				height: 1080,
-			},
-			nativeHandle: mockWindow.getNativeWindowHandle().readUInt32LE(0),
 		});
-		setInterval(() => {
-			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
-			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
-		}, 16)
 	}
 
 	private createWindow(url: string) {
@@ -101,7 +66,7 @@ export class OverlayInjection {
 		this.overlayInjector.addWindow(window.id, {
 			name: overlayId,
 			resizable: false,
-			transparent: false,
+			transparent: true,
 			maxWidth: 1920,
 			maxHeight: 1080,
 			minWidth: 0,
