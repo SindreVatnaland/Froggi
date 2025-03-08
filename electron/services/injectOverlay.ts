@@ -30,6 +30,18 @@ export class OverlayInjection {
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback((event: string, payload: any) => {
 			this.log.info(`Overlay event: ${event}`, payload);
+			if (event === "game.window.focused") {
+				console.log("focusWindowId", payload.focusWindowId);
+
+				BrowserWindow.getAllWindows().forEach((window) => {
+					window.blurWebView();
+				});
+
+				const focusWin = BrowserWindow.fromId(payload.focusWindowId);
+				if (focusWin) {
+					focusWin.focusOnWebView();
+				}
+			}
 		});
 	}
 
@@ -123,7 +135,7 @@ export class OverlayInjection {
 			this.log.warn(`No matching game window found for: ${windowTitle}`);
 			return;
 		}
-		this.log.info(`Injecting overlay into game: ${this.gameWindow.title}`);
+		this.log.info(`Injecting overlay into game: ${JSON.stringify(window)}`);
 		this.overlayInjector.injectProcess(this.gameWindow);
 	};
 
