@@ -28,7 +28,21 @@ export class OverlayInjection {
 
 	private initializeInjection = async () => {
 		this.overlayInjector.start();
-		this.overlayInjector.setEventCallback((event: string, payload: unknown) => {
+		this.overlayInjector.setEventCallback((event: string, payload: any) => {
+			if (event === "game.input") {
+				const window = BrowserWindow.fromId(payload.windowId);
+				if (window) {
+					const inputEvent = this.overlayInjector.translateInputEvent(payload);
+
+					if (inputEvent) {
+						if ("x" in inputEvent)
+							inputEvent["x"] = Math.round(inputEvent["x"]);
+						if ("y" in inputEvent)
+							inputEvent["y"] = Math.round(inputEvent["y"]);
+						window.webContents.sendInputEvent(inputEvent);
+					}
+				}
+			}
 			this.log.info(`Overlay event: ${event}`, payload);
 		})
 		const mockWindow = this.createWindow('http://localhost:3200/obs/overlay/mock');
@@ -52,10 +66,6 @@ export class OverlayInjection {
 			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
 			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
 		}, 16)
-		this.overlayInjector.sendCommand({
-			command: "input.intercept",
-			intercept: true,
-		});
 	}
 
 	private createWindow(url: string) {
