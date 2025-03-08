@@ -31,6 +31,23 @@ export class OverlayInjection {
 		this.overlayInjector.setEventCallback((event: string, payload: unknown) => {
 			this.log.info(`Overlay event: ${event}`, payload);
 		})
+		const mockWindow = this.createWindow('http://localhost:3200/obs/overlay/mock');
+		this.overlayInjector.addWindow(1, {
+			name: 'Test',
+			resizable: false,
+			transparent: true,
+			maxWidth: 1920,
+			maxHeight: 1080,
+			minWidth: 0,
+			minHeight: 0,
+			rect: {
+				x: 0,
+				y: 0,
+				width: 1920,
+				height: 1080,
+			},
+			nativeHandle: mockWindow.getNativeWindowHandle().readUInt32LE(0),
+		});
 		setInterval(() => {
 			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
 			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
