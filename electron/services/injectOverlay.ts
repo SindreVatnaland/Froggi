@@ -31,6 +31,10 @@ export class OverlayInjection {
 		this.overlayInjector.setEventCallback((event: string, payload: unknown) => {
 			this.log.info(`Overlay event: ${event}`, payload);
 		})
+		setInterval(() => {
+			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
+			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
+		}, 16)
 	}
 
 	private createWindow(url: string) {
@@ -80,19 +84,19 @@ export class OverlayInjection {
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
-		const processPaintEvent = throttle((image: Electron.NativeImage) => {
-			console.log("paint", image.getSize());
-			this.overlayInjector.sendFrameBuffer(
-				window.id,
-				image.getBitmap(),
-				image.getSize().width,
-				image.getSize().height
-			);
-		}, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
+		// const processPaintEvent = throttle((image: Electron.NativeImage) => {
+		// 	console.log("paint", image.getSize());
+		// 	this.overlayInjector.sendFrameBuffer(
+		// 		window.id,
+		// 		image.getBitmap(),
+		// 		image.getSize().width,
+		// 		image.getSize().height
+		// 	);
+		// }, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
 
-		window.webContents.on("paint", (_, __, image) => {
-			processPaintEvent(image);
-		});
+		// window.webContents.on("paint", (_, __, image) => {
+		// 	processPaintEvent(image);
+		// });
 
 		this.log.info(`Overlay injected: ${overlayId}`);
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
