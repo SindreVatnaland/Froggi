@@ -35,7 +35,7 @@ export class OverlayInjection {
 		this.overlayInjector.addWindow(1, {
 			name: 'Test',
 			resizable: false,
-			transparent: true,
+			transparent: false,
 			maxWidth: 1920,
 			maxHeight: 1080,
 			minWidth: 0,
