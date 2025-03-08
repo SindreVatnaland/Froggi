@@ -89,7 +89,7 @@ export class OverlayInjection {
 		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
 
-		this.overlayInjector.addWindow(window.id, {
+		this.overlayInjector.addWindow(1, {
 			name: overlayId,
 			resizable: false,
 			transparent: true,
@@ -114,7 +114,7 @@ export class OverlayInjection {
 			this.overlayInjector.sendFrameBuffer(1, testBuffer, 800, 600);
 
 			this.overlayInjector.sendFrameBuffer(
-				window.id,
+				1,
 				image.getBitmap(),
 				image.getSize().width,
 				image.getSize().height
