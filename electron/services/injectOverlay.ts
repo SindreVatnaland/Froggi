@@ -6,6 +6,8 @@ import IOverlay from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
+import fs from 'fs';
+import { throttle } from 'lodash';
 
 @singleton()
 export class InjectOverlay {
@@ -71,13 +73,20 @@ export class InjectOverlay {
 
 		window.loadURL(url);
 
-		window.webContents.on("paint", (_, __, image) => {
+		const processPaintEvent = throttle((image) => {
+			console.log("paint", image);
+			fs.writeFileSync("screenshot.png", image.toPNG());
+
 			IOverlay.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
 				image.getSize().width,
 				image.getSize().height
 			);
+		}, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
+
+		window.webContents.on("paint", (_, __, image) => {
+			processPaintEvent(image);
 		});
 
 		this.log.info(`Overlay injected: ${overlayId}`);
@@ -90,13 +99,12 @@ export class InjectOverlay {
 			window.removeAllListeners();
 			window.close();
 			this.windows.delete(overlayId);
-			IOverlay.closeWindow(window.id);
+			// IOverlay.closeWindow(window.id);
 			this.log.info(`Overlay closed: ${overlayId}`);
 		}
 	};
 
 	injectIntoGame = async (windowTitle: string) => {
-		if (os.platform() !== 'win32') return;
 		this.log.info(`Searching for game window: ${windowTitle}`);
 		const topWindows = IOverlay.getTopWindows();
 		const gameWindow = topWindows.find(win => win.title?.includes(windowTitle));
