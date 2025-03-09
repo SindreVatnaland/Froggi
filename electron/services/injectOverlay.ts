@@ -7,6 +7,7 @@ import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { throttle } from 'lodash';
+import { GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
 
 @singleton()
 export class OverlayInjection {
@@ -29,15 +30,48 @@ export class OverlayInjection {
 	private initializeInjection = async () => {
 		this.log.info('Initializing overlay injection');
 		this.overlayInjector.start();
-		this.overlayInjector.setEventCallback((event: string, payload: any) => {
-			console.log(`event: ${event}, payload: ${JSON.stringify(payload)}`);
-		});
+		this.overlayInjector.setEventCallback(
+			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
+				switch(event) {
+					case "graphics.window.event.resize":
+						console.log("Resize", payload);
+						this.handleWindowResize(payload);
+						break;
+					default:
+						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						break
+				}
+			}) as (event: string, ...args: any[]) => void
+		  );
 	}
+
+	private handleWindowResize = (resizeEvent: GraphicWindowEventResize) => { 
+		for (const window of this.windows.values()) {
+			let newWidth = resizeEvent.width;
+			let newHeight = Math.round((newWidth / 16) * 9);
+	
+			// If the new height exceeds the given height, adjust based on height
+			if (newHeight > resizeEvent.height) {
+				newHeight = resizeEvent.height;
+				newWidth = Math.round((newHeight / 9) * 16);
+			}
+	
+			// Center the window horizontally
+			const x = Math.round((resizeEvent.width - newWidth) / 2);
+			const y = 0; // Keep at top
+	
+			window.setBounds({ x, y, width: newWidth, height: newHeight });
+			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
+	
+			// Manually emit the resize event
+			window.emit("resize");
+		}
+	};
 
 	private createWindow(url: string) {
 		const window = new BrowserWindow({
-			width: 1280,
-			height: 720,
+			width: 1920,
+			height: 1080,
 			frame: false,
 			show: false,
 			transparent: true,
@@ -64,33 +98,28 @@ export class OverlayInjection {
 		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
 
-		const width = window.getSize()[0];
-		const height = window.getSize()[1];
-		const x = window.getBounds().x;
-		const y = window.getBounds().y;
-
 		this.overlayInjector.addWindow(window.id, {
 			name: "StatusBar",
 			resizable: false,
 			transparent: true,
-			maxWidth: width,
-			maxHeight: height,
-			minWidth: width,
-			minHeight: height,
-			rect: {
-				x: x,
-				y: y,
-				width: Math.floor(width),
-				height: Math.floor(height),
-			},
+			maxWidth: 1920,
+			maxHeight: 1080,
+			minWidth: 0,
+			minHeight: 0,
+			rect: window.getBounds(),
 			caption: {
-				left: Math.floor(0),
-				right: Math.floor(0),
-				top: Math.floor(0),
-				height: Math.floor(0),
+				left: 0,
+				right: 0,
+				top: 0,
+				height: 0,
 			  },
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
+
+		window.on("resize", () => {
+			console.log("Resize event", window.getBounds());
+			this.overlayInjector.sendWindowBounds(window.id, {rect: window.getBounds()});
+		})
 
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
 			console.log("paint to window", window.id);
