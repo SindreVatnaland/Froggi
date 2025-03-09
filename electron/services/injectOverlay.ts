@@ -157,7 +157,7 @@ export class OverlayInjection {
 		this.log.info(`Searching for game window: ${windowTitle}`);
 		const topWindows = this.overlayInjector.getTopWindows();
 
-		const possibleTitles = windowTitle.split(/[ .]+/);
+		const possibleTitles = [...windowTitle.split(".")[0].split(" "), "Dolphin", "Faster Melee", "Mainline"];
 		this.gameWindow = topWindows.find(win => possibleTitles.some(title => win.title?.includes(title)));
 		if (!this.gameWindow) {
 			this.log.warn(`No matching game window found for: ${windowTitle}`);
