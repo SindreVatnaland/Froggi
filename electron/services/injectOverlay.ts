@@ -1,12 +1,12 @@
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
-import { throttle } from 'lodash';
+import { debounce, throttle } from 'lodash';
 import { GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
 
 @singleton()
@@ -37,40 +37,36 @@ export class OverlayInjection {
 						this.handleWindowResize(payload);
 						break;
 					default:
-						// this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void
 		);
 	}
 
-	private handleWindowResize = (resizeEvent: GraphicWindowEventResize) => {
+	private handleWindowResize = debounce((resizeEvent: GraphicWindowEventResize) => {
 		for (const window of this.windows.values()) {
-			let newWidth = resizeEvent.width;
-			let newHeight = Math.round((newWidth / 16) * 9);
-
-			// If the new height exceeds the given height, adjust based on height
-			if (newHeight > resizeEvent.height) {
-				newHeight = resizeEvent.height;
-				newWidth = Math.round((newHeight / 9) * 16);
-			}
-
+			// Always use full height
+			const newHeight = resizeEvent.height;
+			const newWidth = Math.round((newHeight / 9) * 16);
+	
 			// Center the window horizontally
 			const x = Math.round((resizeEvent.width - newWidth) / 2);
 			const y = 0; // Keep at top
-
+	
 			window.setBounds({ x, y, width: newWidth, height: newHeight });
 			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
-
+	
 			// Manually emit the resize event
 			window.emit("resize");
 		}
-	};
+	});
+	
 
-	private createWindow(url: string) {
+	private createWindow(url: string, width = 1920, height = 1080) {
 		const window = new BrowserWindow({
-			width: 1920,
-			height: 1080,
+			width,
+			height,
 			frame: false,
 			show: false,
 			transparent: true,
@@ -92,18 +88,26 @@ export class OverlayInjection {
 			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
 			return;
 		}
-
 		this.log.info(`Injecting overlay: ${overlayId}`);
+
+		const display = screen.getDisplayNearestPoint(
+			screen.getCursorScreenPoint()
+		  );
+
+		const displayHeight = display.size.height;
+		const displayWidth = Math.round((displayHeight / 9) * 16);
+		  
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, displayWidth, displayHeight);
 		this.windows.set(overlayId, window);
+
 
 		this.overlayInjector.addWindow(window.id, {
 			name: "StatusBar",
 			resizable: false,
 			transparent: true,
-			maxWidth: 1920,
-			maxHeight: 1080,
+			maxWidth: displayWidth,
+			maxHeight: displayHeight,
 			minWidth: 0,
 			minHeight: 0,
 			rect: window.getBounds(),
