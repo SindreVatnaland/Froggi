@@ -157,10 +157,17 @@ export class OverlayInjection {
 		this.log.info(`Searching for game window: ${windowTitle}`);
 		const topWindows = this.overlayInjector.getTopWindows();
 
-		const possibleTitles = [...windowTitle.split(".")[0].split(" "), "Dolphin", "Faster Melee", "Mainline"];
-		this.gameWindow = topWindows.find(win => possibleTitles.some(title => win.title?.includes(title)));
+		this.log.info(`Top windows: ${JSON.stringify(topWindows)}`);
+
+		const possibleTitles = [`Dolphin`, `Faster Melee - Slippi (3.4.5)`];
+		const possibleSubTitles = [windowTitle, `Dolphin`, `Faster Melee`];
+		this.gameWindow = topWindows.find(win => possibleTitles.some(title => win.title === title));
 		if (!this.gameWindow) {
-			this.log.warn(`No matching game window found for: ${windowTitle}`);
+			this.gameWindow = topWindows.find(win => possibleSubTitles.some(title => win.title?.includes(title)));
+			this.log.warn(`No matching game window found`);
+		}
+		if (!this.gameWindow) {
+			this.log.warn(`No matching game window found`);
 			return;
 		}
 		const window = this.overlayInjector.injectProcess(this.gameWindow);
