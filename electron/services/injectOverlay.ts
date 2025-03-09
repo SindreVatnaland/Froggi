@@ -63,16 +63,13 @@ export class OverlayInjection {
 	});
 	
 
-	private createWindow(url: string, width = 1920, height = 1080) {
+	private createWindow(url: string, rect: Electron.Rectangle) {
 		const window = new BrowserWindow({
-			width,
-			height,
+			...rect,
 			frame: false,
 			show: false,
 			transparent: true,
 			resizable: false,
-			x: 0,
-			y: 0,
 			webPreferences: {
 				offscreen: true,
 				nodeIntegration: true,
@@ -89,19 +86,21 @@ export class OverlayInjection {
 			return;
 		}
 		this.log.info(`Injecting overlay: ${overlayId}`);
-
-		const display = screen.getDisplayNearestPoint(
-			screen.getCursorScreenPoint()
-		  );
-
+	
+		const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+	
 		const displayHeight = display.size.height;
 		const displayWidth = Math.round((displayHeight / 9) * 16);
-		  
+	
+		const x = Math.round((display.size.width - displayWidth) / 2);
+		const y = 0;
+
+		const rect: Electron.Rectangle = { x, y, width: displayWidth, height: displayHeight };
+	
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, displayWidth, displayHeight);
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, rect);
 		this.windows.set(overlayId, window);
-
-
+	
 		this.overlayInjector.addWindow(window.id, {
 			name: "StatusBar",
 			resizable: false,
