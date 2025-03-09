@@ -155,7 +155,7 @@ export class OverlayInjection {
 
 	injectIntoGame = (windowTitle: string) => {
 		this.log.info(`Searching for game window: ${windowTitle}`);
-		const topWindows = this.overlayInjector.getTopWindows();
+		const topWindows = this.overlayInjector.getTopWindows().reverse();
 
 		this.log.info(`Top windows: ${JSON.stringify(topWindows)}`);
 
@@ -170,6 +170,7 @@ export class OverlayInjection {
 			this.log.warn(`No matching game window found`);
 			return;
 		}
+		this.log.info(`Game window found: ${JSON.stringify(this.gameWindow)}`);
 		const window = this.overlayInjector.injectProcess(this.gameWindow);
 		this.log.info(`Injecting overlay into game: ${JSON.stringify(window)}`);
 	};
