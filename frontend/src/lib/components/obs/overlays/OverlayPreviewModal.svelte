@@ -157,7 +157,7 @@
 					on:click={() => injectOverlay(overlay?.id)}
 					use:tooltip={$dolphinState === ConnectionState.Connected
 						? {
-								content: `<p>Inject overlay to dolphin</p>`,
+								content: `<p>Inject overlay to dolphin. Must use directX backend</p>`,
 								html: true,
 								placement: 'top',
 								delay: [250, 0],

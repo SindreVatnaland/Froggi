@@ -46,16 +46,11 @@ export class OverlayInjection {
 
 	private handleWindowResize = (resizeEvent: GraphicWindowEventResize) => { 
 		for (const window of this.windows.values()) {
-			let newWidth = resizeEvent.width;
-			let newHeight = Math.round((newWidth / 16) * 9);
+			// Use full height
+			let newHeight = resizeEvent.height;
+			let newWidth = Math.round((newHeight / 9) * 16);
 	
-			// If the new height exceeds the given height, adjust based on height
-			if (newHeight > resizeEvent.height) {
-				newHeight = resizeEvent.height;
-				newWidth = Math.round((newHeight / 9) * 16);
-			}
-	
-			// Center the window horizontally
+			// Center horizontally, even if it overflows
 			const x = Math.round((resizeEvent.width - newWidth) / 2);
 			const y = 0; // Keep at top
 	
@@ -66,6 +61,7 @@ export class OverlayInjection {
 			window.emit("resize");
 		}
 	};
+	
 
 	private createWindow(url: string) {
 		const window = new BrowserWindow({
@@ -92,6 +88,8 @@ export class OverlayInjection {
 			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
 			return;
 		}
+
+		this.closeAllOverlays(); // Temporary fix as only one overlay is currently supported
 
 		this.log.info(`Injecting overlay: ${overlayId}`);
 		const port = this.isDev ? '5173' : '3200';
