@@ -32,7 +32,7 @@ export class OverlayInjection {
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback(
 			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
-				switch(event) {
+				switch (event) {
 					case "graphics.window.event.resize":
 						this.handleWindowResize(payload);
 						break;
@@ -40,28 +40,28 @@ export class OverlayInjection {
 						// this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
 				}
-			}) as (event: string, ...args: any[]) => void
-		  );
+			}) as (event: string, ...args: unknown[]) => void
+		);
 	}
 
-	private handleWindowResize = (resizeEvent: GraphicWindowEventResize) => { 
+	private handleWindowResize = (resizeEvent: GraphicWindowEventResize) => {
 		for (const window of this.windows.values()) {
 			let newWidth = resizeEvent.width;
 			let newHeight = Math.round((newWidth / 16) * 9);
-	
+
 			// If the new height exceeds the given height, adjust based on height
 			if (newHeight > resizeEvent.height) {
 				newHeight = resizeEvent.height;
 				newWidth = Math.round((newHeight / 9) * 16);
 			}
-	
+
 			// Center the window horizontally
 			const x = Math.round((resizeEvent.width - newWidth) / 2);
 			const y = 0; // Keep at top
-	
+
 			window.setBounds({ x, y, width: newWidth, height: newHeight });
 			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
-	
+
 			// Manually emit the resize event
 			window.emit("resize");
 		}
@@ -112,12 +112,12 @@ export class OverlayInjection {
 				right: 0,
 				top: 0,
 				height: 0,
-			  },
+			},
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
 		window.on("resize", () => {
-			this.overlayInjector.sendWindowBounds(window.id, {rect: window.getBounds()});
+			this.overlayInjector.sendWindowBounds(window.id, { rect: window.getBounds() });
 		})
 
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
@@ -126,7 +126,7 @@ export class OverlayInjection {
 				image.getBitmap(),
 				image.getSize().width,
 				image.getSize().height
-			  );
+			);
 		}, 16, { leading: true, trailing: true });
 
 		window.webContents.on("paint", (_, __, image) => {

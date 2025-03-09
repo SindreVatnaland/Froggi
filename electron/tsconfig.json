@@ -32,6 +32,7 @@
 		"../test",
 		"../frontend/src/lib/utils/gamePredicates.ts",
 		"../demo-overlays",
+		"../electron-overlay",
 		"../public",
 		"services/workers/websocketWorker.ts"
 	],
