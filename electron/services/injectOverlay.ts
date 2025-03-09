@@ -30,38 +30,14 @@ export class OverlayInjection {
 		this.log.info('Initializing overlay injection');
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback((event: string, payload: any) => {
-			this.log.info(`Overlay event: ${event}`, payload);
-			if (event === "game.window.focused") {
-				console.log("focusWindowId", payload.focusWindowId);
-
-				BrowserWindow.getAllWindows().forEach((window) => {
-					window.blurWebView();
-				});
-
-				const focusWin = BrowserWindow.fromId(payload.focusWindowId);
-				if (focusWin) {
-					focusWin.focusOnWebView();
-				}
-			}
-			if (event === "game.window.focused") {
-				console.log("focusWindowId", payload.focusWindowId);
-
-				BrowserWindow.getAllWindows().forEach((window) => {
-					window.blurWebView();
-				});
-
-				const focusWin = BrowserWindow.fromId(payload.focusWindowId);
-				if (focusWin) {
-					focusWin.focusOnWebView();
-				}
-			}
+			console.log(`event: ${event}, payload: ${JSON.stringify(payload)}`);
 		});
 	}
 
 	private createWindow(url: string) {
 		const window = new BrowserWindow({
-			width: 1920,
-			height: 1080,
+			width: 1280,
+			height: 720,
 			frame: false,
 			show: false,
 			transparent: true,
@@ -71,14 +47,13 @@ export class OverlayInjection {
 			webPreferences: {
 				offscreen: true,
 				nodeIntegration: true,
-				contextIsolation: false,
 			},
 		});
 		window.loadURL(url);
 		return window;
 	}
 
-	private injectOverlay = async (overlayId: string) => {
+	private injectOverlay = (overlayId: string) => {
 		if (!this.gameWindow) {
 			this.log.warn('No game window found');
 			return;
@@ -89,40 +64,46 @@ export class OverlayInjection {
 		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`);
 		this.windows.set(overlayId, window);
 
-		this.overlayInjector.addWindow(1, {
-			name: overlayId,
+		const width = window.getSize()[0];
+		const height = window.getSize()[1];
+		const x = window.getBounds().x;
+		const y = window.getBounds().y;
+
+		this.overlayInjector.addWindow(window.id, {
+			name: "StatusBar",
 			resizable: false,
 			transparent: true,
-			maxWidth: 1920,
-			maxHeight: 1080,
-			minWidth: 1920,
-			minHeight: 1080,
+			maxWidth: width,
+			maxHeight: height,
+			minWidth: width,
+			minHeight: height,
 			rect: {
-				x: 0,
-				y: 0,
-				width: 1920,
-				height: 1080,
+				x: x,
+				y: y,
+				width: Math.floor(width),
+				height: Math.floor(height),
 			},
+			caption: {
+				left: Math.floor(0),
+				right: Math.floor(0),
+				top: Math.floor(0),
+				height: Math.floor(0),
+			  },
 			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
-		const processPaintEvent = throttle((image: Electron.NativeImage) => {
-			console.log("paint from window", window.id);
-			console.log("injector", this.overlayInjector);
-
-			const testBuffer = Buffer.alloc(800 * 600 * 4, 255); // White image
-			this.overlayInjector.sendFrameBuffer(window.id, testBuffer, 800, 600);
-
+		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
+			console.log("paint to window", window.id);
 			this.overlayInjector.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
 				image.getSize().width,
 				image.getSize().height
-			);
-		}, 16, { leading: true, trailing: true }); // Adjust the throttle time as needed (in milliseconds)
+			  );
+		}, 16, { leading: true, trailing: true });
 
 		window.webContents.on("paint", (_, __, image) => {
-			processPaintEvent(image);
+			processPaintEvent(image, window);
 		});
 
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
@@ -145,7 +126,7 @@ export class OverlayInjection {
 		}
 	}
 
-	injectIntoGame = async (windowTitle: string) => {
+	injectIntoGame = (windowTitle: string) => {
 		this.log.info(`Searching for game window: ${windowTitle}`);
 		const topWindows = this.overlayInjector.getTopWindows();
 		this.gameWindow = topWindows.find(win => win.title?.includes(windowTitle));
