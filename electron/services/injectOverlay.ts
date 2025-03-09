@@ -34,11 +34,10 @@ export class OverlayInjection {
 			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
 				switch(event) {
 					case "graphics.window.event.resize":
-						console.log("Resize", payload);
 						this.handleWindowResize(payload);
 						break;
 					default:
-						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						// this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
 				}
 			}) as (event: string, ...args: any[]) => void
@@ -90,6 +89,7 @@ export class OverlayInjection {
 	private injectOverlay = (overlayId: string) => {
 		if (!this.gameWindow) {
 			this.log.warn('No game window found');
+			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
 			return;
 		}
 
@@ -117,12 +117,10 @@ export class OverlayInjection {
 		});
 
 		window.on("resize", () => {
-			console.log("Resize event", window.getBounds());
 			this.overlayInjector.sendWindowBounds(window.id, {rect: window.getBounds()});
 		})
 
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
-			console.log("paint to window", window.id);
 			this.overlayInjector.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
