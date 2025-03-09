@@ -107,7 +107,6 @@ export class SlippiJs {
 		this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
 		this.stopProcessSearchInterval();
-		this.overlayInjection.injectIntoGame('Dolphin');
 	}
 
 	private async handleUserSlippiData() {
@@ -129,10 +128,11 @@ export class SlippiJs {
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Searching);
 		this.log.info('Looking For Dolphin Process');
 		this.dolphinProcessInterval = setInterval(async () => {
-
-			if (await isDolphinRunning()) {
-				this.log.info('Dolphin Found');
+			const process = await isDolphinRunning();
+			if (process) {
+				this.log.info(`Dolphin Found: ${process}`);
 				this.dolphinConnection.connect('127.0.0.1', Ports.DEFAULT);
+				this.overlayInjection.injectIntoGame(process);
 				this.stopProcessSearchInterval();
 			}
 		}, 5000);

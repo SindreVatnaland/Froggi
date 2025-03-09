@@ -16,7 +16,7 @@ export const getProcessPid = async (): Promise<number | undefined> => {
 	return undefined;
 };
 
-export const isDolphinRunning = async () => {
+export const isDolphinRunning = async (): Promise<string | null> => {
 	const isWindows = os.platform() === 'win32';
 	const validProcesses = getValidProcesses();
 	const exec = child_process.exec;
@@ -38,7 +38,7 @@ export const isDolphinRunning = async () => {
 			if (!stdout.trim()) {
 				console.log("stdout:", stdout);
 				console.log("Dolphin is not running");
-				return resolve(false);
+				return resolve(null);
 			}
 
 			const runningProcesses = stdout
@@ -49,12 +49,12 @@ export const isDolphinRunning = async () => {
 			for (const process of validProcesses) {
 				if (runningProcesses.some(p => p.includes(process.toLowerCase()))) {
 					console.log(`Dolphin is running: ${process}`);
-					return resolve(true);
+					return resolve(process);
 				}
 			}
 
 			console.log("Dolphin is not running");
-			resolve(false);
+			resolve(null);
 		});
 	});
 };
