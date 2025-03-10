@@ -7,7 +7,7 @@ import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
-import { GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
+import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
 
 @singleton()
 export class OverlayInjection {
@@ -34,8 +34,17 @@ export class OverlayInjection {
 			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
 				switch (event) {
 					case "graphics.window.event.resize":
-						this.handleWindowResize(payload);
-						break;
+						{
+							const resizeEvent = payload as InjectorPayload["graphics.window.event.resize"];
+							this.handleWindowResize(resizeEvent);
+							break;
+						}
+					case "game.window.focused":
+						{
+							const focusEvent = payload as InjectorPayload["game.window.focused"];
+							this.handleWindowFocus(focusEvent);
+							break;
+						}
 					default:
 						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
@@ -59,6 +68,14 @@ export class OverlayInjection {
 
 			// Manually emit the resize event
 			window.emit("resize");
+		}
+	});
+
+	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
+		this.log.info(`Game window focus: ${focusEvent}`);
+		const focusWin = BrowserWindow.fromId(focusEvent.focusWindowId);
+		if (focusWin) {
+			focusWin.focusOnWebView();
 		}
 	});
 
