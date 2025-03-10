@@ -69,14 +69,14 @@ export class OverlayInjection {
 			// Manually emit the resize event
 			window.emit("resize");
 		}
-	});
+	}, 250);
 
 	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
 		this.log.info(`Game window focus: ${focusEvent}`);
-		const focusWin = BrowserWindow.fromId(focusEvent.focusWindowId);
-		if (focusWin) {
-			focusWin.focusOnWebView();
-		}
+		// const focusWin = BrowserWindow.fromId(focusEvent.focusWindowId);
+		// if (focusWin) {
+		// 	focusWin.focusOnWebView();
+		// }
 	});
 
 
@@ -88,6 +88,7 @@ export class OverlayInjection {
 			transparent: true,
 			resizable: false,
 			webPreferences: {
+				backgroundThrottling: false,
 				offscreen: true,
 				nodeIntegration: true,
 			},
