@@ -20,7 +20,7 @@ export function createBackgroundNotification(_: Electron.App, mainWindow: Browse
   });
 
   notification.addListener("close", () => {
-    mainWindow.hide();
+    mainWindow.minimize();
   })
 
   // notification.addListener("action", (_, index) => {

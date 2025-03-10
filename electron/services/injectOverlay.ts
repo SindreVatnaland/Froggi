@@ -1,13 +1,14 @@
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow } from 'electron';
 import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
 import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
+import { getWindowSize } from '../utils/windowManager';
 
 @singleton()
 export class OverlayInjection {
@@ -56,20 +57,25 @@ export class OverlayInjection {
 	private handleWindowResize = debounce((resizeEvent: GraphicWindowEventResize) => {
 		for (const window of this.windows.values()) {
 			// Always use full height
-			const newHeight = resizeEvent.height;
-			const newWidth = Math.round((newHeight / 9) * 16);
+			const newRect = this.getCenteredBounds(resizeEvent.width, resizeEvent.height);
 
-			// Center the window horizontally
-			const x = Math.round((resizeEvent.width - newWidth) / 2);
-			const y = 0; // Keep at top
-
-			window.setBounds({ x, y, width: newWidth, height: newHeight });
+			window.setBounds(newRect);
 			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
 
 			// Manually emit the resize event
 			window.emit("resize");
 		}
 	}, 250);
+
+	private getCenteredBounds = (width: number, height: number): Electron.Rectangle => {
+		const newHeight = height;
+			const newWidth = Math.round((newHeight / 9) * 16);
+
+			// Center the window horizontally
+			const x = Math.round((width - newWidth) / 2);
+			const y = 0; // Keep at top
+		return { x, y, width: newWidth, height: newHeight };
+	}
 
 	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
 		this.log.info(`Game window focus: ${focusEvent}`);
@@ -97,37 +103,33 @@ export class OverlayInjection {
 		return window;
 	}
 
-	private injectOverlay = (overlayId: string) => {
+	private injectOverlay = async (overlayId: string) => {
 		if (!this.gameWindow) {
 			this.log.warn('No game window found');
 			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
 			return;
 		}
+
+		
+		const dolphinWindowSize = await getWindowSize(this.gameWindow.processId)
+		const dolphinWindowBounds = this.getCenteredBounds(dolphinWindowSize.width, dolphinWindowSize.height);
+		this.log.info(`Game window size: ${JSON.stringify(dolphinWindowSize)}`);
+
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
-		const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-
-		const displayHeight = display.size.height;
-		const displayWidth = Math.round((displayHeight / 9) * 16);
-
-		const x = Math.round((display.size.width - displayWidth) / 2);
-		const y = 0;
-
-		const rect: Electron.Rectangle = { x, y, width: displayWidth, height: displayHeight };
-
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, rect);
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, dolphinWindowBounds);
 		this.windows.set(overlayId, window);
 
 		this.overlayInjector.addWindow(window.id, {
 			name: "StatusBar",
 			resizable: false,
 			transparent: true,
-			maxWidth: displayWidth,
-			maxHeight: displayHeight,
+			maxWidth: window.getBounds().width,
+			maxHeight: window.getBounds().height,
 			minWidth: 0,
 			minHeight: 0,
-			rect: window.getBounds(),
+			rect: dolphinWindowBounds,
 			caption: {
 				left: 0,
 				right: 0,
