@@ -106,6 +106,7 @@ export class SlippiJs {
 		this.storeLiveStats.setStatsScene(LiveStatsScene.Menu);
 		this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
+		this.overlayInjection.injectIntoGame();
 		this.stopProcessSearchInterval();
 	}
 
@@ -132,7 +133,6 @@ export class SlippiJs {
 			if (process) {
 				this.log.info(`Dolphin Found: ${process}`);
 				this.dolphinConnection.connect('127.0.0.1', Ports.DEFAULT);
-				this.overlayInjection.injectIntoGame(process);
 				this.stopProcessSearchInterval();
 			}
 		}, 5000);

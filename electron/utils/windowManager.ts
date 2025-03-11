@@ -1,6 +1,12 @@
-const { spawn } = require("child_process");
+import { spawn } from "child_process";
 
-export function getWindowSize(pid: number): Promise<{ width: number, height: number }> {
+interface ProcessInfo {
+    Id: number;
+    ProcessName: string;
+    MainWindowTitle: string;
+}
+
+export function getWindowSizeByPid(pid: number): Promise<{ width: number, height: number }> {
     return new Promise((resolve, reject) => {
         const psScript = `
         $hWnd = (Get-Process -Id ${pid}).MainWindowHandle;
@@ -19,11 +25,11 @@ export function getWindowSize(pid: number): Promise<{ width: number, height: num
         const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
 
         let output = "";
-        ps.stdout.on("data", (data: any) => {
+        ps.stdout.on("data", (data) => {
             output += data.toString().trim();
         });
 
-        ps.stderr.on("data", (data: any) => {
+        ps.stderr.on("data", (data) => {
             reject(`Error: ${data.toString()}`);
         });
 
@@ -32,9 +38,70 @@ export function getWindowSize(pid: number): Promise<{ width: number, height: num
                 const [width, height] = output.split("x").map(Number);
                 resolve({ width, height });
             } else {
-                reject({ width: 1920, height: 1080 });
+                resolve({ width: 1920, height: 1080 });
             }
         });
     });
 }
 
+export function getProcessByPid(pid: number): Promise<ProcessInfo | null> {
+    return new Promise((resolve, reject) => {
+        const psScript = `Get-Process -Id ${pid} | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
+
+        const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
+
+        let output = "";
+        ps.stdout.on("data", (data) => {
+            output += data.toString();
+        });
+
+        ps.stderr.on("data", (data) => {
+            reject(`Error: ${data.toString()}`);
+        });
+
+        ps.on("close", (code) => {
+            if (code === 0 && output) {
+                try {
+                    const processInfo: ProcessInfo = JSON.parse(output.trim());
+                    resolve(processInfo);
+                } catch (err) {
+                    console.log("Failed to parse process info." + err);
+                    resolve(null);
+                }
+            } else {
+                reject(null);
+            }
+        });
+    });
+}
+
+export function getProcessByName(processName: string): Promise<ProcessInfo | null> {
+    return new Promise((resolve, reject) => {
+        const psScript = `(Get-Process -Name "${processName}" | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
+
+        const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
+
+        let output = "";
+        ps.stdout.on("data", (data) => {
+            output += data.toString();
+        });
+
+        ps.stderr.on("data", (data) => {
+            reject(`Error: ${data.toString()}`);
+        });
+
+        ps.on("close", (code) => {
+            if (code === 0 && output) {
+                try {
+                    const processInfo: ProcessInfo = JSON.parse(output.trim());
+                    resolve(processInfo);
+                } catch (err) {
+                    console.log("Failed to parse process info." + err);
+                    resolve(null);
+                }
+            } else {
+                reject(null);
+            }
+        });
+    });
+}

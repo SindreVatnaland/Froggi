@@ -8,7 +8,7 @@ import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
 import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
-import { getWindowSize } from '../utils/windowManager';
+import { getProcessByName, getWindowSizeByPid } from '../utils/windowManager';
 
 @singleton()
 export class OverlayInjection {
@@ -69,11 +69,11 @@ export class OverlayInjection {
 
 	private getCenteredBounds = (width: number, height: number): Electron.Rectangle => {
 		const newHeight = height;
-			const newWidth = Math.round((newHeight / 9) * 16);
+		const newWidth = Math.round((newHeight / 9) * 16);
 
-			// Center the window horizontally
-			const x = Math.round((width - newWidth) / 2);
-			const y = 0; // Keep at top
+		// Center the window horizontally
+		const x = Math.round((width - newWidth) / 2);
+		const y = 0; // Keep at top
 		return { x, y, width: newWidth, height: newHeight };
 	}
 
@@ -110,8 +110,8 @@ export class OverlayInjection {
 			return;
 		}
 
-		
-		const dolphinWindowSize = await getWindowSize(this.gameWindow.processId)
+
+		const dolphinWindowSize = await getWindowSizeByPid(this.gameWindow.processId)
 		const dolphinWindowBounds = this.getCenteredBounds(dolphinWindowSize.width, dolphinWindowSize.height);
 		this.log.info(`Game window size: ${JSON.stringify(dolphinWindowSize)}`);
 
@@ -176,13 +176,18 @@ export class OverlayInjection {
 		}
 	}
 
-	injectIntoGame = (windowTitle: string = "Dolphin") => {
-		this.log.info(`Searching for game window: ${windowTitle}`);
+	injectIntoGame = async (processName: string = "dolphin.exe") => {
+		this.log.info(`Searching for game window: ${processName}`);
 		const topWindows = this.overlayInjector
 			.getTopWindows()
 			.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
 			.reverse();
 
+
+		const windowProcess = await getProcessByName(processName.split(".")[0]);
+		const windowTitle = windowProcess?.MainWindowTitle ?? "Dolphin";
+
+		this.log.info(`Game window title: ${windowTitle}`);
 		this.log.info(`Top windows: ${JSON.stringify(topWindows)}`);
 
 		const possibleSubTitles = [windowTitle, `Dolphin`, `Faster Melee`, `Mainline`];
