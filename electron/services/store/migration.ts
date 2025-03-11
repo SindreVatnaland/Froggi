@@ -4,10 +4,9 @@ import Store from 'electron-store';
 export const migrateStore = (log: ElectronLog): Store.Options<Record<string, unknown>> => {
 	log.info('Initializing Migrations');
 	return {
-		beforeEachMigration: (store, context) => {
+		beforeEachMigration: (_, context) => {
 			log.info(`Migrate store from ${context.fromVersion} → ${context.toVersion}`);
 			log.info(context);
-			store.set("settings.froggi.version", context.toVersion)
 		},
 		migrations: {
 			'>=0.2.0': (store) => {

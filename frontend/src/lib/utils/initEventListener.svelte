@@ -136,6 +136,7 @@
 			case 'FroggiSettings':
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['FroggiSettings']>[0];
+					console.log('FroggiSettings', value);
 					if (!value) return;
 					froggiSettings.set(value);
 				})();

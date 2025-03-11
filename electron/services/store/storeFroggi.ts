@@ -19,6 +19,7 @@ export class ElectronFroggiStore {
         this.log.info("Initializing Players Store")
         this.initStoreListeners();
         this.initEventListeners();
+        this.initVersion();
     }
 
     getFroggiConfig(): Froggi {
@@ -27,6 +28,12 @@ export class ElectronFroggiStore {
 
     setFroggiBeta(betaOptIn: boolean) {
         this.store.set("settings.froggi.betaOptIn", betaOptIn)
+    }
+
+    private initVersion() {
+        const version = this.store.get("__internal__.migrations.version") as string;
+        this.log.info("Froggi Version", version);
+        this.store.set("settings.froggi.version", version);
     }
 
     private initStoreListeners() {

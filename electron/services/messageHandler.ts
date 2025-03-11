@@ -24,6 +24,7 @@ import cors from 'cors';
 import http from 'http';
 import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
 import openurl from 'openurl';
+import { ElectronFroggiStore } from './store/storeFroggi';
 
 @singleton()
 export class MessageHandler {
@@ -55,6 +56,7 @@ export class MessageHandler {
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 		@inject(delay(() => ElectronSessionStore)) private storeSession: ElectronSessionStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
+		@inject(delay(() => ElectronFroggiStore)) private storeFroggi: ElectronFroggiStore,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -202,6 +204,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'RecentGames', await this.storeGames.getRecentGames());
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
+		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string) {

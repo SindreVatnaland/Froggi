@@ -3,6 +3,7 @@
 	import Authorization from '$lib/components/obs/settings/Authorization.svelte';
 	import SaveLogs from '$lib/components/obs/settings/SaveLogs.svelte';
 	import BetaOptIn from '$lib/components/obs/settings/BetaOptIn.svelte';
+	import AppVersion from '$lib/components/obs/settings/AppVersion.svelte';
 </script>
 
 <main
@@ -17,6 +18,7 @@
 		<Authorization />
 		<SaveLogs />
 		<BetaOptIn />
+		<AppVersion />
 	</div>
 </main>
 
