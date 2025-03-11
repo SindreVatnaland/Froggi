@@ -51,8 +51,8 @@ export function getProcessByPid(pid: number): Promise<ProcessInfo | null> {
             });
 
             ps.stderr.on("data", (data) => {
-                console.error("PowerShell Error:", data.toString());
-                reject(`PowerShell Error: ${data.toString()}`);
+                const errorMessage = data.toString();
+                reject("PowerShell Error:" + errorMessage);
             });
 
             ps.on("close", (code) => {
@@ -87,8 +87,8 @@ export function getProcessByName(name: string): Promise<ProcessInfo | null> {
             });
 
             ps.stderr.on("data", (data) => {
-                console.error("PowerShell Error:", data.toString());
-                reject(`PowerShell Error: ${data.toString()}`);
+                const errorMessage = data.toString();
+                reject("PowerShell Error:" + errorMessage);
             });
 
             ps.on("close", (code) => {

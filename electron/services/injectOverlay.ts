@@ -201,6 +201,7 @@ export class OverlayInjection {
 	};
 
 	private findGameWindow = async (processName: string): Promise<IWindow | undefined> => {
+
 		const topWindows = this.overlayInjector
 			.getTopWindows()
 			.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))

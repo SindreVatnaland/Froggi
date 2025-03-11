@@ -100,7 +100,7 @@ export class MessageHandler {
 
 	private initElectronMessageHandler() {
 		this.ipcMain.on('message', (_: any, data: any) => {
-			let parse = JSON.parse(data);
+			const parse = JSON.parse(data);
 			for (const [key, value] of Object.entries(parse) as [
 				key: keyof MessageEvents,
 				value: Parameters<MessageEvents[keyof MessageEvents]>,
