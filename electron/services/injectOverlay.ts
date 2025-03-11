@@ -47,7 +47,7 @@ export class OverlayInjection {
 							break;
 						}
 					default:
-						// this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void
@@ -202,39 +202,16 @@ export class OverlayInjection {
 
 	private findGameWindow = async (processName: string): Promise<IWindow | undefined> => {
 		
-		/*
-		const topWindows = this.overlayInjector
-			.getTopWindows()
-			.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
-			.reverse();
-
-		this.log.info(`Top windows: ${JSON.stringify(topWindows)}`);
-		*/
-
 		let windowProcess: ProcessInfo | null = null;
 		try {
 			windowProcess = await getProcessByName(processName.split(".")[0]);
-			console.log("Powershell", windowProcess);
+			this.log.info("Powershell", windowProcess);
 			return { title: windowProcess?.MainWindowTitle ?? "Dolphin", processId: windowProcess?.Id ?? 0, threadId: 0, windowId: 0 };
-			//return topWindows.find(win => win.title === windowProcess?.MainWindowTitle);
 		} catch (error) {
 			this.log.error(error);
 		}
 
-
-		if (!windowProcess) {
-			this.log.warn(`No matching game window found`);
-			//const possibleProcessNames = ["Dolphin", "Faster Melee", "Mainline"]
-			//return topWindows.find(win => possibleProcessNames.includes(win.title ?? "Dolphin"));
-		}
-
-		const windowTitle = windowProcess?.MainWindowTitle ?? "Dolphin";
-
-		this.log.info(`Game window title: ${windowTitle}`);
-
 		return;
-
-		//return topWindows.find(win => win.title === windowTitle);
 	};
 
 	initEventListeners() {
