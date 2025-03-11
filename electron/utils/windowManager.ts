@@ -46,62 +46,76 @@ export function getWindowSizeByPid(pid: number): Promise<{ width: number, height
 
 export function getProcessByPid(pid: number): Promise<ProcessInfo | null> {
     return new Promise((resolve, reject) => {
-        const psScript = `Get-Process -Id ${pid} | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
+        try {
+            const psScript = `Get-Process -Id ${pid} | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
+            const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
 
-        const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
+            let output = "";
+            ps.stdout.on("data", (data) => {
+                output += data.toString();
+            });
 
-        let output = "";
-        ps.stdout.on("data", (data) => {
-            output += data.toString();
-        });
+            ps.stderr.on("data", (data) => {
+                console.error("PowerShell Error:", data.toString());
+                reject(`PowerShell Error: ${data.toString()}`);
+            });
 
-        ps.stderr.on("data", (data) => {
-            reject(`Error: ${data.toString()}`);
-        });
-
-        ps.on("close", (code) => {
-            if (code === 0 && output) {
-                try {
-                    const processInfo: ProcessInfo = JSON.parse(output.trim());
-                    resolve(processInfo);
-                } catch (err) {
-                    console.log("Failed to parse process info." + err);
+            ps.on("close", (code) => {
+                if (code === 0 && output) {
+                    try {
+                        const processInfo: ProcessInfo = JSON.parse(output.trim());
+                        resolve(processInfo);
+                    } catch (err) {
+                        console.error("Failed to parse process info:", err);
+                        resolve(null);
+                    }
+                } else {
                     resolve(null);
                 }
-            } else {
-                reject(null);
-            }
-        });
+            });
+
+        } catch (error) {
+            console.error("Unexpected error:", error);
+            resolve(null);
+        }
     });
 }
 
-export function getProcessByName(processName: string): Promise<ProcessInfo | null> {
+
+export function getProcessByName(name: string): Promise<ProcessInfo | null> {
     return new Promise((resolve, reject) => {
-        const psScript = `(Get-Process -Name "${processName}" | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
+        try {
+            const psScript = `Get-Process | Where-Object { $_.ProcessName -match "(?i)${name}" } | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json
+`;
+            const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
 
-        const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
+            let output = "";
+            ps.stdout.on("data", (data) => {
+                output += data.toString();
+            });
 
-        let output = "";
-        ps.stdout.on("data", (data) => {
-            output += data.toString();
-        });
+            ps.stderr.on("data", (data) => {
+                console.error("PowerShell Error:", data.toString());
+                reject(`PowerShell Error: ${data.toString()}`);
+            });
 
-        ps.stderr.on("data", (data) => {
-            reject(`Error: ${data.toString()}`);
-        });
-
-        ps.on("close", (code) => {
-            if (code === 0 && output) {
-                try {
-                    const processInfo: ProcessInfo = JSON.parse(output.trim());
-                    resolve(processInfo);
-                } catch (err) {
-                    console.log("Failed to parse process info." + err);
+            ps.on("close", (code) => {
+                if (code === 0 && output) {
+                    try {
+                        const processInfo: ProcessInfo = JSON.parse(output.trim());
+                        resolve(processInfo);
+                    } catch (err) {
+                        console.error("Failed to parse process info:", err);
+                        resolve(null);
+                    }
+                } else {
                     resolve(null);
                 }
-            } else {
-                reject(null);
-            }
-        });
+            });
+
+        } catch (error) {
+            console.error("Unexpected error:", error);
+            resolve(null);
+        }
     });
 }

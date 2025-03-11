@@ -79,10 +79,7 @@ export class OverlayInjection {
 
 	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
 		this.log.info(`Game window focus: ${focusEvent}`);
-		// const focusWin = BrowserWindow.fromId(focusEvent.focusWindowId);
-		// if (focusWin) {
-		// 	focusWin.focusOnWebView();
-		// }
+		this.windows.forEach(window => { window.focus(); })
 	});
 
 
@@ -190,8 +187,7 @@ export class OverlayInjection {
 		this.log.info(`Game window title: ${windowTitle}`);
 		this.log.info(`Top windows: ${JSON.stringify(topWindows)}`);
 
-		const possibleSubTitles = [windowTitle, `Dolphin`, `Faster Melee`, `Mainline`];
-		this.gameWindow = topWindows.find(win => possibleSubTitles.some(title => win.title?.includes(title)));
+		this.gameWindow = topWindows.find(win => win.title === windowTitle);
 		if (!this.gameWindow) {
 			this.log.warn(`No matching game window found`);
 			return;
