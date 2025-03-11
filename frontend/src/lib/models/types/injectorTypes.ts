@@ -16,3 +16,10 @@ export interface GameWindowEventFocus {
 }
 
 export type InjectorEvent = keyof InjectorPayload;
+
+
+export interface ProcessInfo {
+    Id: number;
+    ProcessName: string;
+    MainWindowTitle: string;
+}

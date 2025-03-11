@@ -7,7 +7,7 @@ import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
-import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload } from '../../frontend/src/lib/models/types/injectorTypes';
+import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
 import { getProcessByName, getWindowSizeByPid } from '../utils/windowManager';
 
 @singleton()
@@ -114,8 +114,13 @@ export class OverlayInjection {
 
 		this.closeAllOverlays(); // Temporary while we only support one overlay at a times
 
+		let dolphinWindowSize = { width: 1920, height: 1080 };
+		try {
+			dolphinWindowSize = await getWindowSizeByPid(this.gameWindow.processId)
+		} catch (error) {
+			this.log.error(error);
+		}
 
-		const dolphinWindowSize = await getWindowSizeByPid(this.gameWindow.processId)
 		const dolphinWindowBounds = this.getCenteredBounds(dolphinWindowSize.width, dolphinWindowSize.height);
 		this.log.info(`Game window size: ${JSON.stringify(dolphinWindowSize)}`);
 
@@ -180,15 +185,20 @@ export class OverlayInjection {
 		}
 	}
 
-	injectIntoGame = async (processName: string = "dolphin.exe") => {
+	injectIntoGame = async (processName: string = "dolphin") => {
 		this.log.info(`Searching for game window: ${processName}`);
 		const topWindows = this.overlayInjector
 			.getTopWindows()
 			.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
 			.reverse();
 
+		let windowProcess: ProcessInfo | null = null;
+		try {
+			windowProcess = await getProcessByName(processName.split(".")[0]);
+		} catch (error) {
+			this.log.error(error);
+		}
 
-		const windowProcess = await getProcessByName(processName.split(".")[0]);
 		const windowTitle = windowProcess?.MainWindowTitle ?? "Dolphin";
 
 		this.log.info(`Game window title: ${windowTitle}`);

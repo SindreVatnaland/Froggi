@@ -1,10 +1,5 @@
 import { spawn } from "child_process";
-
-interface ProcessInfo {
-    Id: number;
-    ProcessName: string;
-    MainWindowTitle: string;
-}
+import { ProcessInfo } from "../../frontend/src/lib/models/types/injectorTypes";
 
 export function getWindowSizeByPid(pid: number): Promise<{ width: number, height: number }> {
     return new Promise((resolve, reject) => {
@@ -38,7 +33,7 @@ export function getWindowSizeByPid(pid: number): Promise<{ width: number, height
                 const [width, height] = output.split("x").map(Number);
                 resolve({ width, height });
             } else {
-                resolve({ width: 1920, height: 1080 });
+                reject(`Failed to get window size. Code: ${code} Output: ${output}`);
             }
         });
     });
@@ -66,17 +61,15 @@ export function getProcessByPid(pid: number): Promise<ProcessInfo | null> {
                         const processInfo: ProcessInfo = JSON.parse(output.trim());
                         resolve(processInfo);
                     } catch (err) {
-                        console.error("Failed to parse process info:", err);
-                        resolve(null);
+                        reject("Failed to parse process info" + err);
                     }
                 } else {
-                    resolve(null);
+                    reject("Failed to parse process info. Code: " + code + " Output: " + output);
                 }
             });
 
         } catch (error) {
-            console.error("Unexpected error:", error);
-            resolve(null);
+            reject("Unexpected error:" + error);
         }
     });
 }
@@ -85,8 +78,7 @@ export function getProcessByPid(pid: number): Promise<ProcessInfo | null> {
 export function getProcessByName(name: string): Promise<ProcessInfo | null> {
     return new Promise((resolve, reject) => {
         try {
-            const psScript = `Get-Process | Where-Object { $_.ProcessName -match "(?i)${name}" } | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json
-`;
+            const psScript = `Get-Process | Where-Object { $_.ProcessName -match "(?i)${name}" } | Select-Object Id, ProcessName, MainWindowTitle | ConvertTo-Json`;
             const ps = spawn("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript]);
 
             let output = "";
@@ -105,17 +97,15 @@ export function getProcessByName(name: string): Promise<ProcessInfo | null> {
                         const processInfo: ProcessInfo = JSON.parse(output.trim());
                         resolve(processInfo);
                     } catch (err) {
-                        console.error("Failed to parse process info:", err);
-                        resolve(null);
+                        reject("Failed to parse process info" + err);
                     }
                 } else {
-                    resolve(null);
+                    reject("Failed to parse process info. Code: " + code + " Output: " + output);
                 }
             });
 
         } catch (error) {
-            console.error("Unexpected error:", error);
-            resolve(null);
+            reject("Unexpected error:" + error);
         }
     });
 }
