@@ -47,7 +47,7 @@ export class OverlayInjection {
 							break;
 						}
 					default:
-						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						// this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void
@@ -79,7 +79,6 @@ export class OverlayInjection {
 
 	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
 		this.log.info(`Game window focus: ${focusEvent}`);
-		this.windows.forEach(window => { window.focus(); })
 	});
 
 
@@ -106,6 +105,14 @@ export class OverlayInjection {
 			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
 			return;
 		}
+
+		if (this.windows.has(overlayId)) {
+			this.messageHandler.sendMessage('Notification', `Disable overlay injection`, NotificationType.Warning);
+			this.closeOverlay(overlayId);
+			return;
+		}
+
+		this.closeAllOverlays(); // Temporary while we only support one overlay at a times
 
 
 		const dolphinWindowSize = await getWindowSizeByPid(this.gameWindow.processId)

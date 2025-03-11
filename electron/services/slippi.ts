@@ -101,12 +101,12 @@ export class SlippiJs {
 	}
 
 	private async handleConnected() {
-		this.handleUserSlippiData();
+		await this.handleUserSlippiData();
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Connected);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.Menu);
-		this.storeSession.checkAndResetSessionStats();
+		await this.storeSession.checkAndResetSessionStats();
 		this.memoryRead.initMemoryRead();
-		this.overlayInjection.injectIntoGame();
+		await this.overlayInjection.injectIntoGame();
 		this.stopProcessSearchInterval();
 	}
 
