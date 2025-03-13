@@ -1,10 +1,14 @@
 const os = require('os');
+let isArm64 = os.arch() === 'arm64';
 
 let Overlay = null;
 
 if (os.platform() === 'win32') {
 	try {
-		Overlay = require('./electron-overlay.node');
+		const moduleName = isArm64
+			? './electron-overlay-arm64.node'
+			: './electron-overlay-intel64.node';
+		Overlay = require(moduleName);
 	} catch (error) {
 		console.error('Failed to load electron-overlay on Windows:', error);
 	}

@@ -55,7 +55,7 @@
 		"dolphin-memory-reader": "^0.6.7",
 		"electron-context-menu": "^3.6.1",
 		"electron-log": "^4.4.8",
-		"electron-overlay": "file:./electron-overlay/amd/electron-overlay-1.0.0.tgz",
+		"electron-overlay": "file:./electron-overlay/electron-overlay-1.0.0.tgz",
 		"electron-packager": "^18.3.6",
 		"electron-reloader": "^1.2.3",
 		"electron-serve": "^1.3.0",
