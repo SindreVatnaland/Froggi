@@ -1,14 +1,25 @@
 const os = require('os');
-let isArm64 = os.arch() === 'x64';
+
+const isX64 = os.arch() === 'x64';
+const cpuInfo = os.cpus()[0]?.model || '';
+
+const isIntel = isX64 && cpuInfo.includes('Intel');
+const isAMD = isX64 && cpuInfo.includes('AMD');
 
 let Overlay = null;
 
 if (os.platform() === 'win32') {
 	try {
-		const moduleName = isArm64
-			? './electron-overlay-arm64.node'
-			: './electron-overlay-intel64.node';
-		Overlay = require(moduleName);
+		switch (true) {
+			case isIntel:
+				Overlay = require('./electron-overlay-intel64.node');
+				break;
+			case isAMD:
+				Overlay = require('./electron-overlay-amd64.node');
+				break;
+			default:
+				console.warn('Unsupported CPU architecture:', cpuInfo);
+		}
 	} catch (error) {
 		console.error('Failed to load electron-overlay on Windows:', error);
 	}
