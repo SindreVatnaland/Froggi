@@ -1,5 +1,5 @@
 const os = require('os');
-let isArm64 = os.arch() === 'arm64';
+let isArm64 = os.arch() === 'x64';
 
 let Overlay = null;
 
