@@ -84,8 +84,8 @@ export class ElectronSettingsStore {
 		return settings;
 	}
 
-	getDolphinSettings(): DolphinSettings | DolphinSettingsMainline | undefined {
-		return this.store.get('settings.dolphin') as DolphinSettings | DolphinSettingsMainline;
+	getDolphinSettings(): DolphinSettings | undefined {
+		return this.store.get('settings.dolphin') as DolphinSettings;
 	}
 
 	setDolphinSettings(config: DolphinSettings | DolphinSettingsMainline | undefined) {

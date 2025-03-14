@@ -9,6 +9,7 @@ import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
 import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
 import { getProcessByName, getWindowSizeByPid } from '../utils/windowManager';
+import { ElectronSettingsStore } from './store/storeSettings';
 
 @singleton()
 export class OverlayInjection {
@@ -20,7 +21,8 @@ export class OverlayInjection {
 		@inject('Dev') private isDev: boolean,
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject("ClientEmitter") private clientEmitter: TypedEmitter,
-		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler
+		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore
 	) {
 		this.log.info('Initializing Overlay Injection Service');
 		if (os.platform() !== 'win32') return;
@@ -188,9 +190,19 @@ export class OverlayInjection {
 	injectIntoGame = async (processName: string = "dolphin"): Promise<void> => {
 		if (os.platform() !== 'win32') return;
 		this.log.info(`Searching for game window: ${processName}`);
-		
+
+		const dolphinSettings = this.settingsStore.getDolphinSettings();
+
+		this.log.info(`Dolphin Settings: ${JSON.stringify(dolphinSettings)}`);
+
+		if (dolphinSettings && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) { 
+			this.log.warn(`Dolphin settings not using D3D backend`);
+			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Warning);
+			return;
+		}
+
 		const cpuInfo = os.cpus()[0]?.model || '';
-		console.log(`CPU Model: ${cpuInfo}`);
+		this.log.info(`CPU Model: ${cpuInfo}`);
 
 		this.gameWindow = await this.findGameWindow(processName);
 

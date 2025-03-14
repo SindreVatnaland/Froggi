@@ -55,11 +55,11 @@ const fixMissingDolphinSettings = (config: DolphinSettings | DolphinSettingsMain
       config.Slippi.NetplayPort = 2626;
     }
   } else if ("Core" in config) {
-    if (!(JSON.parse(`${config.Core.SlippiForceNetplayPort}`.toLocaleLowerCase()))) {
-      config.Core.SlippiForceNetplayPort = true;
+    if (!(JSON.parse(`${config?.Core?.SlippiForceNetplayPort}`.toLocaleLowerCase()))) {
+      config.Core!.SlippiForceNetplayPort = true;
     }
-    if (!config.Core.SlippiNetplayPort) {
-      config.Core.SlippiNetplayPort = 2626;
+    if (!config.Core!.SlippiNetplayPort) {
+      config.Core!.SlippiNetplayPort = 2626;
     }
   }
 
@@ -71,7 +71,7 @@ export const getDolphinPort = (config: DolphinSettings | DolphinSettingsMainline
   if ("Slippi" in config) {
     return config.Slippi.NetplayPort;
   } else if ("Core" in config) {
-    return config.Core.SlippiNetplayPort;
+    return config.Core!.SlippiNetplayPort;
   }
   return;
 }
