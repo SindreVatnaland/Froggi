@@ -130,15 +130,14 @@ export class StatsDisplay {
 		const replay = await this.findGameFromSettings(settings);
 		const replaySettings = replay?.getSettings();
 
-
 		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
 		if (isReplay && replaySettings?.matchInfo) {
-			this.log.info("Replay found. Using replay settings.")
+			this.log.info("Replay found. Using replay settings.", replaySettings)
 			settings = replaySettings;
 		}
 
 		const isFirstReplay = Boolean(isReplay && recentGames.filter((game) => game.isReplay).length === 0);
-		const isNewMatchId = replaySettings?.matchInfo?.matchId != previousSettings?.matchInfo?.matchId;
+		const isNewMatchId = settings?.matchInfo?.matchId != previousSettings?.matchInfo?.matchId;
 		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
 		this.storeLiveStats.setGameSettings(settings);
