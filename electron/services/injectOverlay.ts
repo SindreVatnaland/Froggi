@@ -2,19 +2,20 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { BrowserWindow } from 'electron';
-import GOverlay, { IWindow } from 'electron-overlay';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
-import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
+import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, IWindow, OverlayType, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
 import { getProcessByName, getWindowSizeByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
+import { getInjector } from './../utils/injectionHelper';
+
 
 @singleton()
 export class OverlayInjection {
 	private windows: Map<string, BrowserWindow> = new Map();
-	private overlayInjector = GOverlay;
+	private overlayInjector: OverlayType | null = null;
 	private gameWindow: IWindow | undefined;
 
 	constructor(
@@ -32,6 +33,14 @@ export class OverlayInjection {
 
 	private initializeInjection = async () => {
 		this.log.info('Initializing overlay injection');
+
+		this.overlayInjector = await getInjector();
+
+		if (!this.overlayInjector) {
+			this.log.error('Failed to initialize overlay injector using', os.cpus()[0]?.model);
+			return;
+		}
+		
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback(
 			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
@@ -102,6 +111,12 @@ export class OverlayInjection {
 	}
 
 	private injectOverlay = async (overlayId: string) => {
+		if (!this.overlayInjector) {
+			this.log.warn('Overlay injector not initialized');
+			this.messageHandler.sendMessage('Notification', 'Overlay injector not initialized', NotificationType.Danger);
+			return;
+		}
+
 		if (!this.gameWindow) {
 			this.log.warn('No game window found');
 			this.messageHandler.sendMessage('Notification', 'No game window found', NotificationType.Danger);
@@ -151,11 +166,11 @@ export class OverlayInjection {
 		});
 
 		window.on("resize", () => {
-			this.overlayInjector.sendWindowBounds(window.id, { rect: window.getBounds() });
+			this.overlayInjector?.sendWindowBounds(window.id, { rect: window.getBounds() });
 		})
-
+		
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
-			this.overlayInjector.sendFrameBuffer(
+			this.overlayInjector?.sendFrameBuffer(
 				window.id,
 				image.getBitmap(),
 				image.getSize().width,
@@ -176,7 +191,7 @@ export class OverlayInjection {
 			window.removeAllListeners();
 			window.close();
 			this.windows.delete(overlayId);
-			this.overlayInjector.closeWindow(window.id);
+			this.overlayInjector?.closeWindow(window.id);
 			this.log.info(`Overlay closed: ${overlayId}`);
 		}
 	};
@@ -188,21 +203,18 @@ export class OverlayInjection {
 	}
 
 	injectIntoGame = async (processName: string = "dolphin"): Promise<void> => {
-		if (os.platform() !== 'win32') return;
+		if (os.platform() !== 'win32' || !this.overlayInjector) return;
 		this.log.info(`Searching for game window: ${processName}`);
 
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
 
 		this.log.info(`Dolphin Settings: ${JSON.stringify(dolphinSettings)}`);
 
-		if (dolphinSettings && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) { 
+		if (dolphinSettings?.Core?.GFXBackend && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) { 
 			this.log.warn(`Dolphin settings not using D3D backend`);
-			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Warning);
+			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Danger);
 			return;
 		}
-
-		const cpuInfo = os.cpus()[0]?.model || '';
-		this.log.info(`CPU Model: ${cpuInfo}`);
 
 		this.gameWindow = await this.findGameWindow(processName);
 

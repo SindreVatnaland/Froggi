@@ -1,3 +1,8 @@
+import AmdOverlay from 'electron-overlay-amd';
+import IntelOverlay from 'electron-overlay-intel';
+import { IWindow as IWindowAmd } from 'electron-overlay-amd';
+import { IWindow as IWindowIntel } from 'electron-overlay-intel';
+
 // Define the possible events and their payloads
 export interface InjectorPayload {
     ["graphics.window.event.resize"]: GraphicWindowEventResize,
@@ -23,3 +28,6 @@ export interface ProcessInfo {
     ProcessName: string;
     MainWindowTitle: string;
 }
+
+export type OverlayType = typeof AmdOverlay | typeof IntelOverlay | null;
+export type IWindow = IWindowAmd | IWindowIntel;
