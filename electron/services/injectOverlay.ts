@@ -144,7 +144,7 @@ export class OverlayInjection {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}`, dolphinWindowBounds);
+		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}?isInjected=true`, dolphinWindowBounds);
 		this.windows.set(overlayId, window);
 
 		this.overlayInjector.addWindow(window.id, {

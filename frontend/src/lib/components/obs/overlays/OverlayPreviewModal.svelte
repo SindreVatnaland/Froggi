@@ -43,7 +43,8 @@
 		open = false;
 	};
 
-	const injectOverlay = (overlayId: string) => {
+	const injectOverlay = (overlayId: string | undefined) => {
+		if (!overlayId) return;
 		$electronEmitter.emit('InjectOverlay', overlayId);
 	};
 
@@ -154,6 +155,7 @@
 			{#if $isElectron}
 				<button
 					class={availableClass}
+					disabled={$dolphinState !== ConnectionState.Connected}
 					on:click={() => injectOverlay(overlay?.id)}
 					use:tooltip={$dolphinState === ConnectionState.Connected
 						? {

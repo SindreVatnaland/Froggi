@@ -23,6 +23,7 @@
 	} from '$lib/utils/store.svelte';
 	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
+	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
 
 	export let dataItem: GridContentItem;
 	export let edit: boolean = false;
@@ -31,6 +32,21 @@
 	export let boardWidth: number | undefined = undefined;
 
 	$: overlayId = $page.params.overlay;
+
+	$: isInjected = Boolean($page.url.searchParams.get('isInjected'));
+	$: isUsingDisallowedInjectedElement = isDisallowedInjectedElement(dataItem.elementId);
+	$: shouldPreview = !isInjected || (isInjected && !isUsingDisallowedInjectedElement);
+
+	$: console.log(
+		'overlayId',
+		overlayId,
+		'isInjected',
+		isInjected,
+		'isUsingDisallowedInjectedElement',
+		isUsingDisallowedInjectedElement,
+		'shouldPreview',
+		shouldPreview,
+	);
 
 	let div: HTMLElement;
 	$: boardWidth = div?.clientWidth ?? 0;
@@ -108,7 +124,7 @@
 		${style.shadow};`}
 	bind:this={div}
 >
-	{#if div}
+	{#if div && shouldPreview}
 		<div class="w-full h-full">
 			<Custom {dataItem} {style} />
 

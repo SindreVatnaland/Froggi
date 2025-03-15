@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "0.9.20-beta.36",
+	"version": "0.9.20-beta.37",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -34,10 +34,9 @@
 		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles",
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
-		"copy": "npm run overlay:copy && npm run update:copy && npm run electron-overlay:copy",
+		"copy": "npm run overlay:copy && npm run update:copy",
 		"overlay:copy": "shx mkdir -p ./build_electron/electron/demo-overlays && shx cp -r ./demo-overlays/* ./build_electron/electron/demo-overlays",
-		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update",
-		"electron-overlay:copy": "shx cp -r ./electron-overlay ./build_electron"
+		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update"
 	},
 	"engines": {
 		"npm": ">=7",
