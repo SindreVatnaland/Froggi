@@ -27,6 +27,7 @@
 		sceneSwitch,
 		controller,
 		froggiSettings,
+		injectedOverlays,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -167,6 +168,13 @@
 					const value = payload[0] as Parameters<MessageEvents['GameState']>[0];
 					if (!value) return;
 					gameState.set(value);
+				})();
+				break;
+			case 'InjectedOverlays':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['InjectedOverlays']>[0];
+					if (!value) return;
+					injectedOverlays.set(value);
 				})();
 				break;
 			case 'Notification':

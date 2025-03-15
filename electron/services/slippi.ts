@@ -90,7 +90,7 @@ export class SlippiJs {
 		this.storeDolphin.setDolphinConnectionState(ConnectionState.Disconnected);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.WaitingForDolphin);
 		this.memoryRead.stopMemoryRead();
-		this.overlayInjection.closeAllOverlays();
+		this.overlayInjection.stopInjection();
 		setTimeout(() => {
 			this.startProcessSearchInterval();
 		}, 1000);

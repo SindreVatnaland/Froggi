@@ -86,6 +86,8 @@
 	export const sessionStats = writable<SessionStats | undefined>();
 	export const statsScene = writable<LiveStatsScene>(LiveStatsScene.WaitingForDolphin);
 
+	export const injectedOverlays = writable<string[]>([]);
+
 	export const obs = writable<Obs>();
 	export const urls = writable<Url>();
 </script>

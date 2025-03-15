@@ -57,6 +57,7 @@ export interface MessageEvents {
 	GameSettings: (settings: GameStartTypeExtended | undefined) => void;
 	GameState: (state: InGameState | undefined) => void;
 	InjectOverlay: (overlayId: string) => void;
+	InjectedOverlays: (overlayId: string[]) => void;
 	CloseInjectedOverlay: (overlayId: string) => void;
 	CloseAllInjectedOverlays: (overlayId: string) => void;
 	InitElectron: () => void;

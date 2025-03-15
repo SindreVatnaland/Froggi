@@ -8,6 +8,7 @@
 		isMobile,
 		electronEmitter,
 		dolphinState,
+		injectedOverlays,
 	} from '$lib/utils/store.svelte';
 	import SceneSelect from './selector/SceneSelect.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -27,6 +28,8 @@
 
 	let deleteOverlayModalOpen = false;
 	let isEmbedModalOpen = false;
+
+	$: isInjected = $injectedOverlays.includes(overlay?.id ?? '');
 
 	$: url = $isElectron ? $urls?.local : $urls.external;
 	$: src = `${url}/obs/overlay/${overlay?.id}/layers`;
@@ -154,7 +157,8 @@
 			{/if}
 			{#if $isElectron}
 				<button
-					class={availableClass}
+					class={`${availableClass}`}
+					style={`${isInjected ? 'border: 2px solid green' : ''}`}
 					disabled={$dolphinState !== ConnectionState.Connected}
 					on:click={() => injectOverlay(overlay?.id)}
 					use:tooltip={$dolphinState === ConnectionState.Connected

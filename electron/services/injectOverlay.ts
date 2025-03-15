@@ -27,7 +27,6 @@ export class OverlayInjection {
 	) {
 		this.log.info('Initializing Overlay Injection Service');
 		if (os.platform() !== 'win32') return;
-		this.initializeInjection();
 		this.initEventListeners();
 	}
 
@@ -64,6 +63,12 @@ export class OverlayInjection {
 			}) as (event: string, ...args: unknown[]) => void
 		);
 	}
+
+	stopInjection = () => { 
+		this.closeAllOverlays();
+		this.overlayInjector?.stop();
+		this.overlayInjector = null;
+	};
 
 	private handleWindowResize = debounce((resizeEvent: GraphicWindowEventResize) => {
 		for (const window of this.windows.values()) {
@@ -123,8 +128,9 @@ export class OverlayInjection {
 		}
 
 		if (this.windows.has(overlayId)) {
-			this.messageHandler.sendMessage('Notification', `Disable overlay injection`, NotificationType.Warning);
+			this.messageHandler.sendMessage('Notification', `Disabled overlay injection`, NotificationType.Warning);
 			this.closeOverlay(overlayId);
+			this.emitInjectedOverlays();
 			return;
 		}
 
@@ -185,6 +191,8 @@ export class OverlayInjection {
 			processPaintEvent(image, window);
 		});
 
+		this.emitInjectedOverlays();
+
 		this.messageHandler.sendMessage('Notification', `Overlay injected: ${overlayId}`, NotificationType.Success);
 	}
 
@@ -203,11 +211,25 @@ export class OverlayInjection {
 		for (const overlayId of this.windows.keys()) {
 			this.closeOverlay(overlayId);
 		}
+		this.emitInjectedOverlays();
+	}
+
+	private emitInjectedOverlays = () => {
+		const activeOverlays = [...this.windows.keys()];
+		this.messageHandler.sendMessage('InjectedOverlays', activeOverlays);
 	}
 
 	injectIntoGame = async (processName: string = "dolphin"): Promise<void> => {
-		if (os.platform() !== 'win32' || !this.overlayInjector) return;
+		if (os.platform() !== 'win32') return;
 		this.log.info(`Searching for game window: ${processName}`);
+
+		await this.initializeInjection();
+
+		if (!this.overlayInjector) {
+			this.log.warn(`Overlay injector not initialized`);
+			this.messageHandler.sendMessage('Notification', 'Overlay injector not initialized', NotificationType.Danger);
+			return;
+		}
 
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
 
