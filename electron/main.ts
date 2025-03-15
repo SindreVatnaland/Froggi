@@ -310,5 +310,5 @@ try {
 		setTimeout(() => app.exit(), 15000)
 	});
 } catch (err) {
-	mainLog.error(err);
+	mainLog.error("Main application crashed", err);
 }

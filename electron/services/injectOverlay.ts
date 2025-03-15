@@ -170,12 +170,16 @@ export class OverlayInjection {
 		})
 		
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
-			this.overlayInjector?.sendFrameBuffer(
-				window.id,
-				image.getBitmap(),
-				image.getSize().width,
-				image.getSize().height
-			);
+			try {
+				this.overlayInjector?.sendFrameBuffer(
+					window.id,
+					image.getBitmap(),
+					image.getSize().width,
+					image.getSize().height
+				);
+			} catch (error) {
+				this.log.error(error);
+			}
 		}, 2, { leading: true, trailing: true });
 
 		window.webContents.on("paint", (_, __, image) => {
@@ -207,8 +211,6 @@ export class OverlayInjection {
 		this.log.info(`Searching for game window: ${processName}`);
 
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
-
-		this.log.info(`Dolphin Settings: ${JSON.stringify(dolphinSettings)}`);
 
 		if (dolphinSettings?.Core?.GFXBackend && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) { 
 			this.log.warn(`Dolphin settings not using D3D backend`);
