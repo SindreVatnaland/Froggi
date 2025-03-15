@@ -23,7 +23,6 @@
 	},
 	"linux": {
 		"icon": "bin/static/favicon.ico",
-		"sign": false,
 		"target": [
 			{
 				"target": "AppImage",

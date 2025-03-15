@@ -37,17 +37,6 @@
 	$: isUsingDisallowedInjectedElement = isDisallowedInjectedElement(dataItem.elementId);
 	$: shouldPreview = !isInjected || (isInjected && !isUsingDisallowedInjectedElement);
 
-	$: console.log(
-		'overlayId',
-		overlayId,
-		'isInjected',
-		isInjected,
-		'isUsingDisallowedInjectedElement',
-		isUsingDisallowedInjectedElement,
-		'shouldPreview',
-		shouldPreview,
-	);
-
 	let div: HTMLElement;
 	$: boardWidth = div?.clientWidth ?? 0;
 	$: boardHeight = div?.clientHeight ?? 0;
