@@ -67,14 +67,13 @@ export class OverlayInjection {
 
 	private handleWindowResize = debounce((resizeEvent: GraphicWindowEventResize) => {
 		for (const window of this.windows.values()) {
-			// Always use full height
 			const newRect = this.getCenteredBounds(resizeEvent.width, resizeEvent.height);
 
 			window.setBounds(newRect);
-			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
-
-			// Manually emit the resize event
 			window.emit("resize");
+			
+			window.reload();
+			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
 		}
 	}, 250);
 

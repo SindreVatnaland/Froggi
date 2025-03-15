@@ -53,7 +53,7 @@ export class Api {
 
 		let player: any = await data?.getConnectCode?.user;
 
-		if (!response) return;
+		if (!data) return;
 
 		this.log.info("Fetched user:", player)
 
