@@ -105,7 +105,7 @@
 				bind:boardWidth={innerWidth}
 			/>
 			{#each fixedLayers.slice().reverse() as layer, i}
-				<div class="w-full h-full z-2 absolute">
+				<div class="w-full h-full z-2 absolute" id="overlay-container">
 					<Grid
 						items={layer.items}
 						bind:rowHeight

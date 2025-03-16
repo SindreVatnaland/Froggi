@@ -132,7 +132,7 @@
 						cols={curOverlay.aspectRatio.width * 2}
 					/>
 					<BoardContainer bind:scene={curOverlay[$statsScene]} edit={true} />
-					<div class="w-full h-full z-2 absolute">
+					<div class="w-full h-full z-2 absolute" id="overlay-container">
 						<Grid
 							bind:items
 							bind:rowHeight

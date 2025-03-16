@@ -81,6 +81,30 @@ try {
 	powerSaveBlocker.start('prevent-display-sleep');
 
 	function createWindow(): BrowserWindow {
+
+		session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+			details.requestHeaders['User-Agent'] = 'MyDesktopApp/1.0 (Windows NT 10.0; Win64; x64)'; // Mimic a desktop app
+			delete details.requestHeaders['Referer']; // Remove referer to avoid origin checks
+		
+			callback({ requestHeaders: details.requestHeaders });
+		  });
+
+		session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+			let headers = details.responseHeaders;
+
+			if (!headers) return;
+
+			delete headers['x-frame-options'];
+			delete headers['X-Frame-Options'];
+		
+			if (headers['content-security-policy']) {
+				headers['content-security-policy'] = headers['content-security-policy'].map(policy =>
+				  policy.replace(/frame-ancestors[^;]+;?/gi, '') // Remove frame restrictions
+				);
+			  }
+		
+			callback({ responseHeaders: headers });
+		});
 		log.info('Creating window');
 		const windowState = windowStateManager({
 			defaultWidth: 800,
