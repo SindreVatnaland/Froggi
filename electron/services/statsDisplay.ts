@@ -38,6 +38,7 @@ import path from 'path';
 import { PacketCapture } from './packetCapture';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { ElectronSessionStore } from './store/storeSession';
+import { retryFunctionAsync } from './../utils/retryHelper';
 
 @singleton()
 export class StatsDisplay {
@@ -70,6 +71,7 @@ export class StatsDisplay {
 			this.slpParser.handleCommand(event.command, event.payload);
 			if (event.command === Command.GAME_START) {
 				const gameSettings = this.slpParser.getSettings();
+				if (!gameSettings) return;
 				this.handleUndefinedPlayers(gameSettings);
 				await this.handleGameStart(gameSettings);
 			}
@@ -115,7 +117,7 @@ export class StatsDisplay {
 		this.storeLiveStats.setGameState(InGameState.Paused);
 	}
 
-	async handleGameStart(settings: GameStartType | null) {
+	async handleGameStart(settings: GameStartType) {
 		this.log.info("Game start:", settings)
 		this.cancelSimulation();
 		this.packetCapture.stopPacketCapture();
@@ -125,9 +127,11 @@ export class StatsDisplay {
 
 		const recentGames = await this.storeGames.getRecentGames();
 
-		const previousSettings = recentGames?.at(-1)?.settings;
+		const previousGameSettings = recentGames?.at(-1)?.settings;
 
-		const replay = await this.findGameFromSettings(settings);
+		const replay = await retryFunctionAsync(5, async () => await this.findGameFromSettings(settings))
+
+		console.log("Replay:", replay)
 		const replaySettings = replay?.getSettings();
 
 		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
@@ -137,7 +141,7 @@ export class StatsDisplay {
 		}
 
 		const isFirstReplay = Boolean(isReplay && recentGames.filter((game) => game.isReplay).length === 0);
-		const isNewMatchId = settings?.matchInfo?.matchId != previousSettings?.matchInfo?.matchId;
+		const isNewMatchId = settings?.matchInfo?.matchId != previousGameSettings?.matchInfo?.matchId;
 		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
 
 		this.storeLiveStats.setGameSettings(settings);
@@ -384,6 +388,7 @@ export class StatsDisplay {
 
 	private findGameFromSettings = async (settings: GameStartType | undefined): Promise<SlippiGame | undefined> => {
 		if (!settings) return;
+		console.log("Finding game from settings:", settings)
 		const matchId = settings.matchInfo?.matchId;
 		const gameNumber = settings.matchInfo?.gameNumber;
 		const randomSeed = settings.randomSeed;
@@ -407,9 +412,6 @@ export class StatsDisplay {
 		settings: GameStartType | GameStartTypeExtended | undefined,
 		gameEnd: GameEndType | undefined,
 	): Promise<GameStats | undefined> {
-		const MAX_RETRIES = 5;
-		let attempt = 0;
-		let game: SlippiGame | undefined;
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 
@@ -418,17 +420,7 @@ export class StatsDisplay {
 		const randomSeed = settings?.randomSeed;
 		this.log.info("Looking for replay:", matchId, "Game number:", gameNumber, "Random seed:", randomSeed);
 
-		while (attempt < MAX_RETRIES) {
-			game = await this.findGameFromSettings(settings)
-
-			if (game) break;
-			attempt++;
-
-			if (attempt < MAX_RETRIES) {
-				this.log.warn(`Retrying... Attempt ${attempt}/${MAX_RETRIES}`);
-				await new Promise((resolve) => setTimeout(resolve, 10 * attempt));
-			}
-		}
+		const game = await retryFunctionAsync(5, async () => await this.findGameFromSettings(settings))
 
 		if (!game) {
 			this.log.error("Could not find recent replay")
