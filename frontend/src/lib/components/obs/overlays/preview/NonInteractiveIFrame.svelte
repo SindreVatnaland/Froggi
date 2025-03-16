@@ -9,13 +9,10 @@
 	export let title: string;
 	export let isElement: boolean = false;
 
-	$: console.log('src', src, 'urls', $urls);
 	$: isSameOrigin =
 		(src.includes($urls.local.split('://')[1]) ||
 			src.includes($urls.external.split('://')[1])) &&
 		isElement;
-
-	$: console.log('isSameOrigin', isSameOrigin);
 </script>
 
 {#if isSameOrigin}
