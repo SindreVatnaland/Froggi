@@ -4,6 +4,7 @@
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { isElectron, urls } from '$lib/utils/store.svelte';
 	import TextElement from '../element/TextElement.svelte';
+	import NonInteractiveIFrame from '../preview/NonInteractiveIFrame.svelte';
 
 	export let dataItem: GridContentItem;
 	export let style: GridContentItemStyle;
@@ -43,4 +44,13 @@
 			alt="custom"
 		/>
 	</div>
+{/if}
+{#if dataItem?.elementId === CustomElement.CustomBoxIframe}
+	<NonInteractiveIFrame
+		title={'Embed'}
+		style={style.cssValue}
+		class={style.classValue}
+		src={dataItem.data.url ?? ''}
+		isElement={true}
+	/>
 {/if}

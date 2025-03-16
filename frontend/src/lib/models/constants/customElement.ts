@@ -25,6 +25,7 @@ export enum CustomElement {
 
     // Custom Box
     CustomBox = 3000,
+    CustomBoxIframe = 3001,
 
     InGameCurrentPlayerControllerButtonA = 3100,
     InGameCurrentPlayerControllerButtonB = 3101,

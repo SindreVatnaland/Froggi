@@ -90,6 +90,7 @@ export interface ElementPayload {
 	percent: Percent
 	shadow: Shadow;
 	string: string | undefined;
+	url: string | undefined;
 	textStroke: Stroke;
 	transform: CssTransform;
 	visibility: VisibilityAnimations;

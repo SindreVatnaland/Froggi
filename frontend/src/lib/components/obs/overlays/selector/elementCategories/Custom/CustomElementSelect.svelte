@@ -28,4 +28,7 @@
 	>
 		Custom Text
 	</SelectOption>
+	<SelectOption description="Embed url" value={CustomElement.CustomBoxIframe} on:select={select}>
+		Embed URL
+	</SelectOption>
 </div>

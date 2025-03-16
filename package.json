@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "0.9.20-beta.42",
+	"version": "0.9.20-beta.43",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -23,7 +23,7 @@
 		"dev": "cross-env NODE_ENV=dev && nodemon",
 		"dev:all": "concurrently -n=svelte,electron -c='#ff3e00',blue \"npm run dev:svelte\" \"npm run dev:electron\"",
 		"dev:svelte": "cd frontend && npm run dev",
-		"dev:electron": "npm run compile:electron && electron --inspect=9229 --remote-debugging-port=9222 build_electron/electron/main.js",
+		"dev:electron": "npm run compile:electron && electron --inspect=9229 --remote-debugging-port=9222 build_electron/electron/main.js --trace-warnings",
 		"build:svelte": "cd frontend && npm run build",
 		"build": "run-script-os",
 		"build:linux": "npm run compile && electron-builder -l --config build.config.json",

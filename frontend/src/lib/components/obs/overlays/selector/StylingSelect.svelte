@@ -36,6 +36,7 @@
 	$: imageSettings = isImageSettings(selectedElementId);
 
 	$: boxSettings = isBoxSettings(selectedElementId);
+	$: iframeSettings = selectedElementId === CustomElement.CustomBoxIframe;
 	$: controllerButtonSettings = selectedElementId >= 3100 && selectedElementId < 3150;
 	$: controllerAnalogButtonSettings = selectedElementId >= 3150 && selectedElementId < 3160;
 	$: controllerAnalogStickSettings = selectedElementId >= 3160 && selectedElementId < 3170;
@@ -184,6 +185,20 @@
 							id="default-input"
 							placeholder="Text"
 							bind:value={payload.string}
+							class="w-full h-full border-secondary color-secondary background-primary-color text-lg rounded-lg block p-2.5"
+						/>
+					</div>
+				</div>
+			{/if}
+			{#if selectedElementId === CustomElement.CustomBoxIframe}
+				<div class="w-full h-fit flex flex-wrap">
+					<h1 class="text-xl font-medium">Embed Url</h1>
+					<div class="w-full h-10">
+						<input
+							type="text"
+							id="default-input"
+							placeholder="Text"
+							bind:value={payload.url}
 							class="w-full h-full border-secondary color-secondary background-primary-color text-lg rounded-lg block p-2.5"
 						/>
 					</div>

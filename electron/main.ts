@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { app, BrowserWindow, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification, powerSaveBlocker } from 'electron';
+import { app, BrowserWindow, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification, powerSaveBlocker, session } from 'electron';
 import contextMenu from 'electron-context-menu';
 import { container } from 'tsyringe';
 import getAppDataPath from 'appdata-path';
