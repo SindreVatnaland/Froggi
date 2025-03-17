@@ -134,17 +134,6 @@
 								/>
 							</NavButton>
 						</div>
-						<div
-							use:tooltip={{
-								content: `<p>Support Froggi</p>`,
-								html: true,
-								placement: 'right',
-								delay: [1000, 0],
-								offset: 25,
-							}}
-						>
-							<BuyMeACoffee />
-						</div>
 					</div>
 				</div>
 				<div class="w-full flex flex-col gap-2 justify-end items-center h-[20%]">
@@ -229,8 +218,6 @@
 						connectionState={$obsConnection.state}
 						click={() => goto('/obs')}
 					/>
-
-					<BuyMeACoffee />
 
 					<NavButton click={() => goto('/settings')}>
 						<img src="/image/button-icons/settings.png" alt="settings" />

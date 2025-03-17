@@ -39,7 +39,7 @@ export class OverlayInjection {
 			this.log.error('Failed to initialize overlay injector using', os.cpus()[0]?.model);
 			return;
 		}
-		
+
 		this.overlayInjector.start();
 		this.overlayInjector.setEventCallback(
 			((event: InjectorEvent, payload: InjectorPayload[InjectorEvent]) => {
@@ -57,14 +57,14 @@ export class OverlayInjection {
 							break;
 						}
 					default:
-						this.log.info(`Event: ${event}, ${JSON.stringify(payload)}`);
+						this.log.info(`Event: ${event}, ${payload}`);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void
 		);
 	}
 
-	stopInjection = () => { 
+	stopInjection = () => {
 		this.closeAllOverlays();
 		this.overlayInjector?.stop();
 		this.overlayInjector = null;
@@ -76,9 +76,9 @@ export class OverlayInjection {
 
 			window.setBounds(newRect);
 			window.emit("resize");
-			
+
 			window.reload();
-			this.log.info(`Resized window: ${window.id}, ${JSON.stringify(window.getBounds())}`);
+			this.log.info(`Resized window: ${window.id}, ${window.getBounds()}`);
 		}
 	}, 250);
 
@@ -144,7 +144,7 @@ export class OverlayInjection {
 		}
 
 		const dolphinWindowBounds = this.getCenteredBounds(dolphinWindowSize.width, dolphinWindowSize.height);
-		this.log.info(`Game window size: ${JSON.stringify(dolphinWindowSize)}`);
+		this.log.info(`Game window size: ${dolphinWindowSize}`);
 
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
@@ -173,7 +173,7 @@ export class OverlayInjection {
 		window.on("resize", () => {
 			this.overlayInjector?.sendWindowBounds(window.id, { rect: window.getBounds() });
 		})
-		
+
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
 			try {
 				this.overlayInjector?.sendFrameBuffer(
@@ -233,7 +233,7 @@ export class OverlayInjection {
 
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
 
-		if (dolphinSettings?.Core?.GFXBackend && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) { 
+		if (dolphinSettings?.Core?.GFXBackend && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) {
 			this.log.warn(`Dolphin settings not using D3D backend`);
 			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Danger);
 			return;
@@ -254,9 +254,9 @@ export class OverlayInjection {
 			return;
 		}
 
-		this.log.info(`Game window found: ${JSON.stringify(this.gameWindow)}`);
+		this.log.info(`Game window found: ${this.gameWindow}`);
 		const window = this.overlayInjector.injectProcess(topWindow);
-		this.log.info(`Injecting overlay into game: ${JSON.stringify(window)}`);
+		this.log.info(`Injecting overlay into game: ${window}`);
 	};
 
 	private findGameWindow = async (processName: string): Promise<IWindow | undefined> => {
