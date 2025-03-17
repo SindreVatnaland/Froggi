@@ -94,37 +94,35 @@
 	});
 </script>
 
-<svelte:window on:resize={debounce(handleResize, 1000)} on:error={handleError} />
+<svelte:window on:error={handleError} />
 
 {#if curScene && rowHeight && fixedLayers.length && ready}
 	<div class="w-full h-full overflow-hidden relative origin-top-left">
-		{#key innerHeight * innerWidth}
-			<BoardContainer
-				scene={curScene}
-				bind:boardHeight={innerHeight}
-				bind:boardWidth={innerWidth}
-			/>
-			{#each fixedLayers.slice().reverse() as layer, i}
-				<div class="w-full h-full z-2 absolute" id="overlay-container">
-					<Grid
-						items={layer.items}
-						bind:rowHeight
-						gap={[0, 0]}
-						let:dataItem
-						cols={[[COL, COL]]}
-						fastStart={true}
-					>
-						<GridContent
-							{preview}
-							{dataItem}
-							bind:curScene
-							additionalDelay={SCENE_TRANSITION_DELAY +
-								curScene.animation.layerRenderDelay * i}
-						/>
-					</Grid>
-				</div>
-			{/each}
-		{/key}
+		<BoardContainer
+			scene={curScene}
+			bind:boardHeight={innerHeight}
+			bind:boardWidth={innerWidth}
+		/>
+		{#each fixedLayers.slice().reverse() as layer, i}
+			<div class="w-full h-full z-2 absolute" id={`layer-${layer.id}`}>
+				<Grid
+					items={layer.items}
+					bind:rowHeight
+					gap={[0, 0]}
+					let:dataItem
+					cols={[[COL, COL]]}
+					fastStart={true}
+				>
+					<GridContent
+						{preview}
+						{dataItem}
+						bind:curScene
+						additionalDelay={SCENE_TRANSITION_DELAY +
+							curScene.animation.layerRenderDelay * i}
+					/>
+				</Grid>
+			</div>
+		{/each}
 		<div class="w-full h-full z-8 absolute" />
 	</div>
 {/if}
