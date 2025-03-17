@@ -18,6 +18,7 @@
 	import Toast from '$lib/components/notification/Toast.svelte';
 	import { initClient } from '$lib/utils/init.svelte';
 	import { page } from '$app/stores';
+	import BuyMeACoffeeEmbed from '$lib/components/embeds/BuyMeACoffeeEmbed.svelte';
 
 	let ready: boolean = false;
 
@@ -67,6 +68,7 @@
 	<Navbar />
 	<GlobalModal />
 	<Toast />
+	<BuyMeACoffeeEmbed />
 	<slot />
 {/if}
 
