@@ -2,7 +2,7 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import os from 'os';
 import { getControllerInputs } from './memoryRead/controllerInputs';
-import { getPause } from './memoryRead/gameState';
+import { getMenuState, getPause } from './memoryRead/gameState';
 import { MessageHandler } from './messageHandler';
 import DolphinMemory from 'dolphin-memory-reader';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
@@ -66,12 +66,13 @@ export class MemoryRead {
 				}
 				this.handleGameState(this.memory);
 				this.handleController(this.memory);
+				this.handleMenuState(this.memory);
 			} catch (err) {
 				this.log.error('Error during memory read interval:', err);
 				this.stopMemoryRead();
 				this.memory = null;
 			}
-		}, 16);
+		}, 64);
 	}
 
 	private handleController(memory: DolphinMemory) {
@@ -86,6 +87,11 @@ export class MemoryRead {
 		if (!isPaused) return;
 		this.storeLiveStats.setGameState(InGameState.Paused);
 	}
+
+	private handleMenuState(memory: DolphinMemory) {
+		getMenuState(memory);
+	}
+
 
 	stopMemoryRead() {
 		this.log.warn('Stopping memory read');
