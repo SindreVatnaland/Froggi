@@ -7,7 +7,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import BoardContainer from '$lib/components/obs/overlays/BoardContainer.svelte';
 	import { updateFont } from './CustomFontHandler.svelte';
-	import { isNil } from 'lodash';
+	import { debounce, isNil } from 'lodash';
 	import { onMount } from 'svelte';
 
 	export let curOverlay: Overlay;
@@ -94,11 +94,18 @@
 	});
 </script>
 
-<svelte:window on:error={handleError} />
+<svelte:window on:error={handleError} on:resize={debounce(handleResize, 100)} />
 
 {#if curScene && rowHeight && fixedLayers.length && ready}
-	<div class="w-full h-full overflow-hidden relative origin-top-left" id="overlay-container">
-		<BoardContainer scene={curScene} boardHeight={innerHeight} boardWidth={innerWidth} />
+	<div
+		class="w-full h-full overflow-hidden relative origin-top-left"
+		style={`width: ${innerWidth}px; height: ${innerHeight}px;`}
+	>
+		<BoardContainer
+			scene={curScene}
+			bind:boardHeight={innerHeight}
+			bind:boardWidth={innerWidth}
+		/>
 		{#each fixedLayers.slice().reverse() as layer, i}
 			<div class="w-full h-full z-2 absolute" id={`layer-${layer.id}`}>
 				<Grid
@@ -109,13 +116,15 @@
 					cols={[[COL, COL]]}
 					fastStart={true}
 				>
-					<GridContent
-						{preview}
-						{dataItem}
-						bind:curScene
-						additionalDelay={SCENE_TRANSITION_DELAY +
-							curScene.animation.layerRenderDelay * i}
-					/>
+					{#key innerHeight * innerWidth}
+						<GridContent
+							{preview}
+							{dataItem}
+							bind:curScene
+							additionalDelay={SCENE_TRANSITION_DELAY +
+								curScene.animation.layerRenderDelay * i}
+						/>
+					{/key}
 				</Grid>
 			</div>
 		{/each}
