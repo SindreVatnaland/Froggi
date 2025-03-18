@@ -2,13 +2,16 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import os from 'os';
 import { getControllerInputs } from './memoryRead/controllerInputs';
-import { getMenuState, getPause } from './memoryRead/gameState';
+import { getPause } from './memoryRead/gameState';
 import { MessageHandler } from './messageHandler';
 import DolphinMemory from 'dolphin-memory-reader';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { InGameState } from '../../frontend/src/lib/models/enum';
 import { isNil } from 'lodash';
 import { isDolphinRunning } from './../utils/dolphinProcess';
+import { MenuState } from '../../frontend/src/lib/models/constants/memoryReadMapper';
+import { ByteSize } from 'dolphin-memory-reader/dist/types/enum';
+
 
 @singleton()
 export class MemoryRead {
@@ -17,6 +20,7 @@ export class MemoryRead {
 	private isWindows = os.platform() === 'win32';
 	private memory: DolphinMemory | null = null;
 	private isReading = false;
+	private prevMenuState: MenuState | null = null;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -89,7 +93,11 @@ export class MemoryRead {
 	}
 
 	private handleMenuState(memory: DolphinMemory) {
-		getMenuState(memory);
+		const menuId = memory.read(0x804A04F0, ByteSize.U8);
+		if (this.prevMenuState === menuId) return;
+		const menuName = MenuState[menuId];
+		this.prevMenuState = menuId;
+		this.log.info(menuId, menuName);
 	}
 
 
