@@ -233,9 +233,10 @@ export class OverlayInjection {
 
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
 
-		if (dolphinSettings?.Core?.GFXBackend && !dolphinSettings?.Core?.GFXBackend?.includes("D3")) {
+		if (dolphinSettings?.Core?.GFXBackend && !["d3", "dx"].some(backend => dolphinSettings?.Core?.GFXBackend?.toLocaleLowerCase().includes(backend))) {
 			this.log.warn(`Dolphin settings not using D3D backend`);
 			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Danger);
+			this.stopInjection();
 			return;
 		}
 
@@ -243,6 +244,7 @@ export class OverlayInjection {
 
 		if (!this.gameWindow) {
 			this.log.warn(`No matching game window found`);
+			this.stopInjection();
 			return;
 		}
 
@@ -251,6 +253,7 @@ export class OverlayInjection {
 
 		if (!topWindow) {
 			this.log.warn(`Game window not found in top windows`);
+			this.stopInjection();
 			return;
 		}
 
