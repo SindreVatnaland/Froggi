@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { overlays, statsScene } from '$lib/utils/store.svelte';
+	import { overlays } from '$lib/utils/store.svelte';
 	import { fade } from 'svelte/transition';
 	import Board from '$lib/components/obs/overlays/Board.svelte';
 	import { page } from '$app/stores';

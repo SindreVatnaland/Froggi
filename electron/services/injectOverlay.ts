@@ -221,7 +221,8 @@ export class OverlayInjection {
 
 	injectIntoGame = async (processName: string = "dolphin"): Promise<void> => {
 		if (os.platform() !== 'win32') return;
-		this.log.info(`Searching for game window: ${processName}`);
+		this.log.info(`CPU Model: ${os.cpus()[0]?.model}`);
+		this.log.info(`Searching for game window: ${processName} `);
 
 		await this.initializeInjection();
 
@@ -257,9 +258,9 @@ export class OverlayInjection {
 			return;
 		}
 
-		this.log.info(`Game window found: ${this.gameWindow}`);
+		this.log.info(`Game window found: ${this.gameWindow} `);
 		const window = this.overlayInjector.injectProcess(topWindow);
-		this.log.info(`Injecting overlay into game: ${window}`);
+		this.log.info(`Injecting overlay into game: ${window} `);
 	};
 
 	private findGameWindow = async (processName: string): Promise<IWindow | undefined> => {

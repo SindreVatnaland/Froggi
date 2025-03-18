@@ -7,7 +7,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import BoardContainer from '$lib/components/obs/overlays/BoardContainer.svelte';
 	import { updateFont } from './CustomFontHandler.svelte';
-	import { debounce, isNil, reverse, slice } from 'lodash';
+	import { isNil } from 'lodash';
 	import { onMount } from 'svelte';
 
 	export let curOverlay: Overlay;
@@ -97,12 +97,8 @@
 <svelte:window on:error={handleError} />
 
 {#if curScene && rowHeight && fixedLayers.length && ready}
-	<div class="w-full h-full overflow-hidden relative origin-top-left">
-		<BoardContainer
-			scene={curScene}
-			bind:boardHeight={innerHeight}
-			bind:boardWidth={innerWidth}
-		/>
+	<div class="w-full h-full overflow-hidden relative origin-top-left" id="overlay-container">
+		<BoardContainer scene={curScene} boardHeight={innerHeight} boardWidth={innerWidth} />
 		{#each fixedLayers.slice().reverse() as layer, i}
 			<div class="w-full h-full z-2 absolute" id={`layer-${layer.id}`}>
 				<Grid

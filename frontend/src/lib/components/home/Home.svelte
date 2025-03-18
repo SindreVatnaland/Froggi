@@ -1,5 +1,4 @@
 <script lang="ts">
-	import BuyMeACoffeeEmbed from '../embeds/BuyMeACoffeeEmbed.svelte';
 	import HomeSlippiData from './HomeSlippiData.svelte';
 </script>
 

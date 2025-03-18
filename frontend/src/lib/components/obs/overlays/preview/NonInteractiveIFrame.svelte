@@ -2,7 +2,7 @@
 	import { urls } from '$lib/utils/store.svelte';
 
 	let _class: string = '';
-	let _style: string;
+	let _style: string = '';
 	export { _class as class };
 	export { _style as style };
 	export let src: string;
@@ -14,21 +14,15 @@
 			src.includes($urls.external.split('://')[1])) &&
 		isElement;
 
-	const container = document.getElementById('overlay-container');
-
-	let containerWidth = container?.clientWidth ?? 1;
-	let containerHeight = container?.clientHeight ?? 1;
-
-	$: console.log('container', containerWidth, containerHeight);
-
 	let itemWidth = 0;
 	let itemHeight = 0;
 
-	$: console.log('item', itemWidth, itemHeight);
+	const getScale = (itemWidth: number) => {
+		if (!itemWidth) return null;
+		return (itemWidth / 1080 / 16) * 9;
+	};
 
-	$: scale = Math.min(containerWidth / 1920);
-
-	$: console.log('scale', scale);
+	$: scale = getScale(itemWidth);
 </script>
 
 {#if isSameOrigin}
@@ -40,17 +34,19 @@
 		bind:clientWidth={itemWidth}
 		bind:clientHeight={itemHeight}
 	>
-		<iframe
-			class="absolute m-0"
-			style={`transform: scale(${scale}) ;transform-origin: top left; width: ${
-				itemWidth / scale
-			}px; height: ${itemHeight / scale}px;`}
-			{src}
-			{title}
-			allowtransparency={true}
-			allow="autoplay; encrypted-media"
-			sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"
-		/>
+		{#if scale}
+			<iframe
+				class="absolute m-0"
+				style={`transform: scale(${scale}) ;transform-origin: top left; width: ${
+					itemWidth / scale
+				}px; height: ${itemHeight / scale}px;`}
+				{src}
+				{title}
+				allowtransparency={true}
+				allow="autoplay; encrypted-media"
+				sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"
+			/>
+		{/if}
 		<div class="w-full h-full absolute z-2" />
 	</div>
 {/if}
