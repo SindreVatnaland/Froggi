@@ -57,7 +57,7 @@ export class OverlayInjection {
 							break;
 						}
 					default:
-						this.log.info(`Event: ${event}, ${payload}`);
+						this.log.info(`Event: `, event, payload);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void
@@ -78,7 +78,7 @@ export class OverlayInjection {
 			window.emit("resize");
 
 			window.reload();
-			this.log.info(`Resized window: ${window.id}, ${window.getBounds()}`);
+			this.log.info(`Resized window: `, window.id, window.getBounds());
 		}
 	}, 250);
 
@@ -93,7 +93,7 @@ export class OverlayInjection {
 	}
 
 	private handleWindowFocus = debounce((focusEvent: GameWindowEventFocus) => {
-		this.log.info(`Game window focus: ${focusEvent}`);
+		this.log.info(`Game window focus: `, focusEvent);
 	});
 
 
@@ -203,7 +203,7 @@ export class OverlayInjection {
 			window.close();
 			this.windows.delete(overlayId);
 			this.overlayInjector?.closeWindow(window.id);
-			this.log.info(`Overlay closed: ${overlayId}`);
+			this.log.info(`Overlay closed: `, overlayId);
 		}
 	};
 
@@ -235,7 +235,7 @@ export class OverlayInjection {
 		const dolphinSettings = this.settingsStore.getDolphinSettings();
 
 		if (dolphinSettings?.Core?.GFXBackend && !["d3", "dx"].some(backend => dolphinSettings?.Core?.GFXBackend?.toLocaleLowerCase().includes(backend))) {
-			this.log.warn(`Dolphin settings not using D3D backend`);
+			this.log.warn(`Dolphin settings not using DirectX backend`);
 			this.messageHandler.sendMessage('Notification', 'Dolphin settings not using D3D backend', NotificationType.Danger);
 			this.stopInjection();
 			return;
@@ -258,9 +258,9 @@ export class OverlayInjection {
 			return;
 		}
 
-		this.log.info(`Game window found: ${this.gameWindow} `);
+		this.log.info(`Game window found: `, this.gameWindow);
 		const window = this.overlayInjector.injectProcess(topWindow);
-		this.log.info(`Injecting overlay into game: ${window} `);
+		this.log.info(`Injecting overlay into game: `, window);
 	};
 
 	private findGameWindow = async (processName: string): Promise<IWindow | undefined> => {

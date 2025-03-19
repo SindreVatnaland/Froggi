@@ -66,7 +66,7 @@ export class SlippiJs {
 		this.dolphinConnection.on(ConnectionEvent.MESSAGE, (message) => {
 			switch (message.type) {
 				case DolphinMessageType.CONNECT_REPLY:
-					this.log.info('Connected: ' + message);
+					this.log.info('Connected: ', message);
 					break;
 				case DolphinMessageType.GAME_EVENT:
 					{
