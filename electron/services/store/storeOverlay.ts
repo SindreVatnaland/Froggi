@@ -450,7 +450,6 @@ export class ElectronOverlayStore {
 			if (!overlay.froggiVersion) {
 				overlay.froggiVersion = froggiVersion;
 			}
-			overlay.froggiVersion = "0.0.0";
 			if (semver.gt("0.9.20-beta.1", overlay.froggiVersion)) {
 				this.reverseLayers(overlay);
 			}
