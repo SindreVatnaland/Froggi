@@ -52,7 +52,7 @@ export class ElectronOverlayStore {
 	async setOverlay(value: Overlay) {
 		if (!value) return;
 		const froggiConfig = this.froggiStore.getFroggiConfig();
-		const froggiVersion = this.isDev ? "0.0.0" : froggiConfig.version
+		const froggiVersion = froggiConfig.version ?? "0.0.0";
 		const overlay = { ...value, froggiVersion: froggiVersion } as Overlay
 		await this.sqliteOverlay.addOrUpdateOverlay(overlay)
 		await this.emitOverlayUpdate()
@@ -416,7 +416,7 @@ export class ElectronOverlayStore {
 		for (const overlay of Object.values(overlays)) {
 			if (!overlay.isDemo) continue;
 			if (!semver.valid(overlay.froggiVersion)) {
-				console.error(`Invalid version: ${overlay.froggiVersion}. Setting to 0.0.0`);
+				console.error(`Invalid version: ${overlay.froggiVersion}. Setting 0.0.0`);
 				overlay.froggiVersion = "0.0.0";
 			}
 
@@ -440,7 +440,7 @@ export class ElectronOverlayStore {
 	}
 
 	private async migrateOverlays(): Promise<void> {
-		if (this.isDev) return;
+		// if (this.isDev) return;
 		this.log.info("Migrating overlays");
 		const overlays = await this.getOverlays();
 

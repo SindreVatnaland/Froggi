@@ -17,7 +17,7 @@
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border-secondary rounded w-40 h-20"
 				on:click={() => goto('/obs/tutorial/new-overlay')}
 			>
-				Create a new overlay
+				Build an overlay
 			</button>
 			<button
 				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border-secondary rounded w-40 h-20"

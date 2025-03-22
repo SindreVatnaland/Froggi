@@ -64,7 +64,7 @@
 </h2>
 <h2>
 	Clicking on a scene will show all elements in that <b>scene</b>
-	 with its appropriate transitions. Note that this preview will display any elements containing mock
+	with its appropriate transitions. Note that this preview will display any elements containing mock
 	data that may otherwise be hidden in a live preview.
 </h2>
 <h2>

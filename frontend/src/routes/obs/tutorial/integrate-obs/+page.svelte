@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
-	import WhatToLearn from '$lib/components/tutorial/new-overlay/WhatToLearn.svelte';
 	import { isNil } from 'lodash';
+	import WhatToLearn from '$lib/components/tutorial/integrate-obs/WhatToLearn.svelte';
+	import OpenInSeparateWindow from '$lib/components/tutorial/OpenInSeparateWindow.svelte';
+	import ObsConnection from '$lib/components/tutorial/integrate-obs/ObsConnection.svelte';
+	import EmbedOverlay from '$lib/components/tutorial/integrate-obs/EmbedOverlay.svelte';
 
 	let scrollElement: HTMLElement;
 	const scrollToTop = () => {
@@ -16,6 +19,18 @@
 		{
 			title: 'What to learn in this tutorial',
 			component: WhatToLearn,
+		},
+		{
+			title: 'Follow in separate window',
+			component: OpenInSeparateWindow,
+		},
+		{
+			title: 'Set up a OBS Connection',
+			component: ObsConnection,
+		},
+		{
+			title: 'Embed Overlay',
+			component: EmbedOverlay,
 		},
 	];
 
@@ -50,7 +65,7 @@
 			{#if scenes[pageIndex]}
 				<svelte:component this={scenes[pageIndex].component} />
 			{:else}
-				<p>PageIndex not found</p>
+				<p>Page not found</p>
 			{/if}
 		</div>
 		<div class="flex justify-between w-full">

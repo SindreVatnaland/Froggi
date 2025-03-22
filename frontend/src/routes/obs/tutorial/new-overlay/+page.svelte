@@ -2,7 +2,7 @@
 	import WhatIsAScene from '$lib/components/tutorial/new-overlay/WhatIsAScene.svelte';
 	import WhatToLearn from '$lib/components/tutorial/new-overlay/WhatToLearn.svelte';
 	import CreateNewOverlay from '$lib/components/tutorial/new-overlay/CreateNewOverlay.svelte';
-	import OpenInSeparateWindow from '$lib/components/tutorial/new-overlay/OpenInSeparateWindow.svelte';
+	import OpenInSeparateWindow from '$lib/components/tutorial/OpenInSeparateWindow.svelte';
 	import InitOverlayConfigurations from '$lib/components/tutorial/new-overlay/InitOverlayConfigurations.svelte';
 	import AddSimpleTextElement from '$lib/components/tutorial/new-overlay/AddSimpleTextElement.svelte';
 	import SessionStatsMenuScene from '$lib/components/tutorial/new-overlay/SessionStatsMenuScene.svelte';

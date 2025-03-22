@@ -115,7 +115,7 @@
 					disabled={!isObsConnected}
 					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary disabled:opacity-50"
 				>
-					Add to OBS
+					Add to OBS (single-click)
 				</button>
 			</div>
 			<h1 class="color-secondary text-md font-medium w-full">
