@@ -1,7 +1,8 @@
 import { spawn } from "child_process";
 import { ProcessInfo } from "../../frontend/src/lib/models/types/injectorTypes";
 
-export function getWindowSizeByPid(pid: number): Promise<{ width: number, height: number }> {
+// TODO: Get if fullscreen
+export function getWindowInfoByPid(pid: number): Promise<{ width: number, height: number }> {
     return new Promise((resolve, reject) => {
         const psScript = `
         $hWnd = (Get-Process -Id ${pid}).MainWindowHandle;

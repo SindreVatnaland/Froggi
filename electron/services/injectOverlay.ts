@@ -7,7 +7,7 @@ import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
 import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, IWindow, OverlayType, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
-import { getProcessByName, getWindowSizeByPid } from '../utils/windowManager';
+import { getProcessByName, getWindowInfoByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { getInjector } from './../utils/injectionHelper';
 
@@ -133,12 +133,11 @@ export class OverlayInjector {
 			this.messageHandler.sendMessage('Notification', `Disabled overlay injection`, NotificationType.Warning);
 			this.closeOverlay(overlayId);
 			this.emitInjectedOverlays();
-			return;
+		} else {
+			this.log.info(`Injecting overlay: ${overlayId}`);
+			this.injectedOverlayIds.push(overlayId);
+			this.emitInjectedOverlays();
 		}
-
-		this.log.info(`Injecting overlay: ${overlayId}`);
-		this.injectedOverlayIds.push(overlayId);
-		this.emitInjectedOverlays();
 
 		if (this.window) {
 			this.log.info(`A window is already injected`);
@@ -147,7 +146,8 @@ export class OverlayInjector {
 
 		let dolphinWindowSize = { width: 1920, height: 1080 };
 		try {
-			dolphinWindowSize = await getWindowSizeByPid(this.gameWindow.processId)
+			dolphinWindowSize = await getWindowInfoByPid(this.gameWindow.processId)
+			console.log("Dolphin size", dolphinWindowSize);
 		} catch (error) {
 			this.log.error(error);
 		}
@@ -158,7 +158,7 @@ export class OverlayInjector {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
 		const port = this.isDev ? '5173' : '3200';
-		this.window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}?isInjected=true`, dolphinWindowBounds);
+		this.window = this.createWindow(`http://localhost:${port}/obs/overlay/inject`, dolphinWindowBounds);
 
 		this.overlayInjector.addWindow(this.window.id, {
 			name: "StatusBar",
