@@ -28,6 +28,7 @@ export class OverlayInjector {
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore
 	) {
 		this.log.info('Initializing Overlay Injection Service');
+		if (os.platform() !== 'win32') return;
 		this.initEventListeners();
 	}
 
