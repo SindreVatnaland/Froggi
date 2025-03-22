@@ -24,6 +24,7 @@
 		elementId: CustomElement,
 		payload: ElementPayload,
 		items: GridContentItem[] | undefined = undefined,
+		itemId: string = newId(),
 	) {
 		const newItem = {
 			[COL]: gridHelp.item({
@@ -34,7 +35,7 @@
 				min: { w: MIN, h: MIN },
 				max: { y: COL - MIN, h: COL + 1 },
 			}),
-			id: newId(),
+			id: itemId,
 			elementId: elementId,
 			data: payload,
 		};

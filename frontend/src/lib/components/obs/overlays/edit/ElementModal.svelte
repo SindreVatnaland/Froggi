@@ -26,12 +26,13 @@
 	import { fixTransition } from './fixTransition';
 	import { isNil } from 'lodash';
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { newId } from '$lib/utils/helper';
 
 	const overlayId = $page.params.overlay;
 
 	export let open: boolean;
 	export let isEdit: boolean = false;
-	let selectedItemId: string | undefined = $currentOverlayEditor.itemId;
+	let selectedItemId: string = $currentOverlayEditor.itemId ?? newId();
 
 	let isElementSelectOpen = false;
 	let selectedElementId: CustomElement;
@@ -67,14 +68,14 @@
 	}
 
 	function getCurrentItems(): GridContentItem[] {
-		let curOverlay = getCurrentOverlay();
+		const curOverlay = getCurrentOverlay();
 		if (isNil(curOverlay)) return [];
 		return curOverlay[$statsScene]?.layers[$currentOverlayEditor?.layerIndex ?? 0]?.items ?? [];
 	}
 
 	function add(statsScene: LiveStatsScene) {
 		let items = getCurrentItems();
-		let newItem = generateNewItem(selectedElementId, payload, items);
+		let newItem = generateNewItem(selectedElementId, payload, items, selectedItemId);
 
 		newItem = fixTransition(newItem);
 

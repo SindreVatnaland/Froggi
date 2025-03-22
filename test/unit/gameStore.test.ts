@@ -123,7 +123,9 @@ describe('ElectronGamesStore', () => {
         storeLiveStats = new ElectronLiveStatsStore(log, eventEmitter, messageHandler)
         storeLiveStats.setStatsSceneTimeout = (liveStatsScene) => { storeLiveStats.setStatsScene(liveStatsScene) }
 
-        storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer)
+        storePlayers = new ElectronPlayersStore(log, eventEmitter, messageHandler)
+
+        storeCurrentPlayer = new ElectronCurrentPlayerStore(log, store, storeLiveStats, storeSession, storeSettings, messageHandler, sqliteCurrentPlayer, storePlayers)
         storeCurrentPlayer.getCurrentPlayer = async (): Promise<CurrentPlayer | undefined> => {
             return {
                 connectCode: connectCode,
@@ -131,7 +133,6 @@ describe('ElectronGamesStore', () => {
             } as CurrentPlayer;
         };
 
-        storePlayers = new ElectronPlayersStore(log, eventEmitter, messageHandler)
 
         electronGamesStore = new ElectronGamesStore(log, eventEmitter, messageHandler, storeLiveStats, {} as SqliteGame, store);
 
