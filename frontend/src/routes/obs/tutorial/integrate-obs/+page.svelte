@@ -6,6 +6,8 @@
 	import OpenInSeparateWindow from '$lib/components/tutorial/OpenInSeparateWindow.svelte';
 	import ObsConnection from '$lib/components/tutorial/integrate-obs/ObsConnection.svelte';
 	import EmbedOverlay from '$lib/components/tutorial/integrate-obs/EmbedOverlay.svelte';
+	import AutomaticSceneSwitch from '$lib/components/tutorial/integrate-obs/AutomaticSceneSwitch.svelte';
+	import ButtonCommands from '$lib/components/tutorial/integrate-obs/ButtonCommands.svelte';
 
 	let scrollElement: HTMLElement;
 	const scrollToTop = () => {
@@ -31,6 +33,14 @@
 		{
 			title: 'Embed Overlay',
 			component: EmbedOverlay,
+		},
+		{
+			title: 'Automatic Scene Switch',
+			component: AutomaticSceneSwitch,
+		},
+		{
+			title: 'Automatic Scene Switch',
+			component: ButtonCommands,
 		},
 	];
 

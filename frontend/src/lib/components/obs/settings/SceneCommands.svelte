@@ -6,7 +6,7 @@
 	import { LiveStatsScene } from '$lib/models/enum';
 	import { Command, SceneSwitchCommands } from '$lib/models/types/commandTypes';
 	import { electronEmitter, sceneSwitch } from '$lib/utils/store.svelte';
-	import { isNil } from 'lodash';
+	import { isNil, startCase } from 'lodash';
 
 	let sceneCommands: SceneSwitchCommands | undefined = $sceneSwitch;
 	let isSceneCommandModalOpen = false;
@@ -37,14 +37,16 @@
 		>
 			{#each scenes as scene}
 				<div class="w-full flex flex-col gap-4">
-					<h1 class="color-secondary text-2xl">{scene}:</h1>
+					<h1 class="color-secondary text-2xl">{startCase(scene)}:</h1>
 					{#each sceneCommands[scene] ?? [] as command}
 						<div class="flex flex-col w-full">
-							<h1 class="color-secondary text-lg">{command.requestType}:</h1>
+							<h1 class="color-secondary text-lg">
+								{startCase(String(command.requestType))}:
+							</h1>
 							{#each Object.keys(command?.payload ?? {}) as key}
 								<div class="flex gap-2 justify-between">
 									<h1 class="color-secondary text-md">
-										{key}
+										{startCase(key)}:
 									</h1>
 									<h1 class="color-secondary text-md">
 										{command?.payload?.[key]}

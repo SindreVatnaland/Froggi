@@ -10,6 +10,7 @@ export async function performUpdate(app: Electron.App, log: ElectronLog): Promis
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.autoDownload = false;
   autoUpdater.autoRunAppAfterInstall = true;
+  autoUpdater.allowPrerelease = false;
   const updateWindow = createUpdateWindow(log);
   try {
     console.log('Performing update tasks...');

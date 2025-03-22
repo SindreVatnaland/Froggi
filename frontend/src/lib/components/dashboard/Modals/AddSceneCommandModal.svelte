@@ -6,6 +6,7 @@
 	import { electronEmitter } from '$lib/utils/store.svelte';
 	import Select from '$lib/components/input/Select.svelte';
 	import CommandSelect from '../ObsCommands/CommandSelect.svelte';
+	import { startCase } from 'lodash';
 
 	export let open: boolean;
 
@@ -30,7 +31,7 @@
 		<Select bind:selected={selectedScene} label="When switching scene to:">
 			{#each Object.values(LiveStatsScene) as scene}
 				<option value={scene} selected={scene === selectedScene}>
-					{scene}
+					{startCase(scene)}
 				</option>
 			{/each}
 		</Select>

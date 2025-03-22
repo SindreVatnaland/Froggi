@@ -11,6 +11,7 @@
 	import NumberInput from '$lib/components/input/NumberInput.svelte';
 	import TextInput from '$lib/components/input/TextInput.svelte';
 	import { LiveStatsScene } from '$lib/models/enum';
+	import { startCase } from 'lodash';
 
 	export let command: Command;
 	export let displayOverlayCommands: boolean = true;
@@ -65,7 +66,7 @@
 <Select bind:selected={command.type} on:change={handleCommandTypeChange} label="Command type:">
 	{#each displayOverlayCommands ? Object.keys(CommandType) : Object.keys(CommandType).filter((command) => command !== CommandType.Overlay) as scene}
 		<option value={scene} selected={scene === CommandType.Obs}>
-			{scene}
+			{startCase(scene)}
 		</option>
 	{/each}
 </Select>
@@ -79,7 +80,7 @@
 				}}
 				selected={command.requestType === option}
 			>
-				{option}
+				{startCase(option)}
 			</option>
 		{/each}
 	{:else if command.type === CommandType.ObsCustom}
@@ -88,7 +89,7 @@
 				value={ObsCustomRequestOptions[option]}
 				selected={command.requestType === option}
 			>
-				{option}
+				{startCase(option)}
 			</option>
 		{/each}
 	{:else if command.type === CommandType.Overlay}
@@ -100,7 +101,7 @@
 				}}
 				selected={command.requestType === option}
 			>
-				{option}
+				{startCase(option)}
 			</option>
 		{/each}
 	{/if}
@@ -108,19 +109,24 @@
 {#if command.payload}
 	{#each payloadOptions as option}
 		{#if option === 'liveStatsScene'}
-			<Select bind:selected={command.payload[option]} label={option}>
+			<Select bind:selected={command.payload[option]} label={startCase(option)}>
 				{#each Object.values(LiveStatsScene) as scene}
 					<option value={scene} selected={scene === command.payload[option]}>
-						{scene}
+						{startCase(scene)}
 					</option>
 				{/each}
 			</Select>
 		{:else if typeof command.payload?.[option] === 'string'}
-			<TextInput bind:value={command.payload[option]} label={option} />
+			<TextInput bind:value={command.payload[option]} label={startCase(option)} />
 		{:else if typeof command.payload?.[option] === 'number' && option === 'inputVolumeMul'}
-			<NumberInput bind:value={command.payload[option]} label={option} max={1} step={0.01} />
+			<NumberInput
+				bind:value={command.payload[option]}
+				label={startCase(option)}
+				max={1}
+				step={0.01}
+			/>
 		{:else if typeof command.payload?.[option] === 'number'}
-			<NumberInput bind:value={command.payload[option]} label={option} />
+			<NumberInput bind:value={command.payload[option]} label={startCase(option)} />
 		{/if}
 	{/each}
 {/if}
