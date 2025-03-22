@@ -14,6 +14,7 @@ import { MessageHandler } from '../messageHandler';
 import { ElectronSessionStore } from './storeSession';
 import { isMatch } from 'lodash';
 import { SqliteCurrentPlayer } from './../../services/sqlite/sqliteCurrentPlayer';
+import { ElectronPlayersStore } from './storePlayers';
 
 @singleton()
 export class ElectronCurrentPlayerStore {
@@ -25,6 +26,7 @@ export class ElectronCurrentPlayerStore {
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => SqliteCurrentPlayer)) private sqliteCurrentPlayer: SqliteCurrentPlayer,
+		@inject(delay(() => ElectronPlayersStore)) private playersStore: ElectronPlayersStore,
 	) {
 		this.log.info('Initializing Current Player Store');
 	}
@@ -61,7 +63,9 @@ export class ElectronCurrentPlayerStore {
 
 	async setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {
 		if (!rankStats) return;
+		this.playersStore.setCurrentPlayerRankStats(rankStats);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerNewRankStats(rankStats);
+
 		if (!player) return;
 		this.messageHandler.sendMessage('CurrentPlayer', player);
 		await this.handleRankChange();

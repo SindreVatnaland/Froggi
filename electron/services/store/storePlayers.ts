@@ -1,4 +1,4 @@
-import type { Player } from '../../../frontend/src/lib/models/types/slippiData';
+import type { Player, RankedNetplayProfile } from '../../../frontend/src/lib/models/types/slippiData';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
@@ -35,6 +35,14 @@ export class ElectronPlayersStore {
             player.displayName ||= player.rank?.current?.displayName ?? "";
         });
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
+    }
+
+    setCurrentPlayerRankStats(player: RankedNetplayProfile) {
+        const currentPlayer = this.players.find(p => p.connectCode === player.connectCode);
+        if (!currentPlayer) return;
+        currentPlayer.rank = { current: player };
+        this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
+
     }
 
     initEventListeners() {
