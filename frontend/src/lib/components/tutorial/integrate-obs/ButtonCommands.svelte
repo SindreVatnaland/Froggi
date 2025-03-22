@@ -53,6 +53,13 @@
 	.
 </h2>
 
+<h2>
+	This example triggers the <b>Save Replay Buffer</b>
+	command. That will save the recent few seconds/minute of the stream depending on the
+	<b>OBS</b>
+	configuration.
+</h2>
+
 <img
 	class="border-secondary"
 	src="/image/tutorial/integrate-obs/obs-controller-commands-preview.png"
@@ -65,6 +72,6 @@
 	<b>Dolphin</b>
 	needs to be opened for
 	<b>Froggi</b>
-	 to read the button inputs. The buttons previewed on each command should be highlighted when a button
+	to read the button inputs. The buttons previewed on each command should be highlighted when a button
 	is being pressed to verify that the controller is registered.
 </h2>
