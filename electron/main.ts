@@ -28,7 +28,7 @@ import { createBackgroundNotification, createErrorNotification } from './utils/n
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
-import { OverlayInjection } from './services/injectOverlay';
+import { OverlayInjector } from './services/injectOverlay';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -279,7 +279,7 @@ try {
 			container.resolve(FileHandler);
 			container.resolve(FrontendLogger);
 			container.resolve(PacketCapture);
-			container.resolve(OverlayInjection);
+			container.resolve(OverlayInjector);
 		});
 
 		mainWindow.on('close', (event) => {

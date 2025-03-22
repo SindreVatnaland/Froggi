@@ -13,8 +13,10 @@ import { getInjector } from './../utils/injectionHelper';
 
 
 @singleton()
-export class OverlayInjection {
-	private windows: Map<string, BrowserWindow> = new Map();
+export class OverlayInjector {
+	injectedOverlayIds: string[] = [];
+
+	private window: BrowserWindow | null = null;
 	private overlayInjector: OverlayType | null = null;
 	private gameWindow: IWindow | undefined;
 
@@ -26,7 +28,6 @@ export class OverlayInjection {
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore
 	) {
 		this.log.info('Initializing Overlay Injection Service');
-		if (os.platform() !== 'win32') return;
 		this.initEventListeners();
 	}
 
@@ -71,16 +72,15 @@ export class OverlayInjection {
 	};
 
 	private handleWindowResize = debounce((resizeEvent: GraphicWindowEventResize) => {
-		for (const window of this.windows.values()) {
-			const newRect = this.getCenteredBounds(resizeEvent.width, resizeEvent.height);
+		if (!this.window) return;
+		const newRect = this.getCenteredBounds(resizeEvent.width, resizeEvent.height);
 
-			window.setBounds(newRect);
-			window.emit("resize");
+		this.window.setBounds(newRect);
+		this.window.emit("resize");
 
-			window.reload();
-			this.log.info(`Resized window: `, window.id, window.getBounds());
-		}
-	}, 250);
+		this.window.reload();
+		this.log.info(`Resized window: `, this.window.id, this.window.getBounds());
+	});
 
 	private getCenteredBounds = (width: number, height: number): Electron.Rectangle => {
 		const newHeight = height;
@@ -114,6 +114,7 @@ export class OverlayInjection {
 		return window;
 	}
 
+	// TODO: Once stable, inject automatically and handle injectedOverlayIds
 	private injectOverlay = async (overlayId: string) => {
 		if (!this.overlayInjector) {
 			this.log.warn('Overlay injector not initialized');
@@ -127,14 +128,21 @@ export class OverlayInjection {
 			return;
 		}
 
-		if (this.windows.has(overlayId)) {
+		if (this.injectedOverlayIds.includes(overlayId)) {
 			this.messageHandler.sendMessage('Notification', `Disabled overlay injection`, NotificationType.Warning);
 			this.closeOverlay(overlayId);
 			this.emitInjectedOverlays();
 			return;
 		}
 
-		this.closeAllOverlays(); // Temporary while we only support one overlay at a times
+		this.log.info(`Injecting overlay: ${overlayId}`);
+		this.injectedOverlayIds.push(overlayId);
+		this.emitInjectedOverlays();
+
+		if (this.window) {
+			this.log.info(`A window is already injected`);
+			return;
+		}
 
 		let dolphinWindowSize = { width: 1920, height: 1080 };
 		try {
@@ -149,15 +157,14 @@ export class OverlayInjection {
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
 		const port = this.isDev ? '5173' : '3200';
-		const window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}?isInjected=true`, dolphinWindowBounds);
-		this.windows.set(overlayId, window);
+		this.window = this.createWindow(`http://localhost:${port}/obs/overlay/${overlayId}?isInjected=true`, dolphinWindowBounds);
 
-		this.overlayInjector.addWindow(window.id, {
+		this.overlayInjector.addWindow(this.window.id, {
 			name: "StatusBar",
 			resizable: false,
 			transparent: true,
-			maxWidth: window.getBounds().width,
-			maxHeight: window.getBounds().height,
+			maxWidth: this.window.getBounds().width,
+			maxHeight: this.window.getBounds().height,
 			minWidth: 0,
 			minHeight: 0,
 			rect: dolphinWindowBounds,
@@ -167,11 +174,12 @@ export class OverlayInjection {
 				top: 0,
 				height: 0,
 			},
-			nativeHandle: window.getNativeWindowHandle().readUInt32LE(0),
+			nativeHandle: this.window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
-		window.on("resize", () => {
-			this.overlayInjector?.sendWindowBounds(window.id, { rect: window.getBounds() });
+		this.window.on("resize", () => {
+			if (!this.window) return;
+			this.overlayInjector?.sendWindowBounds(this.window.id, { rect: this.window.getBounds() });
 		})
 
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
@@ -187,8 +195,9 @@ export class OverlayInjection {
 			}
 		}, 2, { leading: true, trailing: true });
 
-		window.webContents.on("paint", (_, __, image) => {
-			processPaintEvent(image, window);
+		this.window.webContents.on("paint", (_, __, image) => {
+			if (!this.window) return;
+			processPaintEvent(image, this.window);
 		});
 
 		this.emitInjectedOverlays();
@@ -197,26 +206,16 @@ export class OverlayInjection {
 	}
 
 	private closeOverlay = (overlayId: string) => {
-		const window = this.windows.get(overlayId);
-		if (window) {
-			window.removeAllListeners();
-			window.close();
-			this.windows.delete(overlayId);
-			this.overlayInjector?.closeWindow(window.id);
-			this.log.info(`Overlay closed: `, overlayId);
-		}
+		this.injectedOverlayIds = this.injectedOverlayIds.filter((id) => id !== overlayId);
 	};
 
 	closeAllOverlays = () => {
-		for (const overlayId of this.windows.keys()) {
-			this.closeOverlay(overlayId);
-		}
+		this.injectedOverlayIds = [];
 		this.emitInjectedOverlays();
 	}
 
 	private emitInjectedOverlays = () => {
-		const activeOverlays = [...this.windows.keys()];
-		this.messageHandler.sendMessage('InjectedOverlays', activeOverlays);
+		this.messageHandler.sendMessage('InjectedOverlays', this.injectedOverlayIds);
 	}
 
 	injectIntoGame = async (processName: string = "dolphin"): Promise<void> => {

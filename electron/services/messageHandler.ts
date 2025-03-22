@@ -25,6 +25,7 @@ import http from 'http';
 import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
 import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
+import { OverlayInjector } from './injectOverlay';
 
 @singleton()
 export class MessageHandler {
@@ -57,6 +58,7 @@ export class MessageHandler {
 		@inject(delay(() => ElectronSessionStore)) private storeSession: ElectronSessionStore,
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
 		@inject(delay(() => ElectronFroggiStore)) private storeFroggi: ElectronFroggiStore,
+		@inject(delay(() => OverlayInjector)) private overlayInjector: OverlayInjector,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -80,9 +82,9 @@ export class MessageHandler {
 				this.app.use('/', staticFrontendServe);
 				this.app.use('*', staticFrontendServe);
 			}
-			
+
 			this.app.use('/public', staticFileServe);
-			
+
 			this.server.listen(3200, (_: any) => {
 				this.log.info(`listening on *:${this.port}`);
 			});
@@ -123,7 +125,7 @@ export class MessageHandler {
 				const parse = JSON.parse(value);
 				const socketId = parse['socketId'];
 				if (!socketId) return;
-				for (let [key, value] of Object.entries(parse) as [
+				for (const [key, value] of Object.entries(parse) as [
 					key: keyof MessageEvents,
 					value: Parameters<MessageEvents[keyof MessageEvents]>,
 				]) {
@@ -208,6 +210,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
+		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string) {

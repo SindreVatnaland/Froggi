@@ -29,7 +29,7 @@
 	<div>Cannot embed this url</div>
 {:else}
 	<div
-		class={`${_class} w-full h-full relative m-0`}
+		class={`relative ${_class} w-full h-full m-0`}
 		style={_style}
 		bind:clientWidth={itemWidth}
 		bind:clientHeight={itemHeight}

@@ -21,7 +21,7 @@ import { MessageHandler } from './messageHandler';
 import { SqliteCurrentPlayer } from './sqlite/sqliteCurrentPlayer';
 import { dateTimeNow } from './../utils/functions';
 import { ElectronSessionStore } from './store/storeSession';
-import { OverlayInjection } from './injectOverlay';
+import { OverlayInjector } from './injectOverlay';
 
 @singleton()
 export class SlippiJs {
@@ -39,7 +39,7 @@ export class SlippiJs {
 		@inject(ElectronSettingsStore) private storeSettings: ElectronSettingsStore,
 		@inject(MessageHandler) private messageHandler: MessageHandler,
 		@inject(MemoryRead) private memoryRead: MemoryRead,
-		@inject(OverlayInjection) private overlayInjection: OverlayInjection
+		@inject(OverlayInjector) private overlayInjection: OverlayInjector
 	) {
 		this.initSlippiJs();
 	}

@@ -159,7 +159,6 @@
 				<button
 					class={`${availableClass}`}
 					style={`${isInjected ? 'border: 2px solid green' : ''}`}
-					disabled={$dolphinState !== ConnectionState.Connected}
 					on:click={() => injectOverlay(overlay?.id)}
 					use:tooltip={$dolphinState === ConnectionState.Connected
 						? {
