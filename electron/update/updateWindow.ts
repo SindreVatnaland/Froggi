@@ -3,14 +3,16 @@ import { autoUpdater } from "electron-updater";
 import path from "path";
 import { createErrorNotification } from "./../utils/notifications";
 import { ElectronLog } from "electron-log";
+import Store from 'electron-store';
 
 export async function performUpdate(app: Electron.App, log: ElectronLog): Promise<void> {
-  console.log(app);
+  console.log(app)
+  const store = new Store();
   autoUpdater.disableDifferentialDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.autoDownload = false;
   autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.allowPrerelease = false;
+  autoUpdater.allowPrerelease = Boolean(store.get('settings.froggi.betaOptIn'))
   const updateWindow = createUpdateWindow(log);
   try {
     console.log('Performing update tasks...');
