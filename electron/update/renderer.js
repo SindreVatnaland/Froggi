@@ -25,5 +25,5 @@ window.electron.autoUpdater.onStatus((status) => {
 window.electron.autoUpdater.onProgress((progress) => {
 	statusMessage.textContent = `${'Downloading Update'}`;
 	progressBar.value = progress;
-	progressText.innerText = `${progress}%`;
+	progressText.textContent = `${progress}%`;
 });
