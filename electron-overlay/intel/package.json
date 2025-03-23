@@ -1,5 +1,5 @@
 {
-	"name": "electron-overlay",
+	"name": "electron-overlay-intel",
 	"version": "1.0.0",
 	"main": "index.js",
 	"scripts": {
