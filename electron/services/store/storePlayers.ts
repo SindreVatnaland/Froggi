@@ -40,7 +40,7 @@ export class ElectronPlayersStore {
     setCurrentPlayerRankStats(player: RankedNetplayProfile) {
         const currentPlayer = this.players.find(p => p.connectCode === player.connectCode);
         if (!currentPlayer) return;
-        currentPlayer.rank = { current: player };
+        currentPlayer.rank = { current: player, predictedRating: undefined };
         this.messageHandler.sendMessage("CurrentPlayers", this.players as Player[]);
 
     }

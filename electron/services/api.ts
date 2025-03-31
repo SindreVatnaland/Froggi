@@ -16,7 +16,7 @@ export class Api {
 		try {
 			const rankData = await this.getPlayerRankStats(player.connectCode);
 			if (!rankData) return;
-			return { ...player, rank: { current: this.enrichData(rankData) } }
+			return { ...player, rank: { current: this.enrichData(rankData), predictedRating: undefined } }
 		} catch (err) {
 			this.log.error(err);
 			return
@@ -44,6 +44,8 @@ export class Api {
                 id
                 ratingOrdinal
                 ratingUpdateCount
+								ratingMu
+								ratingSigma
                 wins
                 losses
                 dailyGlobalPlacement
@@ -70,7 +72,7 @@ export class Api {
 
 		const data = response?.data.data;
 
-		let player: any = await data?.getConnectCode?.user;
+		const player: any = await data?.getConnectCode?.user;
 
 		if (!data) return;
 
@@ -79,10 +81,9 @@ export class Api {
 		const rankData: RankedNetplayProfile = {
 			connectCode: connectCode,
 			displayName: player.displayName,
-			totalGames: player.rankedNetplayProfile.characters
-				.map((c: any) => c?.gameCount ?? 0)
-				.reduce((a: number, b: number) => a + b, 0),
-
+			totalGames: player.rankedNetplayProfile?.ratingUpdateCount ?? 0,
+			ratingMu: player.rankedNetplayProfile?.ratingMu ?? 0,
+			ratingSigma: player.rankedNetplayProfile?.ratingSigma ?? 0,
 			characters: player?.rankedNetplayProfile?.characters
 				?.sort((a: Character, b: Character) => b.gameCount - a.gameCount)
 				?.slice(0, 3)

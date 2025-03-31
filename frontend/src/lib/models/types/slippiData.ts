@@ -1,5 +1,6 @@
 import type { ActionCountsType, FrameEntryType, GameEndType, GameStartType, OverallType, PlayerType, PostFrameUpdateType, PreFrameUpdateType, StatsType } from "@slippi/slippi-js";
 import type { BestOf } from "../enum";
+import type { Rating } from "openskill";
 
 export interface SlippiCharacter {
     character: string;
@@ -58,6 +59,12 @@ export interface PlayerFrameType {
 
 export interface Rank {
     current: RankedNetplayProfile | undefined;
+    predictedRating: RatingPrediction | undefined;
+}
+
+export interface RatingPrediction {
+    win: Rating & { ordinal: number };
+    loss: Rating & { ordinal: number };
 }
 
 export interface RankHistory { }
@@ -140,6 +147,8 @@ export interface RankedNetplayProfile {
     rank: string;
     seasons: RankedNetplaySeason[];
     totalGames: number;
+    ratingMu: number;
+    ratingSigma: number;
     totalSets: number;
     wins: number;
     winsPercent: number;

@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "0.9.21-beta.1",
+	"version": "0.9.21-beta.2",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -75,6 +75,7 @@
 		"node-fetch": "^3.3.2",
 		"nodemon": "^2.0.22",
 		"obs-websocket-js": "^5.0.6",
+		"openskill": "^4.1.0",
 		"openurl": "^1.1.1",
 		"reflect-metadata": "^0.1.14",
 		"run-script-os": "^1.1.6",

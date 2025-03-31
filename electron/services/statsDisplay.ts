@@ -39,6 +39,8 @@ import { PacketCapture } from './packetCapture';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
+import { predictNewRating } from './../utils/rankPrediction';
+import { Rating } from 'openskill';
 
 @singleton()
 export class StatsDisplay {
@@ -304,7 +306,7 @@ export class StatsDisplay {
 
 		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
 
-		return (
+		const currentPlayersWithRankStats = (
 			await Promise.all(
 				currentPlayers.map(async (player: PlayerType) => {
 					if (player.connectCode === currentPlayer?.connectCode)
@@ -313,6 +315,21 @@ export class StatsDisplay {
 				}),
 			)
 		).filter((player): player is Player => player !== undefined);
+
+		const player1Rating: Rating = {
+			mu: currentPlayersWithRankStats[0].rank?.current?.ratingMu ?? 25,
+			sigma: currentPlayersWithRankStats[0].rank?.current?.ratingSigma ?? 8.33,
+		}
+
+		const player2Rating: Rating = {
+			mu: currentPlayersWithRankStats[1].rank?.current?.ratingMu ?? 25,
+			sigma: currentPlayersWithRankStats[1].rank?.current?.ratingSigma ?? 8.33,
+		}
+
+		currentPlayersWithRankStats[0].rank!.predictedRating = predictNewRating(player1Rating, player2Rating)
+		currentPlayersWithRankStats[1].rank!.predictedRating = predictNewRating(player2Rating, player1Rating)
+
+		return currentPlayersWithRankStats;
 	}
 
 	private async getGameFiles(): Promise<string[] | undefined> {

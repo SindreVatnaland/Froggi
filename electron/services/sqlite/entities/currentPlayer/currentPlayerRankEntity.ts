@@ -1,5 +1,5 @@
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { CurrentPlayerRank, RankedNetplayProfile } from '../../../../../frontend/src/lib/models/types/slippiData';
+import { CurrentPlayerRank, RankedNetplayProfile, RatingPrediction } from '../../../../../frontend/src/lib/models/types/slippiData';
 import { CurrentPlayerEntity } from "./currentPlayerEntity";
 
 @Entity()
@@ -16,5 +16,9 @@ export class CurrentPlayerRankEntity implements CurrentPlayerRank {
 
   @OneToOne(() => CurrentPlayerEntity, (player) => player.rank)
   player: CurrentPlayerEntity;
+
+
+  @Column({ type: "simple-json", nullable: true })
+  predictedRating: RatingPrediction | undefined;
 }
 
