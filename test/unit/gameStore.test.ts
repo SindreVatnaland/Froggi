@@ -19,6 +19,9 @@ import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
 import { MessageHandler } from "services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
+// import { Rating } from "openskill";
+// import { predictNewRating } from "../../electron/utils/rankPrediction";
+
 
 jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
@@ -83,6 +86,20 @@ describe('ElectronGamesStore', () => {
         store = new Store({ cwd: `${__dirname}/..` })
         store.delete("player")
         store.delete("stats")
+
+        // const ratingP1: Rating = {
+        //     mu: -7.74180284136523,
+        //     sigma: 4.260964522392478,
+        // }
+
+        // const ratingP2: Rating = {
+        //     mu: 14.219087310834182,
+        //     sigma: 3.165391,
+        // }
+
+        // const predictedRating: RatingPrediction = predictNewRating(ratingP1, ratingP2)
+
+        // console.log(predictedRating)
 
         const api: Api = new Api(log)
         const messageHandler = {
