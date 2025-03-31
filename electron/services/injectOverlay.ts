@@ -35,7 +35,7 @@ export class OverlayInjector {
 	private initializeInjection = async () => {
 		this.log.info('Initializing overlay injection');
 
-		this.overlayInjector = await getInjector();
+		this.overlayInjector = getInjector();
 
 		if (!this.overlayInjector) {
 			this.log.error('Failed to initialize overlay injector using', os.cpus()[0]?.model);

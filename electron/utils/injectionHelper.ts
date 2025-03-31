@@ -10,7 +10,7 @@ const isAmdCpu = () => {
     return os.cpus()[0]?.model?.toLowerCase().includes('amd');
 }
 
-export const getInjector = async () => {
+export const getInjector = () => {
     const isAmd = isAmdCpu();
     const isIntel = isIntelCpu();
 
@@ -18,8 +18,8 @@ export const getInjector = async () => {
         return AmdOverlay;
     } else if (isIntel) {
         return IntelOverlay;
-    } else {
-        return null;
     }
+
+    return null;
 
 };
