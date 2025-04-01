@@ -7,7 +7,7 @@ import { Api } from "../../electron/services/api";
 import { ElectronSessionStore } from "../../electron/services/store/storeSession";
 import { ElectronPlayersStore } from "../../electron/services/store/storePlayers";
 import { ElectronCurrentPlayerStore } from "../../electron/services/store/storeCurrentPlayer";
-import { CurrentPlayer, GameStartMode, Player, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayer, GameStartMode, Player, RatingPrediction, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
 import { ElectronLiveStatsStore } from "../../electron/services/store/storeLiveStats";
 import { ElectronSettingsStore } from "../../electron/services/store/storeSettings";
 import log from 'electron-log';
@@ -19,6 +19,7 @@ import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
 import { MessageHandler } from "services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
+import { predictNewRating } from "../../electron/utils/rankPrediction";
 
 
 jest.mock("../../electron/services/api")
@@ -86,19 +87,28 @@ describe('ElectronGamesStore', () => {
         store.delete("stats")
 
         // TODO: Write actual tests for the rating prediction
-        // const ratingP1: Rating = {
-        //     mu: -7.74180284136523,
-        //     sigma: 4.260964522392478,
-        // }
 
-        // const ratingP2: Rating = {
-        //     mu: 14.219087310834182,
-        //     sigma: 3.165391,
-        // }
+        const player1 = {
+            rank: {
+                current: {
+                    ratingMu: 48.50625028174815,
+                    ratingSigma: 2.63253,
+                }
+            }
+        } as Player
 
-        // const predictedRating: RatingPrediction = predictNewRating(ratingP1, ratingP2)
+        const player2 = {
+            rank: {
+                current: {
+                    ratingMu: 48.743637002273275,
+                    ratingSigma: 2.62357,
+                }
+            }
+        } as Player
 
-        // console.log(predictedRating)
+        const predictedRating: RatingPrediction = predictNewRating(player1, player2)
+
+        console.log(predictedRating)
 
         const api: Api = new Api(log)
         const messageHandler = {
