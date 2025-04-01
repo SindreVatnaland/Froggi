@@ -44,7 +44,7 @@
 				in:fly={{ y: -100, duration: 500, delay: 700 }}
 				out:fly={{ y: -100, duration: 250, delay: 0 }}
 			>
-				{$currentPlayer?.rank?.current?.rating}
+				{$currentPlayer?.rank?.current?.rating.toFixed(1)}
 			</h2>
 			<div
 				class="flex w-full justify-center gap-8"

@@ -15,9 +15,11 @@ import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { Api, getPlayerRank } from './api';
 import {
+	CurrentPlayer,
 	GameStartTypeExtended,
 	GameStats,
 	Player,
+	RankedNetplayProfile,
 	SlippiLauncherSettings,
 	StatsTypeExtended,
 } from '../../frontend/src/lib/models/types/slippiData';
@@ -40,7 +42,6 @@ import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
-import { Rating } from 'openskill';
 
 @singleton()
 export class StatsDisplay {
@@ -214,16 +215,29 @@ export class StatsDisplay {
 		const isPostSet = game.score.some((score) => score >= Math.ceil(bestOf / 2));
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
-		const oldRank = await this.storeCurrentPlayer.getCurrentPlayerCurrentRankStats();
+		const player = await this.storeCurrentPlayer.getCurrentPlayer();
+		const prevRank = player?.rank;
 
 		if ((game.settings?.isSimulated) && playerConnectCode) {
 			this.mockPostGameScene();
 			return;
 		}
 
-		if (isPostSet && isRanked && playerConnectCode && oldRank && !game.isReplay) {
+		if (isPostSet && isRanked && playerConnectCode && prevRank && !game.isReplay && prevRank.current) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
-			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(oldRank, playerConnectCode)
+			if (player.rank?.predictedRating) {
+				const didWin = game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
+				await this.handlePredictedRank(player, prevRank.current, didWin);
+				return;
+			}
+
+			if (!player.rank?.current) {
+				this.log.error("Player rank is undefined. Cannot handle rank change.")
+				return;
+			}
+
+			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
+			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
 			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 			return;
 		}
@@ -240,6 +254,26 @@ export class StatsDisplay {
 				LiveStatsScene.Menu,
 				150000,
 			);
+	}
+
+	private async handlePredictedRank(player: CurrentPlayer, prevRank: RankedNetplayProfile, didWin: boolean) {
+		const prediction = didWin ? player.rank?.predictedRating?.win : player.rank?.predictedRating?.loss;
+		if (!prediction) return;
+		prevRank.rating = prediction.ordinal ?? prevRank.rating;
+		prevRank.totalGames += 1;
+		prevRank.wins += didWin ? 1 : 0;
+		prevRank.losses += didWin ? 0 : 1;
+		prevRank.rank = getPlayerRank(prevRank.rating, prevRank.dailyRegionalPlacement, prevRank.dailyGlobalPlacement);
+
+		this.log.info("Handling predicted rank:", prevRank)
+
+		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
+		setTimeout(async () => {
+			if (prevRank) return;
+			this.log.info("Applying actual rank to predicted rank")
+			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode)
+			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerRankStats);
+		}, 15000);
 	}
 
 	private async mockPostGameScene() {
@@ -316,18 +350,8 @@ export class StatsDisplay {
 			)
 		).filter((player): player is Player => player !== undefined);
 
-		const player1Rating: Rating = {
-			mu: currentPlayersWithRankStats[0].rank?.current?.ratingMu ?? 25,
-			sigma: currentPlayersWithRankStats[0].rank?.current?.ratingSigma ?? 8.33,
-		}
-
-		const player2Rating: Rating = {
-			mu: currentPlayersWithRankStats[1].rank?.current?.ratingMu ?? 25,
-			sigma: currentPlayersWithRankStats[1].rank?.current?.ratingSigma ?? 8.33,
-		}
-
-		currentPlayersWithRankStats[0].rank!.predictedRating = predictNewRating(player1Rating, player2Rating)
-		currentPlayersWithRankStats[1].rank!.predictedRating = predictNewRating(player2Rating, player1Rating)
+		currentPlayersWithRankStats[0].rank!.predictedRating = predictNewRating(currentPlayersWithRankStats[0], currentPlayersWithRankStats[1])
+		currentPlayersWithRankStats[1].rank!.predictedRating = predictNewRating(currentPlayersWithRankStats[1], currentPlayersWithRankStats[0])
 
 		return currentPlayersWithRankStats;
 	}

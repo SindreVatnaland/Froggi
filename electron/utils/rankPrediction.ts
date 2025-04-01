@@ -1,5 +1,5 @@
 import { rate, Rating } from 'openskill'
-import { RatingPrediction } from '../../frontend/src/lib/models/types/slippiData';
+import { Player, RatingPrediction } from '../../frontend/src/lib/models/types/slippiData';
 
 // This value is approximately the minimum value we can expect someone's sigma to reach
 const TAU = 0.3;
@@ -15,7 +15,17 @@ export const slippiOrdinal = (rating: Rating) => {
   return ORDINAL_SCALING * (rating.mu - 3 * rating.sigma) + ORDINAL_OFFSET;
 };
 
-export const predictNewRating = (playerRating: Rating, opponentRating: Rating): RatingPrediction => {
+export const predictNewRating = (player: Player, opponent: Player): RatingPrediction => {
+  const playerRating: Rating = {
+    mu: player.rank?.current?.ratingMu ?? 25,
+    sigma: player.rank?.current?.ratingSigma ?? 8.33,
+  }
+
+  const opponentRating: Rating = {
+    mu: opponent.rank?.current?.ratingMu ?? 25,
+    sigma: opponent.rank?.current?.ratingSigma ?? 8.33,
+  }
+
   const [[playerPotentialWinRating]] = rate([[playerRating], [opponentRating]], { tau: TAU });
   const [, [playerPotentialLossRating]] = rate([[opponentRating], [playerRating]], { tau: TAU });
 
@@ -27,6 +37,7 @@ export const predictNewRating = (playerRating: Rating, opponentRating: Rating): 
       mu: playerPotentialWinRating.mu,
       sigma: playerPotentialWinRating.sigma,
       ordinal: playerPotentialWinRatingOrdinal,
+
     },
     loss: {
       mu: playerPotentialLossRating.mu,

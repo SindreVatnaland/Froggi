@@ -32,7 +32,7 @@
 
 {#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Rating}
 	<TextElement {style} {dataItem}>
-		{defaultPreview ? `1100.0` : player?.rank?.current?.rating ?? '-'}
+		{defaultPreview ? `1100.0` : player?.rank?.current?.rating.toFixed(1) ?? '-'}
 	</TextElement>
 {/if}
 

@@ -67,6 +67,9 @@ try {
 	const localEmitter = new TypedEmitter();
 	const clientEmitter = new TypedEmitter();
 
+	localEmitter.setMaxListeners(30);
+	clientEmitter.setMaxListeners(30);
+
 	const serveURL = serve({ directory: 'build' });
 	const port = dev ? `${VITE_PORT}` : `${BACKEND_PORT}`;
 

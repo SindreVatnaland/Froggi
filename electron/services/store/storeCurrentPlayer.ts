@@ -55,9 +55,10 @@ export class ElectronCurrentPlayerStore {
 
 	async setCurrentPlayerCurrentRankStats(rankStats: RankedNetplayProfile | undefined) {
 		if (!rankStats) return;
-		this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
+		await this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerCurrentRankStats(rankStats);
 		if (!player) return;
+		delete player.rank?.predictedRating
 		this.messageHandler.sendMessage('CurrentPlayer', player);
 	}
 
@@ -99,9 +100,9 @@ export class ElectronCurrentPlayerStore {
 		if (!player) return;
 		this.log.info('Handling rank change');
 		this.log.info(`Previous rating: ${player.rank?.current?.rating}. New rating: ${player.rank?.new?.rating}`);
-		setTimeout(() => {
+		setTimeout(async () => {
 			this.log.info("Setting new rank to current rank");
-			this.setCurrentPlayerCurrentRankStats(player.rank?.new);
+			await this.setCurrentPlayerCurrentRankStats(player.rank?.new);
 		}, 3000);
 		const rankSceneTimeout = 8000;
 		if (this.storeLiveStats.getStatsScene() === LiveStatsScene.RankChange) {
