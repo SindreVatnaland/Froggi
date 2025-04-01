@@ -19,8 +19,6 @@ import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
 import { MessageHandler } from "services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
-// import { Rating } from "openskill";
-// import { predictNewRating } from "../../electron/utils/rankPrediction";
 
 
 jest.mock("../../electron/services/api")
@@ -87,6 +85,7 @@ describe('ElectronGamesStore', () => {
         store.delete("player")
         store.delete("stats")
 
+        // TODO: Write actual tests for the rating prediction
         // const ratingP1: Rating = {
         //     mu: -7.74180284136523,
         //     sigma: 4.260964522392478,
