@@ -32,7 +32,9 @@
 
 	export let open: boolean;
 	export let isEdit: boolean = false;
-	let selectedItemId: string = $currentOverlayEditor.itemId ?? newId();
+	export let selectedItemId: string = $currentOverlayEditor.itemId;
+
+	$: console.log(selectedItemId);
 
 	let isElementSelectOpen = false;
 	let selectedElementId: CustomElement;

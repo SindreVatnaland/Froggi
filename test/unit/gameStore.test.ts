@@ -91,8 +91,8 @@ describe('ElectronGamesStore', () => {
         const player1 = {
             rank: {
                 current: {
-                    ratingMu: 48.50625028174815,
-                    ratingSigma: 2.63253,
+                    ratingMu: 45.17743069524177,
+                    ratingSigma: 3.2865821399108603,
                 }
             }
         } as Player
@@ -100,8 +100,8 @@ describe('ElectronGamesStore', () => {
         const player2 = {
             rank: {
                 current: {
-                    ratingMu: 48.743637002273275,
-                    ratingSigma: 2.62357,
+                    ratingMu: 39.69230406284388,
+                    ratingSigma: 4.551073751266102,
                 }
             }
         } as Player

@@ -97,7 +97,7 @@ export class MemoryRead {
 		if (this.prevMenuState === menuId) return;
 		const menuName = MenuState[menuId];
 		this.prevMenuState = menuId;
-		this.log.info(menuId, menuName);
+		this.log.info("Menu: ", menuId, menuName);
 	}
 
 

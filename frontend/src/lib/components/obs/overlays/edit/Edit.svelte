@@ -203,7 +203,9 @@
 		</div>
 		<SceneEditModal bind:open={isSceneModalOpen} {overlay} />
 	{/if}
-	<ElementModal bind:open={isElementModalOpen} />
+	{#key selectedItemId}
+		<ElementModal bind:open={isElementModalOpen} {selectedItemId} />
+	{/key}
 	<PreviewModal bind:open={isPreviewModalOpen} />
 	<EmbedModal bind:open={isEmbedModalOpen} />
 </main>
