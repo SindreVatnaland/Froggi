@@ -58,7 +58,6 @@ export class ElectronCurrentPlayerStore {
 		await this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerCurrentRankStats(rankStats);
 		if (!player) return;
-		delete player.rank?.predictedRating
 		this.messageHandler.sendMessage('CurrentPlayer', player);
 	}
 

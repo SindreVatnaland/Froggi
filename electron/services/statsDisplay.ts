@@ -236,9 +236,8 @@ export class StatsDisplay {
 				return;
 			}
 
-			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
-			this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 			return;
 		}
 
@@ -269,7 +268,6 @@ export class StatsDisplay {
 
 		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
 		setTimeout(async () => {
-			if (prevRank) return;
 			this.log.info("Applying actual rank to predicted rank")
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode)
 			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerRankStats);
