@@ -32,12 +32,10 @@
 {#if dataItem?.elementId === CustomElement.MatchGameMode}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
-			? `Unranked`
+			? `UNRANKED`
 			: $gameSettings
-			? `${$gameSettings?.matchInfo?.mode
-					?.at(0)
-					?.toUpperCase()}${$gameSettings.matchInfo?.mode?.slice(1)}`
-			: 'Local'}
+			? `${$gameSettings?.matchInfo?.mode}`
+			: 'LOCAL'}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1Score}
