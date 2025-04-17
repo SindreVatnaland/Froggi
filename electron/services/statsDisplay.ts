@@ -13,7 +13,7 @@ import {
 } from '@slippi/slippi-js';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
-import { Api, getPlayerRank } from './api';
+import { Api } from './api';
 import {
 	CurrentPlayer,
 	GameStartTypeExtended,
@@ -42,6 +42,7 @@ import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
+import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
 
 @singleton()
 export class StatsDisplay {

@@ -37,7 +37,7 @@
 	<PlayerRankIcon
 		{dataItem}
 		{style}
-		player={$currentPlayer}
+		rank={$currentPlayer?.rank?.current?.rank?.toUpperCase()}
 		preview={defaultPreview}
 		fallbackIcon="GOLD 2"
 	/>

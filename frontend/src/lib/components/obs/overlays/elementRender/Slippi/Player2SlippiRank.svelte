@@ -21,12 +21,17 @@
 {/if}
 
 {#if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankIcon}
-	<PlayerRankIcon {dataItem} {style} {player} preview={defaultPreview} />
+	<PlayerRankIcon
+		{dataItem}
+		{style}
+		rank={player?.rank?.current?.rank?.toUpperCase()}
+		preview={defaultPreview}
+	/>
 {/if}
 
 {#if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankText}
 	<TextElement {style} {dataItem}>
-		{defaultPreview ? `Silver 1` : player?.rank?.current?.rank ?? 'Unranked'}
+		{defaultPreview ? `SILVER 1` : player?.rank?.current?.rank ?? 'UNRANKED'}
 	</TextElement>
 {/if}
 

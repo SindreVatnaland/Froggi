@@ -129,6 +129,26 @@ export enum CustomElement {
 
     SlippiRankChangeRatingDifference = 4140,
 
+    SlippiRankCurrentPlayerPredictedWinRankText = 4160,
+    SlippiRankPlayer1PredictedWinRankText = 4161,
+    SlippiRankPlayer2PredictedWinRankText = 4162,
+    SlippiRankCurrentPlayerPredictedWinRating = 4163,
+    SlippiRankPlayer1PredictedWinRating = 4164,
+    SlippiRankPlayer2PredictedWinRating = 4165,
+    SlippiRankCurrentPlayerPredictedLossRankText = 4166,
+    SlippiRankPlayer1PredictedLossRankText = 4167,
+    SlippiRankPlayer2PredictedLossRankText = 4168,
+    SlippiRankCurrentPlayerPredictedLossRating = 4169,
+    SlippiRankPlayer1PredictedLossRating = 4170,
+    SlippiRankPlayer2PredictedLossRating = 4171,
+
+    SlippiCurrentPlayerRankChangePredictedWinRatingDifference = 4180,
+    SlippiCurrentPlayerRankChangePredictedLossRatingDifference = 4181,
+    SlippiPlayer1RankChangePredictedWinRatingDifference = 4183,
+    SlippiPlayer1RankChangePredictedLossRatingDifference = 4184,
+    SlippiPlayer2RankChangePredictedWinRatingDifference = 4185,
+    SlippiPlayer2RankChangePredictedLossRatingDifference = 4186,
+
     //Post Match Game Summary
     CurrentSetGameRecentPlayer1Score = 4200,
     CurrentSetGameRecentPlayer2Score = 4201,
@@ -638,6 +658,13 @@ export enum CustomElement {
     SlippiRankCurrentPlayerCharacter3Icon = 6030,
     SlippiRankPlayer1Character3Icon = 6031,
     SlippiRankPlayer2Character3Icon = 6032,
+
+    SlippiRankCurrentPlayerPredictedWinRankIcon = 6050,
+    SlippiRankPlayer1PredictedWinRankIcon = 6051,
+    SlippiRankPlayer2PredictedWinRankIcon = 6052,
+    SlippiRankCurrentPlayerPredictedLossRankIcon = 6060,
+    SlippiRankPlayer1PredictedLossRankIcon = 6061,
+    SlippiRankPlayer2PredictedLossRankIcon = 6062,
 
     CurrentSetGameRecentStage = 6100,
     CurrentSetGameRecentPlayer1CharacterIcon = 6101,

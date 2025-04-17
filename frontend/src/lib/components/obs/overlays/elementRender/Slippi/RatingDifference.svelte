@@ -1,35 +1,51 @@
 <script lang="ts">
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { isNil } from 'lodash';
 	import TextElement from '../../element/TextElement.svelte';
-	import { CurrentPlayer, GameStartTypeExtended } from '$lib/models/types/slippiData';
+	import { CurrentPlayer, CurrentPlayerRank } from '$lib/models/types/slippiData';
+	import { CustomElement } from '$lib/models/constants/customElement';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean = false;
 	export let style: GridContentItemStyle;
 	export let currentPlayer: CurrentPlayer;
-	export let gameSettings: GameStartTypeExtended;
 
-	let currentDifference: number | null;
-	$: gameSettings, (currentDifference = null);
-	$: difference =
-		(currentPlayer?.rank?.new?.rating ?? 0) - (currentPlayer?.rank?.current?.rating ?? 0);
+	$: currentDifference = getCurrentDifference(currentPlayer.rank);
+	$: predictedWinDifference = getPredictedWinDifference(currentPlayer.rank);
+	$: predictedLossDifference = getPredictedLossDifference(currentPlayer.rank);
 
-	$: currentDifference = getCurrentDifference(difference);
+	const getCurrentDifference = (rank: CurrentPlayerRank | undefined): number => {
+		if (!rank) return 0;
+		const difference = (rank?.new?.rating ?? 0) - (rank?.current?.rating ?? 0);
 
-	const getCurrentDifference = (difference: number) => {
-		if (!isNil(currentDifference)) return currentDifference;
+		if (difference < 0.1) return Number(difference.toFixed(2));
+		return Number(difference.toFixed(1));
+	};
+
+	const getPredictedWinDifference = (rank: CurrentPlayerRank | undefined) => {
+		if (!rank) return 0;
+		const difference = (rank?.predictedRating?.win?.ordinal ?? 0) - (rank?.new?.rating ?? 0);
+
+		if (difference < 0.1) return Number(difference.toFixed(2));
+		return Number(difference.toFixed(1));
+	};
+
+	const getPredictedLossDifference = (rank: CurrentPlayerRank | undefined) => {
+		if (!rank) return 0;
+		const difference = (rank?.new?.rating ?? 0) - (rank?.predictedRating?.loss.ordinal ?? 0);
+
 		if (difference < 0.1) return Number(difference.toFixed(2));
 		return Number(difference.toFixed(1));
 	};
 </script>
 
-{#if defaultPreview || !isNil(currentDifference)}
-	<TextElement {style} {dataItem}>
-		{defaultPreview
-			? `+132.41`
-			: currentDifference
-			? `${currentDifference >= 0 ? '+' : ''}${currentDifference.toFixed(1)}`
-			: '+0'}
-	</TextElement>
+{#if dataItem?.elementId === CustomElement.SlippiRankChangeRatingDifference}
+	{#if defaultPreview || Math.abs(currentDifference) > 0.001}
+		<TextElement {style} {dataItem}>
+			{defaultPreview
+				? `+132.4`
+				: currentDifference
+				? `${currentDifference >= 0 ? '+' : ''}${currentDifference.toFixed(1)}`
+				: '+0'}
+		</TextElement>
+	{/if}
 {/if}

@@ -164,7 +164,6 @@
 				{dataItem}
 				{defaultPreview}
 				{style}
-				gameSettings={$gameSettings}
 				currentPlayer={$currentPlayer}
 				currentPlayers={$currentPlayers}
 			/>

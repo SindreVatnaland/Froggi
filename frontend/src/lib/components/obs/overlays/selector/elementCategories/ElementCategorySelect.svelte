@@ -42,6 +42,10 @@
 	import Player1ControllerInput from './CustomHud/Player1ControllerInput.svelte';
 	import Player2ControllerInput from './CustomHud/Player2ControllerInput.svelte';
 	import RankChangeData from './SlippiData/RankChangeData.svelte';
+	import CurrentPlayerPredictedSlippiRank from '../../elementRender/Slippi/CurrentPlayerPredictedSlippiRank.svelte';
+	import CurrentPlayerPredictedSlippiData from './PredictedSlippiData/CurrentPlayerPredictedSlippiData.svelte';
+	import Player2PredictedSlippiData from './PredictedSlippiData/Player2PredictedSlippiData.svelte';
+	import Player1PredictedSlippiData from './PredictedSlippiData/Player1PredictedSlippiData.svelte';
 
 	export let selectedElementId: CustomElement;
 	export let open: boolean;
@@ -126,6 +130,18 @@
 				LiveStatsScene.PostGame,
 				LiveStatsScene.PostSet,
 			].includes($statsScene),
+		},
+		{
+			category: ElementCategory.CurrentPlayerPredictedData,
+			visible: [LiveStatsScene.InGame, LiveStatsScene.PostGame].includes($statsScene),
+		},
+		{
+			category: ElementCategory.Player1PredictedData,
+			visible: [LiveStatsScene.InGame, LiveStatsScene.PostGame].includes($statsScene),
+		},
+		{
+			category: ElementCategory.Player2PredictedData,
+			visible: [LiveStatsScene.InGame, LiveStatsScene.PostGame].includes($statsScene),
 		},
 		{
 			category: ElementCategory.Session,
@@ -317,6 +333,15 @@
 				{/if}
 				{#if selectedCategory === ElementCategory.Player2Data}
 					<RecentGamePlayer2SlippiData on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.CurrentPlayerPredictedData}
+					<CurrentPlayerPredictedSlippiData on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.Player1PredictedData}
+					<Player1PredictedSlippiData on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.Player2PredictedData}
+					<Player2PredictedSlippiData on:select={select} />
 				{/if}
 
 				{#if selectedCategory === ElementCategory.CurrentPlayerPostGameAttackCount}

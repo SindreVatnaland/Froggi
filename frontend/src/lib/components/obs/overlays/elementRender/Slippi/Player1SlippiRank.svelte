@@ -23,7 +23,7 @@
 	<PlayerRankIcon
 		{dataItem}
 		{style}
-		{player}
+		rank={player?.rank?.current?.rank?.toUpperCase()}
 		preview={defaultPreview}
 		fallbackIcon={'SILVER 2'}
 	/>

@@ -3,18 +3,17 @@
 	import type { Player } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
-	export let player: Player | undefined;
+	export let rank: string | undefined;
 	export let preview: boolean = false;
 	export let style: GridContentItemStyle;
 	export let fallbackIcon = 'GOLD 2';
 
-	const playerRankIcon = player?.rank?.current?.rank?.toUpperCase();
 	$: getRankIcon = (rankIcon: string | undefined) => {
 		if (preview) return fallbackIcon;
 		if (rankIcon) return rankIcon;
 		return '';
 	};
-	$: rankIcon = getRankIcon(playerRankIcon);
+	$: rankIcon = getRankIcon(rank);
 </script>
 
 {#if rankIcon}
