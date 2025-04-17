@@ -204,7 +204,7 @@ export class StatsDisplay {
 		}, 5000)
 	}
 
-	private async handlePostGameScene(game: GameStats | undefined) {
+	private async handlePostGameScene(game: GameStats | undefined): Promise<void> {
 		if (isNil(game)) return;
 		this.log.info("Handle post game scene:")
 
@@ -238,7 +238,6 @@ export class StatsDisplay {
 
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
 			await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
-			return;
 		}
 
 		if (isPostSet) {
@@ -269,9 +268,9 @@ export class StatsDisplay {
 		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
 		setTimeout(async () => {
 			this.log.info("Applying actual rank to predicted rank")
-			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode)
+			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode, 3, 3000, 1.5);
 			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerRankStats);
-		}, 15000);
+		}, 10000);
 	}
 
 	private async mockPostGameScene() {
@@ -342,7 +341,7 @@ export class StatsDisplay {
 			await Promise.all(
 				currentPlayers.map(async (player: PlayerType) => {
 					if (player.connectCode === currentPlayer?.connectCode)
-						return { ...player, rank: { current: currentPlayer?.rank?.current } }
+						return { ...player, rank: { current: currentPlayer?.rank?.new } }
 					return await this.api.getPlayerWithRankStats(player);
 				}),
 			)
