@@ -19,6 +19,7 @@ import {
 	GameStartTypeExtended,
 	GameStats,
 	Player,
+	Rank,
 	RankedNetplayProfile,
 	SlippiLauncherSettings,
 	StatsTypeExtended,
@@ -217,7 +218,13 @@ export class StatsDisplay {
 		this.log.info("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const player = await this.storeCurrentPlayer.getCurrentPlayer();
-		const prevRank = player?.rank;
+
+		if (!player) {
+			this.log.error("Player not found. Cannot handle post game scene.")
+			return;
+		};
+
+		const prevRank = { ...player?.rank } as Rank;
 
 		if ((game.settings?.isSimulated) && playerConnectCode) {
 			this.mockPostGameScene();
@@ -229,16 +236,13 @@ export class StatsDisplay {
 			if (player.rank?.predictedRating) {
 				const didWin = game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
 				await this.handlePredictedRank(player, prevRank.current, didWin);
-				return;
-			}
-
-			if (!player.rank?.current) {
+			} else if (player.rank?.current) {
+				const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
+				await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+			} else {
 				this.log.error("Player rank is undefined. Cannot handle rank change.")
 				return;
 			}
-
-			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
-			await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
 		}
 
 		if (isPostSet) {
@@ -268,7 +272,7 @@ export class StatsDisplay {
 
 		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
 		setTimeout(async () => {
-			this.log.info("Applying actual rank to predicted rank")
+			this.log.info("Applying actual rank to correct predicted rank")
 			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode, 3, 3000, 1.5);
 			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerRankStats);
 		}, 10000);
