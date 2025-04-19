@@ -56,13 +56,12 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Create or update GitHub Release
-              uses: ncipollo/release-action@v1
+            - uses: softprops/action-gh-release@v2
+              env:
+                  GITHUB_TOKEN: ${{ secrets.PAT }}
               with:
-                  tag: ${{ github.ref_name }}
-                  name: Release ${{ github.ref_name }}
+                  files: ${{ inputs['file'] }}
+                  draft: false
+                  tag_name: ${{ github.ref_name }}
                   prerelease: ${{ contains(github.ref_name, 'beta') }}
-                  allowUpdates: false # ✅ Allows updating an existing release
-                  replacesArtifacts: true # ✅ Removes old assets and replaces them
-                  generateReleaseNotes: true # Or use `body: "Your notes"`
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  fail_on_unmatched_files: false
