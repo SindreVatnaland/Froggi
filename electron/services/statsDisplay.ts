@@ -234,8 +234,7 @@ export class StatsDisplay {
 		if (isPostSet && isRanked && playerConnectCode && prevRank && !game.isReplay && prevRank.current) {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			if (player.rank?.predictedRating) {
-				const didWin = game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
-				await this.handlePredictedRank(player, prevRank.current, didWin);
+				await this.handlePredictedRank(player, prevRank.current, game);
 			} else if (player.rank?.current) {
 				const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
 				await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
@@ -259,14 +258,17 @@ export class StatsDisplay {
 			);
 	}
 
-	private async handlePredictedRank(player: CurrentPlayer, prevRank: RankedNetplayProfile, didWin: boolean) {
+	private async handlePredictedRank(player: CurrentPlayer, prevRank: RankedNetplayProfile, game: GameStats) {
+		const didWin = game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
 		const prediction = didWin ? player.rank?.predictedRating?.win : player.rank?.predictedRating?.loss;
 		if (!prediction) return;
 		prevRank.rating = prediction.ordinal ?? prevRank.rating;
-		prevRank.totalGames += 1;
+		prevRank.totalGames += game.score.reduce((a, b) => a + b, 0);
 		prevRank.wins += didWin ? 1 : 0;
 		prevRank.losses += didWin ? 0 : 1;
 		prevRank.rank = getPlayerRank(prevRank.rating, prevRank.dailyRegionalPlacement, prevRank.dailyGlobalPlacement);
+		prevRank.ratingMu = prediction.mu ?? prevRank.ratingMu;
+		prevRank.ratingSigma = prediction.sigma ?? prevRank.ratingSigma;
 
 		this.log.info("Handling predicted rank:", prevRank)
 

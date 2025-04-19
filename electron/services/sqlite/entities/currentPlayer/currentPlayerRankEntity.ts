@@ -17,7 +17,6 @@ export class CurrentPlayerRankEntity implements CurrentPlayerRank {
   @OneToOne(() => CurrentPlayerEntity, (player) => player.rank)
   player: CurrentPlayerEntity;
 
-
   @Column({ type: "simple-json", nullable: true })
   predictedRating: RatingPrediction | undefined;
 }

@@ -26,27 +26,27 @@ export class DiscordRpc {
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 	) {
 		if (this.dev) return;
-		this.rpc
-			.login({ clientId: '1143955754643112016' })
-			.catch((err) => this.log.error('err', err));
 		this.initDiscordJs();
 	}
 
 	initDiscordJs() {
 		this.log.info('Initializing Discord RPC');
-		this.rpc.on('ready', () => {
+		this.rpc
+			.login({ clientId: '1143955754643112016' })
+			.catch((err) => this.log.error('err', err));
+		this.rpc.on('ready', async () => {
 			this.setMenuActivity('Menu');
 			this.initDiscordEvents();
 		});
 	}
 
-	initDiscordEvents = () => {
-		this.localEmitter.on("LiveStatsSceneChange", (scene: LiveStatsScene) => {
+	private initDiscordEvents = () => {
+		this.localEmitter.on("LiveStatsSceneChange", async (scene: LiveStatsScene) => {
 			if ([LiveStatsScene.InGame].includes(scene)) {
-				this.setMenuActivity('In Game');
+				await this.setMenuActivity('In Game');
 				return;
 			}
-			this.setMenuActivity('Menu');
+			await this.setMenuActivity('Menu');
 		});
 
 		this.localEmitter.on("GameSettings", async (settings: GameStartType | undefined) => {
@@ -118,7 +118,7 @@ export class DiscordRpc {
 			this.updateActivity();
 		}, 1000, { trailing: true, maxWait: 1200 }));
 
-		this.localEmitter.on("PostGameStats", () => {
+		this.localEmitter.on("PostGameStats", async () => {
 			const players = this.storePlayers.getCurrentPlayers();
 			const player1 = players?.at(0);
 			const player2 = players?.at(1);
@@ -130,7 +130,7 @@ export class DiscordRpc {
 				0,
 			)} - ${score.at(1)}) ${player2?.connectCode ? player2?.connectCode : 'Player2'}`;
 
-			this.setMenuActivity(details, state);
+			await this.setMenuActivity(details, state);
 		});
 
 		this.localEmitter.on("GameScore", (score: number[]) => {
@@ -150,7 +150,7 @@ export class DiscordRpc {
 	};
 
 	setMenuActivity = async (menuActivity: string, state: string | undefined = undefined) => {
-		this.log.info('Discord menu');
+		this.log.info('Discord menu activity:', menuActivity);
 		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
 		this.activity = {
 			...this.activity,
@@ -183,8 +183,8 @@ export class DiscordRpc {
 }
 
 const futureTimerEpoch = (milliseconds: number) => {
-	var oldDateObj = new Date();
-	var newDateObj = new Date();
+	const oldDateObj = new Date();
+	const newDateObj = new Date();
 	newDateObj.setTime(oldDateObj.getTime() + milliseconds);
 	return newDateObj.getTime();
 };
@@ -212,7 +212,7 @@ const buttonBuilder = (
 	};
 };
 
-const CharacterConversion: any = {
+const CharacterConversion: Record<number, string> = {
 	0: 'CF',
 	1: 'DK',
 	2: 'Fox',
@@ -241,7 +241,7 @@ const CharacterConversion: any = {
 	25: 'Ganon',
 };
 
-const StageConversion: any = {
+const StageConversion: Record<number, string> = {
 	2: 'Fountain of Dreams',
 	3: 'Pokémon Stadium',
 	4: "Princess Peach's Castle",
