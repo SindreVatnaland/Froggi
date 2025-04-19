@@ -62,7 +62,7 @@ jobs:
                   tag: ${{ github.ref_name }}
                   name: Release ${{ github.ref_name }}
                   prerelease: ${{ contains(github.ref_name, 'beta') }}
-                  allowUpdates: true # ✅ Allows updating an existing release
-                  replacesArtifacts: false # ✅ Removes old assets and replaces them
+                  allowUpdates: false # ✅ Allows updating an existing release
+                  replacesArtifacts: true # ✅ Removes old assets and replaces them
                   generateReleaseNotes: true # Or use `body: "Your notes"`
                   token: ${{ secrets.GITHUB_TOKEN }}
