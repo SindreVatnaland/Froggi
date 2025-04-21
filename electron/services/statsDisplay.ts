@@ -344,6 +344,7 @@ export class StatsDisplay {
 		let currentPlayerNewSlippiData: Player | undefined;
 		if (mode === "ranked" && currentPlayer) {
 			currentPlayerNewSlippiData = await this.api.getPlayerWithRankStats(currentPlayer);
+			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayerNewSlippiData);
 			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerNewSlippiData?.rank?.current);
 		}
 
