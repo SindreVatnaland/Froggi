@@ -31,7 +31,7 @@ import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { ElectronPlayersStore } from './store/storePlayers';
-import { dateTimeNow, getGameMode } from '../utils/functions';
+import { dateTimeNow } from '../utils/functions';
 import { analyzeMatch } from '../utils/analyzeMatch';
 import os from 'os';
 import { debounce, isNil } from 'lodash';
@@ -44,6 +44,7 @@ import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
 import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
+import { getGameMode } from '../../frontend/src/lib/utils/gamePredicates';
 
 @singleton()
 export class StatsDisplay {
@@ -273,11 +274,6 @@ export class StatsDisplay {
 		this.log.info("Handling predicted rank:", prevRank)
 
 		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
-		setTimeout(async () => {
-			this.log.info("Applying actual rank to correct predicted rank")
-			const currentPlayerRankStats = await this.api.getNewRankWithBackoff(prevRank, player.connectCode, 3, 3000, 1.5);
-			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerRankStats);
-		}, 10000);
 	}
 
 	private async mockPostGameScene() {
@@ -343,12 +339,19 @@ export class StatsDisplay {
 		}
 
 		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
+		const mode = getGameMode(settings);
+
+		let currentPlayerNewSlippiData: Player | undefined;
+		if (mode === "ranked" && currentPlayer) {
+			currentPlayerNewSlippiData = await this.api.getPlayerWithRankStats(currentPlayer);
+			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerNewSlippiData?.rank?.current);
+		}
 
 		const currentPlayersWithRankStats = (
 			await Promise.all(
 				currentPlayers.map(async (player: PlayerType) => {
 					if (player.connectCode === currentPlayer?.connectCode)
-						return { ...player, rank: { current: currentPlayer?.rank?.new } }
+						return currentPlayerNewSlippiData ?? { ...player, rank: currentPlayer?.rank };
 					return await this.api.getPlayerWithRankStats(player);
 				}),
 			)

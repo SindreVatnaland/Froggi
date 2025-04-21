@@ -65,12 +65,7 @@ export class SqliteCurrentPlayer {
 
       currentPlayer = fixCurrentPlayer(currentPlayer, rank);
 
-      if (!currentPlayer.rank) {
-        this.log.warn(`Rank entity not found for player ${rank.connectCode}, creating a new one.`);
-        currentPlayer.rank = { current: rank, new: rank } as CurrentPlayerRankEntity;
-      } else {
-        currentPlayer.rank.current = rank;
-      }
+      currentPlayer.rank = { current: rank, new: rank } as CurrentPlayerRankEntity;
 
       await this.currentPlayerRepo.save(currentPlayer);
       return currentPlayer;

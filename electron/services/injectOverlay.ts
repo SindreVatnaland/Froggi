@@ -59,7 +59,7 @@ export class OverlayInjector {
 							break;
 						}
 					default:
-						this.log.info(`Event: `, event, payload);
+						// this.log.info(`Event: `, event, payload);
 						break
 				}
 			}) as (event: string, ...args: unknown[]) => void

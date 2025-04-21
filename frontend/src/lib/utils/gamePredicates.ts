@@ -48,7 +48,7 @@ export const didPlayerWin = (game: GameStats, player: Player): boolean => {
     return game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
 }
 
-export const getGameMode = (settings: GameStartType): GameStartMode => {
+export const getGameMode = (settings: GameStartType | null): GameStartMode => {
     return settings?.matchInfo?.matchId?.match(/mode\.(\w+)/)?.at(1) as GameStartMode ?? "local";
 }
 
