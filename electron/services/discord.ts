@@ -43,7 +43,6 @@ export class DiscordRpc {
 	private initDiscordEvents = () => {
 		this.localEmitter.on("LiveStatsSceneChange", async (scene: LiveStatsScene) => {
 			if ([LiveStatsScene.InGame].includes(scene)) {
-				await this.setMenuActivity('In Game');
 				return;
 			}
 			await this.setMenuActivity('Menu');
