@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "0.9.21-beta.19",
+	"version": "0.9.21-beta.20",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",

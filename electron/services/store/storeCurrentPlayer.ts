@@ -47,7 +47,8 @@ export class ElectronCurrentPlayerStore {
 		return player?.rank?.current;
 	}
 
-	async setCurrentPlayerBaseData(basePlayer: Player) {
+	async setCurrentPlayerBaseData(basePlayer: Player | undefined) {
+		if (!basePlayer) return;
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerBaseData(basePlayer);
 		if (!player) return;
 		this.messageHandler.sendMessage('CurrentPlayer', player);

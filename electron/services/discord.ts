@@ -167,7 +167,7 @@ export class DiscordRpc {
 			smallImageKey: `${currentPlayer?.rank?.current?.rank.toLowerCase().replace(' ', '_')}`,
 			state:
 				state ??
-				`${currentPlayer?.rank?.current?.rank || 'No rank'} - ${currentPlayer?.rank?.current?.rating || 'No rating'
+				`${currentPlayer?.rank?.current?.rank || 'No rank'} - ${currentPlayer?.rank?.current?.rating.toFixed(1) || 'No rating'
 				}`,
 		};
 		this.updateActivity();
