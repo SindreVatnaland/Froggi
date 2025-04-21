@@ -236,9 +236,11 @@ export class StatsDisplay {
 			this.storeLiveStats.setStatsScene(LiveStatsScene.RankChange);
 			if (player.rank?.predictedRating) {
 				await this.handlePredictedRank(player, prevRank.current, game);
+				return
 			} else if (player.rank?.current) {
 				const currentPlayerRankStats = await this.api.getNewRankWithBackoff(player.rank?.current, playerConnectCode)
 				await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(currentPlayerRankStats);
+				return;
 			} else {
 				this.log.error("Player rank is undefined. Cannot handle rank change.")
 				return;
@@ -339,11 +341,12 @@ export class StatsDisplay {
 		}
 
 		const currentPlayer = await this.storeCurrentPlayer.getCurrentPlayer();
+		const newCurrentPlayer = currentPlayers.find((player) => player.connectCode === currentPlayer?.connectCode);
 		const mode = getGameMode(settings);
 
 		let currentPlayerNewSlippiData: Player | undefined;
-		if (mode === "ranked" && currentPlayer) {
-			currentPlayerNewSlippiData = await this.api.getPlayerWithRankStats(currentPlayer);
+		if (mode === "ranked" && newCurrentPlayer) {
+			currentPlayerNewSlippiData = await this.api.getPlayerWithRankStats(newCurrentPlayer);
 			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayerNewSlippiData);
 			await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(currentPlayerNewSlippiData?.rank?.current);
 		}
@@ -352,7 +355,7 @@ export class StatsDisplay {
 			await Promise.all(
 				currentPlayers.map(async (player: PlayerType) => {
 					if (player.connectCode === currentPlayer?.connectCode)
-						return currentPlayerNewSlippiData ?? { ...player, rank: currentPlayer?.rank };
+						return currentPlayerNewSlippiData ?? { ...newCurrentPlayer, rank: currentPlayer?.rank };
 					return await this.api.getPlayerWithRankStats(player);
 				}),
 			)
