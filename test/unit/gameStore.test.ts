@@ -17,12 +17,12 @@ import { SqliteOrm } from "../../electron/services/sqlite/initiSqlite";
 import { SqliteCurrentPlayer } from "../../electron/services/sqlite/sqliteCurrentPlayer";
 import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
-import { MessageHandler } from "services/messageHandler";
+import { MessageHandler } from "../../electron/services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
 import { predictNewRating } from "../../electron/utils/rankPrediction";
 
 
-jest.mock("../../electron/services/api")
+//jest.mock("../../electron/services/api")
 jest.mock("../../electron/services/store/storeSession")
 describe('ElectronGamesStore', () => {
     let connectCode: string;
@@ -88,27 +88,34 @@ describe('ElectronGamesStore', () => {
 
         // TODO: Write actual tests for the rating prediction
 
-        const player1 = {
+        const apiTest: Api = new Api(log)
+
+        const player1 = await apiTest.getPlayerRankStats("HBOX#305")
+        const player2 = await apiTest.getPlayerRankStats("BBB#445")
+
+        const player1Prediction = {
             rank: {
                 current: {
-                    ratingMu: 45.17743069524177,
-                    ratingSigma: 3.2865821399108603,
+                    ratingMu: player1?.ratingMu,
+                    ratingSigma: player1?.ratingSigma,
                 }
             }
         } as Player
 
-        const player2 = {
+        const player2Prediction = {
             rank: {
                 current: {
-                    ratingMu: 39.69230406284388,
-                    ratingSigma: 4.551073751266102,
+                    ratingMu: player2?.ratingMu,
+                    ratingSigma: player2?.ratingSigma,
                 }
             }
         } as Player
 
-        const predictedRating: RatingPrediction = predictNewRating(player1, player2)
+        const predictedRating: RatingPrediction = predictNewRating(player1Prediction, player2Prediction)
 
         console.log(predictedRating)
+
+        console.log("Win:", predictedRating.win.ordinal.toFixed(1), `(+${(predictedRating.win.ordinal - (player1?.rating ?? 0)).toFixed(1)})`, " Loss: ", predictedRating.loss.ordinal.toFixed(1), `(${(predictedRating.loss.ordinal - (player1?.rating ?? 0)).toFixed(1)})`)
 
         const api: Api = new Api(log)
         const messageHandler = {

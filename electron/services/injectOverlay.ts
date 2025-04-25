@@ -35,7 +35,12 @@ export class OverlayInjector {
 	private initializeInjection = async () => {
 		this.log.info('Initializing overlay injection');
 
-		this.overlayInjector = getInjector();
+		await new Promise(resolve => setTimeout(resolve, 5000));
+
+		const cpuModel = os.cpus()[0].model;
+		this.log.info('CPU Model: ', cpuModel);
+
+		this.overlayInjector = getInjector(cpuModel);
 
 		if (!this.overlayInjector) {
 			this.log.error('Failed to initialize overlay injector using', os.cpus()[0]?.model);
@@ -130,7 +135,7 @@ export class OverlayInjector {
 		}
 
 		if (this.injectedOverlayIds.includes(overlayId)) {
-			this.messageHandler.sendMessage('Notification', `Disabled overlay injection`, NotificationType.Warning);
+			this.messageHandler.sendMessage('Notification', `Disabled the injected overlay`, NotificationType.Warning);
 			this.closeOverlay(overlayId);
 			this.emitInjectedOverlays();
 		} else {

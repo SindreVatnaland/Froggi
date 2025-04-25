@@ -1,18 +1,17 @@
-import os from 'os';
 import AmdOverlay from 'electron-overlay-amd';
 import IntelOverlay from 'electron-overlay-intel';
 
-const isIntelCpu = () => {
-    return os.cpus()[0]?.model?.toLowerCase().includes('intel');
+const isIntelCpu = (cpuModel: string) => {
+    return cpuModel.includes('intel');
 }
 
-const isAmdCpu = () => {
-    return os.cpus()[0]?.model?.toLowerCase().includes('amd');
+const isAmdCpu = (cpuModel: string) => {
+    return cpuModel.includes('amd');
 }
 
-export const getInjector = () => {
-    const isAmd = isAmdCpu();
-    const isIntel = isIntelCpu();
+export const getInjector = (cpuModel: string) => {
+    const isAmd = isAmdCpu(cpuModel);
+    const isIntel = isIntelCpu(cpuModel);
 
     if (isAmd) {
         return AmdOverlay;
