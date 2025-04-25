@@ -1,12 +1,8 @@
 const os = require('os');
 
-const cpuInfo = (os.cpus()[0]?.model || '').toLowerCase();
-
-const isIntel = cpuInfo.includes('intel');
-
 let Overlay = null;
 
-if (os.platform() === 'win32' && isIntel) {
+if (os.platform() === 'win32') {
 	try {
 		Overlay = require('./electron-overlay.node');
 	} catch (error) {
