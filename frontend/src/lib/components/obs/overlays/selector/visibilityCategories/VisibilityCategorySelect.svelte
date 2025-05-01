@@ -20,6 +20,7 @@
 	} from '$lib/models/types/animationOption';
 	import { VisibilityToggle } from '$lib/models/types/animationOption';
 	import MatchStatsVisibilitySelect from './MatchStatsVisibilitySelect.svelte';
+	import RankPredictionVisibilitySelect from './RankPredictionVisibilitySelect.svelte';
 
 	export let selectedVisibilityOption: SelectedVisibilityCondition;
 
@@ -102,6 +103,14 @@
 		{
 			category: VisibilityCategory.RankStats,
 			visible: [LiveStatsScene.RankChange].includes($statsScene),
+		},
+		{
+			category: VisibilityCategory.RankPrediction,
+			visible: [
+				LiveStatsScene.InGame,
+				LiveStatsScene.PostGame,
+				LiveStatsScene.RankChange,
+			].includes($statsScene),
 		},
 	];
 
@@ -200,6 +209,11 @@
 			{#if selectedCategory === VisibilityCategory.RankStats}
 				<div class="flex flex-col gap-2">
 					<RankStatsVisibilitySelect on:select={select} {selectedVisibilityOption} />
+				</div>
+			{/if}
+			{#if selectedCategory === VisibilityCategory.RankPrediction}
+				<div class="flex flex-col gap-2">
+					<RankPredictionVisibilitySelect on:select={select} {selectedVisibilityOption} />
 				</div>
 			{/if}
 		</div>

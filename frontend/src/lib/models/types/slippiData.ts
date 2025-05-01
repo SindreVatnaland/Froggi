@@ -62,10 +62,14 @@ export interface Rank {
     predictedRating: RatingPrediction | undefined;
 }
 
+
+
 export interface RatingPrediction {
-    win: Rating & { ordinal: number };
-    loss: Rating & { ordinal: number };
+    win: RatingPredictionWithOrdinal;
+    loss: RatingPredictionWithOrdinal;
 }
+
+export type RatingPredictionWithOrdinal = Rating & { ordinal: number }
 
 export interface RankHistory { }
 

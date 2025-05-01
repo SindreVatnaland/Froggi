@@ -1,3 +1,5 @@
+import { RankedNetplayProfile } from "$lib/models/types/slippiData";
+
 export function getPlayerRank(rating: number, regionalPlacement: number | undefined, globalPlacement: number | undefined): string {
   switch (true) {
     case rating < 766:
@@ -41,4 +43,12 @@ export function getPlayerRank(rating: number, regionalPlacement: number | undefi
     default:
       return 'UNRANKED';
   }
+}
+
+export const getPlayerRankByPlayer = (player: RankedNetplayProfile): string => {
+  return getPlayerRank(
+    player.rating,
+    player.dailyRegionalPlacement,
+    player.dailyGlobalPlacement
+  );
 }

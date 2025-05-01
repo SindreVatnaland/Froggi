@@ -158,6 +158,8 @@ export enum VisibilityOption {
     RankStatsAfterRankUpdated = "Rank Stats Post Update",
     RankStatsMatchWon = "Rank Stats Match Won",
 
+    RankPredictionIsPromotionGame = "Rank Prediction Promotion Game",
+    RankPredictionIsDemotionGame = "Rank Prediction Demotion Game",
 }
 
 export enum VisibilityCategory {
@@ -176,6 +178,7 @@ export enum VisibilityCategory {
     RecentGame4Summary = "Recent Game 4 Summary",
     RecentGame5Summary = "Recent Game 5 Summary",
     RankStats = "Rank Stats",
+    RankPrediction = "Rank Prediction",
 }
 
 export enum AnimationTriggerCategory {

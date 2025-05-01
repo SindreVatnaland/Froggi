@@ -34,6 +34,7 @@
 		Player,
 		SessionStats,
 	} from '$lib/models/types/slippiData';
+	import { rankPredictionVisibilityOption } from './visibilityConditions/RankPredictionVisibilityOptions.svelte';
 	export let animationIn: Function;
 	export let animationOut: Function;
 	export let dataItem: GridContentItem;
@@ -106,6 +107,7 @@
 					recentGames,
 				) ||
 				rankVisibilityOption(option, currentPlayer) ||
+				rankPredictionVisibilityOption(option, currentPlayer, gameSettings) ||
 				sessionVisibilityOption(option, sessionStats)
 			) {
 				return true;
