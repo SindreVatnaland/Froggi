@@ -275,6 +275,8 @@ export class StatsDisplay {
 
 		this.log.info("Handling predicted rank:", prevRank)
 
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
 		await this.storeCurrentPlayer.setCurrentPlayerNewRankStats(prevRank);
 	}
 
