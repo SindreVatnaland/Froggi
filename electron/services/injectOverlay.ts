@@ -10,6 +10,7 @@ import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, Injector
 import { getProcessByName, getWindowInfoByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { getInjector } from './../utils/injectionHelper';
+import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
 
 @singleton()
 export class OverlayInjector {
@@ -168,7 +169,7 @@ export class OverlayInjector {
 
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
-		const port = this.isDev ? '5173' : '3200';
+		const port = this.isDev ? '5173' : `${BACKEND_PORT}`;
 		this.window = this.createWindow(`http://localhost:${port}/obs/overlay/inject`, dolphinWindowBounds);
 
 		this.overlayInjector.addWindow(this.window.id, {

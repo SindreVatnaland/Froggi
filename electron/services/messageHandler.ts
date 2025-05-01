@@ -26,6 +26,7 @@ import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
 import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
+import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
 
 @singleton()
 export class MessageHandler {
@@ -85,8 +86,8 @@ export class MessageHandler {
 
 			this.app.use('/public', staticFileServe);
 
-			this.server.listen(3200, (_: any) => {
-				this.log.info(`listening on *:${this.port}`);
+			this.server.listen(BACKEND_PORT, () => {
+				this.log.info(`listening on *:${BACKEND_PORT}`);
 			});
 		} catch (err) {
 			this.log.error(err);
@@ -94,7 +95,7 @@ export class MessageHandler {
 	}
 
 	private tryCreatePublicDir(dir: string) {
-		this.log.info('Creating Public Dir');
+		this.log.info('Creating Public Dir at', dir);
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
 			this.log.info('Public Dir Created');
