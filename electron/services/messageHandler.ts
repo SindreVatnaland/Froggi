@@ -44,7 +44,6 @@ export class MessageHandler {
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject('IpcMain') private ipcMain: IpcMain,
-		@inject('Port') private port: string,
 		@inject('RootDir') private rootDir: string,
 		@inject(delay(() => ElectronDolphinStore)) private storeDolphin: ElectronDolphinStore,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
