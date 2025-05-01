@@ -34,9 +34,9 @@ export class FileHandler {
 		if (!fs.existsSync(saveDir)) {
 			fs.mkdirSync(saveDir, { recursive: true });
 		}
-		this.log.info("Uploading custom file")
 		const newFileName = `${fileName}${fileExtension}`
 		const filePath = path.join(saveDir, newFileName);
+		this.log.info("Uploading custom file to: ", filePath)
 		fs.copyFileSync(filePaths[0], filePath)
 		this.messageHandler.sendMessage("ImportCustomFileComplete", newFileName)
 	};

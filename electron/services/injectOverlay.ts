@@ -10,9 +10,6 @@ import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, Injector
 import { getProcessByName, getWindowInfoByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { getInjector } from './../utils/injectionHelper';
-import AmdOverlay from 'electron-overlay-amd';
-import IntelOverlay from 'electron-overlay-intel';
-
 
 @singleton()
 export class OverlayInjector {
@@ -48,15 +45,11 @@ export class OverlayInjector {
 		const cpuModel = os.cpus()[0].model;
 		this.log.info('CPU Model: ', cpuModel);
 
-		this.log.info('OS Platform: ', os.platform());
-		this.log.info("AMD Overlay: ", AmdOverlay);
-		this.log.info("Intel Overlay: ", IntelOverlay);
-
-		this.overlayInjector = getInjector(cpuModel);
+		this.overlayInjector = getInjector();
 		this.log.info('Overlay Injector: ', this.overlayInjector);
 
 		if (!this.overlayInjector) {
-			this.log.error('Failed to initialize overlay injector using', os.cpus()[0]?.model);
+			this.log.error('Failed to initialize overlay injector using', cpuModel);
 			return;
 		}
 
