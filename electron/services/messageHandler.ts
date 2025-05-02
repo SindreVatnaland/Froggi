@@ -78,12 +78,12 @@ export class MessageHandler {
 		const staticFileServe = express.static(path.join(this.appDir + '/public'));
 
 		try {
+			this.app.use('/public', staticFileServe);
+
 			if (!this.dev) {
 				this.app.use('/', staticFrontendServe);
 				this.app.use('*', staticFrontendServe);
 			}
-
-			this.app.use('/public', staticFileServe);
 
 			this.server.listen(BACKEND_PORT, () => {
 				this.log.info(`listening on *:${BACKEND_PORT}`);
@@ -94,7 +94,7 @@ export class MessageHandler {
 	}
 
 	private tryCreatePublicDir(dir: string) {
-		this.log.info('Creating Public Dir at', dir);
+		this.log.info('Attempting to create public dir at', dir);
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
 			this.log.info('Public Dir Created');
