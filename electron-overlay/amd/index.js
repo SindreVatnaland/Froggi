@@ -8,7 +8,6 @@ if (os.platform() === 'win32') {
 	} catch (error) {
 		console.error('Failed to load electron-overlay on Windows:', error);
 	}
-	console.warn('electron-overlay is only supported on Windows. Skipping module load.');
 }
 
 module.exports = Overlay;

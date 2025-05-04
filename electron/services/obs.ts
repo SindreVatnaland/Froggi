@@ -289,10 +289,11 @@ export class ObsWebSocket {
 		payload: OBSRequestTypes[T] | undefined,
 	) => {
 		try {
+			this.log.info(`Executing command: ${command}`, payload);
 			await this.obs.call(command, payload);
 			await this.updateObsData();
-		} catch {
-			this.log.error(`Could not execute command: ${command}`);
+		} catch (err) {
+			this.log.error(`Could not execute command: ${command}`, err);
 			this.messageHandler.sendMessage(
 				'Notification',
 				`Could not execute command: ${command}`,

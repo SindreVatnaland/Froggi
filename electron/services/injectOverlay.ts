@@ -9,8 +9,9 @@ import { debounce, throttle } from 'lodash';
 import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, IWindow, OverlayType, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
 import { getProcessByName, getWindowInfoByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
-import { getInjector } from './../utils/injectionHelper';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
+import AmdOverlay from 'electron-overlay-amd';
+import IntelOverlay from 'electron-overlay-intel';
 
 @singleton()
 export class OverlayInjector {
@@ -28,14 +29,15 @@ export class OverlayInjector {
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore
 	) {
 		this.log.info('Initializing Overlay Injection Service');
-		if (os.platform() !== 'win32') return;
+		//if (os.platform() !== 'win32') return;
 		this.initEventListeners();
+		this.initializeInjection();
 	}
 
 	private initializeInjection = async () => {
 		this.log.info('Initializing overlay injection');
 
-		this.log.info('Waiting for 5 seconds before initializing overlay injector');
+		this.log.info('Waiting for 10 seconds to initialize overlay injector');
 
 		await new Promise(resolve => setTimeout(resolve, 10000));
 
@@ -43,13 +45,11 @@ export class OverlayInjector {
 
 		this.messageHandler.sendMessage('Notification', 'Initializing overlay injector', NotificationType.Info);
 
-		const cpuModel = os.cpus()[0].model;
-		this.log.info('CPU Model: ', cpuModel);
-
-		this.overlayInjector = getInjector();
+		this.overlayInjector = this.getInjector();
 		this.log.info('Overlay Injector: ', this.overlayInjector);
 
 		if (!this.overlayInjector) {
+			const cpuModel = os.cpus()[0].model;
 			this.log.error('Failed to initialize overlay injector using', cpuModel);
 			return;
 		}
@@ -287,6 +287,22 @@ export class OverlayInjector {
 		}
 
 		return;
+	};
+
+	getInjector = () => {
+		const cpuModel = os.cpus()[0].model.toLowerCase();
+		const isIntel = cpuModel.includes('intel');
+
+		this.log.info(`CPU Model: ${cpuModel}`);
+		this.log.info(`Injector Intel Module: `, IntelOverlay);
+		this.log.info(`Injector AMD Module: `, AmdOverlay);
+
+		if (isIntel) {
+			return IntelOverlay;
+		}
+
+		return AmdOverlay;
+
 	};
 
 	initEventListeners() {
