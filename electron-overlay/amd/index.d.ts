@@ -1,7 +1,6 @@
 /// <reference types="node" />
 declare module "electron-overlay-amd" {
-
-    interface IHotkey{
+    interface IHotkey {
         name: string;
         keyCode: number;
         modifiers?: {
@@ -10,7 +9,7 @@ declare module "electron-overlay-amd" {
             shift?: boolean;
             meta?: boolean;
         };
-        passthrough?: boolean
+        passthrough?: boolean;
     }
 
     interface IRectangle {
@@ -19,7 +18,8 @@ declare module "electron-overlay-amd" {
         width: number;
         height: number;
     }
-    interface IOverlayWindowDetails{
+
+    interface IOverlayWindowDetails {
         name: string;
         transparent: boolean;
         resizable: boolean;
@@ -35,7 +35,7 @@ declare module "electron-overlay-amd" {
             right: number;
             top: number;
             height: number;
-        }
+        };
     }
 
     enum FpsPosition {
@@ -46,7 +46,7 @@ declare module "electron-overlay-amd" {
     }
 
     export interface IProcessThread {
-        processId: number,
+        processId: number;
         threadId?: number;
     }
 
@@ -61,19 +61,22 @@ declare module "electron-overlay-amd" {
         injectSucceed: boolean;
     }
 
-    export function getTopWindows(includeMinimized?: boolean): IWindow[];
-    export function injectProcess(process: IWindow): IInjectResult;
- 
-    export function start(): void;
-    export function stop(): void;
-    export function setEventCallback(cb: (event: string, ...args: any[]) => void): void;
-    export function setHotkeys(hotkeys: IHotkey[]): void;
-    export function sendCommand(arg: {command: "cursor", cursor: string}): void;
-    export function sendCommand(arg: {command: "fps", showfps: boolean, position: FpsPosition}): void;
-    export function sendCommand(arg: {command: "input.intercept", intercept: boolean}): void;
-    export function addWindow(windowId: number, details: IOverlayWindowDetails): void;
-    export function closeWindow(windowId: number): void;
-    export function sendWindowBounds(windowId: number, details: {rect: IRectangle}): void;
-    export function sendFrameBuffer(windowId: number, buffer: Buffer, width: number, height: number): void;
-    export function translateInputEvent(event: {windowId: number, msg: number, wparam: number, lparam: number}): any;
+    export interface IOverlayModule {
+        getTopWindows(includeMinimized?: boolean): IWindow[];
+        injectProcess(process: IWindow): IInjectResult;
+        start(): void;
+        stop(): void;
+        setEventCallback(cb: (event: string, ...args: any[]) => void): void;
+        setHotkeys(hotkeys: IHotkey[]): void;
+        sendCommand(arg: { command: "cursor", cursor: string }): void;
+        sendCommand(arg: { command: "fps", showfps: boolean, position: FpsPosition }): void;
+        sendCommand(arg: { command: "input.intercept", intercept: boolean }): void;
+        addWindow(windowId: number, details: IOverlayWindowDetails): void;
+        closeWindow(windowId: number): void;
+        sendWindowBounds(windowId: number, details: { rect: IRectangle }): void;
+        sendFrameBuffer(windowId: number, buffer: Buffer, width: number, height: number): void;
+        translateInputEvent(event: { windowId: number, msg: number, wparam: number, lparam: number }): any;
+    }
+
+    export function initialize(): IOverlayModule | null;
 }

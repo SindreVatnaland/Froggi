@@ -6,19 +6,19 @@ import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce, throttle } from 'lodash';
-import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, IWindow, OverlayType, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
+import { GameWindowEventFocus, GraphicWindowEventResize, InjectorEvent, InjectorPayload, IWindow, ProcessInfo } from '../../frontend/src/lib/models/types/injectorTypes';
 import { getProcessByName, getWindowInfoByPid } from '../utils/windowManager';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
-import AmdOverlay from 'electron-overlay-amd';
-import IntelOverlay from 'electron-overlay-intel';
+import { initialize as initializeAmd, IOverlayModule } from 'electron-overlay-amd';
+import { initialize as initializeIntel } from 'electron-overlay-intel';
 
 @singleton()
 export class OverlayInjector {
 	injectedOverlayIds: string[] = [];
 
 	private window: BrowserWindow | null = null;
-	private overlayInjector: OverlayType | null = null;
+	private overlayInjector: IOverlayModule | null = null;
 	private gameWindow: IWindow | undefined;
 
 	constructor(
@@ -29,7 +29,7 @@ export class OverlayInjector {
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore
 	) {
 		this.log.info('Initializing Overlay Injection Service');
-		//if (os.platform() !== 'win32') return;
+		if (os.platform() !== 'win32') return;
 		this.initEventListeners();
 		this.initializeInjection();
 	}
@@ -158,6 +158,7 @@ export class OverlayInjector {
 
 		let dolphinWindowSize = { width: 1920, height: 1080 };
 		try {
+			this.log.info(`Getting Dolphin window size`);
 			dolphinWindowSize = await getWindowInfoByPid(this.gameWindow.processId)
 			console.log("Dolphin size", dolphinWindowSize);
 		} catch (error) {
@@ -294,15 +295,10 @@ export class OverlayInjector {
 		const isIntel = cpuModel.includes('intel');
 
 		this.log.info(`CPU Model: ${cpuModel}`);
-		this.log.info(`Injector Intel Module: `, IntelOverlay);
-		this.log.info(`Injector AMD Module: `, AmdOverlay);
 
-		if (isIntel) {
-			return IntelOverlay;
-		}
+		const overlayInjector = isIntel ? initializeAmd : initializeIntel;
 
-		return AmdOverlay;
-
+		return overlayInjector();
 	};
 
 	initEventListeners() {
