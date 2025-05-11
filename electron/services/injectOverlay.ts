@@ -298,7 +298,7 @@ export class OverlayInjector {
 
 		const overlayInjector = isIntel ? initializeAmd : initializeIntel;
 
-		return overlayInjector();
+		return overlayInjector(this.log);
 	};
 
 	initEventListeners() {

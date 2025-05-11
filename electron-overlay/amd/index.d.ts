@@ -78,5 +78,5 @@ declare module "electron-overlay-amd" {
         translateInputEvent(event: { windowId: number, msg: number, wparam: number, lparam: number }): any;
     }
 
-    export function initialize(): IOverlayModule | null;
+    export function initialize(logger: any = null): IOverlayModule | null;
 }
