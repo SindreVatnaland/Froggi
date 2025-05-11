@@ -15,7 +15,7 @@
 </script>
 
 <SelectOption
-	description="If The Next Ranked Game Is A Promotion Game"
+	description="If The Current Ranked Game Is A Promotion Game"
 	value={VisibilityOption.RankPredictionIsPromotionGame}
 	bind:selected={selectedVisibilityOption[VisibilityOption.RankPredictionIsPromotionGame]}
 	on:select={select}
@@ -24,7 +24,7 @@
 </SelectOption>
 
 <SelectOption
-	description="If The Next Ranked Game Is A Demotion Game"
+	description="If The Current Ranked Game Is A Demotion Game"
 	value={VisibilityOption.RankPredictionIsDemotionGame}
 	bind:selected={selectedVisibilityOption[VisibilityOption.RankPredictionIsDemotionGame]}
 	on:select={select}

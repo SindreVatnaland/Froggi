@@ -59,7 +59,19 @@ export class ElectronCurrentPlayerStore {
 		await this.storeSession.updateSessionStats(rankStats as RankedNetplayProfile);
 		const player = await this.sqliteCurrentPlayer.addOrUpdateCurrentPlayerCurrentRankStats(rankStats);
 		if (!player) return;
+		const currentPlayers = this.playersStore.getCurrentPlayers();
 		this.messageHandler.sendMessage('CurrentPlayer', player);
+		if (!currentPlayers) return;
+		for (const currentPlayer of currentPlayers) {
+			if (currentPlayer.connectCode === player.connectCode) {
+				currentPlayer.rank = {
+					...player.rank,
+					current: rankStats,
+					predictedRating: undefined,
+				};
+			}
+		}
+		this.playersStore.setCurrentPlayers(currentPlayers);
 	}
 
 	async setCurrentPlayerNewRankStats(rankStats: RankedNetplayProfile | undefined) {

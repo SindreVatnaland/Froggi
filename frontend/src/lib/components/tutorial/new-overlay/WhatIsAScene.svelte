@@ -10,33 +10,33 @@
 </h2>
 
 <div class="grid grid-cols-[2fr_5fr] gap-2 w-[600px] my-2">
-	<div class="flex items-center font-bold">
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.WaitingForDolphin)}
-	</div>
-	<div class="flex items-center">- While dolphin is disconnected</div>
-	<div class="flex items-center font-bold">
+	</h2>
+	<h2 class="flex items-center">- While dolphin is disconnected</h2>
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.Menu)}
-	</div>
-	<div class="flex items-center">- While being idle outside of a game</div>
-	<div class="flex items-center font-bold">
+	</h2>
+	<h2 class="flex items-center">- While being idle outside of a game</h2>
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.InGame)}
-	</div>
-	<div class="flex items-center">- While in a game</div>
-	<div class="flex items-center font-bold">
+	</h2>
+	<h2 class="flex items-center">- While in a game</h2>
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.PostGame)}
-	</div>
-	<div class="flex items-center">- 150 seconds after a game is finished</div>
-	<div class="flex items-center font-bold">
+	</h2>
+	<h2 class="flex items-center">- 150 seconds after a game is finished</h2>
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.PostSet)}
-	</div>
-	<div class="flex items-center">
+	</h2>
+	<h2 class="flex items-center">
 		- 150 seconds after a game is finished and its registered a set winner (eg. bo3). Or 140
 		seconds after rank change.
-	</div>
-	<div class="flex items-center font-bold">
+	</h2>
+	<h2 class="flex items-center font-bold">
 		{startCase(LiveStatsScene.RankChange)}
-	</div>
-	<div class="flex items-center">- 10 Seconds after a rank game while updating rank</div>
+	</h2>
+	<h2 class="flex items-center">- 10 Seconds after a rank game while updating rank</h2>
 </div>
 
 <style>
