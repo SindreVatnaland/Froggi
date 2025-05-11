@@ -70,6 +70,12 @@ export enum VisibilityOption {
     InGamePlayer2Stock3 = "Player 2 Stock 3",
     InGamePlayer2Stock4 = "Player 2 Stock 4",
 
+    InGameIsGame1 = "Game 1",
+    InGameIsGame2 = "Game 2",
+    InGameIsGame3 = "Game 3",
+    InGameIsGame4 = "Game 4",
+    InGameIsGame5 = "Game 5",
+
     MatchStatsPlayer1Score1 = "Player 1 Score 1",
     MatchStatsPlayer1Score2 = "Player 1 Score 2",
     MatchStatsPlayer1Score3 = "Player 1 Score 3",
@@ -170,6 +176,7 @@ export enum VisibilityCategory {
     OngoingGame = "Ongoing Game",
     Session = "Session",
     InGameState = "Game State",
+    InGameNumber = "Game Number",
     MatchStats = "Match Stats",
     RecentGame = "Recent Game",
     RecentGame1Summary = "Recent Game 1 Summary",

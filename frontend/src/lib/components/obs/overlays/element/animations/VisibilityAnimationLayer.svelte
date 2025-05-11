@@ -71,6 +71,7 @@
 					gameSettings,
 					gameFrame,
 					gameState,
+					gameScore,
 				) ||
 				inGamePlayer1VisibilityOption(option, gameFrame, currentPlayers) ||
 				inGamePlayer2VisibilityOption(option, gameFrame, currentPlayers) ||

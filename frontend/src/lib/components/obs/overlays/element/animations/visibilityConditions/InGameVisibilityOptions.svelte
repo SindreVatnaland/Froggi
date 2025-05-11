@@ -5,8 +5,9 @@
 		VisibilityOption,
 		VisibilityToggle,
 	} from '$lib/models/types/animationOption';
-	import { Player } from '$lib/models/types/slippiData';
+	import { GameStartTypeExtended, Player } from '$lib/models/types/slippiData';
 	import { getOffStageZone } from '$lib/utils/gamePredicates';
+	import { gameSettings } from '$lib/utils/store.svelte';
 	import type {
 		FrameEntryType,
 		GameStartType,
@@ -18,9 +19,10 @@
 	export const inGameVisibilityOption = (
 		option: SelectedVisibilityCondition,
 		currentPlayers: Player[],
-		gameSettings: GameStartType,
+		gameSettings: GameStartTypeExtended,
 		gameFrame: FrameEntryType | undefined | null,
 		gameState: InGameState,
+		gameScore: number[],
 	) => {
 		if (option[VisibilityOption.InGameRunning] === VisibilityToggle.True)
 			if (gameState === InGameState.Running) return true;
@@ -98,6 +100,27 @@
 			)
 				return true;
 
+		if (option[VisibilityOption.InGameIsGame1] === VisibilityToggle.True)
+			if (isGameNumber(gameScore, 1)) return true;
+		if (option[VisibilityOption.InGameIsGame1] === VisibilityToggle.False)
+			if (!isGameNumber(gameScore, 1)) return true;
+		if (option[VisibilityOption.InGameIsGame2] === VisibilityToggle.True)
+			if (isGameNumber(gameScore, 2)) return true;
+		if (option[VisibilityOption.InGameIsGame2] === VisibilityToggle.False)
+			if (!isGameNumber(gameScore, 2)) return true;
+		if (option[VisibilityOption.InGameIsGame3] === VisibilityToggle.True)
+			if (isGameNumber(gameScore, 3)) return true;
+		if (option[VisibilityOption.InGameIsGame3] === VisibilityToggle.False)
+			if (!isGameNumber(gameScore, 3)) return true;
+		if (option[VisibilityOption.InGameIsGame4] === VisibilityToggle.True)
+			if (isGameNumber(gameScore, 4)) return true;
+		if (option[VisibilityOption.InGameIsGame4] === VisibilityToggle.False)
+			if (!isGameNumber(gameScore, 4)) return true;
+		if (option[VisibilityOption.InGameIsGame5] === VisibilityToggle.True)
+			if (isGameNumber(gameScore, 5)) return true;
+		if (option[VisibilityOption.InGameIsGame5] === VisibilityToggle.False)
+			if (!isGameNumber(gameScore, 5)) return true;
+
 		return false;
 	};
 
@@ -125,6 +148,10 @@
 
 	const isGameTie = (gameState: InGameState) => {
 		return gameState === InGameState.Tie;
+	};
+
+	const isGameNumber = (gameScore: number[], assumedGameNumber: number) => {
+		return gameScore.reduce((a, b) => a + b, 1) === assumedGameNumber;
 	};
 
 	const isOffStage = (
