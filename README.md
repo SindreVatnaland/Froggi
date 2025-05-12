@@ -1,6 +1,6 @@
-<p align="center">
-  <img style="width: 80; height: 80;" src="frontend/static/icon.png" />
-</p>
+<div align="center">
+  <img src="frontend/static/icon.png" width="80" height="80" style="border-radius: 5%;" />
+</div>
 
 ## Support the project
 
