@@ -178,7 +178,7 @@ try {
 	}
 
 	function createTray(): Tray {
-		const imagePath = path.join(__dirname, '../../build/icon.png');
+		const imagePath = path.join(__dirname, '../../build/icon-tray.png');
 		const image = nativeImage.createFromPath(imagePath);
 		tray = new Tray(image.resize({ width: 16, height: 16 }));
 		if (isMac) app.dock.setIcon(image);
