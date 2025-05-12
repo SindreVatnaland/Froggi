@@ -33,7 +33,7 @@
 	"mac": {
 		"icon": "bin/static/icon.png",
 		"target": ["default"],
-		"extraResources": ["res", "favicon.png"],
+		"extraResources": ["res", "favicon.ico"],
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
 		"hardenedRuntime": true,

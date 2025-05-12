@@ -1,5 +1,5 @@
 <p align="center">
-  <img style="width: 50; height: 50" src="frontend/static/icon.png" />
+  <img style="width: 80; height: 80; border-radius: 5%;" src="frontend/static/icon.png" />
 </p>
 
 ## Support the project
@@ -22,7 +22,7 @@ Got any questions or feedback. Maybe want to contribute? Join our [Discord](http
 
 ## Electron
 
-Electron is used as the source of the application and stores settings and temporary data in `Electron Store` (Json database). All data displayed in the frontend comes from Electron. Electron is the source of truth and provides consistency between all devices.
+Electron is the backend of the application and stores settings and temporary data in `Electron Store` (Json database). All data displayed in the frontend comes from Electron. Electron is the source of truth and provides consistency between all devices.
 
 For larger data structure `Froggi` uses a `SQLite` database. It is light weight and allows for storing lots of data without slowing the application down. It is currently being used to store overlays, player data and game history.
 

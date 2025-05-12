@@ -10,7 +10,6 @@
 		"build": "vite build"
 	},
 	"dependencies": {
-		"@dimfeld/svelte-lazyload": "^0.0.4",
 		"@leveluptuts/svelte-fit": "^1.0.3",
 		"@slippi/slippi-js": "github:SindreVatnaland/slippi-js#dist",
 		"@types/lodash": "^4.17.16",

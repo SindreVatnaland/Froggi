@@ -4,7 +4,6 @@
 	import TextFitMulti from '$lib/components/TextFitMulti.svelte';
 	import { localEmitter, isMobile } from '$lib/utils/store.svelte';
 	import { fade, fly } from 'svelte/transition';
-	import LazyLoad from '@dimfeld/svelte-lazyload';
 
 	$: selectedRegions = [];
 	$: selectedCharacters = [];
@@ -116,12 +115,7 @@
 			{#key true}
 				<!-- TODO: Render if not end of database* -->
 				{#if true}
-					<LazyLoad
-						class="w-full h-36 md:h-16 grid justify-center content-center mb-36 md:mb-16"
-						on:visible={() => console.log('trigger request')}
-					>
-						<h1 class="text-secondary-color text-shadow text-md">Loading..</h1>
-					</LazyLoad>
+					<h1 class="text-secondary-color text-shadow text-md">Loading..</h1>
 				{/if}
 			{/key}
 		</div>
