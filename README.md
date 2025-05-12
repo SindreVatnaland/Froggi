@@ -1,5 +1,5 @@
 <p align="center">
-  <img style="width: 80; height: 80; border-radius: 5%;" src="frontend/static/icon.png" />
+  <img style="width: 80; height: 80;" src="frontend/static/icon.png" />
 </p>
 
 ## Support the project
