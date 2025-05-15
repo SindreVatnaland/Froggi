@@ -26,41 +26,66 @@ export class Api {
 
 	async getPlayerRankStats(connectCode: string): Promise<RankedNetplayProfile | undefined> {
 		const response = await axios.post(
-			"https://gql-gateway-dot-slippi.uc.r.appspot.com/graphql",
+			"https://internal.slippi.gg/graphql",
 			{
-				query: `query AccountManagementPageQuery($cc: String!) {
-          getConnectCode(code: $cc) {
-            user {
-              fbUid
-              displayName
-              connectCode {
-                code
-              }
-              status
-              activeSubscription {
-                level
-                hasGiftSub
-              }
-              rankedNetplayProfile {
-                id
-                ratingOrdinal
-                ratingUpdateCount
-								ratingMu
-								ratingSigma
-                wins
-                losses
-                dailyGlobalPlacement
-                dailyRegionalPlacement
-                continent
-                characters {
-                  character
-                  gameCount
-                }
-              }
-            }
-          }
-        }`,
-				variables: { cc: connectCode },
+				query: `
+				fragment profileFields on NetplayProfile {
+					id
+					ratingMu
+					ratingSigma
+					ratingOrdinal
+					ratingUpdateCount
+					wins
+					losses
+					dailyGlobalPlacement
+					dailyRegionalPlacement
+					continent
+					characters {
+						character
+						gameCount
+						__typename
+					}
+					__typename
+				}
+				fragment userProfilePage on User {
+					fbUid
+					displayName
+					connectCode {
+						code
+						__typename
+					}
+					status
+					activeSubscription {
+						level
+						hasGiftSub
+						__typename
+					}
+					rankedNetplayProfile {
+						...profileFields
+						__typename
+					}
+					rankedNetplayProfileHistory {
+						...profileFields
+						season {
+							id
+							startedAt
+							endedAt
+							name
+							status
+							__typename
+						}
+						__typename
+					}
+					__typename
+				}
+				query UserProfilePageQuery($cc: String, $uid: String) {
+					getUser(fbUid: $uid, connectCode: $cc) {
+						...userProfilePage
+						__typename
+					}
+				}
+			`,
+				variables: { cc: connectCode, uid: null },
 			},
 			{
 				headers: {
@@ -73,7 +98,7 @@ export class Api {
 
 		const data = response?.data.data;
 
-		const player: any = await data?.getConnectCode?.user;
+		const player: any = await data?.getUser;
 
 		if (!data) return;
 
@@ -108,7 +133,7 @@ export class Api {
 			continentInitials: undefined,
 			lossesPercent: 0,
 			rank: 'UNRANKED',
-			seasons: player?.netplayProfiles,
+			seasons: player?.rankedNetplayProfileHistory,
 			totalSets: 0,
 			winsPercent: 0,
 			userId: player.fbUid,
