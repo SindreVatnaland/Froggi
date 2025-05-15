@@ -96,7 +96,8 @@ export class Api {
 			}
 		);
 
-		const data = response?.data.data;
+		const data =
+			response?.data.data;
 
 		const player: any = await data?.getUser;
 
@@ -166,12 +167,12 @@ export class Api {
 			...playerRank,
 			continentInitials: continentInitials,
 			characters: characters,
-			lossesPercent: Number(lossesPercent.toFixed(1)),
+			lossesPercent: Number(lossesPercent.toFixed(2)),
 			rank: rank,
 			rating: Number(playerRank.rating.toFixed(1)),
 			totalSets: totalSets,
 			totalGames: totalGames,
-			winsPercent: Number(winsPercent.toFixed(1)),
+			winsPercent: Number(winsPercent.toFixed(2)),
 		}
 	}
 
