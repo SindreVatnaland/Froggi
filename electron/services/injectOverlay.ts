@@ -166,12 +166,15 @@ export class OverlayInjector {
 		}
 
 		const dolphinWindowBounds = this.getCenteredBounds(dolphinWindowSize.width, dolphinWindowSize.height);
-		this.log.info(`Game window size: ${dolphinWindowSize}`);
+		this.log.info(`Game window size:`, dolphinWindowSize);
 
 		this.log.info(`Injecting overlay: ${overlayId}`);
 
 		const port = this.isDev ? '5173' : `${BACKEND_PORT}`;
-		this.window = this.createWindow(`http://localhost:${port}/obs/overlay/inject`, dolphinWindowBounds);
+		const overlayUrl = `http://localhost:${port}/obs/overlay/inject`;
+		this.window = this.createWindow(overlayUrl, dolphinWindowBounds);
+
+		this.log.info(`Overlay window created: `, overlayUrl);
 
 		this.overlayInjector.addWindow(this.window.id, {
 			name: "StatusBar",
@@ -191,10 +194,14 @@ export class OverlayInjector {
 			nativeHandle: this.window.getNativeWindowHandle().readUInt32LE(0),
 		});
 
+		this.log.info(`Overlay window added: `, this.window.id);
+
 		this.window.on("resize", () => {
 			if (!this.window) return;
 			this.overlayInjector?.sendWindowBounds(this.window.id, { rect: this.window.getBounds() });
 		})
+
+		this.log.info(`Listening for overlay window events`);
 
 		const processPaintEvent = throttle((image: Electron.NativeImage, window: BrowserWindow) => {
 			try {
@@ -209,10 +216,13 @@ export class OverlayInjector {
 			}
 		}, 2, { leading: true, trailing: true });
 
+
 		this.window.webContents.on("paint", (_, __, image) => {
 			if (!this.window) return;
 			processPaintEvent(image, this.window);
 		});
+
+		this.log.info(`Listening for overlay window paint events`);
 
 		this.emitInjectedOverlays();
 
