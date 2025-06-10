@@ -34,8 +34,6 @@
 	export let isEdit: boolean = false;
 	export let selectedItemId: string = $currentOverlayEditor.itemId;
 
-	$: console.log(selectedItemId);
-
 	let isElementSelectOpen = false;
 	let selectedElementId: CustomElement;
 	let payload: ElementPayload = getDefaultElementPayload();

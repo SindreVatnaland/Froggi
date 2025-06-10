@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { electronEmitter, froggiSettings } from '$lib/utils/store.svelte';
+	import { froggiSettings } from '$lib/utils/store.svelte';
 
 	$: console.log($froggiSettings.version);
 </script>

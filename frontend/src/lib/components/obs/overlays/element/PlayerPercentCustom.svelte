@@ -7,7 +7,7 @@
 	import { createAnimation } from './animations/Animations.svelte';
 	import { onMount } from 'svelte';
 	import type { TransitionConfig } from 'svelte/transition';
-	import { isNil } from 'lodash';
+	import { get, isNil } from 'lodash';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
@@ -123,79 +123,84 @@
 	});
 
 	let parent: HTMLElement | undefined;
+
+	let clientWidth: number = 0;
+	let clientHeight: number = 0;
 </script>
 
-<div class="w-full h-full relative">
+<div class="w-full h-full relative" bind:clientWidth bind:clientHeight>
 	{#if isInGame || defaultPreview}
-		<div class={`w-full h-full absolute`}>
-			<div
-				class={`${style.classValue.replace(
-					'justify-center',
-					'justify-end',
-				)} flex aspect-[23/9] max-h-full w-full items-end justify-end; `}
-				style={`${style.cssValue}; transform: translate(0,25%); ${dataItem?.data.advancedStyling}; color: ${percentageColor}; ${style.textStroke}`}
-				bind:this={parent}
-			>
-				{#if parent}
-					{#key framePercent}
-						<div
-							in:animation|local
-							class="flex h-full items-end justify-center"
-							style={`font-size: ${parent?.clientHeight ?? 0}px`}
-						>
-							{defaultPreview ? 3 : framePercent.at(-3) ?? ''}
-						</div>
-						<div
-							in:animation|local
-							class="flex h-full items-end justify-center"
-							style={`font-size: ${parent?.clientHeight ?? 0}px`}
-						>
-							{defaultPreview ? 0 : framePercent.at(-2) ?? ''}
-						</div>
-						<div
-							in:animation|local
-							class="flex h-full items-end justify-center"
-							style={`font-size: ${parent?.clientHeight ?? 0}px`}
-						>
-							{defaultPreview ? 0 : framePercent.at(-1) ?? ''}
-						</div>
-						{#if !numberOfDecimals}
-							<div
-								in:animation|local
-								class="flex h-full items-end justify-center pb-[2.25%]"
-								style={`font-size: ${parent?.clientHeight * 0.8}px`}
-							>
-								%
-							</div>
-						{/if}
-					{/key}
-					{#if numberOfDecimals}
+		{#key clientHeight * clientWidth}
+			<div class={`w-full h-full absolute`}>
+				<div
+					class={`${style.classValue.replace(
+						'justify-center',
+						'justify-end',
+					)} flex aspect-[23/9] max-h-full w-full items-end justify-end; `}
+					style={`${style.cssValue}; transform: translate(0,25%); ${dataItem?.data.advancedStyling}; color: ${percentageColor}; ${style.textStroke}`}
+					bind:this={parent}
+				>
+					{#if parent}
 						{#key framePercent}
 							<div
 								in:animation|local
-								class="flex h-full items-end justify-center pb-[6%]"
-								style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								class="flex h-full items-end justify-center"
+								style={`font-size: ${parent?.clientHeight ?? 0}px`}
 							>
-								.
+								{defaultPreview ? 3 : framePercent.at(-3) ?? ''}
 							</div>
 							<div
 								in:animation|local
-								class="flex h-full items-end justify-center pb-[6%]"
-								style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								class="flex h-full items-end justify-center"
+								style={`font-size: ${parent?.clientHeight ?? 0}px`}
 							>
-								{defaultPreview ? 0 : decimals.at(0) ?? ''}
+								{defaultPreview ? 0 : framePercent.at(-2) ?? ''}
 							</div>
 							<div
 								in:animation|local
-								class="flex h-full items-end justify-center pb-[6%]"
-								style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								class="flex h-full items-end justify-center"
+								style={`font-size: ${parent?.clientHeight ?? 0}px`}
 							>
-								%
+								{defaultPreview ? 0 : framePercent.at(-1) ?? ''}
 							</div>
+							{#if !numberOfDecimals}
+								<div
+									in:animation|local
+									class="flex h-full items-end justify-center pb-[2.25%]"
+									style={`font-size: ${parent?.clientHeight * 0.8}px`}
+								>
+									%
+								</div>
+							{/if}
 						{/key}
+						{#if numberOfDecimals}
+							{#key framePercent}
+								<div
+									in:animation|local
+									class="flex h-full items-end justify-center pb-[6%]"
+									style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								>
+									.
+								</div>
+								<div
+									in:animation|local
+									class="flex h-full items-end justify-center pb-[6%]"
+									style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								>
+									{defaultPreview ? 0 : decimals.at(0) ?? ''}
+								</div>
+								<div
+									in:animation|local
+									class="flex h-full items-end justify-center pb-[6%]"
+									style={`font-size: ${parent?.clientHeight * 0.55}px`}
+								>
+									%
+								</div>
+							{/key}
+						{/if}
 					{/if}
-				{/if}
+				</div>
 			</div>
-		</div>
+		{/key}
 	{/if}
 </div>

@@ -4,8 +4,6 @@
 	import { fly } from 'svelte/transition';
 
 	$: rankIcon = $currentPlayer.rank?.current?.rank?.toUpperCase() ?? 'UNRANKED';
-
-	$: console.log($currentPlayer);
 </script>
 
 <div class="w-full h-full relative">

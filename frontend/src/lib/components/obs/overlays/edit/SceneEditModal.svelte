@@ -17,12 +17,12 @@
 	import { tooltip } from 'svooltip';
 	import { fly } from 'svelte/transition';
 	import NonInteractiveIFrame from '../preview/NonInteractiveIFrame.svelte';
+	import { preview } from 'vite';
 
 	export let open: boolean;
 	export let overlay: Overlay;
 
 	$: curScene = overlay[$statsScene];
-	$: previewBackgroundType = curScene.background.type;
 
 	$: url = $isElectron ? $urls?.local : $urls?.external;
 	$: overlayPreviewSrc = `${url}/obs/overlay/${overlay.id}/layers`;
@@ -198,17 +198,17 @@
 									</div>
 								{/if}
 							</div>
-
-							<div
-								class="bg-center aspect-video w-[35vw] max-w-[600px] border-secondary"
-								style={`
+							{#key curScene.background}
+								<div
+									class="bg-center aspect-video w-[35vw] max-w-[600px] border-secondary"
+									style={`
 						${
-							previewBackgroundType === SceneBackground.Color
+							curScene.background.type === SceneBackground.Color
 								? `background: ${curScene.background.color};`
 								: ''
 						}
 							${
-								previewBackgroundType === SceneBackground.Image
+								curScene.background.type === SceneBackground.Image
 									? `background-image: url('/image/backgrounds/${
 											curScene.background.image.src
 									  }');
@@ -216,7 +216,7 @@
 									: ''
 							}
 									${
-										previewBackgroundType === SceneBackground.ImageCustom
+										curScene.background.type === SceneBackground.ImageCustom
 											? `background-image: url('${`${resourceUrl}/public/custom/${
 													overlay.id
 											  }/image/${encodeURI(
@@ -226,26 +226,27 @@
 											: ''
 									}
 											${
-												previewBackgroundType ===
+												curScene.background.type ===
 												SceneBackground.InGameImageStage
 													? `background-image: url('/image/stages/8.png');`
 													: ''
 											}
 												${
-													previewBackgroundType ===
+													curScene.background.type ===
 													SceneBackground.PostGameImageStage
 														? `background-image: url('/image/stages/8.png');`
 														: ''
 												}
 													${curScene.background.opacity !== undefined ? `opacity: ${curScene.background.opacity / 100};` : ''}
 													background-repeat: no-repeat;`}
-							>
-								<NonInteractiveIFrame
-									src={overlayPreviewSrc}
-									title="preview"
-									class="w-full h-full"
-								/>
-							</div>
+								>
+									<!-- <NonInteractiveIFrame
+										src={overlayPreviewSrc}
+										title="preview"
+										class="w-full h-full"
+									/> -->
+								</div>
+							{/key}
 
 							{#if curScene.background.type !== SceneBackground.None}
 								<div class="flex gap-4">

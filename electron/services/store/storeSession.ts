@@ -7,6 +7,7 @@ import { MessageHandler } from '../messageHandler';
 import { dateTimeNow, getHoursDifference } from '../../utils/functions';
 import { ElectronCurrentPlayerStore } from './storeCurrentPlayer';
 import { ElectronSettingsStore } from './storeSettings';
+import { isNil } from 'lodash';
 
 
 @singleton()
@@ -45,8 +46,13 @@ export class ElectronSessionStore {
     }
 
     async checkAndResetSessionStats(): Promise<boolean> {
+        this.log.info("Checking Session Stats Reset");
         const session = await this.getSessionStats();
-        if (!session || (getHoursDifference(new Date(session?.latestUpdate), dateTimeNow()) > 6)) {
+        this.log.info("Current Session Stats", session);
+        const hoursSinceLastUpdate = session && getHoursDifference(new Date(session?.latestUpdate), dateTimeNow());
+        this.log.info("Hours since last update", hoursSinceLastUpdate);
+        if (!session || isNil(hoursSinceLastUpdate) || (hoursSinceLastUpdate >= 6)) {
+            this.log.info("Current Date Time");
             await this.resetSessionStats();
             return true;
         }
@@ -59,7 +65,7 @@ export class ElectronSessionStore {
         if (!rankStats) return;
         const player = await this.storeCurrentPlayer.getCurrentPlayer();
         if (!player) return;
-        let session = await this.getSessionStats();
+        const session = await this.getSessionStats();
         if (!session) return;
         session.latestUpdate = dateTimeNow();
         session.currentRankStats = rankStats;

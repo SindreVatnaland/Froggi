@@ -8,6 +8,7 @@
 	import { fly } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { Element } from 'svelte/types/compiler/interfaces';
+	import { Stage } from '$lib/models/constants/stageData';
 
 	export let boardHeight: number | undefined = undefined;
 	export let boardWidth: number | undefined = undefined;
@@ -46,11 +47,12 @@
 
 <svelte:window bind:innerHeight bind:innerWidth />
 
-<div
-	in:animateIn|global={{ scene }}
-	out:animateOut|global={{ scene }}
-	class={`w-full h-full bg-center absolute z-0`}
-	style={`
+{#key scene.background}
+	<div
+		in:animateIn|global={{ scene }}
+		out:animateOut|global={{ scene }}
+		class={`w-full h-full bg-center absolute z-0`}
+		style={`
 				${scene?.background.type === SceneBackground.Color ? `background: ${scene.background.color};` : ''};
 				${
 					scene?.background.type === SceneBackground.Image
@@ -86,6 +88,7 @@
 				}
 				${scene?.background.opacity !== undefined ? `opacity: ${scene.background.opacity / 100};` : ''}
 				background-repeat: no-repeat;`}
->
-	<slot />
-</div>
+	>
+		<slot />
+	</div>
+{/key}
