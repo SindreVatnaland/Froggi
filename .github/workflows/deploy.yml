@@ -56,12 +56,12 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Upload release assets using GitHub CLI
+            - uses: softprops/action-gh-release@v1
               env:
                   GITHUB_TOKEN: ${{ secrets.PAT }}
-              run: |
-                  TAG="${{ github.ref_name }}"
-                  FILES="${{ inputs['file'] }}"
-
-                  # Ensure GitHub CLI is installed
-                  gh release upload "$TAG" $FILES --clobber
+              with:
+                  files: ${{ inputs['file'] }}
+                  draft: false
+                  tag_name: ${{ github.ref_name }}
+                  prerelease: ${{ contains(github.ref_name, 'beta') }}
+                  fail_on_unmatched_files: false
