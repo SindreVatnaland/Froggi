@@ -20,5 +20,5 @@
 		checked={isSceneCommandEnabled}
 		on:change={toggleSceneCommandState}
 	/>
-	<h1 class="text-xl font-semibold color-secondary">Enable Scene Switch Commands</h1>
+	<h1 class="text-xl font-semibold text-secondary-color">Enable Scene Switch Commands</h1>
 </div>

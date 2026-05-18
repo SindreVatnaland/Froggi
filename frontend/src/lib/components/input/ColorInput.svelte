@@ -22,7 +22,7 @@
 </script>
 
 {#if label}
-	<h1 class="color-secondary text-sm font-medium">{label}</h1>
+	<h1 class="text-secondary-color text-sm font-medium">{label}</h1>
 {/if}
 <div class="w-full h-12 grid grid-flow-col gap-4 grid-cols-2">
 	<input

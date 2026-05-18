@@ -105,7 +105,7 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <main
-	class="fixed w-screen h-screen background-color-primary color-secondary"
+	class="fixed w-screen h-screen background-primary-color text-secondary-color"
 	in:fade={{ delay: 50, duration: 150 }}
 >
 	{#if overlay && boardHeight && boardWidth}
@@ -134,7 +134,7 @@
 						</button>
 					</div>
 					<div
-						class="w-full border-secondary background-color-primary bg-opacity-20 flex-1 overflow-hidden"
+						class="w-full border-secondary background-primary-color bg-opacity-20 flex-1 overflow-hidden"
 					>
 						<LayerToggle />
 					</div>
@@ -145,12 +145,12 @@
 				class={`max-w-full flex-1 flex flex-col gap-2 justify-start items-center py-2 overflow-auto`}
 			>
 				<div class="flex flex-col items-center">
-					<h1 class="text-lg font-medium color-secondary">
+					<h1 class="text-lg font-medium text-secondary-color">
 						Overlay - {overlay.title}
 					</h1>
 					<div class="flex gap-2 justify-center items-center">
 						<button
-							class="transition background-color-primary bg-opacity-30 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
+							class="btn text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
 							on:click={() => {
 								isSceneModalOpen = true;
 							}}
@@ -158,14 +158,14 @@
 							Configure
 						</button>
 						<button
-							class="transition background-color-primary bg-opacity-30 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
+							class="btn text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
 							on:click={downloadOverlay}
 						>
 							Share
 						</button>
 
 						<button
-							class="transition background-color-primary bg-opacity-30 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
+							class="btn text-md whitespace-nowrap h-10 p-2 xl:text-xl border-secondary rounded"
 							on:click={() => (isEmbedModalOpen = true)}
 						>
 							Embed
@@ -186,7 +186,7 @@
 					<BoardEdit bind:borderHeight={boardHeight} />
 				</div>
 				<button
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 					on:click={() => {
 						selectedItemId = newId();
 						isElementModalOpen = true;

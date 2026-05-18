@@ -23,7 +23,7 @@
 
 <div class="grid grid-flow-col gap-2 items-center">
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
+		class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
 		on:click={() => (open = true)}
 	>
 		Apply Animation Triggers
@@ -38,7 +38,7 @@
 			<AnimationTriggerCategorySelect bind:selectedOption={tempSelectedOptions} />
 		</div>
 
-		<h1 class="color-secondary text-sm font-bold">Triggers:</h1>
+		<h1 class="text-secondary-color text-sm font-bold">Triggers:</h1>
 		{#if tempActiveOption.length}
 			<div
 				in:fly={{ duration: 250, x: 100, delay: 250 }}
@@ -46,9 +46,9 @@
 				class="max-h-24 overflow-auto"
 			>
 				{#each tempActiveOption as activeOption, i}
-					<span class="color-secondary text-sm"><b>{activeOption}</b></span>
+					<span class="text-secondary-color text-sm"><b>{activeOption}</b></span>
 					{#if tempActiveOption.length != i + 1}
-						<span class="color-secondary text-sm">{'or '}</span>
+						<span class="text-secondary-color text-sm">{'or '}</span>
 					{/if}
 				{/each}
 			</div>
@@ -56,7 +56,7 @@
 
 		<div class="w-48 flex items-end">
 			<button
-				class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+				class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 				on:click={handleUpdate}
 			>
 				Update

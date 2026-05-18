@@ -32,7 +32,7 @@
 
 <div class="w-full">
 	{#if label}
-		<h1 class="color-secondary text-sm font-medium m-0">{label}</h1>
+		<h1 class="text-secondary-color text-sm font-medium m-0">{label}</h1>
 	{/if}
 	<div class="w-full h-11 rounded-md">
 		<input

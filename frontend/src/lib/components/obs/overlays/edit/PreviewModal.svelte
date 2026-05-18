@@ -20,17 +20,17 @@
 		class="w-[80vw] h-80 max-h-[80vh] max-w-[800px] flex rounded-lg bg-transparent m-0 bg-cover bg-center p-4 background-primary-color"
 	>
 		<div class="flex-1 flex flex-col justify-between items-center w-[80%]">
-			<h1 class="text-xl font-medium color-secondary">Open Preview In New Window</h1>
+			<h1 class="text-xl font-medium text-secondary-color">Open Preview In New Window</h1>
 			<a target="popup" href={`${localUrl}`} on:click={() => (open = false)}>
 				<button
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-24 h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-md whitespace-nowrap w-24 h-10 px-2 xl:text-xl border-secondary"
 				>
 					Popup
 				</button>
 			</a>
 		</div>
 		<div class="flex-1 flex flex-col justify-between items-center rounded-md">
-			<h1 class="text-xl font-medium color-secondary">Open on external device</h1>
+			<h1 class="text-xl font-medium text-secondary-color">Open on external device</h1>
 			<div class="border-secondary" style="border-width: 0.125em">
 				<QrCode value={`${externalUrl}`} />
 			</div>
@@ -43,7 +43,7 @@
 			>
 				<button
 					on:click={copy}
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 				>
 					Copy external URL
 				</button>

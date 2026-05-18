@@ -65,7 +65,7 @@
 			<div class="h-full flex flex-col justify-between">
 				<div class="max-h-full h-full overflow-auto flex flex-col gap-4">
 					<div>
-						<h1 class="color-secondary text-2xl font-medium">Overlay:</h1>
+						<h1 class="text-secondary-color text-2xl font-medium">Overlay:</h1>
 						<div class="w-48 flex gap-2">
 							<TextInput
 								bind:value={overlay.title}
@@ -77,19 +77,19 @@
 					</div>
 
 					<div>
-						<h1 class="text-2xl font-medium color-secondary">Scene:</h1>
+						<h1 class="text-2xl font-medium text-secondary-color">Scene:</h1>
 						<div class="flex gap-8 justify-between">
-							<h1 class="text-lg font-medium color-secondary w-[50%]">
+							<h1 class="text-lg font-medium text-secondary-color w-[50%]">
 								Active scenes
 							</h1>
-							<h1 class="text-lg font-medium color-secondary w-[50%]">Fallback</h1>
+							<h1 class="text-lg font-medium text-secondary-color w-[50%]">Fallback</h1>
 						</div>
 						<SceneSelectOptions bind:overlay />
 					</div>
 				</div>
 				<div class="w-48 flex items-end">
 					<button
-						class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+						class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 						on:click={handleUpdate}
 					>
 						Update
@@ -251,7 +251,7 @@
 							{#if curScene.background.type !== SceneBackground.None}
 								<div class="flex gap-4">
 									<div class="max-w-full">
-										<h1 class=" text-lg font-medium color-secondary">
+										<h1 class=" text-lg font-medium text-secondary-color">
 											Background Transition - In
 										</h1>
 										<div class="w-48">
@@ -261,7 +261,7 @@
 										</div>
 									</div>
 									<div class="max-w-full">
-										<h1 class=" text-lg font-medium color-secondary">
+										<h1 class=" text-lg font-medium text-secondary-color">
 											Background Transition - Out
 										</h1>
 										<div class="w-48">
@@ -275,7 +275,7 @@
 						</div>
 						<div>
 							<h1
-								class=" text-2xl font-medium color-secondary"
+								class=" text-2xl font-medium text-secondary-color"
 								use:tooltip={{
 									content: 'Delay between each layer rendering',
 									placement: 'top-start',
@@ -297,7 +297,7 @@
 						</div>
 						<div class="flex gap-4">
 							<div class="max-w-full">
-								<h1 class=" text-lg font-medium color-secondary">
+								<h1 class=" text-lg font-medium text-secondary-color">
 									Element Transition - In
 								</h1>
 								<div class="w-48">
@@ -308,7 +308,7 @@
 								</div>
 							</div>
 							<div class="max-w-full">
-								<h1 class=" text-lg font-medium color-secondary">
+								<h1 class=" text-lg font-medium text-secondary-color">
 									Element Transition - Out
 								</h1>
 								<div class="w-48">

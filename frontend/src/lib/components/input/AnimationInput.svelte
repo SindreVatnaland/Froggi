@@ -36,10 +36,10 @@
 {#if animation}
 	<div class="w-full">
 		{#if label}
-			<h1 class="color-secondary text-md font-medium">{label}</h1>
+			<h1 class="text-secondary-color text-md font-medium">{label}</h1>
 		{/if}
 		<div class="w-full">
-			<h1 class="color-secondary text-sm font-medium">Type</h1>
+			<h1 class="text-secondary-color text-sm font-medium">Type</h1>
 			<div class="relative w-full background-primary-color rounded-md">
 				<Select bind:selected={animation.type}>
 					<option selected value={Animation.None}>None</option>
@@ -57,7 +57,7 @@
 
 			{#if animation?.type !== Animation.None}
 				{#if [Animation.Fly, Animation.FlyRandom, Animation.Slide].includes(animation.type)}
-					<h1 class="color-secondary text-sm font-medium">X-distance - px</h1>
+					<h1 class="text-secondary-color text-sm font-medium">X-distance - px</h1>
 					<div class="relative w-full h-11 rounded-md">
 						<input
 							type="number"
@@ -70,7 +70,7 @@
 						/>
 					</div>
 
-					<h1 class="color-secondary text-sm font-medium">Y-distance - px</h1>
+					<h1 class="text-secondary-color text-sm font-medium">Y-distance - px</h1>
 					<div class="relative w-full h-11 rounded-md">
 						<input
 							type="number"
@@ -85,7 +85,7 @@
 				{/if}
 
 				{#if animation.type === Animation.Scale}
-					<h1 class="color-secondary text-sm font-medium">Scale</h1>
+					<h1 class="text-secondary-color text-sm font-medium">Scale</h1>
 					<div class="relative w-full h-11 rounded-md">
 						<input
 							type="number"
@@ -98,7 +98,7 @@
 						/>
 					</div>
 				{/if}
-				<h1 class="color-secondary text-sm font-medium">Duration - ms</h1>
+				<h1 class="text-secondary-color text-sm font-medium">Duration - ms</h1>
 				<div class="relative w-full h-11 rounded-md">
 					<input
 						type="number"
@@ -110,7 +110,7 @@
 						bind:value={animation.options.duration}
 					/>
 				</div>
-				<h1 class="color-secondary text-sm font-medium">Delay - ms</h1>
+				<h1 class="text-secondary-color text-sm font-medium">Delay - ms</h1>
 				<div class="relative w-full h-11 rounded-md">
 					<input
 						type="number"
@@ -122,7 +122,7 @@
 						bind:value={animation.options.delay}
 					/>
 				</div>
-				<h1 class="color-secondary text-sm font-medium">Easing</h1>
+				<h1 class="text-secondary-color text-sm font-medium">Easing</h1>
 				<Select bind:selected={animation.options.easing}>
 					<option selected value={undefined}>None</option>
 					{#each Object.keys(easingFunctions) as easingName}

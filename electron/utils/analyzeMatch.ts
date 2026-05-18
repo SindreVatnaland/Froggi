@@ -1,230 +1,116 @@
 import { ActionCountsType, OverallType } from "@slippi/slippi-js";
 import { GameStats, MatchStats } from "../../frontend/src/lib/models/types/slippiData";
 
+const sumStat = <T>(items: T[], fn: (item: T) => number): number =>
+    items.reduce((acc, item) => acc + fn(item), 0);
+
+const ratioStat = <T>(items: T[], countFn: (item: T) => number, totalFn: (item: T) => number) => {
+    const count = sumStat(items, countFn);
+    const total = sumStat(items, totalFn);
+    return { count, total, ratio: count / (total || 1) };
+};
+
+function aggregateActionCounts(counts: ActionCountsType[], playerIndex: number) {
+    const s = (fn: (a: ActionCountsType) => number) =>
+        sumStat(counts, fn);
+    return {
+        playerIndex,
+        airDodgeCount: s(a => a.airDodgeCount),
+        attackCount: {
+            jab1: s(a => a.attackCount.jab1),
+            jab2: s(a => a.attackCount.jab2),
+            jab3: s(a => a.attackCount.jab3),
+            jabm: s(a => a.attackCount.jabm),
+            dash: s(a => a.attackCount.dash),
+            ftilt: s(a => a.attackCount.ftilt),
+            utilt: s(a => a.attackCount.utilt),
+            dtilt: s(a => a.attackCount.dtilt),
+            fsmash: s(a => a.attackCount.fsmash),
+            usmash: s(a => a.attackCount.usmash),
+            dsmash: s(a => a.attackCount.dsmash),
+            nair: s(a => a.attackCount.nair),
+            fair: s(a => a.attackCount.fair),
+            bair: s(a => a.attackCount.bair),
+            uair: s(a => a.attackCount.uair),
+            dair: s(a => a.attackCount.dair),
+        },
+        dashDanceCount: s(a => a.dashDanceCount),
+        grabCount: {
+            success: s(a => a.grabCount.success),
+            fail: s(a => a.grabCount.fail),
+        },
+        groundTechCount: {
+            in: s(a => a.groundTechCount.in),
+            away: s(a => a.groundTechCount.away),
+            neutral: s(a => a.groundTechCount.neutral),
+            fail: s(a => a.groundTechCount.fail),
+        },
+        lCancelCount: {
+            success: s(a => a.lCancelCount.success),
+            fail: s(a => a.lCancelCount.fail),
+        },
+        ledgegrabCount: s(a => a.ledgegrabCount),
+        rollCount: s(a => a.rollCount),
+        spotDodgeCount: s(a => a.spotDodgeCount),
+        throwCount: {
+            up: s(a => a.throwCount.up),
+            down: s(a => a.throwCount.down),
+            forward: s(a => a.throwCount.forward),
+            back: s(a => a.throwCount.back),
+        },
+        wavedashCount: s(a => a.wavedashCount),
+        wavelandCount: s(a => a.wavelandCount),
+        wallTechCount: {
+            success: s(a => a.wallTechCount.success),
+            fail: s(a => a.wallTechCount.fail),
+        },
+    };
+}
+
+function aggregateOverall(overall: OverallType[], playerIndex: number) {
+    const r = (countFn: (o: OverallType) => number, totalFn: (o: OverallType) => number) =>
+        ratioStat(overall, countFn, totalFn);
+    return {
+        playerIndex,
+        inputCounts: {
+            buttons: sumStat(overall, o => o.inputCounts.buttons),
+            triggers: sumStat(overall, o => o.inputCounts.triggers),
+            joystick: sumStat(overall, o => o.inputCounts.joystick),
+            cstick: sumStat(overall, o => o.inputCounts.cstick),
+            total: sumStat(overall, o => o.inputCounts.total),
+        },
+        conversionCount: sumStat(overall, o => o.conversionCount),
+        totalDamage: sumStat(overall, o => o.totalDamage),
+        killCount: sumStat(overall, o => o.killCount),
+        successfulConversions: r(o => o.successfulConversions.count, o => o.successfulConversions.total),
+        inputsPerMinute: r(o => o.inputsPerMinute.count, o => o.inputsPerMinute.total),
+        digitalInputsPerMinute: r(o => o.digitalInputsPerMinute.count, o => o.digitalInputsPerMinute.total),
+        openingsPerKill: r(o => o.openingsPerKill.count, o => o.openingsPerKill.total),
+        damagePerOpening: r(o => o.damagePerOpening.count, o => o.damagePerOpening.total),
+        neutralWinRatio: r(o => o.neutralWinRatio.count, o => o.neutralWinRatio.total),
+        counterHitRatio: r(o => o.counterHitRatio.count, o => o.counterHitRatio.total),
+        beneficialTradeRatio: r(o => o.beneficialTradeRatio.count, o => o.beneficialTradeRatio.total),
+    };
+}
+
 export const analyzeMatch = (gameStats: GameStats[] | undefined): MatchStats | undefined => {
-    if (!gameStats || !gameStats.length) return;
-    const stats = gameStats.map(stats => stats.postGameStats)
-    const player1Index = stats.at(0)?.actionCounts.at(0)?.playerIndex ?? 0
-    const player2Index = stats.at(1)?.actionCounts.at(1)?.playerIndex ?? 1
-    const player1ActionCounts = stats.map(stats => stats?.actionCounts[0]).filter(actionCounts => actionCounts !== undefined) as ActionCountsType[];
-    const player2ActionCounts = stats.map(stats => stats?.actionCounts[1]).filter(actionCounts => actionCounts !== undefined) as ActionCountsType[]
-    const player1Overall = stats.map(stats => stats?.overall[0]).filter(overall => overall !== undefined) as OverallType[];
-    const player2Overall = stats.map(stats => stats?.overall[1]).filter(overall => overall !== undefined) as OverallType[];
+    if (!gameStats?.length) return;
+    const stats = gameStats.map(g => g.postGameStats);
+    const player1Index = stats[0]?.actionCounts[0]?.playerIndex ?? 0;
+    const player2Index = stats[0]?.actionCounts[1]?.playerIndex ?? 1;
+    const p1Counts = stats.flatMap(s => s?.actionCounts[0] ?? []).filter(Boolean) as ActionCountsType[];
+    const p2Counts = stats.flatMap(s => s?.actionCounts[1] ?? []).filter(Boolean) as ActionCountsType[];
+    const p1Overall = stats.flatMap(s => s?.overall[0] ?? []).filter(Boolean) as OverallType[];
+    const p2Overall = stats.flatMap(s => s?.overall[1] ?? []).filter(Boolean) as OverallType[];
 
     return {
         actionCounts: [
-            {
-                playerIndex: player1Index,
-                airDodgeCount: player1ActionCounts?.map(action => action.airDodgeCount).reduce((i, j) => i + j, 0) ?? 0,
-                attackCount: {
-                    jab1: player1ActionCounts?.map(action => action.attackCount.jab1).reduce((i, j) => i + j, 0) ?? 0,
-                    jab2: player1ActionCounts?.map(action => action.attackCount.jab2).reduce((i, j) => i + j, 0) ?? 0,
-                    jab3: player1ActionCounts?.map(action => action.attackCount.jab3).reduce((i, j) => i + j, 0) ?? 0,
-                    jabm: player1ActionCounts?.map(action => action.attackCount.jabm).reduce((i, j) => i + j, 0) ?? 0,
-                    dash: player1ActionCounts?.map(action => action.attackCount.dash).reduce((i, j) => i + j, 0) ?? 0,
-                    ftilt: player1ActionCounts?.map(action => action.attackCount.ftilt).reduce((i, j) => i + j, 0) ?? 0,
-                    utilt: player1ActionCounts?.map(action => action.attackCount.utilt).reduce((i, j) => i + j, 0) ?? 0,
-                    dtilt: player1ActionCounts?.map(action => action.attackCount.dtilt).reduce((i, j) => i + j, 0) ?? 0,
-                    fsmash: player1ActionCounts?.map(action => action.attackCount.fsmash).reduce((i, j) => i + j, 0) ?? 0,
-                    usmash: player1ActionCounts?.map(action => action.attackCount.usmash).reduce((i, j) => i + j, 0) ?? 0,
-                    dsmash: player1ActionCounts?.map(action => action.attackCount.dsmash).reduce((i, j) => i + j, 0) ?? 0,
-                    nair: player1ActionCounts?.map(action => action.attackCount.nair).reduce((i, j) => i + j, 0) ?? 0,
-                    fair: player1ActionCounts?.map(action => action.attackCount.fair).reduce((i, j) => i + j, 0) ?? 0,
-                    bair: player1ActionCounts?.map(action => action.attackCount.bair).reduce((i, j) => i + j, 0) ?? 0,
-                    uair: player1ActionCounts?.map(action => action.attackCount.uair).reduce((i, j) => i + j, 0) ?? 0,
-                    dair: player1ActionCounts?.map(action => action.attackCount.dair).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                dashDanceCount: player1ActionCounts?.map(action => action.dashDanceCount).reduce((i, j) => i + j, 0) ?? 0,
-                grabCount: {
-                    success: player1ActionCounts?.map(action => action.grabCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player1ActionCounts?.map(action => action.grabCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                groundTechCount: {
-                    in: player1ActionCounts?.map(action => action.groundTechCount.in).reduce((i, j) => i + j, 0) ?? 0,
-                    away: player1ActionCounts?.map(action => action.groundTechCount.away).reduce((i, j) => i + j, 0) ?? 0,
-                    neutral: player1ActionCounts?.map(action => action.groundTechCount.neutral).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player1ActionCounts?.map(action => action.groundTechCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                lCancelCount: {
-                    success: player1ActionCounts?.map(action => action.lCancelCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player1ActionCounts?.map(action => action.lCancelCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                ledgegrabCount: player1ActionCounts?.map(action => action.ledgegrabCount).reduce((i, j) => i + j, 0) ?? 0,
-                rollCount: player1ActionCounts?.map(action => action.rollCount).reduce((i, j) => i + j, 0) ?? 0,
-                spotDodgeCount: player1ActionCounts?.map(action => action.spotDodgeCount).reduce((i, j) => i + j, 0) ?? 0,
-                throwCount: {
-                    up: player1ActionCounts?.map(action => action.throwCount.up).reduce((i, j) => i + j, 0) ?? 0,
-                    down: player1ActionCounts?.map(action => action.throwCount.down).reduce((i, j) => i + j, 0) ?? 0,
-                    forward: player1ActionCounts?.map(action => action.throwCount.forward).reduce((i, j) => i + j, 0) ?? 0,
-                    back: player1ActionCounts?.map(action => action.throwCount.back).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                wavedashCount: player1ActionCounts?.map(action => action.wavedashCount).reduce((i, j) => i + j, 0) ?? 0,
-                wavelandCount: player1ActionCounts?.map(action => action.wavelandCount).reduce((i, j) => i + j, 0) ?? 0,
-                wallTechCount: {
-                    success: player1ActionCounts?.map(action => action.wallTechCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player1ActionCounts?.map(action => action.wallTechCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-            },
-            {
-                playerIndex: player2Index,
-                airDodgeCount: player2ActionCounts?.map(action => action.airDodgeCount).reduce((i, j) => i + j, 0) ?? 0,
-                attackCount: {
-                    jab1: player2ActionCounts?.map(action => action.attackCount.jab1).reduce((i, j) => i + j, 0) ?? 0,
-                    jab2: player2ActionCounts?.map(action => action.attackCount.jab2).reduce((i, j) => i + j, 0) ?? 0,
-                    jab3: player2ActionCounts?.map(action => action.attackCount.jab3).reduce((i, j) => i + j, 0) ?? 0,
-                    jabm: player2ActionCounts?.map(action => action.attackCount.jabm).reduce((i, j) => i + j, 0) ?? 0,
-                    dash: player2ActionCounts?.map(action => action.attackCount.dash).reduce((i, j) => i + j, 0) ?? 0,
-                    ftilt: player2ActionCounts?.map(action => action.attackCount.ftilt).reduce((i, j) => i + j, 0) ?? 0,
-                    utilt: player2ActionCounts?.map(action => action.attackCount.utilt).reduce((i, j) => i + j, 0) ?? 0,
-                    dtilt: player2ActionCounts?.map(action => action.attackCount.dtilt).reduce((i, j) => i + j, 0) ?? 0,
-                    fsmash: player2ActionCounts?.map(action => action.attackCount.fsmash).reduce((i, j) => i + j, 0) ?? 0,
-                    usmash: player2ActionCounts?.map(action => action.attackCount.usmash).reduce((i, j) => i + j, 0) ?? 0,
-                    dsmash: player2ActionCounts?.map(action => action.attackCount.dsmash).reduce((i, j) => i + j, 0) ?? 0,
-                    nair: player2ActionCounts?.map(action => action.attackCount.nair).reduce((i, j) => i + j, 0) ?? 0,
-                    fair: player2ActionCounts?.map(action => action.attackCount.fair).reduce((i, j) => i + j, 0) ?? 0,
-                    bair: player2ActionCounts?.map(action => action.attackCount.bair).reduce((i, j) => i + j, 0) ?? 0,
-                    uair: player2ActionCounts?.map(action => action.attackCount.uair).reduce((i, j) => i + j, 0) ?? 0,
-                    dair: player2ActionCounts?.map(action => action.attackCount.dair).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                dashDanceCount: player2ActionCounts?.map(action => action.dashDanceCount).reduce((i, j) => i + j, 0) ?? 0,
-                grabCount: {
-                    success: player2ActionCounts?.map(action => action.grabCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player2ActionCounts?.map(action => action.grabCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                groundTechCount: {
-                    in: player2ActionCounts?.map(action => action.groundTechCount.in).reduce((i, j) => i + j, 0) ?? 0,
-                    away: player2ActionCounts?.map(action => action.groundTechCount.away).reduce((i, j) => i + j, 0) ?? 0,
-                    neutral: player2ActionCounts?.map(action => action.groundTechCount.neutral).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player2ActionCounts?.map(action => action.groundTechCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                lCancelCount: {
-                    success: player2ActionCounts?.map(action => action.lCancelCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player2ActionCounts?.map(action => action.lCancelCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                ledgegrabCount: player2ActionCounts?.map(action => action.ledgegrabCount).reduce((i, j) => i + j, 0) ?? 0,
-                rollCount: player2ActionCounts?.map(action => action.rollCount).reduce((i, j) => i + j, 0) ?? 0,
-                spotDodgeCount: player2ActionCounts?.map(action => action.spotDodgeCount).reduce((i, j) => i + j, 0) ?? 0,
-                throwCount: {
-                    up: player2ActionCounts?.map(action => action.throwCount.up).reduce((i, j) => i + j, 0) ?? 0,
-                    down: player2ActionCounts?.map(action => action.throwCount.down).reduce((i, j) => i + j, 0) ?? 0,
-                    forward: player2ActionCounts?.map(action => action.throwCount.forward).reduce((i, j) => i + j, 0) ?? 0,
-                    back: player2ActionCounts?.map(action => action.throwCount.back).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                wavedashCount: player2ActionCounts?.map(action => action.wavedashCount).reduce((i, j) => i + j, 0) ?? 0,
-                wavelandCount: player2ActionCounts?.map(action => action.wavelandCount).reduce((i, j) => i + j, 0) ?? 0,
-                wallTechCount: {
-                    success: player2ActionCounts?.map(action => action.wallTechCount.success).reduce((i, j) => i + j, 0) ?? 0,
-                    fail: player2ActionCounts?.map(action => action.wallTechCount.fail).reduce((i, j) => i + j, 0) ?? 0,
-                },
-            }
+            aggregateActionCounts(p1Counts, player1Index),
+            aggregateActionCounts(p2Counts, player2Index),
         ],
         overall: [
-            {
-                playerIndex: player1Index,
-                inputCounts: {
-                    buttons: player1Overall?.map(overall => overall.inputCounts.buttons).reduce((i, j) => i + j, 0) ?? 0,
-                    triggers: player1Overall?.map(overall => overall.inputCounts.triggers).reduce((i, j) => i + j, 0) ?? 0,
-                    joystick: player1Overall?.map(overall => overall.inputCounts.joystick).reduce((i, j) => i + j, 0) ?? 0,
-                    cstick: player1Overall?.map(overall => overall.inputCounts.cstick).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.inputCounts.total).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                conversionCount: player1Overall?.map(overall => overall.conversionCount).reduce((i, j) => i + j, 0) ?? 0,
-                totalDamage: player1Overall?.map(overall => overall.totalDamage).reduce((i, j) => i + j, 0) ?? 0,
-                killCount: player1Overall?.map(overall => overall.killCount).reduce((i, j) => i + j, 0) ?? 0,
-                successfulConversions: {
-                    count: player1Overall?.map(overall => overall.successfulConversions.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.successfulConversions.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.successfulConversions.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.successfulConversions.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                inputsPerMinute: {
-                    count: player1Overall?.map(overall => overall.inputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.inputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.inputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.inputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                digitalInputsPerMinute: {
-                    count: player1Overall?.map(overall => overall.digitalInputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.digitalInputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.digitalInputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.digitalInputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                openingsPerKill: {
-                    count: player1Overall?.map(overall => overall.openingsPerKill.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.openingsPerKill.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.openingsPerKill.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.openingsPerKill.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                damagePerOpening: {
-                    count: player1Overall?.map(overall => overall.damagePerOpening.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.damagePerOpening.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.damagePerOpening.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.damagePerOpening.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                neutralWinRatio: {
-                    count: player1Overall?.map(overall => overall.neutralWinRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.neutralWinRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.neutralWinRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.neutralWinRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                counterHitRatio: {
-                    count: player1Overall?.map(overall => overall.counterHitRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.counterHitRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.counterHitRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.counterHitRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                beneficialTradeRatio: {
-                    count: player1Overall?.map(overall => overall.beneficialTradeRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player1Overall?.map(overall => overall.beneficialTradeRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player1Overall?.map(overall => overall.beneficialTradeRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player1Overall?.map(overall => overall.beneficialTradeRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-            },
-            {
-                playerIndex: player2Index,
-                inputCounts: {
-                    buttons: player2Overall?.map(overall => overall.inputCounts.buttons).reduce((i, j) => i + j, 0) ?? 0,
-                    triggers: player2Overall?.map(overall => overall.inputCounts.triggers).reduce((i, j) => i + j, 0) ?? 0,
-                    joystick: player2Overall?.map(overall => overall.inputCounts.joystick).reduce((i, j) => i + j, 0) ?? 0,
-                    cstick: player2Overall?.map(overall => overall.inputCounts.cstick).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.inputCounts.total).reduce((i, j) => i + j, 0) ?? 0,
-                },
-                conversionCount: player2Overall?.map(overall => overall.conversionCount).reduce((i, j) => i + j, 0) ?? 0,
-                totalDamage: player2Overall?.map(overall => overall.totalDamage).reduce((i, j) => i + j, 0) ?? 0,
-                killCount: player2Overall?.map(overall => overall.killCount).reduce((i, j) => i + j, 0) ?? 0,
-                successfulConversions: {
-                    count: player2Overall?.map(overall => overall.successfulConversions.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.successfulConversions.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.successfulConversions.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.successfulConversions.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                inputsPerMinute: {
-                    count: player2Overall?.map(overall => overall.inputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.inputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.inputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.inputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                digitalInputsPerMinute: {
-                    count: player2Overall?.map(overall => overall.digitalInputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.digitalInputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.digitalInputsPerMinute.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.digitalInputsPerMinute.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                openingsPerKill: {
-                    count: player2Overall?.map(overall => overall.openingsPerKill.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.openingsPerKill.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.openingsPerKill.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.openingsPerKill.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                damagePerOpening: {
-                    count: player2Overall?.map(overall => overall.damagePerOpening.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.damagePerOpening.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.damagePerOpening.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.damagePerOpening.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                neutralWinRatio: {
-                    count: player2Overall?.map(overall => overall.neutralWinRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.neutralWinRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.neutralWinRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.neutralWinRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                counterHitRatio: {
-                    count: player2Overall?.map(overall => overall.counterHitRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.counterHitRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.counterHitRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.counterHitRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-                beneficialTradeRatio: {
-                    count: player2Overall?.map(overall => overall.beneficialTradeRatio.count).reduce((i, j) => i + j, 0) ?? 0,
-                    total: player2Overall?.map(overall => overall.beneficialTradeRatio.total).reduce((i, j) => i + j, 0) ?? 0,
-                    ratio: ((player2Overall?.map(overall => overall.beneficialTradeRatio.count).reduce((i, j) => i + j, 0) ?? 0) / (player2Overall?.map(overall => overall.beneficialTradeRatio.total).reduce((i, j) => i + j, 0) ?? 1)),
-                },
-            }
+            aggregateOverall(p1Overall, player1Index),
+            aggregateOverall(p2Overall, player2Index),
         ],
-    }
-}
+    };
+};

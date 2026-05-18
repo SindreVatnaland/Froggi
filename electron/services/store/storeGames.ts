@@ -99,6 +99,7 @@ export class ElectronGamesStore {
 	async clearRecentGames() {
 		await this.sqliteGame.deleteLocalGameStats();
 		this.setGameScore([0, 0]);
+		this.messageHandler.sendMessage('RecentGames', []);
 	}
 
 	private applyGamesScore(games: GameStats[]) {

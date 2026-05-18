@@ -49,7 +49,7 @@
 		<div class="max-h-full overflow-auto" in:fly={{ y: 100, duration: 1500, delay: 300 }}>
 			<div class="w-full h-12 grid grid-cols-12 col-span-12 min-w-2xl max-w-6xl">
 				<div
-					class="w-full h-full grid grid-cols-12 col-span-12 border-b-1 border-gray-500 rounded-t-md background-color-primary bg-opacity-50"
+					class="w-full h-full grid grid-cols-12 col-span-12 border-b-1 border-gray-500 rounded-t-md background-primary-color bg-opacity-50"
 				>
 					<div class="w-full h-12 col-span-2 grid content-center justify-center">
 						<TextFitMulti
@@ -90,8 +90,8 @@
 			</div>
 			<div
 				class="w-full grid grid-cols-12 min-w-2xl max-w-6xl h-full
-			[&>*:nth-child(odd)]:background-color-primary [&>*:nth-child(odd)]:bg-opacity-25
-			[&>*:nth-child(even)]:background-color-primary [&>*:nth-child(even)]:bg-opacity-50"
+			[&>*:nth-child(odd)]:background-primary-color [&>*:nth-child(odd)]:bg-opacity-25
+			[&>*:nth-child(even)]:background-primary-color [&>*:nth-child(even)]:bg-opacity-50"
 			>
 				{#each Array.from(Array(200)) as _, i}
 					<LeaderboardRow

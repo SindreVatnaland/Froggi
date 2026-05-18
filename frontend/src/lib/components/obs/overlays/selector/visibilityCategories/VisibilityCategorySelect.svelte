@@ -129,7 +129,7 @@
 		{#each buttons.filter((b) => b.visible) as button}
 			<div class="grid gap-2 justify-start items-start">
 				<button
-					class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border rounded ${
+					class={`btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border rounded ${
 						selectedCategory === button.category
 							? 'border-secondary bg-opacity-50'
 							: 'border-white'

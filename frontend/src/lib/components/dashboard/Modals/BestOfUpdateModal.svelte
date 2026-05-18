@@ -18,12 +18,12 @@
 		class="w-[70vw] max-w-[600px] max-h-[80vh] min-w-72 flex flex-col justify-between gap-8 bg-cover bg-center border-secondary background-primary-color p-8"
 	>
 		<div class="flex gap-4 justify-center items-center">
-			<h1 class="color-secondary text-3xl font-semibold">Games</h1>
+			<h1 class="text-secondary-color text-3xl font-semibold">Games</h1>
 		</div>
 
 		{#each Object.values(BestOf).filter((bestOf) => typeof bestOf === 'number') as bestOf}
 			<button
-				class={`transition background-color-primary hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary ${
+				class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary ${
 					currentBestOf === bestOf ? 'bg-opacity-50' : 'bg-opacity-25'
 				}`}
 				on:click={() => handleUpdate(bestOf)}

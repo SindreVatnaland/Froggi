@@ -157,7 +157,7 @@
 			>
 				<div class="flex flex-col gap-2 items-center">
 					<button
-						class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
+						class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
 						on:click={() => (isElementSelectOpen = true)}
 					>
 						Select
@@ -170,7 +170,7 @@
 				</div>
 				<button
 					transition:fly={{ duration: 250, x: 150 }}
-					class="transition w-24 background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="transition w-24 background-primary-color bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 					on:click={() => update($statsScene)}
 				>
 					{isNewElement ? 'Add' : 'Update'}

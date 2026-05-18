@@ -59,7 +59,7 @@
 	$: notifyDisabledScene(overlay?.id, $statsScene);
 
 	const availableClass =
-		'transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border border-white rounded w-36 h-20 my-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary';
+		'btn text-xl py-2 px-4 border border-white rounded w-36 h-20 my-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary';
 	const unavailableInfo =
 		'Cannot perform this action on a demo overlay, try duplicating it first.';
 
@@ -88,7 +88,7 @@
 
 <Modal bind:open on:close={() => (open = false)}>
 	<div
-		class="h-[80vh] w-[800px] max-w-[80vw] overflow-y-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color color-secondary"
+		class="h-[80vh] w-[800px] max-w-[80vw] overflow-y-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color text-secondary-color"
 	>
 		<div>
 			<h1 class="font-bold text-3xl">{overlay?.title}</h1>

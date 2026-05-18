@@ -156,13 +156,13 @@
 	>
 		<div>
 			<div class="flex gap-4 justify-center items-center">
-				<h1 class="color-secondary text-3xl font-semibold">Add Game</h1>
+				<h1 class="text-secondary-color text-3xl font-semibold">Add Game</h1>
 			</div>
 			<div class="flex justify-between gap-4">
-				<h1 class="color-secondary text-2xl font-semibold">
+				<h1 class="text-secondary-color text-2xl font-semibold">
 					{getDisplayName(0)}
 				</h1>
-				<h1 class="color-secondary text-2xl font-semibold">
+				<h1 class="text-secondary-color text-2xl font-semibold">
 					{getDisplayName(1)}
 				</h1>
 			</div>
@@ -171,7 +171,7 @@
 			class="flex flex-col flex-1 gap-8 overflow-y-auto sp-2 border-t border-b border-secondary-color py-2"
 		>
 			<div class="flex gap-4 justify-center items-center">
-				<h1 class="color-secondary text-2xl font-semibold">Character</h1>
+				<h1 class="text-secondary-color text-2xl font-semibold">Character</h1>
 			</div>
 			<div class="flex justify-between gap-4">
 				<Select
@@ -214,7 +214,7 @@
 				</Select>
 			</div>
 			<div class="flex gap-4 justify-center items-center">
-				<h1 class="color-secondary text-2xl font-semibold">Stocks</h1>
+				<h1 class="text-secondary-color text-2xl font-semibold">Stocks</h1>
 			</div>
 			<div class="flex justify-between gap-18">
 				<div class="flex gap-2">
@@ -241,7 +241,7 @@
 						</button>
 					{/each}
 					<button
-						class="transition duration-100 w-14 p-2 rounded-md justify-center background-color-primary border-secondary bg-opacity-40 hover:bg-opacity-60"
+						class="transition duration-100 w-14 p-2 rounded-md justify-center background-primary-color border-secondary bg-opacity-40 hover:bg-opacity-60"
 						on:click={() => {
 							handleStockChange($currentPlayers.at(0)?.playerIndex ?? 0, 0);
 						}}
@@ -251,7 +251,7 @@
 				</div>
 				<div class="flex gap-2">
 					<button
-						class="transition duration-100 w-14 p-2 rounded-md justify-center background-color-primary border-secondary bg-opacity-40 hover:bg-opacity-60"
+						class="transition duration-100 w-14 p-2 rounded-md justify-center background-primary-color border-secondary bg-opacity-40 hover:bg-opacity-60"
 						on:click={() => {
 							handleStockChange($currentPlayers.at(1)?.playerIndex ?? 1, 0);
 						}}
@@ -283,7 +283,7 @@
 				</div>
 			</div>
 			<div class="flex gap-4 justify-center items-center">
-				<h1 class="color-secondary text-2xl font-semibold">Stage</h1>
+				<h1 class="text-secondary-color text-2xl font-semibold">Stage</h1>
 			</div>
 			<div class="flex gap-4 items-center">
 				<Select on:change={handleStageChange}>
@@ -302,11 +302,11 @@
 				</div>
 			</div>
 			<div class="flex gap-4 justify-center items-center">
-				<h1 class="color-secondary text-2xl font-semibold">Winner</h1>
+				<h1 class="text-secondary-color text-2xl font-semibold">Winner</h1>
 			</div>
 			<div class="flex justify-around gap-4">
 				<button
-					class={`border background-color-primary bg-opacity-25 rounded-sm p-4 ${
+					class={`border background-primary-color bg-opacity-25 rounded-sm p-4 ${
 						game.gameEnd.placements[$currentPlayers.at(0)?.playerIndex ?? 0]
 							.position === 0
 							? 'border-secondary bg-opacity-50'
@@ -319,7 +319,7 @@
 					</h1>
 				</button>
 				<button
-					class={`border background-color-primary bg-opacity-25 rounded-sm p-4 ${
+					class={`border background-primary-color bg-opacity-25 rounded-sm p-4 ${
 						game.gameEnd.placements[$currentPlayers.at(1)?.playerIndex ?? 1]
 							.position === 0
 							? 'border-secondary bg-opacity-50'
@@ -335,7 +335,7 @@
 		</div>
 		<button
 			disabled={!hasGameWinner()}
-			class={`border-secondary background-color-primary bg-opacity-25 p-4 disabled:opacity-50`}
+			class={`border-secondary background-primary-color bg-opacity-25 p-4 disabled:opacity-50`}
 			on:click={addGame}
 		>
 			<h1 class="text-secondary-color text-2xl font-semibold">Add Game</h1>

@@ -58,10 +58,6 @@ main {
 	padding-right: 4.5rem;
 }
 
-.color-secondary {
-	color: var(--secondary-color);
-}
-
 .border-secondary {
 	border-width: 1px;
 	border-color: var(--secondary-color);
@@ -149,6 +145,12 @@ main {
 
 .text-success-color {
 	color: var(--success-color);
+}
+
+.btn {
+	@apply transition font-semibold;
+	background-color: var(--primary-color);
+	color: var(--secondary-color);
 }
 
 button:active {

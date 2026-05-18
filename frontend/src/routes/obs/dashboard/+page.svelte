@@ -9,18 +9,18 @@
 </script>
 
 <main
-	class={`fixed h-screen w-screen bg-cover bg-center color-secondary`}
+	class={`fixed h-screen w-screen bg-cover bg-center text-secondary-color`}
 	in:fade={{ delay: 50, duration: 150 }}
 	out:fade={{ duration: 300 }}
 >
 	<div
 		class="w-full h-full flex flex-col overflow-y-auto items-center justify-start p-4 pb-24 gap-8"
 	>
-		<h1 class="color-secondary text-4xl font-bold">Dashboard</h1>
+		<h1 class="text-secondary-color text-4xl font-bold">Dashboard</h1>
 		<div class="flex gap-2">
 			{#each Object.values(DashboardOption) as option}
 				<button
-					class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary ${
+					class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary ${
 						dashboardOption === option
 							? 'border-secondary bg-opacity-50'
 							: 'border-white'
@@ -42,7 +42,7 @@
 				<div class="absolute flex flex-col gap-8 py-4">
 					<Default />
 					<div class="flex gap-2 justify-center items-center">
-						<h1 class="color-secondary text-3xl font-semibold">Stream Commands</h1>
+						<h1 class="text-secondary-color text-3xl font-semibold">Stream Commands</h1>
 					</div>
 					<OverlayScenes />
 					<ReplayBufferHandler />

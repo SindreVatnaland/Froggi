@@ -4,19 +4,19 @@
 
 <div class="w-full h-full flex flex-col items-center justify-center">
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
+		class="btn text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
 		on:click={() => goto('/obs/settings/websocket')}
 	>
 		OBS Websocket
 	</button>
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
+		class="btn text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
 		on:click={() => goto('/obs/settings/scene')}
 	>
 		Scene Commands
 	</button>
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
+		class="btn text-xl py-2 px-4 border-secondary w-40 h-20 my-4"
 		on:click={() => goto('/obs/settings/controller')}
 	>
 		Controller Commands

@@ -28,14 +28,14 @@
 	<div>
 		<h1 class="text-4xl font-bold text-secondary-color">Authorization</h1>
 	</div>
-	<h1 class="text-xl font-bold color-secondary">
+	<h1 class="text-xl font-bold text-secondary-color">
 		<span class={`${$isAuthorized ? 'text-success-color' : 'text-secondary'}`}>
 			{!$isAuthorized ? 'Unauthorized' : 'Authorized'}
 		</span>
 	</h1>
 	<div class="flex flex-col gap-2">
 		<h1
-			class="font-md text-center color-secondary"
+			class="font-md text-center text-secondary-color"
 			use:tooltip={{
 				content: 'Pass key for authorizing external devices',
 				html: true,

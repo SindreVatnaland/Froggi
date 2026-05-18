@@ -10,7 +10,7 @@
 	class="flex flex-col gap-4 w-full items-center justify-start overflow-auto py-4 border-secondary rounded-md p-4"
 >
 	<div>
-		<h1 class="text-4xl font-bold color-secondary">Beta Releases</h1>
+		<h1 class="text-4xl font-bold text-secondary-color">Beta Releases</h1>
 	</div>
 	<div class="w-full flex justify-center">
 		<button

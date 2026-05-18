@@ -162,7 +162,7 @@
 			{#if savedStyle}
 				<div class="flex gap-4">
 					<button
-						class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
+						class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
 						on:click={loadStyling}
 						use:tooltip={{
 							content:
@@ -185,7 +185,7 @@
 							id="default-input"
 							placeholder="Text"
 							bind:value={payload.string}
-							class="w-full h-full border-secondary color-secondary background-primary-color text-lg rounded-lg block p-2.5"
+							class="w-full h-full border-secondary text-secondary-color background-primary-color text-lg rounded-lg block p-2.5"
 						/>
 					</div>
 				</div>
@@ -199,14 +199,14 @@
 							id="default-input"
 							placeholder="Text"
 							bind:value={payload.url}
-							class="w-full h-full border-secondary color-secondary background-primary-color text-lg rounded-lg block p-2.5"
+							class="w-full h-full border-secondary text-secondary-color background-primary-color text-lg rounded-lg block p-2.5"
 						/>
 					</div>
 				</div>
 			{/if}
 
 			{#if selectedElementId === CustomElement.CustomImage}
-				<h1 class="color-secondary text-xl font-medium">Select Image</h1>
+				<h1 class="text-secondary-color text-xl font-medium">Select Image</h1>
 				<div class="w-full h-fit flex flex-wrap">
 					<div class="w-full h-24">
 						<FileUpload
@@ -220,7 +220,7 @@
 						/>
 					</div>
 				</div>
-				<h1 class="color-secondary text-xl font-medium">Image Positioning</h1>
+				<h1 class="text-secondary-color text-xl font-medium">Image Positioning</h1>
 			{/if}
 
 			{#if stringSettings || customStringSettings}
@@ -229,10 +229,10 @@
 				</div>
 			{/if}
 			{#if percentSettings || customPercentSettings}
-				<h1 class="color-secondary text-xl font-medium">Percent Colors</h1>
+				<h1 class="text-secondary-color text-xl font-medium">Percent Colors</h1>
 				<div class="w-full flex flex-wrap">
 					<div class="w-full">
-						<h1 class="color-secondary text-lg font-medium">
+						<h1 class="text-secondary-color text-lg font-medium">
 							Start Color - 0% - {payload.percent.startColor}
 						</h1>
 						<ColorInput bind:value={payload.percent.startColor} />
@@ -240,7 +240,7 @@
 				</div>
 				<div class="w-full flex flex-wrap">
 					<div class="w-full">
-						<h1 class="color-secondary text-lg font-medium">
+						<h1 class="text-secondary-color text-lg font-medium">
 							End Color - 300% - {payload.percent.endColor}
 						</h1>
 						<ColorInput bind:value={payload.percent.endColor} />
@@ -248,10 +248,10 @@
 				</div>
 			{/if}
 			{#if stringSettings || imageSettings}
-				<h1 class="color-secondary text-xl font-medium">Alignment</h1>
+				<h1 class="text-secondary-color text-xl font-medium">Alignment</h1>
 				<div class="w-full h-fit flex flex-wrap">
 					<div class="w-full h-24">
-						<h1 class="color-secondary text-lg font-medium">Horizontal</h1>
+						<h1 class="text-secondary-color text-lg font-medium">Horizontal</h1>
 						<Select bind:selected={payload.class.alignment}>
 							<option value="justify-start">Left</option>
 							<option selected value="justify-center">Center</option>
@@ -263,7 +263,7 @@
 			{#if imageSettings}
 				<div class="w-full h-fit flex flex-wrap">
 					<div class="w-full h-24">
-						<h1 class="color-secondary text-lg font-medium">Fit</h1>
+						<h1 class="text-secondary-color text-lg font-medium">Fit</h1>
 						<Select bind:selected={payload.image.objectFit}>
 							<option value="contain">Contain</option>
 							<option selected value="cover">Cover</option>
@@ -272,7 +272,7 @@
 				</div>
 			{/if}
 			{#if stringSettings && (!percentSettings || !customPercentSettings)}
-				<h1 class="color-secondary text-xl font-medium">Text color</h1>
+				<h1 class="text-secondary-color text-xl font-medium">Text color</h1>
 				<div class="w-full h-fit flex flex-wrap">
 					<div class="w-full h-12">
 						<ColorInput bind:valueConcat={payload.css.color} opacity={true} />
@@ -280,9 +280,9 @@
 				</div>
 			{/if}
 			{#if stringSettings || percentSettings || customPercentSettings}
-				<h1 class="color-secondary text-lg font-medium">Stroke</h1>
+				<h1 class="text-secondary-color text-lg font-medium">Stroke</h1>
 				<div>
-					<h1 class="color-secondary text-lg font-medium">
+					<h1 class="text-secondary-color text-lg font-medium">
 						Size - ({payload.textStroke.size})
 					</h1>
 					<div class="w-full h-fit flex flex-wrap">
@@ -295,7 +295,7 @@
 							/>
 						</div>
 					</div>
-					<h1 class="color-secondary text-lg font-medium">Color</h1>
+					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
 					<div class="w-full h-fit flex flex-wrap">
 						<div class="w-full">
 							<ColorInput
@@ -307,9 +307,9 @@
 				</div>
 			{/if}
 			{#if svgSettings}
-				<h1 class="color-secondary text-lg font-medium">Stroke</h1>
+				<h1 class="text-secondary-color text-lg font-medium">Stroke</h1>
 				<div>
-					<h1 class="color-secondary text-lg font-medium">
+					<h1 class="text-secondary-color text-lg font-medium">
 						Size - ({payload.css.strokeWidth})
 					</h1>
 					<div class="w-full h-fit flex flex-wrap">
@@ -322,7 +322,7 @@
 							/>
 						</div>
 					</div>
-					<h1 class="color-secondary text-lg font-medium">Color</h1>
+					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
 					<div class="w-full h-fit flex flex-wrap">
 						<div class="w-full">
 							<ColorInput bind:value={payload.css.stroke} />
@@ -332,8 +332,8 @@
 			{/if}
 			<div class="w-full h-fit flex flex-wrap">
 				<div class="w-full grid grid-flow-row gap-2">
-					<h1 class="color-secondary text-xl font-medium">Border</h1>
-					<h1 class="color-secondary text-lg font-medium">Color</h1>
+					<h1 class="text-secondary-color text-xl font-medium">Border</h1>
+					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
 					<div class="w-full h-fit flex flex-wrap">
 						<ColorInput bind:valueConcat={payload.css.borderColor} opacity={true} />
 					</div>
@@ -379,7 +379,7 @@
 			</div>
 			<div class="w-full h-fit flex flex-wrap">
 				<div class="w-full h-24">
-					<h1 class="color-secondary text-lg font-medium">Rounded corner</h1>
+					<h1 class="text-secondary-color text-lg font-medium">Rounded corner</h1>
 					<Select bind:selected={payload.class.rounded}>
 						<option value="" selected>None</option>
 						<option value="rounded-sm">Small</option>
@@ -389,17 +389,17 @@
 					</Select>
 				</div>
 			</div>
-			<h1 class="color-secondary text-xl font-medium">Background color</h1>
+			<h1 class="text-secondary-color text-xl font-medium">Background color</h1>
 			<div class="w-full h-fit flex flex-wrap">
 				<div class="w-full h-12">
 					<ColorInput bind:valueConcat={payload.css.background} opacity={true} />
 				</div>
 			</div>
 
-			<h1 class="color-secondary text-xl font-medium">Transformation</h1>
+			<h1 class="text-secondary-color text-xl font-medium">Transformation</h1>
 			<div class="w-full h-fit flex flex-wrap">
 				<div class="w-full h-24">
-					<h1 class="color-secondary text-lg font-medium">Flip</h1>
+					<h1 class="text-secondary-color text-lg font-medium">Flip</h1>
 					<Select bind:selected={payload.transform.scale}>
 						<option selected value={'1, 1'}>Default</option>
 						<option value={'-1, 1'}>Horizontal</option>
@@ -410,7 +410,7 @@
 			</div>
 			<div class="w-full h-fit flex flex-wrap">
 				<div class="w-full h-24">
-					<h1 class="color-secondary text-lg font-medium">
+					<h1 class="text-secondary-color text-lg font-medium">
 						Rotate - ({payload.transform.rotate})
 					</h1>
 					<div class="flex gap-2">
@@ -431,7 +431,7 @@
 			</div>
 
 			<div class="w-full h-fit flex flex-wrap flex-col">
-				<h1 class="color-secondary text-lg font-medium">
+				<h1 class="text-secondary-color text-lg font-medium">
 					X - ({payload.transform.translate.x})
 				</h1>
 				<div class="w-full h-fit flex flex-wrap">
@@ -444,7 +444,7 @@
 						/>
 					</div>
 				</div>
-				<h1 class="color-secondary text-lg font-medium">
+				<h1 class="text-secondary-color text-lg font-medium">
 					Y - ({payload.transform.translate.y})
 				</h1>
 				<div class="w-full h-fit flex flex-wrap">
@@ -460,13 +460,13 @@
 			</div>
 
 			<div class="w-full">
-				<h1 class="color-secondary text-lg font-medium">Shadow</h1>
+				<h1 class="text-secondary-color text-lg font-medium">Shadow</h1>
 				<div class="w-full h-fit flex flex-wrap">
 					<ShadowSelect bind:value={payload.shadow} />
 				</div>
 			</div>
 			<div>
-				<h1 class="color-secondary text-lg font-medium">
+				<h1 class="text-secondary-color text-lg font-medium">
 					Opacity - {`${((payload.css.opacity ?? 0) * 100).toFixed()}%`}
 				</h1>
 				<div class="w-full flex flex-nowrap items-center">
@@ -477,7 +477,7 @@
 			</div>
 			<div class="items-center gap-2 flex">
 				<h1
-					class="color-secondary text-xl font-medium mb-2"
+					class="text-secondary-color text-xl font-medium mb-2"
 					use:tooltip={{
 						content: 'Animations that triggers on in-game events such as taking damage',
 						placement: 'top-start',
@@ -488,7 +488,7 @@
 					Animation Triggers
 				</h1>
 			</div>
-			<h1 class="color-secondary text-lg font-medium">Trigger</h1>
+			<h1 class="text-secondary-color text-lg font-medium">Trigger</h1>
 			{#if !preAnimatedElement}
 				<AnimationTriggerSelect
 					bind:selectedOption={payload.animationTrigger.selectedOptions}
@@ -513,7 +513,7 @@
 				<button
 					in:fly={{ duration: 250, x: 100 }}
 					on:click={testAnimationTriggers}
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 				>
 					Test animation
 				</button>
@@ -522,7 +522,7 @@
 				<button
 					in:fly={{ duration: 250, x: 100 }}
 					on:click={testCustomAnimationTriggers}
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 				>
 					Test animation
 				</button>
@@ -530,7 +530,7 @@
 
 			<div class="items-center gap-2 flex">
 				<h1
-					class="color-secondary text-xl font-medium mb-2"
+					class="text-secondary-color text-xl font-medium mb-2"
 					use:tooltip={{
 						content:
 							'Conditions that decides when an element should be visible. For example, when a game is paused or if player is alive',
@@ -564,13 +564,13 @@
 				<button
 					in:fly={{ duration: 250, x: 100 }}
 					on:click={() => testVisibilityAnimation()}
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 				>
 					Test animation
 				</button>
 			{/if}
 			<div class="items-center gap-2 flex">
-				<h1 class="color-secondary text-xl font-medium mb-2">Advanced styling</h1>
+				<h1 class="text-secondary-color text-xl font-medium mb-2">Advanced styling</h1>
 				<div class="mb-2">
 					<BooleanInput bind:checked={payload.advancedStyling} />
 				</div>
@@ -611,7 +611,7 @@
 			{/if}
 			<div>
 				<button
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 					on:click={saveStyling}
 					use:tooltip={{
 						content:

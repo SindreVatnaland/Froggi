@@ -15,6 +15,7 @@
 	import BoardGrid from './BoardGrid.svelte';
 	import { updateFont } from '../CustomFontHandler.svelte';
 	import { isNil } from 'lodash';
+	import { tick } from 'svelte';
 	import { LiveStatsScene } from '$lib/models/enum';
 
 	const overlayId = $page.params.overlay;
@@ -26,6 +27,7 @@
 
 	$: curOverlay = $overlays[overlayId] as Overlay | undefined;
 	let items: GridContentItem[] = [];
+	let syncingFromServer = false;
 
 	function removeDuplicates(items: GridContentItem[]): GridContentItem[] {
 		return [
@@ -50,6 +52,7 @@
 	}
 
 	function updateScene() {
+		if (syncingFromServer) return;
 		const items = updateItems();
 		updateOverlay(curOverlay, items, selectedLayerIndex, $statsScene);
 	}
@@ -74,7 +77,11 @@
 		});
 		return items;
 	}
-	$: items = updateLiveScene(curOverlay, $statsScene, selectedLayerIndex, items);
+	$: {
+		syncingFromServer = true;
+		items = updateLiveScene(curOverlay, $statsScene, selectedLayerIndex, items);
+		tick().then(() => (syncingFromServer = false));
+	}
 
 	function updateOverlay(
 		curOverlay: Overlay | undefined,

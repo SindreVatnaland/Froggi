@@ -86,12 +86,12 @@
 </script>
 
 <div class="w-full h-full flex flex-col gap-4">
-	<h1 class="text-lg font-medium color-secondary">Category</h1>
+	<h1 class="text-lg font-medium text-secondary-color">Category</h1>
 	<div class="w-lg 3xl:w-full flex flex-wrap gap-2">
 		{#each buttons.filter((b) => b.visible) as button}
 			<div class="grid gap-2 justify-start items-start">
 				<button
-					class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border rounded ${
+					class={`btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border rounded ${
 						selectedCategory === button.category
 							? 'border-secondary bg-opacity-50'
 							: 'border-accent'
@@ -105,7 +105,7 @@
 			</div>
 		{/each}
 	</div>
-	<h1 class="color-secondary text-lg font-medium">Options</h1>
+	<h1 class="text-secondary-color text-lg font-medium">Options</h1>
 	{#key selectedCategory}
 		<div
 			in:fly={{ duration: 250, x: 50, delay: 250 }}

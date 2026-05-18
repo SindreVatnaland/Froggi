@@ -18,7 +18,7 @@
 	{/if}
 	<div class="flex flex-col items-center">
 		<button
-			class={`transition background-color-primary px-4 border-secondary-color bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 w-full xl:text-xl border rounded`}
+			class={`btn px-4 border-secondary-color text-md whitespace-nowrap h-10 w-full xl:text-xl border rounded`}
 			on:click={() => {
 				fileinput.click();
 			}}

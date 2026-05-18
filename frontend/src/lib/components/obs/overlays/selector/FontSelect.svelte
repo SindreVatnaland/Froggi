@@ -63,7 +63,7 @@
 		on:change={updateFontSrc}
 	/>
 	<h1
-		class="text-2xl h-full grid text-start justify-center items-center color-secondary"
+		class="text-2xl h-full grid text-start justify-center items-center text-secondary-color"
 		style={`font-family: ${fontFamily}`}
 	>
 		Super Smash Bros

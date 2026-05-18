@@ -13,7 +13,7 @@
 >
 	<div class={`w-full h-full px-2 gap-4 flex flex-col items-center`}>
 		<div>
-			<h1 class="text-4xl font-bold color-secondary">Settings</h1>
+			<h1 class="text-4xl font-bold text-secondary-color">Settings</h1>
 		</div>
 		<Authorization />
 		<SaveLogs />

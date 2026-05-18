@@ -20,5 +20,5 @@
 		checked={isControllerCommandEnabled}
 		on:change={toggleControllerCommandState}
 	/>
-	<h1 class="text-xl font-semibold color-secondary">Enable Controller Commands</h1>
+	<h1 class="text-xl font-semibold text-secondary-color">Enable Controller Commands</h1>
 </div>

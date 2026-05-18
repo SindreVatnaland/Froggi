@@ -36,7 +36,7 @@
 {#if layers && curOverlay}
 	<div class="h-full flex flex-col">
 		<div
-			class="w-full h-12 border-b-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between background-color-primary bg-opacity-50"
+			class="w-full h-12 border-b-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between background-primary-color bg-opacity-50"
 		>
 			<div
 				class="col-span-1 grid justify-center"
@@ -73,7 +73,7 @@
 		<div class={`w-full max-h-full overflow-auto flex-1`} bind:this={scrollElement}>
 			<div class="w-full h-6 items-center overflow-hidden">
 				<button
-					class="w-full h-full justify-center background-color-primary bg-opacity-40 hover:bg-opacity-60"
+					class="w-full h-full justify-center background-primary-color bg-opacity-40 hover:bg-opacity-60"
 					on:click={async () => {
 						await newLayer(overlayId, $statsScene, scene.id, 0);
 					}}

@@ -38,11 +38,11 @@
 
 <div class="grid">
 	{#if label}
-		<h1 class="color-secondary text-sm font-medium">{label}</h1>
+		<h1 class="text-secondary-color text-sm font-medium">{label}</h1>
 	{/if}
 	<div class="flex flex-col items-center">
 		<button
-			class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 w-full px-2 xl:text-xl border-secondary`}
+			class={`btn text-md whitespace-nowrap h-10 w-full px-2 xl:text-xl border-secondary`}
 			on:click={uploadFile}
 		>
 			Upload

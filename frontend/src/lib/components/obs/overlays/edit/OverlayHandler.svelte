@@ -12,7 +12,6 @@
 
 	//@ts-ignore
 	import gridHelp from 'svelte-grid/build/helper/index.mjs';
-	import { electronEmitter } from '$lib/utils/store.svelte';
 	import type { SelectedAnimationTriggerCondition } from '$lib/models/types/animationOption';
 	import { getElectronEmitter, getOverlays } from '$lib/utils/fetchSubscriptions.svelte';
 	import isNil from 'lodash/isNil';
@@ -60,34 +59,24 @@
 	}
 
 	export async function updateOverlay(overlay: Overlay) {
-		await new Promise(() =>
-			electronEmitter.subscribe((electronEmitter) =>
-				electronEmitter.emit('OverlayUpdate', overlay),
-			),
-		);
+		const emitter = await getElectronEmitter();
+		emitter.emit('OverlayUpdate', overlay);
 	}
 
 	export async function updateScene(overlay: Overlay, statsScene: LiveStatsScene) {
-		await new Promise(() =>
-			electronEmitter.subscribe((electronEmitter) =>
-				electronEmitter.emit('SceneUpdate', overlay.id, statsScene, overlay[statsScene]),
-			),
-		);
+		const emitter = await getElectronEmitter();
+		emitter.emit('SceneUpdate', overlay.id, statsScene, overlay[statsScene]);
 	}
 
-	export function duplicateOverlay(overlay: Overlay) {
-		electronEmitter.subscribe((electronEmitter) =>
-			electronEmitter.emit('OverlayDuplicate', overlay.id),
-		);
+	export async function duplicateOverlay(overlay: Overlay) {
+		const emitter = await getElectronEmitter();
+		emitter.emit('OverlayDuplicate', overlay.id);
 	}
 
 	export async function deleteOverlay(overlayId: string | undefined) {
 		if (!overlayId) return;
-		await new Promise(() =>
-			electronEmitter.subscribe((electronEmitter) =>
-				electronEmitter.emit('OverlayDelete', overlayId),
-			),
-		);
+		const emitter = await getElectronEmitter();
+		emitter.emit('OverlayDelete', overlayId);
 	}
 
 	export function getDefaultElementPayload(): ElementPayload {

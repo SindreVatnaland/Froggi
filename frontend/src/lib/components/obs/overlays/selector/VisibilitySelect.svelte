@@ -42,7 +42,7 @@
 
 <div class="grid grid-flow-col gap-2 items-center">
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
+		class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary"
 		on:click={() => (open = true)}
 	>
 		Apply Visibility Conditions
@@ -53,7 +53,7 @@
 	<div
 		class="w-[80vw] h-[80vh] bg-cover bg-center p-4 gap-8 background-primary-color flex flex-col justify-between"
 	>
-		<h1 class="color-secondary font-bold text-lg">Visibility Conditions</h1>
+		<h1 class="text-secondary-color font-bold text-lg">Visibility Conditions</h1>
 		<div class="flex-1 flex-col max-h-full overflow-auto gap-2" bind:this={visibilitySelect}>
 			{#each tempSelectedOptions as option, i (i)}
 				<div
@@ -70,11 +70,11 @@
 								in:fly={{ duration: 250, x: 100, delay: 250 }}
 								out:fly={{ duration: 250, x: 100 }}
 							>
-								<h1 class="color-secondary text-sm font-bold">Condition:</h1>
+								<h1 class="text-secondary-color text-sm font-bold">Condition:</h1>
 								{#each tempActiveConditions[i] as activeCondition, j}
-									<h1 class="color-secondary text-sm">{activeCondition.title}</h1>
+									<h1 class="text-secondary-color text-sm">{activeCondition.title}</h1>
 									{#if tempActiveConditions[i].length != j + 1}
-										<h1 class="color-secondary text-sm">or</h1>
+										<h1 class="text-secondary-color text-sm">or</h1>
 									{/if}
 								{/each}
 							</div>
@@ -84,7 +84,7 @@
 					{#if tempSelectedOptions.length}
 						<div class="w-48 flex items-end">
 							<button
-								class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+								class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 								on:click={() => removeOption(i)}
 							>
 								Delete
@@ -97,7 +97,7 @@
 		</div>
 		<div class="w-48 flex items-end">
 			<button
-				class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+				class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 				on:click={addNewCondition}
 			>
 				New Condition
@@ -106,21 +106,21 @@
 
 		<div>
 			{#if tempActiveConditions.length}
-				<h1 class="color-secondary font-bold">Combined conditions:</h1>
+				<h1 class="text-secondary-color font-bold">Combined conditions:</h1>
 			{/if}
 			<div class="max-h-28 overflow-auto">
 				{#each tempActiveConditions as activeConditions, i}
-					<h1 class="color-secondary text-sm">
+					<h1 class="text-secondary-color text-sm">
 						{#each activeConditions as activeCondition, j}
 							<span>{activeCondition.value === 2 ? ' Not' : ''}</span>
 							{activeCondition.title}
 							{#if activeConditions.length != j + 1}
-								<span class="color-secondary text-sm">or</span>
+								<span class="text-secondary-color text-sm">or</span>
 							{/if}
 						{/each}
 					</h1>
 					{#if tempActiveConditions.length != i + 1 && tempActiveConditions?.[i + 1]?.length}
-						<h1 class="color-secondary text-sm">and</h1>
+						<h1 class="text-secondary-color text-sm">and</h1>
 					{/if}
 				{/each}
 			</div>
@@ -128,7 +128,7 @@
 
 		<div class="w-48 flex items-end">
 			<button
-				class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+				class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 				on:click={handleUpdate}
 			>
 				Update

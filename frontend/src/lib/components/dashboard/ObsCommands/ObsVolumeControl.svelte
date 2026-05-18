@@ -27,7 +27,7 @@
 			animate:flip={{ duration: 250 }}
 			id={input.inputName}
 		>
-			<h1 class="color-secondary text-xl font-semibold flex-1">{input.inputName}</h1>
+			<h1 class="text-secondary-color text-xl font-semibold flex-1">{input.inputName}</h1>
 			<div class="flex-1">
 				<SliderInput
 					bind:value={input.volume.inputVolumeMul}

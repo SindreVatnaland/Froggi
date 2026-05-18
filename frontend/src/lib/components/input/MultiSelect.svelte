@@ -128,7 +128,7 @@
 						</label>
 					{/if}
 					<input
-						class="background-color-primary bg-opacity-75 text-secondary-color text-md rounded-md border-b-0"
+						class="background-primary-color bg-opacity-75 text-secondary-color text-md rounded-md border-b-0"
 						{id}
 						autocomplete="off"
 						bind:value={inputValue}

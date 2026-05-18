@@ -12,7 +12,7 @@
 	</h2>
 	<a target="popup" href={`${localUrl}`}>
 		<button
-			class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-24 h-10 px-2 xl:text-xl border-secondary rounded"
+			class="btn text-md whitespace-nowrap w-24 h-10 px-2 xl:text-xl border-secondary rounded"
 		>
 			Popup
 		</button>

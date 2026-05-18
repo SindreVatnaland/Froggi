@@ -32,10 +32,10 @@
 	} gap-2 p-2`}
 	style={`height: 100svh; width: 100%; max-height: 100%;`}
 >
-	<h1 class="text-lg font-medium color-secondary">
+	<h1 class="text-lg font-medium text-secondary-color">
 		{curOverlay?.title}
 	</h1>
-	<div class="w-full h-full flex-1 flex justify-center background-color-primary bg-cover">
+	<div class="w-full h-full flex-1 flex justify-center background-primary-color bg-cover">
 		<div
 			class={`h-full max-h-full
 			 bg-cover border-secondary overflow-hidden`}

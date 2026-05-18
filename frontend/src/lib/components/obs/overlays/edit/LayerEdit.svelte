@@ -24,7 +24,7 @@
 </script>
 
 {#if selectedLayer}
-	<h1 class="color-secondary text-lg font-medium">Layers</h1>
+	<h1 class="text-secondary-color text-lg font-medium">Layers</h1>
 	<div class="w-full flex gap-2">
 		<div class="w-24">
 			<Select
@@ -38,7 +38,7 @@
 		</div>
 		<div>
 			<button
-				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 				on:click={() => newLayer(overlay.id, $statsScene, scene.id, selectedLayer.index)}
 			>
 				<TextFitMulti>New layer</TextFitMulti>
@@ -46,7 +46,7 @@
 		</div>
 		<div>
 			<button
-				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 				on:click={() =>
 					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, -1)}
 			>
@@ -55,7 +55,7 @@
 		</div>
 		<div>
 			<button
-				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 				on:click={() =>
 					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, 1)}
 			>
@@ -65,7 +65,7 @@
 		{#if scene?.layers?.length > 1}
 			<div transition:fly={{ duration: 250, y: -25 }}>
 				<button
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+					class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
 					on:click={() =>
 						deleteLayer(overlay.id, $statsScene, scene.id, selectedLayer.id)}
 				>

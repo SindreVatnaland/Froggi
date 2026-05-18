@@ -14,16 +14,16 @@
 	>
 		<div class="h-full w-full grid grid-cols-2 p-4">
 			<div class="col-span-1 flex flex-col items-center w-full h-full px-4 gap-2">
-				<h1 class="color-secondary text-xl font-medium">
+				<h1 class="text-secondary-color text-xl font-medium">
 					Scan the QR code to open the app on your phone!
 				</h1>
-				<h1 class="color-secondary text-xl font-medium">
+				<h1 class="text-secondary-color text-xl font-medium">
 					Add page to the home screen to get the best mobile experience
 				</h1>
-				<h1 class="color-secondary text-md font-medium">
+				<h1 class="text-secondary-color text-md font-medium">
 					Make sure to be connected to the same network
 				</h1>
-				<h1 class="color-secondary text-md font-medium">
+				<h1 class="text-secondary-color text-md font-medium">
 					App might require a new scan if the local IP-address changes
 				</h1>
 			</div>
@@ -34,7 +34,7 @@
 					<QrCode value={$urls?.external} />
 				</div>
 				<div class="flex">
-					<h1 class="color-secondary text-md font-medium underline">
+					<h1 class="text-secondary-color text-md font-medium underline">
 						{$urls?.external}
 					</h1>
 					<Clipboard

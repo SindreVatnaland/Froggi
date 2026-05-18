@@ -20,7 +20,7 @@
 		/>
 	</div>
 	<button
-		class="transition background-color-primary border-secondary-color bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border border-white rounded"
+		class="btn border-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border border-white rounded"
 		on:click={() => reset()}
 	>
 		Reset

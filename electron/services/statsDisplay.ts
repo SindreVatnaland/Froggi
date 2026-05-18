@@ -124,55 +124,64 @@ export class StatsDisplay {
 	}
 
 	async handleGameStart(settings: GameStartType) {
-		this.log.info("Game start:", settings)
+		this.log.info("Game start:", settings);
 		this.cancelSimulation();
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
 
-		await this.storeSession.checkAndResetSessionStats()
-
+		await this.storeSession.checkAndResetSessionStats();
 		const recentGames = await this.storeGames.getRecentGames();
-
-		const previousGameSettings = recentGames?.at(-1)?.settings;
-
-		const replay = await retryFunctionAsync(5, async () => await this.findGameFromSettings(settings))
-
-		console.log("Replay:", replay)
-		const replaySettings = replay?.getSettings();
-
-		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
-		if (isReplay && replaySettings?.matchInfo) {
-			this.log.info("Replay found. Using replay settings.", replaySettings)
-			settings = replaySettings;
-		}
-
-		const isFirstReplay = Boolean(isReplay && recentGames.filter((game) => game.isReplay).length === 0);
-		const isNewMatchId = settings?.matchInfo?.matchId != previousGameSettings?.matchInfo?.matchId;
-		const isNewGame = Boolean(isNewMatchId || isFirstReplay)
-
-		this.storeLiveStats.setGameSettings(settings);
-
-		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
-
-		const currentPlayerConnectCode = this.storeSettings.getCurrentPlayerConnectCode();
-		const currentPlayer = currentPlayers.find((player) => player.connectCode === currentPlayerConnectCode);
-
-		if (currentPlayer) {
-			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
-		}
-
-		this.log.info("Current players:", currentPlayers)
-
-		if (currentPlayers.every((player) => "rank" in player)) {
-			this.storePlayers.setCurrentPlayers(currentPlayers);
-		}
+		const { settings: resolvedSettings, isNewGame } = await this.resolveReplaySettings(settings, recentGames);
+		await this.applyCurrentPlayers(resolvedSettings, isNewGame);
 
 		this.storeLiveStats.setGameState(InGameState.Running);
 		this.storeLiveStats.setStatsScene(LiveStatsScene.InGame);
 
 		if (!isNewGame) return;
-		this.log.info("New game detected. Clearing recent games.")
+		this.log.info("New game detected. Clearing recent games.");
 		await this.storeGames.clearRecentGames();
+	}
+
+	private async resolveReplaySettings(
+		settings: GameStartType,
+		recentGames: GameStats[],
+	): Promise<{ settings: GameStartType; isNewGame: boolean }> {
+		const previousGameSettings = recentGames.at(-1)?.settings;
+		const replay = await retryFunctionAsync(5, () => this.findGameFromSettings(settings));
+		console.log("Replay:", replay);
+		const replaySettings = replay?.getSettings();
+
+		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
+		if (isReplay && replaySettings?.matchInfo) {
+			this.log.info("Replay found. Using replay settings.", replaySettings);
+			settings = replaySettings;
+		}
+
+		const isFirstReplay = Boolean(isReplay && recentGames.filter(g => g.isReplay).length === 0);
+		const isNewMatchId = settings?.matchInfo?.matchId !== previousGameSettings?.matchInfo?.matchId;
+		const prevGame = recentGames.at(-1);
+		const bestOf = this.storeLiveStats.getBestOf();
+		const prevSetEnded = prevGame?.score?.some(score => score >= Math.ceil(bestOf / 2));
+		const isNewGame = Boolean(isNewMatchId || isFirstReplay || prevSetEnded);
+
+		this.storeLiveStats.setGameSettings(settings);
+		return { settings, isNewGame };
+	}
+
+	private async applyCurrentPlayers(settings: GameStartType, isNewGame: boolean): Promise<Player[]> {
+		const currentPlayers = await this.getCurrentPlayersWithRankStats(settings, isNewGame);
+		const currentPlayerConnectCode = this.storeSettings.getCurrentPlayerConnectCode();
+		const currentPlayer = currentPlayers.find(p => p.connectCode === currentPlayerConnectCode);
+
+		if (currentPlayer) {
+			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
+		}
+
+		this.log.info("Current players:", currentPlayers);
+		if (currentPlayers.every(p => "rank" in p)) {
+			this.storePlayers.setCurrentPlayers(currentPlayers);
+		}
+		return currentPlayers;
 	}
 
 	async handleGameEnd(
@@ -186,7 +195,7 @@ export class StatsDisplay {
 		this.stopPauseInterval();
 		this.handleInGameState(gameEnd, latestGameFrame);
 
-		let gameStats = await this.getPreviousGameStats(settings, gameEnd);
+		let gameStats = await this.findCurrentGameStats(settings, gameEnd);
 		if (!gameStats) {
 			this.log.info("Did not find the recently played game.")
 			this.storeLiveStats.setStatsScene(LiveStatsScene.Menu)
@@ -462,7 +471,7 @@ export class StatsDisplay {
 		return new SlippiGame(file);
 	}
 
-	private async getPreviousGameStats(
+	private async findCurrentGameStats(
 		settings: GameStartType | GameStartTypeExtended | undefined,
 		gameEnd: GameEndType | undefined,
 	): Promise<GameStats | undefined> {

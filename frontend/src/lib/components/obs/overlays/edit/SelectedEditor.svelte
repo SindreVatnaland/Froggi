@@ -171,7 +171,7 @@
 <svelte:window on:keydown={throttle(handleKeydown, 50)} />
 
 <h1
-	class="text-secondary-color text-lg font-medium color-secondary"
+	class="text-secondary-color text-lg font-medium text-secondary-color"
 	transition:fly={{ duration: 250, y: 50 }}
 >
 	Selected element
@@ -237,7 +237,7 @@
 			</div>
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 200 }}>
 				<button
-					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
+					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
 					on:click={() => {
 						isElementModalOpen = true;
 					}}
@@ -247,7 +247,7 @@
 			</div>
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
 				<button
-					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
+					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
 					on:click={() => copyElement(overlayEditor.itemId)}
 				>
 					Copy
@@ -255,7 +255,7 @@
 			</div>
 			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
 				<button
-					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
+					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
 					on:click={() =>
 						deleteElement(
 							curOverlay,

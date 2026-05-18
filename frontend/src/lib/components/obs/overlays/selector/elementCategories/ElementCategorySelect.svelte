@@ -256,7 +256,7 @@
 	];
 </script>
 
-<div class="w-full h-full flex flex-col gap-2 color-secondary">
+<div class="w-full h-full flex flex-col gap-2 text-secondary-color">
 	<div class="w-full">
 		<h1 class="text-lg font-medium">Category</h1>
 		<div
@@ -265,7 +265,7 @@
 			{#each buttons.filter((b) => b.visible) as button}
 				<div class="grid gap-2 justify-start items-start">
 					<button
-						class={`transition background-color-primary hover:bg-opacity-40  font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl rounded ${
+						class={`btn text-md whitespace-nowrap h-10 px-2 xl:text-xl rounded ${
 							selectedCategory === button.category
 								? 'border-secondary bg-opacity-50'
 								: 'border-accent bg-opacity-25'
@@ -281,12 +281,12 @@
 		</div>
 	</div>
 	<div class="w-full flex-1 overflow-auto border-t border-b border-secondary-color">
-		<h1 class="text-lg font-medium color-secondary">Element</h1>
+		<h1 class="text-lg font-medium text-secondary-color">Element</h1>
 		{#key selectedCategory}
 			<div
 				in:fly={{ duration: 250, x: 50, delay: 250 }}
 				out:fly={{ duration: 250, x: 50 }}
-				class="overflow-y-auto flex flex-col gap-2 color-secondary"
+				class="overflow-y-auto flex flex-col gap-2 text-secondary-color"
 			>
 				{#if selectedCategory === ElementCategory.Custom}
 					<CustomElementSelect on:select={select} />

@@ -52,17 +52,17 @@
 				/>
 			{/each}
 		</div>
-		<h1 class="text-xl color-secondary">
+		<h1 class="text-xl text-secondary-color">
 			{controllerCommand.command.requestType}:
 		</h1>
 		{#each Object.entries(controllerCommand.command.payload ?? {}) as [key, value]}
-			<h1 class="text-xl color-secondary">
+			<h1 class="text-xl text-secondary-color">
 				{key}: {value}
 			</h1>
 		{/each}
 	</div>
 	<button
-		class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
+		class="btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
 		on:click={() => {
 			selectedCommand = controllerCommand;
 			isDeleteCommandModalOpen = true;

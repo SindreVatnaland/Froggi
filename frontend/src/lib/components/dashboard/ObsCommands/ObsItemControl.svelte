@@ -18,7 +18,7 @@
 			class="flex gap-2 justify-start items-center"
 			in:fly={{ duration: 250, x: 150, delay: i * 50 }}
 		>
-			<h1 class="color-secondary text-xl font-semibold flex-1">{item.sourceName}</h1>
+			<h1 class="text-secondary-color text-xl font-semibold flex-1">{item.sourceName}</h1>
 			<div class="col-span-1 grid justify-center">
 				<input
 					type="checkbox"

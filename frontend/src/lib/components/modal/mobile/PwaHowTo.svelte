@@ -27,7 +27,7 @@
 	class="w-[95vw] max-w-[624px] min-w-lg place-items-center bg-cover bg-center border-secondary background-primary-color p-4"
 >
 	<div class="w-full grid place-items-center">
-		<h1 class="color-secondary text-xl font-medium">
+		<h1 class="text-secondary-color text-xl font-medium">
 			Add to <b>Home Screen</b>
 			for the best experience.
 		</h1>

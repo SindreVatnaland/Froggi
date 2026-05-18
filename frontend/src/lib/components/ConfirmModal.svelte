@@ -25,18 +25,18 @@
 		class="w-72 min-w-72 min-w-lg py-4 grid gap-8 justify-center bg-cover bg-center rounded-md border-secondary background-primary-color"
 	>
 		<div class="w-full grid justify-center gap-8 py-4">
-			<h1 class="text-center color-secondary text-xl font-bold">
+			<h1 class="text-center text-secondary-color text-xl font-bold">
 				<slot />
 			</h1>
 			<button
-				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
+				class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
 				on:click={cancel}
 			>
 				Cancel
 			</button>
 
 			<button
-				class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
+				class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
 				on:click={confirm}
 			>
 				Confirm

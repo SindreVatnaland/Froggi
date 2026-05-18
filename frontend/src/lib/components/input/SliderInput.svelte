@@ -23,7 +23,7 @@
 
 <div class="w-full">
 	{#if label}
-		<h1 class="color-secondary text-sm font-medium">{label}</h1>
+		<h1 class="text-secondary-color text-sm font-medium">{label}</h1>
 	{/if}
 	<div class="h-10 flex items-center">
 		<input

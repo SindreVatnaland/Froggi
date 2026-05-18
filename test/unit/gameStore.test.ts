@@ -312,4 +312,93 @@ describe('ElectronGamesStore', () => {
         10000
         // Set a timeout of 10 seconds for each test
     );
+
+    describe('Score Reset Between Sets', () => {
+        async function playGame(file: string) {
+            statsDisplay["getGameFiles"] = async () => [`${__dirname}/../sample-games/${file}`];
+            const game = new SlippiGame(`${__dirname}/../sample-games/${file}`);
+            const gameEnd = game.getGameEnd();
+            const settings = game.getSettings();
+            if (!gameEnd || !settings) return;
+            await statsDisplay.handleGameStart(settings);
+            await statsDisplay.handleGameEnd(gameEnd, game.getLatestFrame(), settings);
+        }
+
+        async function playSet(files: string[]) {
+            for (const file of files) await playGame(file);
+        }
+
+        test('online: score starts fresh after switching to new set (different matchId)', async () => {
+            await sqlite.clearAllTables();
+            connectCode = "FLCD#507";
+            storeLiveStats["getBestOf"] = () => BestOf.BestOf3;
+
+            await playSet([
+                "direct-set-2/Replay 1 [W].slp",
+                "direct-set-2/Replay 2 [W].slp",  // PostSet, score [0,2]
+            ]);
+            expect(electronGamesStore.getGameScore()).toStrictEqual([0, 2]);
+
+            await playGame("direct-set-3/Replay 1 [W].slp");  // New matchId
+            expect(electronGamesStore.getGameScore()).toStrictEqual([0, 1]);
+        }, 30000);
+
+        test('online: recentGames only contains new set games after set transition', async () => {
+            await sqlite.clearAllTables();
+            connectCode = "FLCD#507";
+            storeLiveStats["getBestOf"] = () => BestOf.BestOf3;
+
+            await playSet([
+                "direct-set-2/Replay 1 [W].slp",
+                "direct-set-2/Replay 2 [W].slp",  // PostSet
+            ]);
+            await playGame("direct-set-3/Replay 1 [W].slp");
+
+            const recentGames = await electronGamesStore.getRecentGames();
+            expect(recentGames).toHaveLength(1);
+
+            const set3Game = new SlippiGame(`${__dirname}/../sample-games/direct-set-3/Replay 1 [W].slp`);
+            expect(recentGames[0].settings?.matchInfo?.matchId).toStrictEqual(set3Game.getSettings()?.matchInfo?.matchId);
+        }, 30000);
+
+        test('offline: score resets after previous set ended (prevSetEnded fix)', async () => {
+            await sqlite.clearAllTables();
+            connectCode = "";
+            storeLiveStats["getBestOf"] = () => BestOf.BestOf3;
+
+            await playSet([
+                "offline-set-1/Replay 1 [L].slp",
+                "offline-set-1/Replay 2 [T].slp",
+                "offline-set-1/Replay 3 [I].slp",
+                "offline-set-1/Replay 4 [L].slp",  // PostSet, score [0,2]
+            ]);
+            expect(electronGamesStore.getGameScore()).toStrictEqual([0, 2]);
+
+            // Play first game of a new offline "set" — same files, no matchId to distinguish
+            await playGame("offline-set-1/Replay 1 [L].slp");
+            expect(electronGamesStore.getGameScore()).toStrictEqual([0, 1]);
+        }, 30000);
+
+        test('offline: recentGames resets after prevSetEnded', async () => {
+            await sqlite.clearAllTables();
+            connectCode = "";
+            storeLiveStats["getBestOf"] = () => BestOf.BestOf3;
+
+            await playSet([
+                "offline-set-1/Replay 1 [L].slp",
+                "offline-set-1/Replay 2 [T].slp",
+                "offline-set-1/Replay 3 [I].slp",
+                "offline-set-1/Replay 4 [L].slp",  // PostSet
+            ]);
+
+            await playGame("offline-set-1/Replay 1 [L].slp");  // New set
+
+            const recentGames = await electronGamesStore.getRecentGames();
+            expect(recentGames.length).toBeLessThanOrEqual(1);
+        }, 30000);
+
+        afterAll(() => {
+            storeLiveStats["getBestOf"] = ElectronLiveStatsStore.prototype.getBestOf.bind(storeLiveStats);
+        });
+    });
 });

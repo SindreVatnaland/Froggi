@@ -37,8 +37,8 @@
 	>
 		<div class="rounded-md flex flex-col justify-between items-center gap-4 w-[50%]">
 			<div class="flex flex-col w-full">
-				<h1 class="color-secondary font-medium text-2xl w-full">Embed on local devices</h1>
-				<h1 class="color-secondary text-md font-medium w-full">
+				<h1 class="text-secondary-color font-medium text-2xl w-full">Embed on local devices</h1>
+				<h1 class="text-secondary-color text-md font-medium w-full">
 					This is a local URL and could be used to embed the overlay on <b>this</b>
 					device. Paste it in the Web Browser or Embed it to local applications such as OBS.
 				</h1>
@@ -59,16 +59,16 @@
 						/>
 					</div>
 				</div>
-				<h1 class="color-secondary text-md font-medium text-start w-full">
+				<h1 class="text-secondary-color text-md font-medium text-start w-full">
 					Embed to OBS by adding a new browser source and insert the URL.
 				</h1>
-				<h1 class="color-secondary text-md font-medium text-start w-full">
+				<h1 class="text-secondary-color text-md font-medium text-start w-full">
 					Use a resolution of 1920x1080 resolution if the overlay is horizontal. Otherwise
 					use 1080x1920.
 				</h1>
 
 				<div class="flex justify-center">
-					<h1 class="color-secondary text-md font-medium underline">
+					<h1 class="text-secondary-color text-md font-medium underline">
 						{localUrl}
 					</h1>
 					<Clipboard
@@ -96,7 +96,7 @@
 				>
 					<button
 						on:click={copy}
-						class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+						class="btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 					>
 						Copy local URL
 					</button>
@@ -113,12 +113,12 @@
 								offset: 25,
 						  }}
 					disabled={!isObsConnected}
-					class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary disabled:opacity-50"
+					class="btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary disabled:opacity-50"
 				>
 					Add to OBS (single-click)
 				</button>
 			</div>
-			<h1 class="color-secondary text-md font-medium w-full">
+			<h1 class="text-secondary-color text-md font-medium w-full">
 				This URL can only be used on the current local device.
 			</h1>
 		</div>
@@ -126,14 +126,14 @@
 			class="place-items-center rounded-md flex flex-col justify-between items-center gap-4 w-[50%]"
 		>
 			<div class="flex flex-col justify-center items-center">
-				<h1 class="font-medium text-2xl w-full color-secondary">
+				<h1 class="font-medium text-2xl w-full text-secondary-color">
 					Embed on external devices
 				</h1>
-				<h1 class="color-secondary text-md font-medium w-full">
+				<h1 class="text-secondary-color text-md font-medium w-full">
 					This is an external URL and can be opened on any device connected to the same
 					local network.
 				</h1>
-				<h1 class="color-secondary text-md font-medium w-full">
+				<h1 class="text-secondary-color text-md font-medium w-full">
 					Mobile/Tablets/Laptops/Projectors
 				</h1>
 			</div>
@@ -142,7 +142,7 @@
 			</div>
 
 			<div class="flex">
-				<h1 class="color-secondary text-md font-medium underline w-full">
+				<h1 class="text-secondary-color text-md font-medium underline w-full">
 					{externalUrl}
 				</h1>
 				<Clipboard
@@ -170,12 +170,12 @@
 			>
 				<button
 					on:click={copy}
-					class="w-full transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
+					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
 				>
 					Copy external URL
 				</button>
 			</Clipboard>
-			<h1 class="color-secondary text-md font-medium w-full">
+			<h1 class="text-secondary-color text-md font-medium w-full">
 				Consider setting a static local ip-address on this device.
 			</h1>
 		</div>

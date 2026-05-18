@@ -54,7 +54,7 @@
 			}}
 		>
 			<button
-				class={`transition background-color-primary font-semibold text-secondary-color text-md whitespace-nowrap h-10 p-2 xl:text-xl rounded-sm border ${
+				class={`btn text-md whitespace-nowrap h-10 p-2 xl:text-xl rounded-sm border ${
 					$statsScene === button.liveScene
 						? 'border-secondary-color'
 						: 'border-accent-color'

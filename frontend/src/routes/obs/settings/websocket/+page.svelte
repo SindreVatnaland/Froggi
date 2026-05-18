@@ -58,12 +58,12 @@
 </script>
 
 <div class="w-full max-w-[25rem] justify-center items-center item flex flex-col gap-4">
-	<h1 class="text-2xl color-secondary">Websocket Settings</h1>
+	<h1 class="text-2xl text-secondary-color">Websocket Settings</h1>
 
 	<div class={`flex flex-col gap-2 p-2 `}>
 		<h1
 			class={`text-xl font-semibold text-nowrap ${
-				!authValidator.ipAddress ? 'color-secondary' : 'text-success-color'
+				!authValidator.ipAddress ? 'text-secondary-color' : 'text-success-color'
 			}`}
 		>
 			Local Ip Address:
@@ -77,7 +77,7 @@
 	<div class="flex flex-col gap-2 p-2">
 		<h1
 			class={`text-xl font-semibold text-nowrap ${
-				!authValidator.port ? 'color-secondary' : 'text-success-color'
+				!authValidator.port ? 'text-secondary-color' : 'text-success-color'
 			}`}
 		>
 			Port:
@@ -87,7 +87,7 @@
 	<div class="flex flex-col gap-2 p-2">
 		<h1
 			class={`text-xl font-semibold text-nowrap ${
-				!authValidator.password ? 'color-secondary' : 'text-success-color'
+				!authValidator.password ? 'text-secondary-color' : 'text-success-color'
 			}`}
 		>
 			Password:
@@ -99,10 +99,10 @@
 		/>
 	</div>
 	<button class="p-2 border-secondary" on:click={connect}>
-		<h1 class="color-secondary text-xl font-semibold">Connect</h1>
+		<h1 class="text-secondary-color text-xl font-semibold">Connect</h1>
 	</button>
 	<hr />
 	<button class="p-2 border-secondary" on:click={resetToDefault}>
-		<h1 class="color-secondary text-xl font-semibold">Reset To Default</h1>
+		<h1 class="text-secondary-color text-xl font-semibold">Reset To Default</h1>
 	</button>
 </div>

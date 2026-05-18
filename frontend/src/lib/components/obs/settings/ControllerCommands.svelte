@@ -10,7 +10,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<h1 class="text-2xl font-bold color-secondary">Controller Commands</h1>
+	<h1 class="text-2xl font-bold text-secondary-color">Controller Commands</h1>
 	<ToggleControllerCommand />
 	<div class="flex flex-col gap-4" style={`opacity: ${isControllerCommandEnabled ? 1 : 0.5}`}>
 		{#each $controller?.inputCommands ?? [] as controllerCommand}
@@ -20,7 +20,7 @@
 	</div>
 	<div class="flex justify-center" style={`opacity: ${isControllerCommandEnabled ? 1 : 0.5}`}>
 		<button
-			class="transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap w-full h-12 p-2 xl:text-xl border-secondary"
+			class="btn text-md whitespace-nowrap w-full h-12 p-2 xl:text-xl border-secondary"
 			on:click={() => (isNewCommandModalOpen = true)}
 		>
 			Add New Command

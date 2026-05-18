@@ -48,6 +48,9 @@
 		]
 	},
 	"executableName": "Froggi",
+	"asarUnpack": [
+		"**/node_modules/@asdf-overlay/**"
+	],
 	"files": [
 		"build_electron/**/*",
 		"build/**/*",
@@ -58,10 +61,6 @@
 		{
 			"from": "demo-overlays",
 			"to": "build_electron/electron/demo-overlays"
-		},
-		{
-			"from": "electron-overlay",
-			"to": "build_electron/electron-overlay"
 		}
 	]
 }

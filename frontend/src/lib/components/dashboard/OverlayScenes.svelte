@@ -11,7 +11,7 @@
 <div class="flex flex-col gap-2">
 	<div class="flex flex-col gap-2">
 		<button
-			class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
+			class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
 			on:click={openChangeObsSceneModal}
 		>
 			Commands

@@ -45,19 +45,19 @@
 
 <div class="flex flex-col gap-2 w-[30rem] max-w-[95vw]">
 	<div class="flex gap-2 justify-center items-center">
-		<h1 class="color-secondary text-3xl font-semibold">Tag</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">Tag</h1>
 	</div>
 	<div class="flex w-full justify-between">
-		<h1 class="color-secondary text-2xl font-semibold">
+		<h1 class="text-secondary-color text-2xl font-semibold">
 			{getDisplayName($currentPlayers.at(0))}
 		</h1>
-		<h1 class="color-secondary text-2xl font-semibold">
+		<h1 class="text-secondary-color text-2xl font-semibold">
 			{getDisplayName($currentPlayers.at(1))}
 		</h1>
 	</div>
 	<div class="flex flex-col gap-2">
 		<button
-			class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
+			class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
 			on:click={updateTag}
 		>
 			Change Tag
@@ -66,21 +66,21 @@
 </div>
 <div class="flex flex-col gap-2">
 	<div class="flex gap-2 justify-center items-center">
-		<h1 class="color-secondary text-3xl font-semibold">Score</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">Score</h1>
 	</div>
 	<div class="flex gap-2 justify-center items-center">
-		<h1 class="color-secondary text-3xl font-semibold">{$gameScore.at(0)}</h1>
-		<h1 class="color-secondary text-3xl font-semibold">-</h1>
-		<h1 class="color-secondary text-3xl font-semibold">{$gameScore.at(1)}</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">{$gameScore.at(0)}</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">-</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">{$gameScore.at(1)}</h1>
 	</div>
 	<button
-		class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
+		class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
 		on:click={resetScore}
 	>
 		Reset Score
 	</button>
 	<button
-		class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
+		class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
 		on:click={updateScore}
 	>
 		Update Score
@@ -88,10 +88,10 @@
 </div>
 <div class="flex flex-col gap-2">
 	<div class="flex gap-2 justify-center items-center">
-		<h1 class="color-secondary text-3xl font-semibold">Best Of</h1>
+		<h1 class="text-secondary-color text-3xl font-semibold">Best Of</h1>
 	</div>
 	<button
-		class={`transition background-color-primary bg-opacity-25 hover:bg-opacity-40  font-semibold text-secondary-color text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
+		class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
 		on:click={updateBestOf}
 	>
 		Update Best Of - ({$gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3})
