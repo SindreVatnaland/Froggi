@@ -109,13 +109,22 @@ export class ElectronLiveStatsStore {
 
 	setBestOf(bestOf: BestOf | undefined) {
 		if (isNil(bestOf)) return;
-		if (isNil(this.gameSettings?.matchInfo)) return;
-		this.gameSettings.matchInfo.bestOf = bestOf;
+		const prev = this.gameSettings?.matchInfo;
+		this.gameSettings = {
+			...(this.gameSettings ?? {} as GameStartTypeExtended),
+			matchInfo: {
+				matchId: prev?.matchId ?? null,
+				gameNumber: prev?.gameNumber ?? null,
+				tiebreakerNumber: prev?.tiebreakerNumber ?? null,
+				mode: prev?.mode ?? 'local',
+				bestOf,
+			},
+		} as GameStartTypeExtended;
+		this.messageHandler.sendMessage('GameSettings', this.gameSettings);
 	}
 
 	getBestOf(): BestOf {
-		const bestOf = this.gameSettings?.matchInfo.bestOf;
-		return bestOf ?? BestOf.BestOf3;
+		return (this.gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3) as BestOf;
 	}
 
 
