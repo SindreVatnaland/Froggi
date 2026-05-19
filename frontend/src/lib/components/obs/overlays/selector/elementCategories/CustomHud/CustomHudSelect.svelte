@@ -19,7 +19,7 @@
 		Player Radar
 	</SelectOption>
 	<SelectOption
-		description="Image fo the current stage"
+		description="Image of the current stage"
 		value={CustomElement.InGameStage}
 		on:select={select}
 	>

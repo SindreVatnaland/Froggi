@@ -228,158 +228,123 @@
 					<FontSelectorLayer bind:font={payload.font} fontId={selectedItemId} />
 				</div>
 			{/if}
+
 			{#if percentSettings || customPercentSettings}
-				<h1 class="text-secondary-color text-xl font-medium">Percent Colors</h1>
-				<div class="w-full flex flex-wrap">
-					<div class="w-full">
-						<h1 class="text-secondary-color text-lg font-medium">
-							Start Color - 0% - {payload.percent.startColor}
-						</h1>
-						<ColorInput bind:value={payload.percent.startColor} />
+				<section class="styling-section">
+					<p class="section-label">Percent Colors</p>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<p class="field-label">Start · 0%</p>
+							<ColorInput bind:value={payload.percent.startColor} />
+						</div>
+						<div>
+							<p class="field-label">End · 300%</p>
+							<ColorInput bind:value={payload.percent.endColor} />
+						</div>
 					</div>
-				</div>
-				<div class="w-full flex flex-wrap">
-					<div class="w-full">
-						<h1 class="text-secondary-color text-lg font-medium">
-							End Color - 300% - {payload.percent.endColor}
-						</h1>
-						<ColorInput bind:value={payload.percent.endColor} />
-					</div>
-				</div>
+				</section>
 			{/if}
+
 			{#if stringSettings || imageSettings}
-				<h1 class="text-secondary-color text-xl font-medium">Alignment</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full h-24">
-						<h1 class="text-secondary-color text-lg font-medium">Horizontal</h1>
-						<Select bind:selected={payload.class.alignment}>
-							<option value="justify-start">Left</option>
-							<option selected value="justify-center">Center</option>
-							<option value="justify-end">Right</option>
-						</Select>
-					</div>
-				</div>
+				<section class="styling-section">
+					<p class="section-label">Alignment</p>
+					<Select bind:selected={payload.class.alignment}>
+						<option value="justify-start">Left</option>
+						<option selected value="justify-center">Center</option>
+						<option value="justify-end">Right</option>
+					</Select>
+				</section>
 			{/if}
+
 			{#if imageSettings}
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full h-24">
-						<h1 class="text-secondary-color text-lg font-medium">Fit</h1>
-						<Select bind:selected={payload.image.objectFit}>
-							<option value="contain">Contain</option>
-							<option selected value="cover">Cover</option>
-						</Select>
-					</div>
-				</div>
+				<section class="styling-section">
+					<p class="section-label">Image Fit</p>
+					<Select bind:selected={payload.image.objectFit}>
+						<option value="contain">Contain</option>
+						<option selected value="cover">Cover</option>
+					</Select>
+				</section>
 			{/if}
+
 			{#if stringSettings && (!percentSettings || !customPercentSettings)}
-				<h1 class="text-secondary-color text-xl font-medium">Text color</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full h-12">
+				<section class="styling-section">
+					<p class="section-label">Text Color</p>
+					<div class="h-12">
 						<ColorInput bind:valueConcat={payload.css.color} opacity={true} />
 					</div>
-				</div>
+				</section>
 			{/if}
+
 			{#if stringSettings || percentSettings || customPercentSettings}
-				<h1 class="text-secondary-color text-lg font-medium">Stroke</h1>
-				<div>
-					<h1 class="text-secondary-color text-lg font-medium">
-						Size - ({payload.textStroke.size})
-					</h1>
-					<div class="w-full h-fit flex flex-wrap">
-						<div class="w-full">
-							<NumberInput
-								bind:value={payload.textStroke.size}
-								min={0}
-								max={100}
-								step={0.1}
-							/>
+				<section class="styling-section">
+					<p class="section-label">Text Stroke</p>
+					<div class="grid grid-cols-2 gap-3 items-end">
+						<div>
+							<p class="field-label">Size · {payload.textStroke.size}</p>
+							<NumberInput bind:value={payload.textStroke.size} min={0} max={100} step={0.1} />
+						</div>
+						<div>
+							<p class="field-label">Color</p>
+							<ColorInput bind:valueConcat={payload.textStroke.color} opacity={true} />
 						</div>
 					</div>
-					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
-					<div class="w-full h-fit flex flex-wrap">
-						<div class="w-full">
-							<ColorInput
-								bind:valueConcat={payload.textStroke.color}
-								opacity={true}
-							/>
-						</div>
-					</div>
-				</div>
+				</section>
 			{/if}
+
 			{#if svgSettings}
-				<h1 class="text-secondary-color text-lg font-medium">Stroke</h1>
-				<div>
-					<h1 class="text-secondary-color text-lg font-medium">
-						Size - ({payload.css.strokeWidth})
-					</h1>
-					<div class="w-full h-fit flex flex-wrap">
-						<div class="w-full">
-							<NumberInput
-								bind:value={payload.css.strokeWidth}
-								min={0}
-								max={100}
-								step={0.1}
-							/>
+				<section class="styling-section">
+					<p class="section-label">SVG Stroke</p>
+					<div class="grid grid-cols-2 gap-3 items-end">
+						<div>
+							<p class="field-label">Size · {payload.css.strokeWidth}</p>
+							<NumberInput bind:value={payload.css.strokeWidth} min={0} max={100} step={0.1} />
 						</div>
-					</div>
-					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
-					<div class="w-full h-fit flex flex-wrap">
-						<div class="w-full">
+						<div>
+							<p class="field-label">Color</p>
 							<ColorInput bind:value={payload.css.stroke} />
 						</div>
 					</div>
-				</div>
+				</section>
 			{/if}
-			<div class="w-full h-fit flex flex-wrap">
-				<div class="w-full grid grid-flow-row gap-2">
-					<h1 class="text-secondary-color text-xl font-medium">Border</h1>
-					<h1 class="text-secondary-color text-lg font-medium">Color</h1>
-					<div class="w-full h-fit flex flex-wrap">
-						<ColorInput bind:valueConcat={payload.css.borderColor} opacity={true} />
-					</div>
-					<div class="grid grid-flow-row gap-2">
-						<NumberInput
-							value={Number(payload.css.borderLeft?.slice(0, -9) ?? 0)}
-							bind:valueConcat={payload.css.borderLeft}
-							min={0}
-							max={100}
-							step={0.1}
-							stringFormat={'{0}rem solid'}
-							label={'Left'}
-						/>
-						<NumberInput
-							value={Number(payload.css.borderRight?.slice(0, -9) ?? 0)}
-							bind:valueConcat={payload.css.borderRight}
-							min={0}
-							max={100}
-							step={0.1}
-							stringFormat={'{0}rem solid'}
-							label={'Right'}
-						/>
-						<NumberInput
-							value={Number(payload.css.borderTop?.slice(0, -9) ?? 0)}
-							bind:valueConcat={payload.css.borderTop}
-							min={0}
-							max={100}
-							step={0.1}
-							stringFormat={'{0}rem solid'}
-							label={'Top'}
-						/>
-						<NumberInput
-							value={Number(payload.css.borderBottom?.slice(0, -9) ?? 0)}
-							bind:valueConcat={payload.css.borderBottom}
-							min={0}
-							max={100}
-							step={0.1}
-							stringFormat={'{0}rem solid'}
-							label={'Bottom'}
-						/>
-					</div>
+
+			<section class="styling-section">
+				<p class="section-label">Border</p>
+				<div class="mb-2">
+					<p class="field-label">Color</p>
+					<ColorInput bind:valueConcat={payload.css.borderColor} opacity={true} />
 				</div>
-			</div>
-			<div class="w-full h-fit flex flex-wrap">
-				<div class="w-full h-24">
-					<h1 class="text-secondary-color text-lg font-medium">Rounded corner</h1>
+				<div class="grid grid-cols-2 gap-2">
+					<NumberInput
+						value={Number(payload.css.borderLeft?.slice(0, -9) ?? 0)}
+						bind:valueConcat={payload.css.borderLeft}
+						min={0} max={100} step={0.1}
+						stringFormat={'{0}rem solid'}
+						label={'Left'}
+					/>
+					<NumberInput
+						value={Number(payload.css.borderRight?.slice(0, -9) ?? 0)}
+						bind:valueConcat={payload.css.borderRight}
+						min={0} max={100} step={0.1}
+						stringFormat={'{0}rem solid'}
+						label={'Right'}
+					/>
+					<NumberInput
+						value={Number(payload.css.borderTop?.slice(0, -9) ?? 0)}
+						bind:valueConcat={payload.css.borderTop}
+						min={0} max={100} step={0.1}
+						stringFormat={'{0}rem solid'}
+						label={'Top'}
+					/>
+					<NumberInput
+						value={Number(payload.css.borderBottom?.slice(0, -9) ?? 0)}
+						bind:valueConcat={payload.css.borderBottom}
+						min={0} max={100} step={0.1}
+						stringFormat={'{0}rem solid'}
+						label={'Bottom'}
+					/>
+				</div>
+				<div class="mt-2">
+					<p class="field-label">Rounded Corner</p>
 					<Select bind:selected={payload.class.rounded}>
 						<option value="" selected>None</option>
 						<option value="rounded-sm">Small</option>
@@ -388,93 +353,56 @@
 						<option value="rounded-full">Full</option>
 					</Select>
 				</div>
-			</div>
-			<h1 class="text-secondary-color text-xl font-medium">Background color</h1>
-			<div class="w-full h-fit flex flex-wrap">
-				<div class="w-full h-12">
+			</section>
+
+			<section class="styling-section">
+				<p class="section-label">Background Color</p>
+				<div class="h-12">
 					<ColorInput bind:valueConcat={payload.css.background} opacity={true} />
 				</div>
-			</div>
+			</section>
 
-			<h1 class="text-secondary-color text-xl font-medium">Transformation</h1>
-			<div class="w-full h-fit flex flex-wrap">
-				<div class="w-full h-24">
-					<h1 class="text-secondary-color text-lg font-medium">Flip</h1>
-					<Select bind:selected={payload.transform.scale}>
-						<option selected value={'1, 1'}>Default</option>
-						<option value={'-1, 1'}>Horizontal</option>
-						<option value={'1, -1'}>Vertical</option>
-						<option value={'-1, -1'}>Horizontal & Vertical</option>
-					</Select>
-				</div>
-			</div>
-			<div class="w-full h-fit flex flex-wrap">
-				<div class="w-full h-24">
-					<h1 class="text-secondary-color text-lg font-medium">
-						Rotate - ({payload.transform.rotate})
-					</h1>
-					<div class="flex gap-2">
-						<SliderInput
-							bind:value={payload.transform.rotate}
-							min={-180}
-							max={180}
-							step={1}
-						/>
-						<NumberInput
-							bind:value={payload.transform.rotate}
-							min={-180}
-							max={180}
-							step={1}
-						/>
+			<section class="styling-section">
+				<p class="section-label">Transformation</p>
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<p class="field-label">Flip</p>
+						<Select bind:selected={payload.transform.scale}>
+							<option selected value={'1, 1'}>Default</option>
+							<option value={'-1, 1'}>Horizontal</option>
+							<option value={'1, -1'}>Vertical</option>
+							<option value={'-1, -1'}>Both</option>
+						</Select>
+					</div>
+					<div>
+						<p class="field-label">Rotate · {payload.transform.rotate}°</p>
+						<div class="flex gap-2">
+							<SliderInput bind:value={payload.transform.rotate} min={-180} max={180} step={1} />
+							<NumberInput bind:value={payload.transform.rotate} min={-180} max={180} step={1} />
+						</div>
 					</div>
 				</div>
-			</div>
+				<div class="grid grid-cols-2 gap-3 mt-2">
+					<div>
+						<p class="field-label">Translate X · {payload.transform.translate.x}</p>
+						<NumberInput bind:value={payload.transform.translate.x} min={0} max={100} step={0.1} />
+					</div>
+					<div>
+						<p class="field-label">Translate Y · {payload.transform.translate.y}</p>
+						<NumberInput bind:value={payload.transform.translate.y} min={0} max={100} step={0.1} />
+					</div>
+				</div>
+			</section>
 
-			<div class="w-full h-fit flex flex-wrap flex-col">
-				<h1 class="text-secondary-color text-lg font-medium">
-					X - ({payload.transform.translate.x})
-				</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full">
-						<NumberInput
-							bind:value={payload.transform.translate.x}
-							min={0}
-							max={100}
-							step={0.1}
-						/>
-					</div>
-				</div>
-				<h1 class="text-secondary-color text-lg font-medium">
-					Y - ({payload.transform.translate.y})
-				</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full">
-						<NumberInput
-							bind:value={payload.transform.translate.y}
-							min={0}
-							max={100}
-							step={0.1}
-						/>
-					</div>
-				</div>
-			</div>
+			<section class="styling-section">
+				<p class="section-label">Shadow</p>
+				<ShadowSelect bind:value={payload.shadow} />
+			</section>
 
-			<div class="w-full">
-				<h1 class="text-secondary-color text-lg font-medium">Shadow</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<ShadowSelect bind:value={payload.shadow} />
-				</div>
-			</div>
-			<div>
-				<h1 class="text-secondary-color text-lg font-medium">
-					Opacity - {`${((payload.css.opacity ?? 0) * 100).toFixed()}%`}
-				</h1>
-				<div class="w-full flex flex-nowrap items-center">
-					<div class="w-full h-24">
-						<SliderInput bind:value={payload.css.opacity} />
-					</div>
-				</div>
-			</div>
+			<section class="styling-section">
+				<p class="section-label">Opacity · {`${((payload.css.opacity ?? 0) * 100).toFixed()}%`}</p>
+				<SliderInput bind:value={payload.css.opacity} />
+			</section>
 			<div class="items-center gap-2 flex">
 				<h1
 					class="text-secondary-color text-xl font-medium mb-2"
@@ -628,3 +556,24 @@
 		</div>
 	{/key}
 {/key}
+
+<style>
+	.styling-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.section-label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		opacity: 0.6;
+	}
+	.field-label {
+		font-size: 0.8rem;
+		font-weight: 500;
+		opacity: 0.7;
+		margin-bottom: 0.25rem;
+	}
+</style>

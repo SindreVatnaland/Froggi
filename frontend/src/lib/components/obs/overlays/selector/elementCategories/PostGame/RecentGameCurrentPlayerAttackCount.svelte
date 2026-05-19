@@ -82,7 +82,7 @@
 		Neutral Air Count
 	</SelectOption>
 	<SelectOption
-		description="Current Player Number Of Down Tilt Executed"
+		description="Current Player Number Of Down Smash Executed"
 		value={CustomElement.PostGameCurrentPlayerAttackCountDsmash}
 		on:select={select}
 	>
