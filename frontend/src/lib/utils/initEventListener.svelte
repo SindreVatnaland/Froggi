@@ -28,6 +28,7 @@
 		controller,
 		froggiSettings,
 		injectedOverlays,
+		remoteAccess,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -293,6 +294,12 @@
 					const value = payload[0] as Parameters<MessageEvents['Url']>[0];
 					if (!value) return;
 					urls.set(payload[0] as Parameters<MessageEvents['Url']>[0]);
+				})();
+				break;
+			case 'RemoteAccessStatus':
+				(() => {
+					const [url, provider] = payload as Parameters<MessageEvents['RemoteAccessStatus']>;
+					remoteAccess.set({ url: url ?? undefined, provider: provider ?? undefined });
 				})();
 				break;
 		}

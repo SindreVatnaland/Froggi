@@ -12,6 +12,7 @@ import { ElectronPlayersStore } from './store/storePlayers';
 import { ElectronSessionStore } from './store/storeSession';
 import { ElectronDolphinStore } from './store/storeDolphin';
 import path from 'path';
+import { exec } from 'child_process';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import type { MessageEvents } from '../../frontend/src/lib/utils/customEventEmitter';
 import { Worker } from 'worker_threads';
@@ -193,7 +194,8 @@ export class MessageHandler {
 			'DolphinConnectionState',
 			this.storeDolphin.getDolphinConnectionState(),
 		);
-		this.sendInitMessage(socketId, 'GameScore', this.storeGames.getGameScore());
+		const recentGames = await this.storeGames.getRecentGames();
+		this.sendInitMessage(socketId, 'GameScore', recentGames.at(-1)?.score ?? this.storeGames.getGameScore());
 		this.sendInitMessage(socketId, 'GameSettings', this.storeLiveStats.getGameSettings());
 		this.sendInitMessage(socketId, 'GameState', this.storeLiveStats.getGameState());
 		this.sendInitMessage(socketId, 'LiveStatsSceneChange', this.storeLiveStats.getStatsScene());
@@ -206,11 +208,12 @@ export class MessageHandler {
 		);
 		this.sendInitMessage(socketId, 'SceneSwitchCommands', this.storeObsCommands.getSceneCommands());
 		this.sendInitMessage(socketId, 'PostGameStats', this.storeLiveStats.getGameStats());
-		this.sendInitMessage(socketId, 'RecentGames', await this.storeGames.getRecentGames());
+		this.sendInitMessage(socketId, 'RecentGames', recentGames);
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
+		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.remoteAccessUrl, this.remoteAccessProvider);
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string) {
@@ -229,6 +232,58 @@ export class MessageHandler {
 		);
 	}
 
+	private remoteAccessUrl: string | undefined = undefined;
+	private remoteAccessProvider: 'tailscale' | 'ngrok' | undefined = undefined;
+
+	private detectRemoteAccess = async (): Promise<void> => {
+		// Try ngrok local API
+		const ngrokUrl = await new Promise<string | undefined>((resolve) => {
+			const req = http.get('http://127.0.0.1:4040/api/tunnels', (res) => {
+				let data = '';
+				res.on('data', (chunk) => (data += chunk));
+				res.on('end', () => {
+					try {
+						const parsed = JSON.parse(data);
+						const tunnel = parsed?.tunnels?.find((t: any) => t.proto === 'https');
+						resolve(tunnel?.public_url);
+					} catch { resolve(undefined); }
+				});
+			});
+			req.on('error', () => resolve(undefined));
+			req.setTimeout(1500, () => { req.destroy(); resolve(undefined); });
+		});
+
+		if (ngrokUrl) {
+			this.remoteAccessUrl = ngrokUrl;
+			this.remoteAccessProvider = 'ngrok';
+			this.sendMessage('RemoteAccessStatus', ngrokUrl, 'ngrok');
+			return;
+		}
+
+		// Try tailscale
+		const tailscaleUrl = await new Promise<string | undefined>((resolve) => {
+			exec('tailscale status --json', { timeout: 3000 }, (err, stdout) => {
+				if (err) { resolve(undefined); return; }
+				try {
+					const parsed = JSON.parse(stdout);
+					const dnsName = parsed?.Self?.DNSName;
+					resolve(dnsName ? `https://${dnsName.replace(/\.$/, '')}` : undefined);
+				} catch { resolve(undefined); }
+			});
+		});
+
+		if (tailscaleUrl) {
+			this.remoteAccessUrl = tailscaleUrl;
+			this.remoteAccessProvider = 'tailscale';
+			this.sendMessage('RemoteAccessStatus', tailscaleUrl, 'tailscale');
+			return;
+		}
+
+		this.remoteAccessUrl = undefined;
+		this.remoteAccessProvider = undefined;
+		this.sendMessage('RemoteAccessStatus', undefined, undefined);
+	};
+
 	private initEventListeners() {
 		this.clientEmitter.on('CurrentOverlayEditor', (overlayEditor: OverlayEditor) => {
 			this.sendMessage('CurrentOverlayEditor', overlayEditor);
@@ -245,6 +300,9 @@ export class MessageHandler {
 		this.clientEmitter.on('OpenUrl', (url: string) => {
 			openurl.open(url);
 		});
-
+		this.clientEmitter.on('RemoteAccessRefresh', () => {
+			this.detectRemoteAccess();
+		});
+		this.detectRemoteAccess();
 	}
 }

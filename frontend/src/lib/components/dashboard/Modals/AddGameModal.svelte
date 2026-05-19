@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import type {
 		GameStartTypeExtended,
@@ -119,11 +118,7 @@
 		if (!game.gameEnd) return;
 		const placements = cloneDeep(game.gameEnd.placements);
 		for (let placement of placements) {
-			if (placement.playerIndex === playerIndex) {
-				placement.position = 0;
-			} else {
-				placement.position = 1;
-			}
+			placement.position = placement.playerIndex === playerIndex ? 0 : 1;
 		}
 		game.gameEnd.placements = placements;
 	};
@@ -144,201 +139,286 @@
 		$electronEmitter.emit('RecentGamesMock', game, selectedGameIndex);
 		open = false;
 	};
+
+	$: p1Idx = $currentPlayers.at(0)?.playerIndex ?? 0;
+	$: p2Idx = $currentPlayers.at(1)?.playerIndex ?? 1;
+	$: p1Winner = game.gameEnd.placements[p1Idx]?.position === 0;
+	$: p2Winner = game.gameEnd.placements[p2Idx]?.position === 0;
 </script>
 
-<Modal
-	bind:open
-	on:close={() => (open = false)}
-	class="w-[95vw] max-w-[600px] max-h-[80vh] min-w-72 flex justify-center"
->
-	<div
-		class="w-[600px] h-[80vh] min-w-lg flex flex-col gap-8 bg-cover bg-center border-secondary background-primary-color p-8"
-	>
-		<div>
-			<div class="flex gap-4 justify-center items-center">
-				<h1 class="text-secondary-color text-3xl font-semibold">Add Game</h1>
-			</div>
-			<div class="flex justify-between gap-4">
-				<h1 class="text-secondary-color text-2xl font-semibold">
-					{getDisplayName(0)}
-				</h1>
-				<h1 class="text-secondary-color text-2xl font-semibold">
-					{getDisplayName(1)}
-				</h1>
+<Modal bind:open on:close={() => (open = false)} class="w-[95vw] max-w-lg min-w-72">
+	<div class="modal-inner background-primary-color text-secondary-color">
+
+		<div class="modal-header border-b border-secondary-color">
+			<span class="modal-title">Add Game</span>
+			<div class="player-names">
+				<span class="pname">{getDisplayName(0)}</span>
+				<span class="pname pname--right">{getDisplayName(1)}</span>
 			</div>
 		</div>
-		<div
-			class="flex flex-col flex-1 gap-8 overflow-y-auto sp-2 border-t border-b border-secondary-color py-2"
-		>
-			<div class="flex gap-4 justify-center items-center">
-				<h1 class="text-secondary-color text-2xl font-semibold">Character</h1>
-			</div>
-			<div class="flex justify-between gap-4">
-				<Select
-					on:change={(e) =>
-						handleCharacterChange($currentPlayers.at(0)?.playerIndex ?? 0, e)}
-					label={`${$currentPlayers.at(0)?.displayName ?? 'Player1 Character'}`}
-				>
-					{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
-						<option
-							selected={id ===
-								`${
-									game.settings?.players.at(
-										$currentPlayers.at(0)?.characterId ?? 0,
-									)?.characterId
-								}`}
-							value={id}
-						>
-							{name}
-						</option>
-					{/each}
-				</Select>
-				<Select
-					on:change={(e) =>
-						handleCharacterChange($currentPlayers.at(1)?.playerIndex ?? 1, e)}
-					label={`${$currentPlayers.at(1)?.displayName ?? 'Player2 Character'}`}
-				>
-					{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
-						<option
-							selected={id ===
-								`${
-									game.settings?.players.at(
-										$currentPlayers.at(1)?.playerIndex ?? 1,
-									)?.characterId
-								}`}
-							value={id}
-						>
-							{name}
-						</option>
-					{/each}
-				</Select>
-			</div>
-			<div class="flex gap-4 justify-center items-center">
-				<h1 class="text-secondary-color text-2xl font-semibold">Stocks</h1>
-			</div>
-			<div class="flex justify-between gap-18">
-				<div class="flex gap-2">
-					{#each [...Array(4).keys()].reverse() as stock}
-						<button
-							class={`${
-								(game?.lastFrame?.players[$currentPlayers.at(0)?.playerIndex ?? 0]
-									?.post.stocksRemaining ?? 0) > stock
-									? 'opacity-100'
-									: 'opacity-50'
-							} h-10`}
-							on:click={() => {
-								handleStockChange(
-									$currentPlayers.at(0)?.playerIndex ?? 0,
-									stock + 1,
-								);
-							}}
-						>
-							<CharacterIcon
-								characterId={game?.settings?.players[
-									$currentPlayers.at(0)?.playerIndex ?? 0
-								]?.characterId ?? 0}
-							/>
-						</button>
-					{/each}
-					<button
-						class="transition duration-100 w-14 p-2 rounded-md justify-center background-primary-color border-secondary bg-opacity-40 hover:bg-opacity-60"
-						on:click={() => {
-							handleStockChange($currentPlayers.at(0)?.playerIndex ?? 0, 0);
-						}}
+
+		<div class="modal-body">
+
+			<!-- Characters -->
+			<div class="section">
+				<p class="section-label">Characters</p>
+				<div class="two-col">
+					<Select
+						on:change={(e) => handleCharacterChange(p1Idx, e)}
+						label={getDisplayName(0)}
 					>
-						<h1 class="text-secondary-color">None</h1>
-					</button>
-				</div>
-				<div class="flex gap-2">
-					<button
-						class="transition duration-100 w-14 p-2 rounded-md justify-center background-primary-color border-secondary bg-opacity-40 hover:bg-opacity-60"
-						on:click={() => {
-							handleStockChange($currentPlayers.at(1)?.playerIndex ?? 1, 0);
-						}}
+						{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
+							<option
+								selected={id === `${game.settings?.players.at(p1Idx)?.characterId}`}
+								value={id}
+							>{name}</option>
+						{/each}
+					</Select>
+					<Select
+						on:change={(e) => handleCharacterChange(p2Idx, e)}
+						label={getDisplayName(1)}
 					>
-						<h1 class="text-secondary-color">None</h1>
-					</button>
-					{#each [...Array(4).keys()] as stock}
+						{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
+							<option
+								selected={id === `${game.settings?.players.at(p2Idx)?.characterId}`}
+								value={id}
+							>{name}</option>
+						{/each}
+					</Select>
+				</div>
+			</div>
+
+			<!-- Stocks -->
+			<div class="section">
+				<p class="section-label">Stocks remaining</p>
+				<div class="stocks-row">
+					<!-- P1 stocks (right-to-left) -->
+					<div class="stocks-group stocks-group--left">
 						<button
-							class={`${
-								(game?.lastFrame?.players[$currentPlayers.at(1)?.playerIndex ?? 1]
-									?.post.stocksRemaining ?? 0) > stock
-									? 'opacity-100'
-									: 'opacity-50'
-							} h-10`}
-							on:click={() => {
-								handleStockChange(
-									$currentPlayers.at(1)?.playerIndex ?? 1,
-									stock + 1,
-								);
-							}}
-						>
-							<CharacterIcon
-								characterId={game?.settings?.players[
-									$currentPlayers.at(1)?.playerIndex ?? 1
-								]?.characterId ?? 0}
-							/>
-						</button>
-					{/each}
+							class="none-btn btn border-secondary rounded text-xs px-2 h-7"
+							on:click={() => handleStockChange(p1Idx, 0)}
+						>0</button>
+						{#each [...Array(4).keys()].reverse() as stock}
+							<button
+								class="stock-btn"
+								class:stock-active={(game?.lastFrame?.players[p1Idx]?.post.stocksRemaining ?? 0) > stock}
+								on:click={() => handleStockChange(p1Idx, stock + 1)}
+							>
+								<CharacterIcon characterId={game?.settings?.players[p1Idx]?.characterId ?? 0} />
+							</button>
+						{/each}
+					</div>
+					<!-- P2 stocks (left-to-right) -->
+					<div class="stocks-group stocks-group--right">
+						{#each [...Array(4).keys()] as stock}
+							<button
+								class="stock-btn"
+								class:stock-active={(game?.lastFrame?.players[p2Idx]?.post.stocksRemaining ?? 0) > stock}
+								on:click={() => handleStockChange(p2Idx, stock + 1)}
+							>
+								<CharacterIcon characterId={game?.settings?.players[p2Idx]?.characterId ?? 0} />
+							</button>
+						{/each}
+						<button
+							class="none-btn btn border-secondary rounded text-xs px-2 h-7"
+							on:click={() => handleStockChange(p2Idx, 0)}
+						>0</button>
+					</div>
 				</div>
 			</div>
-			<div class="flex gap-4 justify-center items-center">
-				<h1 class="text-secondary-color text-2xl font-semibold">Stage</h1>
-			</div>
-			<div class="flex gap-4 items-center">
-				<Select on:change={handleStageChange}>
-					{#each Object.entries(STAGE_DATA) as [id, stage_data]}
-						<option selected={id === `${game?.settings?.stageId}`} value={id}>
-							{stage_data.name}
-						</option>
-					{/each}
-				</Select>
-				<div class="relative aspect-video w-full border-secondary">
-					<GameStage
-						stageId={game?.settings?.stageId}
-						class="aspect-video rounded-md"
-						objectFit="cover"
-					/>
+
+			<!-- Stage -->
+			<div class="section">
+				<p class="section-label">Stage</p>
+				<div class="stage-row">
+					<div class="stage-select">
+						<Select on:change={handleStageChange}>
+							{#each Object.entries(STAGE_DATA) as [id, stage_data]}
+								<option selected={id === `${game?.settings?.stageId}`} value={id}>
+									{stage_data.name}
+								</option>
+							{/each}
+						</Select>
+					</div>
+					<div class="stage-preview border-secondary">
+						<GameStage stageId={game?.settings?.stageId} class="w-full h-full" objectFit="cover" />
+					</div>
 				</div>
 			</div>
-			<div class="flex gap-4 justify-center items-center">
-				<h1 class="text-secondary-color text-2xl font-semibold">Winner</h1>
-			</div>
-			<div class="flex justify-around gap-4">
-				<button
-					class={`border background-primary-color bg-opacity-25 rounded-sm p-4 ${
-						game.gameEnd.placements[$currentPlayers.at(0)?.playerIndex ?? 0]
-							.position === 0
-							? 'border-secondary bg-opacity-50'
-							: 'border white'
-					}`}
-					on:click={() => handleWinnerChange(0)}
-				>
-					<h1 class="text-secondary-color text-2xl font-semibold">
+
+			<!-- Winner -->
+			<div class="section">
+				<p class="section-label">Winner</p>
+				<div class="winner-row">
+					<button
+						class="winner-btn border-secondary"
+						class:winner-btn--active={p1Winner}
+						on:click={() => handleWinnerChange(0)}
+					>
 						{getDisplayName(0)}
-					</h1>
-				</button>
-				<button
-					class={`border background-primary-color bg-opacity-25 rounded-sm p-4 ${
-						game.gameEnd.placements[$currentPlayers.at(1)?.playerIndex ?? 1]
-							.position === 0
-							? 'border-secondary bg-opacity-50'
-							: 'border white'
-					}`}
-					on:click={() => handleWinnerChange(1)}
-				>
-					<h1 class="text-secondary-color text-2xl font-semibold">
+					</button>
+					<button
+						class="winner-btn border-secondary"
+						class:winner-btn--active={p2Winner}
+						on:click={() => handleWinnerChange(1)}
+					>
 						{getDisplayName(1)}
-					</h1>
-				</button>
+					</button>
+				</div>
 			</div>
+
 		</div>
-		<button
-			disabled={!hasGameWinner()}
-			class={`border-secondary background-primary-color bg-opacity-25 p-4 disabled:opacity-50`}
-			on:click={addGame}
-		>
-			<h1 class="text-secondary-color text-2xl font-semibold">Add Game</h1>
-		</button>
+
+		<div class="modal-footer border-t border-secondary-color">
+			<button
+				class="btn text-sm h-9 px-6 border-secondary rounded w-full"
+				disabled={!hasGameWinner()}
+				on:click={addGame}
+			>
+				Add Game
+			</button>
+		</div>
+
 	</div>
 </Modal>
+
+<style>
+	.modal-inner {
+		display: flex;
+		flex-direction: column;
+		max-height: 80vh;
+		border-radius: 0.25rem;
+		overflow: hidden;
+	}
+
+	.modal-header {
+		padding: 1rem 1.25rem 0.75rem;
+		flex-shrink: 0;
+	}
+
+	.modal-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--secondary-color);
+		display: block;
+		margin-bottom: 0.35rem;
+	}
+
+	.player-names {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.pname {
+		font-size: 0.8rem;
+		font-weight: 600;
+		opacity: 0.55;
+	}
+
+	.modal-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0.75rem 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.modal-footer {
+		padding: 0.75rem 1.25rem;
+		flex-shrink: 0;
+	}
+
+	.section-label {
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		opacity: 0.35;
+		margin-bottom: 0.5rem;
+	}
+
+	.two-col {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+
+	/* Stocks */
+	.stocks-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.stocks-group {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.stock-btn {
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		opacity: 0.2;
+		transition: opacity 0.1s;
+	}
+
+	.stock-active {
+		opacity: 1;
+	}
+
+	.none-btn {
+		flex-shrink: 0;
+	}
+
+	/* Stage */
+	.stage-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.stage-preview {
+		aspect-ratio: 16/9;
+		overflow: hidden;
+		border-radius: 0.125rem;
+	}
+
+	/* Winner */
+	.winner-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+
+	.winner-btn {
+		padding: 0.5rem 0.75rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--secondary-color);
+		background: transparent;
+		cursor: pointer;
+		border-radius: 0.125rem;
+		opacity: 0.4;
+		transition: opacity 0.1s;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.winner-btn:hover {
+		opacity: 0.7;
+	}
+
+	.winner-btn--active {
+		opacity: 1;
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
+	}
+</style>

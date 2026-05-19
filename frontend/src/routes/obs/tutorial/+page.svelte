@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { fade } from 'svelte/transition';
 
 	const tutorials = [
 		{
@@ -24,11 +23,7 @@
 	];
 </script>
 
-<main
-	class="fixed h-screen w-screen background-primary-color text-secondary-color flex flex-col justify-center items-center p-8"
-	in:fade={{ delay: 50, duration: 150 }}
-	out:fade={{ duration: 300 }}
->
+<main class="background-primary-color text-secondary-color flex justify-center">
 	<div class="w-full max-w-lg flex flex-col gap-6">
 		<div>
 			<h1 class="font-bold text-3xl">Tutorials</h1>

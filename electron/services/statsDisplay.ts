@@ -24,7 +24,7 @@ import {
 	SlippiLauncherSettings,
 	StatsTypeExtended,
 } from '../../frontend/src/lib/models/types/slippiData';
-import { InGameState, LiveStatsScene } from '../../frontend/src/lib/models/enum';
+import { InGameState, LiveStatsScene, NotificationType } from '../../frontend/src/lib/models/enum';
 import fs from 'fs/promises';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
@@ -541,19 +541,22 @@ export class StatsDisplay {
 	private getRecentReplay = async (): Promise<SlippiGame | undefined> => {
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
-		const file = files.find((file) => {
-			const settings = new SlippiGame(file).getSettings();
-			return settings?.players.some((player) => player?.connectCode);
+		const onlineFile = files.find((file) => {
+			try {
+				const settings = new SlippiGame(file).getSettings();
+				return settings?.players.some((player) => player?.connectCode);
+			} catch { return false; }
 		});
-		if (!file) return;
-		const game = new SlippiGame(file);
-		return game;
+		return new SlippiGame(onlineFile ?? files[0]);
 	};
 
 	simulateGame = async () => {
 		this.cancelSimulation();
 		const game = await this.getRecentReplay();
-		if (!game) return;
+		if (!game) {
+			this.messageHandler.sendMessage('Notification', 'No replay files found. Configure Slippi path in settings.', NotificationType.Warning, 3000);
+			return;
+		}
 		const settings = game.getSettings() as GameStartTypeExtended;
 		const frames = game.getFrames()
 		if (!settings || !frames) return;

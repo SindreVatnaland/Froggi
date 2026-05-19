@@ -1,30 +1,93 @@
 <script lang="ts">
 	import AddControllerCommandModal from '$lib/components/dashboard/Modals/AddControllerCommandModal.svelte';
 	import ButtonCommand from '$lib/components/dashboard/ObsCommands/ButtonCommand.svelte';
-	import ToggleControllerCommand from '$lib/components/dashboard/ObsCommands/ToggleControllerCommand.svelte';
-	import { controller } from '$lib/utils/store.svelte';
+	import { notifications } from '$lib/components/notification/Notifications.svelte';
+	import { electronEmitter, controller } from '$lib/utils/store.svelte';
 
-	let isNewCommandModalOpen = false;
+	let isAddModalOpen = false;
 
-	$: isControllerCommandEnabled = $controller.enabled;
+	const toggleController = () => {
+		$electronEmitter.emit('ControllerCommandStateToggle');
+		notifications.success(`Controller commands ${$controller.enabled ? 'disabled' : 'enabled'}`, 1500);
+	};
 </script>
 
-<div class="flex flex-col gap-2">
-	<h1 class="text-2xl font-bold text-secondary-color">Controller Commands</h1>
-	<ToggleControllerCommand />
-	<div class="flex flex-col gap-4" style={`opacity: ${isControllerCommandEnabled ? 1 : 0.5}`}>
-		{#each $controller?.inputCommands ?? [] as controllerCommand}
-			<ButtonCommand {controllerCommand} />
-			<hr />
-		{/each}
-	</div>
-	<div class="flex justify-center" style={`opacity: ${isControllerCommandEnabled ? 1 : 0.5}`}>
-		<button
-			class="btn text-md whitespace-nowrap w-full h-12 p-2 xl:text-xl border-secondary"
-			on:click={() => (isNewCommandModalOpen = true)}
-		>
-			Add New Command
+<div class="controller-commands">
+	<!-- Enable toggle -->
+	<label class="toggle-row border-secondary">
+		<span class="toggle-label text-secondary-color">Enable controller commands</span>
+		<input
+			type="checkbox"
+			class="toggle-check"
+			checked={$controller.enabled}
+			on:change={toggleController}
+		/>
+	</label>
+
+	<!-- Command list -->
+	<div class="commands-list" class:commands-list--off={!$controller.enabled}>
+		{#if $controller?.inputCommands?.length}
+			{#each $controller.inputCommands as cmd}
+				<ButtonCommand controllerCommand={cmd} />
+			{/each}
+		{:else}
+			<p class="empty-hint">No commands yet. Add a button combo below.</p>
+		{/if}
+
+		<button class="add-btn btn border-secondary rounded text-xs h-8 px-4 w-full mt-1" on:click={() => (isAddModalOpen = true)}>
+			+ Add Command
 		</button>
 	</div>
 </div>
-<AddControllerCommandModal bind:open={isNewCommandModalOpen} />
+
+<AddControllerCommandModal bind:open={isAddModalOpen} />
+
+<style>
+	.controller-commands {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.toggle-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.6rem 0.75rem;
+		border-radius: 0.25rem;
+		cursor: pointer;
+	}
+
+	.toggle-label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.toggle-check {
+		width: 1rem;
+		height: 1rem;
+		cursor: pointer;
+	}
+
+	.commands-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		transition: opacity 0.2s;
+	}
+
+	.commands-list--off {
+		opacity: 0.4;
+		pointer-events: none;
+	}
+
+	.empty-hint {
+		font-size: 0.75rem;
+		opacity: 0.35;
+		padding: 0.25rem 0;
+	}
+
+	.add-btn {
+		margin-top: 0.25rem;
+	}
+</style>

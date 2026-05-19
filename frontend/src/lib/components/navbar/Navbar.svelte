@@ -18,8 +18,8 @@
 	import { tooltip } from 'svooltip';
 	import BuyMeACoffee from './BuyMeACoffee.svelte';
 
-	// In Electron: visibility is controlled by isOverlayPage alone — always on, no timer.
-	// In browser: start hidden, reveal on mouse/touch activity, auto-hide after idle.
+	// Non-overlay pages: Electron always on, browser timer-based.
+	// Overlay pages: timer-based for both (auto-hide, reveal on activity).
 	let isVisible = $isMobile;
 	let visibilityTimer: ReturnType<typeof setTimeout>;
 
@@ -27,11 +27,12 @@
 		clearTimeout(visibilityTimer);
 		visibilityTimer = setTimeout(() => {
 			isVisible = false;
-		}, $isMobile ? 5000 : 8000);
+		}, $isMobile ? 5000 : 4000);
 	}
 
 	function onActivity() {
-		if ($isElectron || $isIframe) return;
+		if ($isIframe) return;
+		if ($isElectron && !$isOverlayPage) return;
 		isVisible = true;
 		startHideTimer();
 	}
@@ -46,8 +47,8 @@
 
 	$: isVertical = width < height;
 
-	// Whether the nav should render at all
-	$: showNav = !$isOverlayPage && ($isElectron || isVisible);
+	// On overlay pages: timer-based for both. On other pages: Electron always on.
+	$: showNav = $isOverlayPage ? isVisible : ($isElectron || isVisible);
 </script>
 
 <svelte:window

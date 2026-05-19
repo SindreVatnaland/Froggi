@@ -1,44 +1,24 @@
 <script lang="ts">
 	import Modal from '$lib/components/modal/Modal.svelte';
-	import { electronEmitter } from '$lib/utils/store.svelte';
-
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
+	export let open = false;
 
 	function confirm() {
 		dispatch('confirm');
 		open = false;
 	}
-
-	function cancel() {
-		open = false;
-	}
-
-	// TODO: Style
-
-	export let open = false;
 </script>
 
-<Modal bind:open on:close={() => (open = false)} class="rounded-lg">
-	<div
-		class="w-72 min-w-72 min-w-lg py-4 grid gap-8 justify-center bg-cover bg-center rounded-md border-secondary background-primary-color"
-	>
-		<div class="w-full grid justify-center gap-8 py-4">
-			<h1 class="text-center text-secondary-color text-xl font-bold">
-				<slot />
-			</h1>
-			<button
-				class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
-				on:click={cancel}
-			>
+<Modal bind:open on:close={() => (open = false)}>
+	<div class="confirm-box background-primary-color border-secondary text-secondary-color">
+		<p class="confirm-text"><slot /></p>
+		<div class="confirm-actions">
+			<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => (open = false)}>
 				Cancel
 			</button>
-
-			<button
-				class="btn text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border-secondary rounded"
-				on:click={confirm}
-			>
+			<button class="btn text-sm h-9 px-5 border-secondary rounded confirm-ok" on:click={confirm}>
 				Confirm
 			</button>
 		</div>
@@ -46,8 +26,30 @@
 </Modal>
 
 <style>
-	:root {
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-			Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+	.confirm-box {
+		padding: 1.25rem 1.5rem;
+		min-width: 260px;
+		max-width: 380px;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		border-radius: 0.25rem;
+	}
+
+	.confirm-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.5;
+	}
+
+	.confirm-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
+	}
+
+	.confirm-ok {
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
 	}
 </style>

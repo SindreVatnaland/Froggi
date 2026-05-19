@@ -41,7 +41,7 @@
 	export const isMobile = writable<boolean>(!window.electron && Device.isMobile);
 	export const isTablet = writable<boolean>(!window.electron && Device.isTablet);
 	export const isIframe = writable<boolean>(window.self !== window.top);
-	export const isOverlayPage = writable<boolean>(true);
+	export const isOverlayPage = writable<boolean>(false);
 
 	export const isPwa = writable<boolean>(
 		window.electron ||
@@ -90,4 +90,5 @@
 
 	export const obs = writable<Obs>();
 	export const urls = writable<Url>();
+	export const remoteAccess = writable<{ url?: string; provider?: 'tailscale' | 'ngrok' }>({});
 </script>

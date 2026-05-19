@@ -95,6 +95,26 @@ Custom CSS classes are defined in `frontend/src/app.css`. Use them — do not in
 
 `background-color-primary` and `color-secondary` are removed aliases — do not use them.
 
+#### Dashboard / settings page conventions
+
+Pages use `<main class="flex justify-center"><div class="w-full max-w-{N}">` for centered content. Max widths: `xl` for settings, `2xl` for nav/list pages, `3xl` for the dashboard.
+
+Dashboard cards use `.dash-card border-secondary` with `.dash-label` (0.7rem, uppercase, 0.4 opacity) for section headers. Section labels in settings use `.section-label` (same style, defined per-page).
+
+Compact toggle rows: `label.toggle-row.border-secondary` with `span.toggle-label` + `input[type=checkbox].toggle-check` (0.9rem). Used in both SceneCommands and the OBS dashboard.
+
+Modals follow the ConfirmModal pattern: `.confirm-box.background-primary-color.border-secondary`, title paragraph, body, footer with Cancel + action button where action button uses `.confirm-ok` (inverted colors). Max-width ~400px.
+
+Do not use `h1`/`h2` for section labels inside cards — use `.dash-label` or a small `<p>` with `font-size: 0.7rem; opacity: 0.4`.
+
+#### Third-party components
+
+`svelte-qrcode`: renders as JPEG via qrious. Props: `value`, `size` (string px), `color` (hex), `background` (hex). No CSS variable support — use hex values. Import with `// @ts-ignore`.
+
+#### Page transitions
+
+No page-level transitions (`in:fade`, `out:fade`, `in:fly`, `out:fly` on `<main>`). Step-navigation animations within a page (e.g. TutorialPages.svelte) are acceptable.
+
 ### Overlay injection
 
 `@asdf-overlay/core` and `@asdf-overlay/electron` handle overlay injection into the Dolphin game window. Windows-only. On Dolphin connect, `OverlayInjector.injectIntoGame()` calls `Overlay.attach(dllDir, pid)` which injects the DLL; once the game window is detected the `added` event fires and `ElectronOverlaySurface.connect()` pipes an offscreen `BrowserWindow` into the overlay via shared GPU texture. The package's native binaries must be in `app.asar.unpacked` — this is handled by the `asarUnpack` rule in `build.config.json`.

@@ -1,125 +1,232 @@
 <script lang="ts">
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { ControllerButtons } from '$lib/models/types/controller';
-	import { Command, CommandType, ControllerCommand } from '$lib/models/types/commandTypes';
+	import type { ControllerButtons } from '$lib/models/types/controller';
+	import { Command, CommandType, type ControllerCommand } from '$lib/models/types/commandTypes';
 	import { getOverlappingCommands } from '$lib/utils/controllerCommandHelper';
 	import { electronEmitter, controller } from '$lib/utils/store.svelte';
-	import { fly } from 'svelte/transition';
-	import ButtonCommand from '../ObsCommands/ButtonCommand.svelte';
-	import { flip } from 'svelte/animate';
 	import CommandSelect from '../ObsCommands/CommandSelect.svelte';
 
 	export let open: boolean;
 
-	$: overlappingCommands = getOverlappingCommands(
-		$controller.inputCommands,
-		controllerCommand.inputs,
-	);
+	let controllerCommand: ControllerCommand = makeEmpty();
 
-	const addCommand = async () => {
-		if (!controllerCommand) return;
-		if (!Object.values(controllerCommand.inputs).some((input) => input)) return;
-		$electronEmitter.emit('ControllerCommandAdd', controllerCommand);
-		notifications.success('Updated Commands', 1500);
-		open = false;
-	};
-
-	let controllerCommand: ControllerCommand = {
-		id: '',
-		inputs: {
-			isAPressed: false,
-			isBPressed: false,
-			isDPadLeftPressed: false,
-			isDPadRightPressed: false,
-			isDPadUpPressed: false,
-			isDPadDownPressed: false,
-			isLPressed: false,
-			isRPressed: false,
-			isStartPressed: false,
-			isXPressed: false,
-			isYPressed: false,
-			isZPressed: false,
-		},
-		command: {
+	function makeEmpty(): ControllerCommand {
+		return {
 			id: '',
-			requestType: 'SaveReplayBuffer',
-			payload: undefined,
-			type: CommandType.Obs,
-		} as Command,
-	};
+			inputs: {
+				isAPressed: false, isBPressed: false,
+				isDPadLeftPressed: false, isDPadRightPressed: false,
+				isDPadUpPressed: false, isDPadDownPressed: false,
+				isLPressed: false, isRPressed: false, isStartPressed: false,
+				isXPressed: false, isYPressed: false, isZPressed: false,
+			},
+			command: { id: '', requestType: 'SaveReplayBuffer', payload: undefined, type: CommandType.Obs } as Command,
+		};
+	}
+
+	$: if (open) controllerCommand = makeEmpty();
+
+	$: overlapping = getOverlappingCommands($controller.inputCommands, controllerCommand.inputs);
+	$: selectedKeys = (Object.entries(controllerCommand.inputs)
+		.filter(([, v]) => v)
+		.map(([k]) => k)) as (keyof ControllerButtons)[];
+	$: hasSelection = selectedKeys.length > 0;
 
 	const filterKey = (key: string) => {
-		const pattern = /is(.*?)Pressed/;
-		const match = key.match(pattern);
+		const match = key.match(/is(.*?)Pressed/);
 		return match ? match[1] : key;
 	};
 
-	const getKeys = (): (keyof ControllerButtons)[] => {
-		return Object.keys(controllerCommand.inputs) as (keyof ControllerButtons)[];
-	};
+	const getKeys = (): (keyof ControllerButtons)[] =>
+		Object.keys(controllerCommand.inputs) as (keyof ControllerButtons)[];
 
-	$: selectedKeys = Object.entries(controllerCommand.inputs)
-		.filter(([_, value]) => value)
-		.map(([key, _]) => key) as (keyof ControllerButtons)[];
+	const addCommand = () => {
+		if (!hasSelection) return;
+		$electronEmitter.emit('ControllerCommandAdd', controllerCommand);
+		notifications.success('Command added', 1500);
+		open = false;
+	};
 </script>
 
 <Modal bind:open on:close={() => (open = false)}>
-	<div
-		class="max-h-[80vh] max-w-[400px] w-screen h-full min-w-lg flex flex-col justify-between gap-4 bg-cover bg-center border-secondary background-primary-color p-8 overflow-y-auto"
-	>
-		<h1 class="flex text-2xl font-bold text-secondary-color">Button Combinations</h1>
-		<div
-			class="flex flex-col flex-1 overflow-y-auto gap-4 min-h-40 border-b border-t border-secondary-color py-2"
-		>
-			<div class="flex flex-col gap-2 pr-4">
-				{#each getKeys() as key}
-					<div class="flex justify-between items-center gap-2">
-						<img
-							class="aspect-square w-12 h-12"
-							src={`/image/controller-buttons/${filterKey(key)}.svg`}
-							alt={key}
-						/>
-						<input
-							type="checkbox"
-							class="w-12 h-12"
-							bind:checked={controllerCommand.inputs[key]}
-						/>
-					</div>
-				{/each}
-			</div>
+	<div class="modal-box background-primary-color border-secondary text-secondary-color">
+		<p class="modal-title">Add Controller Command</p>
+		<p class="modal-desc">Select a button combination, then choose the OBS action to trigger.</p>
+
+		<!-- Button grid -->
+		<div class="btn-grid">
+			{#each getKeys() as key}
+				<label class="btn-item" class:btn-item--active={controllerCommand.inputs[key]}>
+					<img
+						class="btn-img"
+						src={`/image/controller-buttons/${filterKey(key)}.svg`}
+						alt={filterKey(key)}
+					/>
+					<input
+						type="checkbox"
+						class="sr-only"
+						bind:checked={controllerCommand.inputs[key]}
+					/>
+				</label>
+			{/each}
 		</div>
-		{#if Object.values(controllerCommand.inputs).some((input) => input)}
-			<div class="flex flex-col gap-2" in:fly={{ x: 150, duration: 250 }}>
-				<h1 class="text-2xl font-bold text-secondary-color">Selected Buttons</h1>
-				<div class="flex gap-2 max-w-full overflow-auto">
-					{#each selectedKeys as key (key)}
+
+		<!-- Selected preview -->
+		{#if hasSelection}
+			<div class="selected-row">
+				<span class="selected-label">Combo:</span>
+				<div class="selected-icons">
+					{#each selectedKeys as key}
 						<img
-							animate:flip={{ duration: 250 }}
-							class="aspect-square w-12 h-12"
+							class="btn-img"
 							src={`/image/controller-buttons/${filterKey(key)}.svg`}
 							alt={filterKey(key)}
 						/>
 					{/each}
 				</div>
 			</div>
-			{#if overlappingCommands.length}
-				<div class="flex flex-col gap-2">
-					<h1 class="text-2xl font-bold text-secondary-color">Overlapping Commands</h1>
-					<div class="max-w-full overflow-auto">
-						{#each overlappingCommands as command}
-							<ButtonCommand controllerCommand={command} />
-						{/each}
-					</div>
-				</div>
+
+			{#if overlapping.length > 0}
+				<p class="overlap-warn">⚠ Overlaps with {overlapping.length} existing command{overlapping.length > 1 ? 's' : ''}</p>
 			{/if}
 		{/if}
-		<CommandSelect bind:command={controllerCommand.command} />
-		<button
-			class="btn text-md whitespace-nowrap h-12 p-2 xl:text-xl border-secondary"
-			on:click={addCommand}
-		>
-			Add Command
-		</button>
+
+		<!-- Command select -->
+		<div class="command-select-wrap" class:faded={!hasSelection}>
+			<CommandSelect bind:command={controllerCommand.command} />
+		</div>
+
+		<!-- Actions -->
+		<div class="modal-actions">
+			<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => (open = false)}>
+				Cancel
+			</button>
+			<button
+				class="btn text-sm h-9 px-5 border-secondary rounded confirm-ok"
+				disabled={!hasSelection}
+				on:click={addCommand}
+			>
+				Add Command
+			</button>
+		</div>
 	</div>
 </Modal>
+
+<style>
+	.modal-box {
+		padding: 1.25rem 1.5rem;
+		width: min(90vw, 380px);
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		border-radius: 0.25rem;
+		max-height: 85vh;
+		overflow-y: auto;
+	}
+
+	.modal-title {
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.modal-desc {
+		font-size: 0.75rem;
+		opacity: 0.45;
+		line-height: 1.5;
+		margin-top: -0.5rem;
+	}
+
+	.btn-grid {
+		display: grid;
+		grid-template-columns: repeat(6, 1fr);
+		gap: 0.4rem;
+	}
+
+	.btn-item {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.4rem;
+		border-radius: 0.25rem;
+		cursor: pointer;
+		opacity: 0.3;
+		border: 1px solid transparent;
+		transition: opacity 0.15s, border-color 0.15s;
+	}
+
+	.btn-item:hover {
+		opacity: 0.6;
+	}
+
+	.btn-item--active {
+		opacity: 1;
+		border-color: var(--secondary-color);
+		background: rgba(128, 128, 128, 0.1);
+	}
+
+	.btn-img {
+		width: 1.75rem;
+		height: 1.75rem;
+		object-fit: contain;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+	}
+
+	.selected-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.selected-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		opacity: 0.4;
+		flex-shrink: 0;
+	}
+
+	.selected-icons {
+		display: flex;
+		gap: 3px;
+		flex-wrap: wrap;
+	}
+
+	.overlap-warn {
+		font-size: 0.75rem;
+		color: rgb(234, 179, 8);
+		opacity: 0.85;
+	}
+
+	.command-select-wrap {
+		transition: opacity 0.2s;
+	}
+
+	.faded {
+		opacity: 0.4;
+		pointer-events: none;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
+	}
+
+	.confirm-ok {
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
+	}
+
+	.confirm-ok:disabled {
+		opacity: 0.4;
+	}
+</style>

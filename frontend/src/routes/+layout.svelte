@@ -15,9 +15,9 @@
 		urls,
 	} from '$lib/utils/store.svelte';
 
-	// Navbar is 4rem (64px) wide on each side. Add matching padding to content so
-	// nothing renders under the fixed sidebars.
-	$: navPadding = $isElectron && !$isOverlayPage
+	// Navbar is 4rem wide on each side. Pad content to avoid overlap.
+	// Overlay pages fill the screen — no padding. Browser uses same sidebar width as Electron.
+	$: navPadding = !$isOverlayPage
 		? 'padding-left: 5rem; padding-right: 5rem;'
 		: '';
 	import GlobalModal from '$lib/components/global/GlobalModal.svelte';
@@ -43,6 +43,15 @@
 		};
 	});
 
+	let wakeLock: WakeLockSentinel | null = null;
+
+	const requestWakeLock = async () => {
+		if (!hasWakeLockSupport || document.visibilityState !== 'visible') return;
+		try {
+			wakeLock = await navigator.wakeLock.request('screen');
+		} catch {}
+	};
+
 	const updateBackgroundColor = () => {
 		if ($isOverlayPage && !$isElectron) {
 			document.body.style.backgroundColor = 'transparent';
@@ -59,8 +68,8 @@
 	$: setOverlayPage($page.url.pathname);
 
 	const initWakeLock = () => {
-		if (!hasWakeLockSupport) return;
-		navigator.wakeLock.request();
+		requestWakeLock();
+		document.addEventListener('visibilitychange', requestWakeLock);
 	};
 </script>
 

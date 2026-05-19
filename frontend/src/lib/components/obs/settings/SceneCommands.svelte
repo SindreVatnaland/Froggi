@@ -1,85 +1,223 @@
 <script lang="ts">
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import AddSceneCommandModal from '$lib/components/dashboard/Modals/AddSceneCommandModal.svelte';
-	import ToggleSceneSwitchCommand from '$lib/components/dashboard/ObsCommands/ToggleSceneSwitchCommand.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { LiveStatsScene } from '$lib/models/enum';
-	import { Command, SceneSwitchCommands } from '$lib/models/types/commandTypes';
+	import type { Command, SceneSwitchCommands } from '$lib/models/types/commandTypes';
 	import { electronEmitter, sceneSwitch } from '$lib/utils/store.svelte';
 	import { isNil, startCase } from 'lodash';
 
-	let sceneCommands: SceneSwitchCommands | undefined = $sceneSwitch;
-	let isSceneCommandModalOpen = false;
-	let isDeleteCommandModalOpen = false;
-
+	let isAddModalOpen = false;
+	let isDeleteModalOpen = false;
 	let selectedScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
 	let selectedCommand: Command;
-
-	const deleteSceneCommand = () => {
-		if (isNil(sceneCommands) || isNil(selectedCommand)) return;
-		$electronEmitter.emit('SceneSwitchCommandDelete', selectedScene, selectedCommand?.id);
-		isDeleteCommandModalOpen = false;
-		notifications.success('Scene Command Deleted', 2000);
-	};
+	let addForScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
 
 	const scenes: LiveStatsScene[] = Object.values(LiveStatsScene);
 
-	$: sceneCommands = $sceneSwitch;
+	const toggleSceneSwitch = () => {
+		$electronEmitter.emit('SceneSwitchCommandStateToggle');
+		notifications.success(`Auto scene switch ${$sceneSwitch?.enabled ? 'disabled' : 'enabled'}`, 1500);
+	};
+
+	const openAdd = (scene: LiveStatsScene) => {
+		addForScene = scene;
+		isAddModalOpen = true;
+	};
+
+	const confirmDelete = () => {
+		if (isNil($sceneSwitch) || isNil(selectedCommand)) return;
+		$electronEmitter.emit('SceneSwitchCommandDelete', selectedScene, selectedCommand.id);
+		isDeleteModalOpen = false;
+		notifications.success('Command deleted', 1500);
+	};
+
+	$: sceneCommands = $sceneSwitch as SceneSwitchCommands | undefined;
 </script>
 
 {#if !isNil(sceneCommands)}
-	<div class="flex flex-col gap-2 font-bold">
-		<h1 class="text-3xl font-bold text-secondary-color text-center">Scene Switching</h1>
-		<ToggleSceneSwitchCommand />
-		<div
-			class="flex flex-col justify-between gap-8 items-center"
-			style={`opacity: ${$sceneSwitch?.enabled ? 1 : 0.5}`}
-		>
+	<div class="scene-commands">
+		<!-- Enable toggle -->
+		<label class="toggle-row border-secondary">
+			<span class="toggle-label text-secondary-color">Enable scene switching</span>
+			<input
+				type="checkbox"
+				class="toggle-check"
+				checked={$sceneSwitch?.enabled}
+				on:change={toggleSceneSwitch}
+			/>
+		</label>
+
+		<!-- Scene list -->
+		<div class="scenes-list" class:scenes-list--off={!$sceneSwitch?.enabled}>
 			{#each scenes as scene}
-				<div class="w-full flex flex-col gap-4">
-					<h1 class="text-secondary-color text-2xl">{startCase(scene)}:</h1>
-					{#each sceneCommands[scene] ?? [] as command}
-						<div class="flex flex-col w-full">
-							<h1 class="text-secondary-color text-lg">
-								{startCase(String(command.requestType))}:
-							</h1>
-							{#each Object.keys(command?.payload ?? {}) as key}
-								<div class="flex gap-2 justify-between">
-									<h1 class="text-secondary-color text-md">
-										{startCase(key)}:
-									</h1>
-									<h1 class="text-secondary-color text-md">
-										{command?.payload?.[key]}
-									</h1>
+				{@const commands = sceneCommands[scene] ?? []}
+				<div class="scene-block">
+					<div class="scene-header">
+						<span class="scene-name">{startCase(scene)}</span>
+						<button class="add-btn border-secondary" on:click={() => openAdd(scene)}>+ Add</button>
+					</div>
+					{#if commands.length === 0}
+						<p class="empty-hint">No commands — OBS does nothing on this state.</p>
+					{:else}
+						{#each commands as command}
+							<div class="command-row border-secondary">
+								<div class="command-info">
+									<span class="command-type">{startCase(String(command.requestType))}</span>
+									{#each Object.entries(command.payload ?? {}) as [k, v]}
+										<span class="command-payload">{startCase(k)}: {v}</span>
+									{/each}
 								</div>
-							{/each}
-							<button
-								class="btn text-md whitespace-nowrap h-12 px-2 text-xl border-secondary"
-								on:click={() => {
-									selectedScene = scene;
-									selectedCommand = command;
-									isDeleteCommandModalOpen = true;
-								}}
-							>
-								Delete
-							</button>
-						</div>
-					{/each}
+								<button
+									class="delete-btn"
+									on:click={() => {
+										selectedScene = scene;
+										selectedCommand = command;
+										isDeleteModalOpen = true;
+									}}
+								>×</button>
+							</div>
+						{/each}
+					{/if}
 				</div>
 			{/each}
-			<button
-				class="transition w-full background-primary-color bg-opacity-25 hover:bg-opacity-40 font-semibold text-secondary-color text-md whitespace-nowrap h-12 px-2 text-2xl border-secondary"
-				on:click={() => {
-					isSceneCommandModalOpen = true;
-				}}
-			>
-				Add New Command
-			</button>
 		</div>
 	</div>
 {/if}
 
-<AddSceneCommandModal bind:open={isSceneCommandModalOpen} />
-<ConfirmModal bind:open={isDeleteCommandModalOpen} on:confirm={deleteSceneCommand}>
-	Delete Command
+<AddSceneCommandModal bind:open={isAddModalOpen} initialScene={addForScene} />
+<ConfirmModal bind:open={isDeleteModalOpen} on:confirm={confirmDelete}>
+	Delete this command?
 </ConfirmModal>
+
+<style>
+	.scene-commands {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.toggle-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.6rem 0.75rem;
+		border-radius: 0.25rem;
+		cursor: pointer;
+	}
+
+	.toggle-label {
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.toggle-check {
+		width: 1rem;
+		height: 1rem;
+		cursor: pointer;
+	}
+
+	.scenes-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		transition: opacity 0.2s;
+	}
+
+	.scenes-list--off {
+		opacity: 0.4;
+		pointer-events: none;
+	}
+
+	.scene-block {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.scene-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.scene-name {
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--secondary-color);
+		opacity: 0.5;
+	}
+
+	.add-btn {
+		font-size: 0.65rem;
+		font-weight: 600;
+		padding: 0.15rem 0.5rem;
+		border-radius: 0.25rem;
+		background: transparent;
+		color: var(--secondary-color);
+		cursor: pointer;
+		opacity: 0.6;
+		transition: opacity 0.15s;
+	}
+
+	.add-btn:hover {
+		opacity: 1;
+	}
+
+	.empty-hint {
+		font-size: 0.7rem;
+		opacity: 0.3;
+		padding: 0.25rem 0;
+	}
+
+	.command-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.4rem 0.6rem;
+		border-radius: 0.25rem;
+		gap: 0.5rem;
+	}
+
+	.command-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.command-type {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--secondary-color);
+	}
+
+	.command-payload {
+		font-size: 0.7rem;
+		opacity: 0.5;
+		color: var(--secondary-color);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.delete-btn {
+		font-size: 1rem;
+		line-height: 1;
+		opacity: 0.4;
+		color: var(--secondary-color);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		padding: 0 0.25rem;
+		flex-shrink: 0;
+		transition: opacity 0.15s;
+	}
+
+	.delete-btn:hover {
+		opacity: 1;
+	}
+</style>

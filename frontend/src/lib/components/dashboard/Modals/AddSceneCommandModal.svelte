@@ -9,38 +9,93 @@
 	import { startCase } from 'lodash';
 
 	export let open: boolean;
+	export let initialScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
 
-	let selectedScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
+	let selectedScene: LiveStatsScene = initialScene;
 	let sceneCommand: Command = {
 		type: CommandType.Obs,
 		requestType: 'SaveReplayBuffer',
 		payload: undefined,
 	} as Command;
 
+	$: if (open) {
+		selectedScene = initialScene;
+		sceneCommand = { type: CommandType.Obs, requestType: 'SaveReplayBuffer', payload: undefined } as Command;
+	}
+
 	const addSceneCommand = () => {
 		$electronEmitter.emit('SceneSwitchCommandAdd', selectedScene, sceneCommand);
-		notifications.success('Scene Command Added', 2000);
+		notifications.success('Command added', 1500);
 		open = false;
 	};
 </script>
 
 <Modal bind:open on:close={() => (open = false)}>
-	<div
-		class="max-h-[80vh] max-w-[400px] w-screen h-full min-w-lg flex flex-col justify-between gap-8 bg-cover bg-center border-secondary background-primary-color p-8 overflow-y-auto"
-	>
-		<Select bind:selected={selectedScene} label="When switching scene to:">
-			{#each Object.values(LiveStatsScene) as scene}
-				<option value={scene} selected={scene === selectedScene}>
-					{startCase(scene)}
-				</option>
-			{/each}
-		</Select>
-		<CommandSelect bind:command={sceneCommand} displayOverlayCommands={false} />
-		<button
-			class="btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
-			on:click={addSceneCommand}
-		>
-			Add Command
-		</button>
+	<div class="modal-box background-primary-color border-secondary text-secondary-color">
+		<p class="modal-title">Add Scene Command</p>
+		<p class="modal-desc">
+			Choose a Froggi state, then pick an OBS action to run when it activates.
+		</p>
+		<div class="modal-form">
+			<Select bind:selected={selectedScene} label="When Froggi enters:">
+				{#each Object.values(LiveStatsScene) as scene}
+					<option value={scene} selected={scene === selectedScene}>
+						{startCase(scene)}
+					</option>
+				{/each}
+			</Select>
+			<CommandSelect bind:command={sceneCommand} displayOverlayCommands={false} />
+		</div>
+		<div class="modal-actions">
+			<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => (open = false)}>
+				Cancel
+			</button>
+			<button class="btn text-sm h-9 px-5 border-secondary rounded confirm-ok" on:click={addSceneCommand}>
+				Add Command
+			</button>
+		</div>
 	</div>
 </Modal>
+
+<style>
+	.modal-box {
+		padding: 1.25rem 1.5rem;
+		min-width: 280px;
+		max-width: 400px;
+		width: 90vw;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		border-radius: 0.25rem;
+	}
+
+	.modal-title {
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.modal-desc {
+		font-size: 0.75rem;
+		opacity: 0.5;
+		line-height: 1.5;
+		margin-top: -0.25rem;
+	}
+
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
+		margin-top: 0.25rem;
+	}
+
+	.confirm-ok {
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
+	}
+</style>

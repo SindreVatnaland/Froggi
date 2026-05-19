@@ -3,7 +3,6 @@
 	import MultiSelect from '$lib/components/input/MultiSelect.svelte';
 	import TextFitMulti from '$lib/components/TextFitMulti.svelte';
 	import { localEmitter, isMobile } from '$lib/utils/store.svelte';
-	import { fade, fly } from 'svelte/transition';
 
 	$: selectedRegions = [];
 	$: selectedCharacters = [];
@@ -17,20 +16,18 @@
 </script>
 
 <main
-	class="fixed h-screen w-screen max-h-full max-w-full bg-cover bg-center lg:flex justify-center"
+	class="bg-cover bg-center lg:flex justify-center"
 	style="background-image: url('/image/backgrounds/MeleeMenuGreen.png')"
-	in:fade={{ delay: 50, duration: 150 }}
-	out:fade={{ duration: 300 }}
 >
 	<div class={`place-items-start px-2 w-full h-full max-h-full max-w-6xl pb-12 overflow-hidden`}>
-		<div class="w-full h-12 grid content-center" in:fly={{ y: 100, duration: 1500 }}>
+		<div class="w-full h-12 grid content-center">
 			<h1
 				class="text-secondary-color text-md md:text-xl whitespace-nowrap m-0 font-medium text-shadow"
 			>
 				Leaderboard
 			</h1>
 		</div>
-		<div class="w-full h-16 flex" in:fly={{ y: 100, duration: 1500, delay: 150 }}>
+		<div class="w-full h-16 flex">
 			<div class="w-32 mr-2">
 				<MultiSelect bind:value={selectedRegions} label="Regions">
 					<option value={'NA'}>North America</option>
@@ -46,7 +43,7 @@
 				</MultiSelect>
 			</div>
 		</div>
-		<div class="max-h-full overflow-auto" in:fly={{ y: 100, duration: 1500, delay: 300 }}>
+		<div class="max-h-full overflow-auto">
 			<div class="w-full h-12 grid grid-cols-12 col-span-12 min-w-2xl max-w-6xl">
 				<div
 					class="w-full h-full grid grid-cols-12 col-span-12 border-b-1 border-gray-500 rounded-t-md background-primary-color bg-opacity-50"

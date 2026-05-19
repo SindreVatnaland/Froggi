@@ -51,7 +51,9 @@
       "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2 \"\\\\t\" $1}')",
       "Bash(awk 'NR==1 || $1 != prev+1 {if\\(NR>1\\) print \"\"; printf \"--- GAP at \" $1 \" ---\\\\n\"} {prev=$1; print}')",
       "Bash(awk 'BEGIN{prev=-1} { *)",
-      "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2}')"
+      "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2}')",
+      "Bash(npm list *)",
+      "Bash(node -e \"require\\('node-fetch'\\)\")"
     ]
   }
 }

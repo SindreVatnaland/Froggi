@@ -1,22 +1,11 @@
 <script lang="ts">
 	import ObsCommandModal from './Modals/ObsCommandModal.svelte';
 
-	let isSceneObsModalOpen = false;
-
-	const openChangeObsSceneModal = () => {
-		isSceneObsModalOpen = true;
-	};
+	let isModalOpen = false;
 </script>
 
-<div class="flex flex-col gap-2">
-	<div class="flex flex-col gap-2">
-		<button
-			class={`btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary`}
-			on:click={openChangeObsSceneModal}
-		>
-			Commands
-		</button>
-	</div>
-</div>
+<button class="btn text-xs h-8 px-4 border-secondary rounded w-full" on:click={() => (isModalOpen = true)}>
+	OBS Commands
+</button>
 
-<ObsCommandModal bind:open={isSceneObsModalOpen} />
+<ObsCommandModal bind:open={isModalOpen} />

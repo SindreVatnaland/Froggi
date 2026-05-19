@@ -130,6 +130,9 @@ export interface MessageEvents {
 
 
 	Ping: () => void;
+
+	RemoteAccessStatus: (url: string | undefined, provider: 'tailscale' | 'ngrok' | undefined) => void;
+	RemoteAccessRefresh: () => void;
 }
 
 export class TypedEmitter extends localEmitter {

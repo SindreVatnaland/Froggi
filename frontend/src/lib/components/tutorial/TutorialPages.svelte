@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { fade, fly } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
 
@@ -38,11 +37,7 @@
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<main
-	class="fixed h-screen w-screen background-primary-color text-secondary-color flex justify-center"
-	in:fade={{ delay: 50, duration: 150 }}
-	out:fade={{ duration: 300 }}
->
+<main class="fixed h-screen w-screen background-primary-color text-secondary-color flex justify-center">
 	<div class="w-full max-w-3xl h-full flex flex-col p-6 gap-0">
 
 		<!-- Header -->
@@ -59,14 +54,9 @@
 		</div>
 
 		<!-- Current page title -->
-		{#key pageIndex}
-			<p
-				class="text-xs uppercase tracking-widest opacity-50 font-semibold mb-4 mt-2"
-				in:fly={{ y: 8, duration: 200, delay: 100 }}
-			>
-				{currentTitle}
-			</p>
-		{/key}
+		<p class="text-xs uppercase tracking-widest opacity-50 font-semibold mb-4 mt-2">
+			{currentTitle}
+		</p>
 
 		<!-- Content area -->
 		<div
@@ -74,7 +64,7 @@
 			bind:this={scrollElement}
 		>
 			{#key pageIndex}
-				<div in:fly={{ y: 16, duration: 200, delay: 80 }} out:fly={{ y: -16, duration: 150 }}>
+				<div>
 					{#if scenes[pageIndex]}
 						<svelte:component this={scenes[pageIndex].component} />
 					{:else}
