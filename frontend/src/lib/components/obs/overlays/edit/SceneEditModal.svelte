@@ -16,16 +16,11 @@
 	import SceneSelectOptions from '../selector/SceneSelectOptions.svelte';
 	import { tooltip } from 'svooltip';
 	import { fly } from 'svelte/transition';
-	import NonInteractiveIFrame from '../preview/NonInteractiveIFrame.svelte';
-	import { preview } from 'vite';
 
 	export let open: boolean;
 	export let overlay: Overlay;
 
 	$: curScene = overlay[$statsScene];
-
-	$: url = $isElectron ? $urls?.local : $urls?.external;
-	$: overlayPreviewSrc = `${url}/obs/overlay/${overlay.id}/layers`;
 
 	const resourceUrl = $isElectron ? $urls.localResource : $urls.localResource;
 
@@ -36,7 +31,6 @@
 		for (let image in modules) {
 			imageOptions.push(image);
 		}
-
 		imageOptions = imageOptions
 			.filter((i) => i !== undefined)
 			.map((imageString: string) => `${imageString.split('/').slice(-1).pop()}`)
@@ -55,97 +49,89 @@
 	}
 
 	let autofocus: number = 0;
+
+	$: bgStyle = [
+		curScene.background.type === SceneBackground.Color
+			? `background: ${curScene.background.color};`
+			: '',
+		curScene.background.type === SceneBackground.Image
+			? `background-image: url('/image/backgrounds/${curScene.background.image.src}'); background-size: ${curScene.background.image.objectFit ?? 'cover'};`
+			: '',
+		curScene.background.type === SceneBackground.ImageCustom
+			? `background-image: url('${resourceUrl}/public/custom/${overlay.id}/image/${encodeURI(curScene.background.customImage.name ?? '')}'); background-size: ${curScene.background.customImage.objectFit};`
+			: '',
+		curScene.background.type === SceneBackground.InGameImageStage || curScene.background.type === SceneBackground.PostGameImageStage
+			? `background-image: url('/image/stages/8.png');`
+			: '',
+		curScene.background.opacity !== undefined
+			? `opacity: ${curScene.background.opacity / 100};`
+			: '',
+		'background-repeat: no-repeat;',
+	].join(' ');
 </script>
 
 <Modal bind:open class="rounded-lg" on:close={clear}>
-	<div
-		class="w-[80vw] h-[80vh] min-w-72 min-w-lg place-items-center bg-cover bg-center border-secondary background-primary-color"
-	>
-		<div class="w-full max-h-full h-full flex gap-8 p-4 justify-between">
-			<div class="h-full flex flex-col justify-between">
-				<div class="max-h-full h-full overflow-auto flex flex-col gap-4">
-					<div>
-						<h1 class="text-secondary-color text-2xl font-medium">Overlay:</h1>
-						<div class="w-48 flex gap-2">
-							<TextInput
-								bind:value={overlay.title}
-								label="Overlay title"
-								bind:autofocus
-								autoFocusValue={1}
-							/>
-						</div>
-					</div>
+	<div class="w-[80vw] h-[80vh] min-w-72 border-secondary background-primary-color text-secondary-color flex">
+		<div class="w-full h-full flex gap-4 p-4">
 
+			<!-- Left column: overlay + scene config -->
+			<div class="flex flex-col justify-between gap-4 shrink-0" style="width: 240px;">
+				<div class="flex flex-col gap-5 overflow-auto flex-1">
 					<div>
-						<h1 class="text-2xl font-medium text-secondary-color">Scene:</h1>
-						<div class="flex gap-8 justify-between">
-							<h1 class="text-lg font-medium text-secondary-color w-[50%]">
-								Active scenes
-							</h1>
-							<h1 class="text-lg font-medium text-secondary-color w-[50%]">Fallback</h1>
+						<p class="modal-label">Overlay</p>
+						<TextInput bind:value={overlay.title} label="Title" bind:autofocus autoFocusValue={1} />
+					</div>
+					<div>
+						<p class="modal-label">Scene visibility</p>
+						<div class="flex gap-2 justify-between mb-1 mt-1">
+							<span class="text-xs opacity-40">Active</span>
+							<span class="text-xs opacity-40">Fallback</span>
 						</div>
 						<SceneSelectOptions bind:overlay />
 					</div>
 				</div>
-				<div class="w-48 flex items-end">
-					<button
-						class="w-full btn text-md whitespace-nowrap h-12 px-2 xl:text-xl border-secondary"
-						on:click={handleUpdate}
-					>
-						Update
-					</button>
-				</div>
+				<button class="btn text-sm h-9 px-5 border-secondary rounded shrink-0" on:click={handleUpdate}>
+					Update
+				</button>
 			</div>
-			<div class="overflow-auto max-h-full w-full relative">
+
+			<!-- Right column: per-scene settings -->
+			<div class="overflow-auto flex-1 relative min-h-0">
 				{#key $statsScene}
 					<div
-						class="flex flex-col gap-4 w-full h-full absolute"
-						out:fly={{ duration: 250, x: 150 }}
-						in:fly={{ duration: 250, delay: 250, x: 150 }}
+						class="flex flex-col gap-4 w-full absolute"
+						out:fly={{ duration: 200, x: 100 }}
+						in:fly={{ duration: 200, delay: 200, x: 100 }}
 					>
-						<div class="w-full">
-							<h1 class="text-2xl font-medium">
-								{$statsScene}:
-							</h1>
-						</div>
-						<div class="w-full">
-							<h1 class="text-2xl font-medium">Default Font:</h1>
+						<p class="modal-label">{$statsScene}</p>
+
+						<div>
+							<p class="modal-label">Default Font</p>
 							<FontSelectorLayer bind:font={curScene.font} fontId={$statsScene} />
 						</div>
 
 						<div class="flex flex-col gap-2">
-							<h1 class="text-2xl font-medium">Background</h1>
-							<div class="w-full flex gap-2">
-								<div class="w-48">
+							<p class="modal-label">Background</p>
+							<div class="flex flex-wrap gap-2">
+								<div class="w-40">
 									<Select bind:selected={curScene.background.type} label="Type">
 										<option value={SceneBackground.None}>None</option>
 										<option value={SceneBackground.Color}>Color</option>
 										<option value={SceneBackground.Image}>Image</option>
-										<option value={SceneBackground.ImageCustom}>
-											Custom Image
-										</option>
+										<option value={SceneBackground.ImageCustom}>Custom Image</option>
 										{#if $statsScene === LiveStatsScene.InGame}
-											<option value={SceneBackground.InGameImageStage}>
-												Stage
-											</option>
+											<option value={SceneBackground.InGameImageStage}>Stage</option>
 										{/if}
 										{#if [LiveStatsScene.PostGame, LiveStatsScene.PostSet].includes($statsScene)}
-											<option value={SceneBackground.PostGameImageStage}>
-												Stage
-											</option>
+											<option value={SceneBackground.PostGameImageStage}>Stage</option>
 										{/if}
 									</Select>
 								</div>
 								{#if curScene.background.type === SceneBackground.Image}
 									<div class="w-24">
-										<Select
-											bind:selected={curScene.background.image.src}
-											label="Image"
-										>
+										<Select bind:selected={curScene.background.image.src} label="Image">
 											{#each imageOptions as image, i}
-												<option selected={i === 0} value={image}>
-													{image.split('.')[0]}
-												</option>
+												<option selected={i === 0} value={image}>{image.split('.')[0]}</option>
 											{/each}
 										</Select>
 									</div>
@@ -156,25 +142,12 @@
 											fileName={$statsScene}
 											directory={'image'}
 											label="Upload"
-											acceptedExtensions={[
-												'jpg',
-												'jpeg',
-												'png',
-												'gif',
-												'svg',
-												'webp',
-											]}
-											on:change={(event) => {
-												curScene.background.customImage.name = event.detail;
-											}}
+											acceptedExtensions={['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']}
+											on:change={(event) => { curScene.background.customImage.name = event.detail; }}
 										/>
 									</div>
 									<div class="w-24">
-										<Select
-											bind:selected={curScene.background.customImage
-												.objectFit}
-											label="Object fit"
-										>
+										<Select bind:selected={curScene.background.customImage.objectFit} label="Fit">
 											<option selected value="cover">Cover</option>
 											<option value="contain">Contain</option>
 										</Select>
@@ -182,146 +155,76 @@
 								{/if}
 								{#if curScene.background.type === SceneBackground.Color}
 									<div class="w-24">
-										<ColorInput
-											bind:value={curScene.background.color}
-											label="Color"
-										/>
+										<ColorInput bind:value={curScene.background.color} label="Color" />
 									</div>
 								{/if}
 								{#if curScene.background.type !== SceneBackground.None}
 									<div class="w-24">
-										<NumberInput
-											bind:value={curScene.background.opacity}
-											label="Opacity"
-											max={100}
-										/>
+										<NumberInput bind:value={curScene.background.opacity} label="Opacity" max={100} />
 									</div>
 								{/if}
 							</div>
+
 							{#key curScene.background}
-								<div
-									class="bg-center aspect-video w-[35vw] max-w-[600px] border-secondary"
-									style={`
-						${
-							curScene.background.type === SceneBackground.Color
-								? `background: ${curScene.background.color};`
-								: ''
-						}
-							${
-								curScene.background.type === SceneBackground.Image
-									? `background-image: url('/image/backgrounds/${
-											curScene.background.image.src
-									  }');
-									background-size: ${curScene.background.image.objectFit ?? 'cover'};`
-									: ''
-							}
-									${
-										curScene.background.type === SceneBackground.ImageCustom
-											? `background-image: url('${`${resourceUrl}/public/custom/${
-													overlay.id
-											  }/image/${encodeURI(
-													curScene.background.customImage.name ?? '',
-											  )}`}');
-											background-size: ${curScene.background.customImage.objectFit};`
-											: ''
-									}
-											${
-												curScene.background.type ===
-												SceneBackground.InGameImageStage
-													? `background-image: url('/image/stages/8.png');`
-													: ''
-											}
-												${
-													curScene.background.type ===
-													SceneBackground.PostGameImageStage
-														? `background-image: url('/image/stages/8.png');`
-														: ''
-												}
-													${curScene.background.opacity !== undefined ? `opacity: ${curScene.background.opacity / 100};` : ''}
-													background-repeat: no-repeat;`}
-								>
-									<!-- <NonInteractiveIFrame
-										src={overlayPreviewSrc}
-										title="preview"
-										class="w-full h-full"
-									/> -->
-								</div>
+								<div class="aspect-video w-[35vw] max-w-[500px] border-secondary bg-center" style={bgStyle} />
 							{/key}
 
 							{#if curScene.background.type !== SceneBackground.None}
 								<div class="flex gap-4">
-									<div class="max-w-full">
-										<h1 class=" text-lg font-medium text-secondary-color">
-											Background Transition - In
-										</h1>
+									<div>
+										<p class="modal-label">Background in</p>
 										<div class="w-48">
-											<AnimationInput
-												bind:animation={curScene.background.animation.in}
-											/>
+											<AnimationInput bind:animation={curScene.background.animation.in} />
 										</div>
 									</div>
-									<div class="max-w-full">
-										<h1 class=" text-lg font-medium text-secondary-color">
-											Background Transition - Out
-										</h1>
+									<div>
+										<p class="modal-label">Background out</p>
 										<div class="w-48">
-											<AnimationInput
-												bind:animation={curScene.background.animation.out}
-											/>
+											<AnimationInput bind:animation={curScene.background.animation.out} />
 										</div>
 									</div>
 								</div>
 							{/if}
 						</div>
+
 						<div>
-							<h1
-								class=" text-2xl font-medium text-secondary-color"
-								use:tooltip={{
-									content: 'Delay between each layer rendering',
-									placement: 'top-start',
-									offset: 15,
-									delay: [200, 0],
-								}}
-							>
-								Layers Render Delay
-							</h1>
-							<div class="w-full flex gap-2">
-								<div class="w-48">
-									<NumberInput
-										bind:value={curScene.animation.layerRenderDelay}
-										max={SCENE_TRANSITION_DELAY}
-										label="Delay"
-									/>
-								</div>
+							<p class="modal-label" use:tooltip={{ content: 'Delay between each layer rendering', placement: 'top-start', offset: 15, delay: [200, 0] }}>
+								Layer render delay
+							</p>
+							<div class="w-48 mt-1">
+								<NumberInput bind:value={curScene.animation.layerRenderDelay} max={SCENE_TRANSITION_DELAY} label="ms" />
 							</div>
 						</div>
+
 						<div class="flex gap-4">
-							<div class="max-w-full">
-								<h1 class=" text-lg font-medium text-secondary-color">
-									Element Transition - In
-								</h1>
+							<div>
+								<p class="modal-label">Element in</p>
 								<div class="w-48">
-									<AnimationInput
-										bind:animation={curScene.animation.in}
-										isSceneElementAnimation={true}
-									/>
+									<AnimationInput bind:animation={curScene.animation.in} isSceneElementAnimation={true} />
 								</div>
 							</div>
-							<div class="max-w-full">
-								<h1 class=" text-lg font-medium text-secondary-color">
-									Element Transition - Out
-								</h1>
+							<div>
+								<p class="modal-label">Element out</p>
 								<div class="w-48">
-									<AnimationInput
-										bind:animation={curScene.animation.out}
-										isSceneElementAnimation={true}
-									/>
+									<AnimationInput bind:animation={curScene.animation.out} isSceneElementAnimation={true} />
 								</div>
 							</div>
 						</div>
 					</div>
 				{/key}
 			</div>
+
 		</div>
 	</div>
 </Modal>
+
+<style>
+	.modal-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		opacity: 0.45;
+		margin-bottom: 0.35rem;
+	}
+</style>

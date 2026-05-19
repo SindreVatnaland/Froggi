@@ -18,60 +18,54 @@
 	import { tooltip } from 'svooltip';
 	import BuyMeACoffee from './BuyMeACoffee.svelte';
 
-	function resetVisibilityTimer() {
-		if ($isElectron) {
-			isVisible = true;
-			return;
-		}
-		if ($isIframe) {
+	// In Electron: visibility is controlled by isOverlayPage alone — always on, no timer.
+	// In browser: start hidden, reveal on mouse/touch activity, auto-hide after idle.
+	let isVisible = $isMobile;
+	let visibilityTimer: ReturnType<typeof setTimeout>;
+
+	function startHideTimer() {
+		clearTimeout(visibilityTimer);
+		visibilityTimer = setTimeout(() => {
 			isVisible = false;
-			return;
-		}
-		isVisible = true;
-		clearInterval(visibilityTimer);
-		startVisibilityTimer();
+		}, $isMobile ? 5000 : 8000);
 	}
 
-	function startVisibilityTimer() {
-		visibilityTimer = setTimeout(
-			() => {
-				isVisible = false;
-			},
-			$isMobile ? 5000 : 10000,
-		);
+	function onActivity() {
+		if ($isElectron || $isIframe) return;
+		isVisible = true;
+		startHideTimer();
 	}
 
 	const openUrl = (url: string) => {
 		$electronEmitter.emit('OpenUrl', url);
 	};
 
-	let visibilityTimer: NodeJS.Timeout;
-	let isVisible = !$isOverlayPage && ($isElectron || $isMobile);
-
 	let isMobileOpen: boolean;
 	let width: number;
 	let height: number;
 
 	$: isVertical = width < height;
+
+	// Whether the nav should render at all
+	$: showNav = !$isOverlayPage && ($isElectron || isVisible);
 </script>
 
 <svelte:window
 	bind:innerWidth={width}
 	bind:innerHeight={height}
-	on:click={resetVisibilityTimer}
-	on:touchstart={resetVisibilityTimer}
-	on:touchmove={resetVisibilityTimer}
-	on:touchend={resetVisibilityTimer}
-	on:mousemove={resetVisibilityTimer}
+	on:click={onActivity}
+	on:touchstart={onActivity}
+	on:touchmove={onActivity}
+	on:touchend={onActivity}
+	on:mousemove={onActivity}
 />
 
-<div>
-	{#if isVisible}
-		{#if !isVertical}
+{#if showNav}
+	{#if !isVertical}
+		<!-- Left sidebar -->
+		{#if $isElectron}
 			<div
-				in:fly={{ x: -100, duration: 150 }}
-				out:fly={{ x: -100, duration: 400 }}
-				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
+				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
 			>
 				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
 					<BackButton />
@@ -108,11 +102,7 @@
 							}}
 						>
 							<NavButton click={() => openUrl('https://discord.gg/rX7aQmbrEa')}>
-								<img
-									class="object-cover"
-									src="/image/icons/discord.png"
-									alt="mobile"
-								/>
+								<img class="object-cover" src="/image/icons/discord.png" alt="discord" />
 							</NavButton>
 						</div>
 						<div
@@ -127,11 +117,7 @@
 							<NavButton
 								click={() => openUrl('https://github.com/SindreVatnaland/Froggi')}
 							>
-								<img
-									class="object-cover"
-									src="/image/icons/github.png"
-									alt="mobile"
-								/>
+								<img class="object-cover" src="/image/icons/github.png" alt="github" />
 							</NavButton>
 						</div>
 					</div>
@@ -140,16 +126,33 @@
 					<ElectronVersionButton />
 				</div>
 			</div>
-
+		{:else}
+			<!-- Browser: animate in/out -->
 			<div
-				in:fly={{ x: 100, duration: 150 }}
-				out:fly={{ x: 100, duration: 400 }}
-				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-primary-color bg-opacity-25 border-l-1 border-opacity-25 border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
+				in:fly={{ x: -100, duration: 150 }}
+				out:fly={{ x: -100, duration: 400 }}
+				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
+			>
+				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
+					<BackButton />
+				</div>
+				<div class="flex flex-col gap-2 justify-center flex-1">
+					<div class="h-12 w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl p-1">
+						<NavButton click={() => goto('/')}>
+							<img src="/image/button-icons/home.png" alt="home" />
+						</NavButton>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Right sidebar -->
+		{#if $isElectron}
+			<div
+				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-primary-color border-l border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
 				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
-					<div
-						class="h-100 w-12 bg-black bg-opacity-30 justify-start items-center rounded-2xl space-y-2 p-1"
-					/>
+					<div class="h-100 w-12 bg-black bg-opacity-30 justify-start items-center rounded-2xl space-y-2 p-1" />
 				</div>
 
 				<div class="flex-1 flex flex-col gap-2 justify-center">
@@ -200,32 +203,52 @@
 			</div>
 		{:else}
 			<div
-				in:fly={{ y: 100, duration: 150 }}
-				out:fly={{ y: 100, duration: 400 }}
-				class={`fixed grid justify-center w-screen h-16 m-0 background-primary-color bg-opacity-60 border-t-1 border-opacity-25 bottom-0 border-secondary-color z-50 p-1 background-primary-color`}
+				in:fly={{ x: 100, duration: 150 }}
+				out:fly={{ x: 100, duration: 400 }}
+				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-primary-color border-l border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
-				<div
-					class={`flex justify-evenly content-center items-center w-screen ${
-						$isMobile ? 'max-w-lg' : 'max-w-xl'
-					}`}
-				>
-					<NavButton click={() => goto('/')}>
-						<img src="/image/button-icons/home.png" alt="home" />
-					</NavButton>
-
-					<ConnectionStateButton
-						iconPath="/image/button-icons/obs.png"
-						connectionState={$obsConnection.state}
-						click={() => goto('/obs')}
-					/>
-
-					<NavButton click={() => goto('/settings')}>
-						<img src="/image/button-icons/settings.png" alt="settings" />
-					</NavButton>
+				<div class="flex-1 flex flex-col gap-2 justify-center">
+					<div class="w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl space-y-2 p-1">
+						<ConnectionStateButton
+							iconPath="/image/button-icons/obs.png"
+							connectionState={$obsConnection.state}
+							click={() => goto('/obs')}
+						/>
+						<NavButton click={() => goto('/settings')}>
+							<img src="/image/button-icons/settings.png" alt="settings" />
+						</NavButton>
+					</div>
 				</div>
 			</div>
 		{/if}
+	{:else}
+		<!-- Mobile / portrait: bottom bar -->
+		<div
+			in:fly={{ y: 100, duration: 150 }}
+			out:fly={{ y: 100, duration: 400 }}
+			class={`fixed grid justify-center w-screen h-16 m-0 background-primary-color bg-opacity-60 border-t border-secondary-color bottom-0 z-50 p-1 background-primary-color`}
+		>
+			<div
+				class={`flex justify-evenly content-center items-center w-screen ${
+					$isMobile ? 'max-w-lg' : 'max-w-xl'
+				}`}
+			>
+				<NavButton click={() => goto('/')}>
+					<img src="/image/button-icons/home.png" alt="home" />
+				</NavButton>
+
+				<ConnectionStateButton
+					iconPath="/image/button-icons/obs.png"
+					connectionState={$obsConnection.state}
+					click={() => goto('/obs')}
+				/>
+
+				<NavButton click={() => goto('/settings')}>
+					<img src="/image/button-icons/settings.png" alt="settings" />
+				</NavButton>
+			</div>
+		</div>
 	{/if}
-</div>
+{/if}
 
 <Mobile bind:open={isMobileOpen} />

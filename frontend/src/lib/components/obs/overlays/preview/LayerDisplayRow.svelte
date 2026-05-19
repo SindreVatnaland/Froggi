@@ -72,75 +72,58 @@
 		]}
 	>
 		<div
-			class={`w-full border-b-1 border-t-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between items-center background-primary-color bg-opacity-30 hover:bg-opacity-60`}
+			class={`w-full border-b-1 border-t-1 border-secondary-color gap-1 p-1 grid grid-flow-col grid-cols-6 justify-between items-center background-primary-color bg-opacity-30 hover:bg-opacity-60`}
 			style={`${isSelected && 'background-color: rgba(255, 255, 255, 0.50);'}`}
 		>
 			<div class="col-span-1 grid justify-center">
 				{#key layer}
 					<input
 						type="checkbox"
-						class="w-12 h-12"
+						class="w-4 h-4"
 						checked={layer.preview}
 						on:change={handleChecked}
 					/>
 				{/key}
 			</div>
 
-			<div
-				class="col-span-2 grid justify-center"
-				in:fly={{ duration: 750, delay: 100 * (layerIndex + 1), x: 75 }}
-			>
+			<div class="col-span-2 grid justify-center">
 				<button
 					class="w-full h-full transition"
 					on:click={() => changeEditLayer(layerIndex)}
 				>
-					<div class="h-16 aspect-video rounded-sm border-secondary">
+					<div class="h-10 aspect-video rounded-sm border-secondary">
 						<LayerPreview bind:layerId={layer.id} bind:overlayId={curOverlay.id} />
 					</div>
 				</button>
 			</div>
 			<button
-				class="w-full h-full col-span-1 grid justify-center text-lg font-bold text-secondary-color transition"
+				class="w-full h-full col-span-1 grid justify-center text-sm font-bold text-secondary-color transition"
 				on:click={() => changeEditLayer(layer.index)}
 			>
-				<div class="w-full h-full grid justify-center items-center text-[1.5em]">
+				<div class="w-full h-full grid justify-center items-center">
 					{layer.index + 1}
 				</div>
 			</button>
-			<div
-				class="w-full h-full col-span-1 grid justify-center text-lg font-bold text-secondary-color"
-			>
+			<div class="w-full h-full col-span-1 grid justify-center items-center gap-0.5">
 				<button
-					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
-					on:click={() => {
-						moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, -1);
-					}}
+					class="w-6 h-5 grid justify-center items-center hover:scale-[1.05]"
+					on:click={() => moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, -1)}
 				>
-					<img src="/image/button-icons/up.png" alt="up" class="dark:invert" />
+					<img src="/image/button-icons/up.png" alt="up" class="dark:invert w-3 h-3" />
 				</button>
 				<button
-					class="w-8 h-12 grid justify-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
-					on:click={async () => {
-						moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, 1);
-					}}
+					class="w-6 h-5 grid justify-center items-center hover:scale-[1.05]"
+					on:click={async () => moveLayer(curOverlay.id, $statsScene, scene.id, layerIndex, 1)}
 				>
-					<div class="w-full h-full grid justify-center items-center text-[0.5em]">
-						<img src="/image/button-icons/down.png" alt="down" class="dark:invert" />
-					</div>
+					<img src="/image/button-icons/down.png" alt="down" class="dark:invert w-3 h-3" />
 				</button>
 			</div>
-			<div
-				class="w-full h-full col-span-1 grid justify-center items-center text-lg font-bold text-secondary-color"
-			>
+			<div class="w-full h-full col-span-1 grid justify-center items-center">
 				<button
-					class="w-6 h-10 grid justify-center items-center text-lg font-bold text-secondary-color hover:scale-[1.05]"
+					class="w-5 h-6 grid justify-center items-center hover:scale-[1.05]"
 					on:click={async () => (deleteLayerModalOpen = true)}
 				>
-					<img
-						src="/image/button-icons/remove.png"
-						alt="remove"
-						style="filter: invert(0.5)"
-					/>
+					<img src="/image/button-icons/remove.png" alt="remove" style="filter: invert(0.5)" />
 				</button>
 			</div>
 		</div>

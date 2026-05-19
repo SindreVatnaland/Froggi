@@ -28,6 +28,7 @@ import { createBackgroundNotification, createErrorNotification } from './utils/n
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
+import { ElectronSettingsStore } from './services/store/storeSettings';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -281,6 +282,10 @@ try {
 			container.resolve(FileHandler);
 			container.resolve(FrontendLogger);
 			container.resolve(PacketCapture);
+
+			// Notify the frontend of any missing spectate configuration now that
+			// MessageHandler is ready and listening for Notification events.
+			container.resolve(ElectronSettingsStore).notifyMissingSpectateConfig();
 		});
 
 		mainWindow.on('close', (event) => {

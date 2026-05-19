@@ -38,7 +38,7 @@
 		</div>
 		<div>
 			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
 				on:click={() => newLayer(overlay.id, $statsScene, scene.id, selectedLayer.index)}
 			>
 				<TextFitMulti>New layer</TextFitMulti>
@@ -46,7 +46,7 @@
 		</div>
 		<div>
 			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
 				on:click={() =>
 					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, -1)}
 			>
@@ -55,7 +55,7 @@
 		</div>
 		<div>
 			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
 				on:click={() =>
 					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, 1)}
 			>
@@ -65,7 +65,7 @@
 		{#if scene?.layers?.length > 1}
 			<div transition:fly={{ duration: 250, y: -25 }}>
 				<button
-					class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border border-white rounded"
+					class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
 					on:click={() =>
 						deleteLayer(overlay.id, $statsScene, scene.id, selectedLayer.id)}
 				>

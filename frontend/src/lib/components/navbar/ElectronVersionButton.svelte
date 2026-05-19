@@ -35,6 +35,9 @@
 		}
 	};
 
+	const fmtVersion = (v: string | undefined) =>
+		!v || v === 'dev' ? 'dev' : `v${v}`;
+
 	const getContent = (autoUpdater: AutoUpdater) => {
 		switch (autoUpdater.status) {
 			case AutoUpdaterStatus.LookingForUpdate:
@@ -48,9 +51,9 @@
 			case AutoUpdaterStatus.Installing:
 				return 'Installing';
 			case AutoUpdaterStatus.UpToDate:
-				return `v${autoUpdater.version}`;
+				return fmtVersion(autoUpdater.version);
 			default:
-				return `v${autoUpdater.version}`;
+				return fmtVersion(autoUpdater.version);
 		}
 	};
 

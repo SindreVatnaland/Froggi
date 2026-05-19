@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { isElectron, urls } from '$lib/utils/store.svelte';
-	$: localUrl = `${$urls?.local}/obs/tutorial/new-overlay?page=2`;
+	$: localUrl = `${$urls?.local}${$page.url.pathname}?page=2`;
 </script>
 
 <h1 class="text-2xl font-semibold">Open tutorial in separate window</h1>
@@ -27,10 +28,3 @@
 	OBS indirectly. But for this tutorial, we will just use it to follow the tutorial in an external
 	window.
 </h2>
-
-<style>
-	h1,
-	h2 {
-		color: var(--secondary-color);
-	}
-</style>

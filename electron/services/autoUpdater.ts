@@ -25,7 +25,11 @@ export class AutoUpdater {
 	}
 
 	private async initListeners() {
-		if (this.dev) return;
+		if (this.dev) {
+			this.messageHandler.sendMessage('AutoUpdaterStatus', AutoUpdaterStatus.UpToDate);
+			this.messageHandler.sendMessage('AutoUpdaterVersion', 'dev');
+			return;
+		}
 		this.checkBetaOptIn();
 		autoUpdater.checkForUpdates();
 		autoUpdater.autoInstallOnAppQuit = true;

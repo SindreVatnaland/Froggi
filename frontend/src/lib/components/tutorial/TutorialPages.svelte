@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
 
@@ -31,50 +31,136 @@
 		if (e.key === 'ArrowLeft') handlePrevious();
 		if (e.key === 'ArrowRight') handleNext();
 	}
+
+	$: progress = scenes.length > 1 ? (pageIndex / (scenes.length - 1)) * 100 : 100;
+	$: currentTitle = scenes[pageIndex]?.title ?? '';
 </script>
 
 <svelte:window on:keydown={handleKeyPress} />
 
 <main
-	class="fixed h-screen w-screen bg-cover bg-center flex justify-center"
+	class="fixed h-screen w-screen background-primary-color text-secondary-color flex justify-center"
 	in:fade={{ delay: 50, duration: 150 }}
 	out:fade={{ duration: 300 }}
 >
-	<div class="w-full max-w-3xl h-full flex flex-col justify-center items-center p-8 gap-4">
-		<div>
-			<h1 class="text-secondary-color font-bold text-4xl">Tutorial</h1>
+	<div class="w-full max-w-3xl h-full flex flex-col p-6 gap-0">
+
+		<!-- Header -->
+		<div class="flex items-baseline justify-between mb-3">
+			<h1 class="font-bold text-3xl text-secondary-color">Tutorial</h1>
+			<span class="text-sm opacity-50 font-medium tabular-nums">
+				{pageIndex + 1} / {scenes.length}
+			</span>
 		</div>
+
+		<!-- Progress bar -->
+		<div class="progress-track mb-1">
+			<div class="progress-fill" style="width: {progress}%" />
+		</div>
+
+		<!-- Current page title -->
+		{#key pageIndex}
+			<p
+				class="text-xs uppercase tracking-widest opacity-50 font-semibold mb-4 mt-2"
+				in:fly={{ y: 8, duration: 200, delay: 100 }}
+			>
+				{currentTitle}
+			</p>
+		{/key}
+
+		<!-- Content area -->
 		<div
-			class="flex-1 flex flex-col justify-start items-start h-full w-full gap-4 overflow-auto border-t border-b border-secondary-color p-2"
+			class="flex-1 overflow-auto tutorial-content border-t border-secondary-color pt-4"
 			bind:this={scrollElement}
 		>
-			{#if scenes[pageIndex]}
-				<svelte:component this={scenes[pageIndex].component} />
-			{:else}
-				<p>PageIndex not found</p>
-			{/if}
+			{#key pageIndex}
+				<div in:fly={{ y: 16, duration: 200, delay: 80 }} out:fly={{ y: -16, duration: 150 }}>
+					{#if scenes[pageIndex]}
+						<svelte:component this={scenes[pageIndex].component} />
+					{:else}
+						<p class="opacity-50">Page not found.</p>
+					{/if}
+				</div>
+			{/key}
 		</div>
-		<div class="flex justify-between w-full">
+
+		<!-- Navigation -->
+		<div class="flex items-center justify-between pt-4 border-t border-secondary-color mt-4 gap-4">
 			<button
 				disabled={pageIndex === 0}
-				class="btn text-xl py-2 px-4 border-secondary rounded w-40 h-20 my-4 disabled:opacity-50"
+				class="btn text-sm h-10 px-6 border-secondary rounded disabled:opacity-30"
 				on:click={handlePrevious}
 			>
-				Previous
+				← Previous
 			</button>
+
+			<!-- Step dots -->
+			<div class="flex gap-1.5 flex-wrap justify-center flex-1">
+				{#each scenes as _, i}
+					<button
+						class="step-dot {i === pageIndex ? 'step-dot-active' : ''} {i < pageIndex ? 'step-dot-done' : ''}"
+						on:click={() => { pageIndex = i; scrollToTop(); }}
+						aria-label="Go to step {i + 1}"
+					/>
+				{/each}
+			</div>
+
 			<button
 				disabled={pageIndex === scenes.length - 1}
-				class="btn text-xl py-2 px-4 border-secondary rounded w-40 h-20 my-4 disabled:opacity-50"
+				class="btn text-sm h-10 px-6 border-secondary rounded disabled:opacity-30"
 				on:click={handleNext}
 			>
-				Next
+				Next →
 			</button>
 		</div>
 	</div>
 </main>
 
 <style>
-	h1 {
-		color: var(--secondary-color);
+	.progress-track {
+		width: 100%;
+		height: 3px;
+		background-color: var(--secondary-color);
+		opacity: 0.15;
+		border-radius: 2px;
+		overflow: hidden;
+		position: relative;
+	}
+
+	.progress-fill {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		background-color: var(--secondary-color);
+		opacity: 1;
+		border-radius: 2px;
+		transition: width 0.3s ease;
+	}
+
+	.step-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background-color: var(--secondary-color);
+		opacity: 0.2;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		transition: opacity 0.2s, transform 0.2s;
+		flex-shrink: 0;
+	}
+
+	.step-dot:hover {
+		opacity: 0.5;
+	}
+
+	.step-dot-done {
+		opacity: 0.4;
+	}
+
+	.step-dot-active {
+		opacity: 1;
+		transform: scale(1.4);
 	}
 </style>

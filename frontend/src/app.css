@@ -54,8 +54,6 @@ body {
 main {
 	padding: 0.5rem;
 	background-color: var(--primary-color);
-	padding-left: 4.5rem;
-	padding-right: 4.5rem;
 }
 
 .border-secondary {
@@ -173,4 +171,42 @@ button:active {
 
 img {
 	pointer-events: none;
+}
+
+/* Tutorial content typography */
+.tutorial-content h1 {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: var(--secondary-color);
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.tutorial-content h1:first-child {
+	margin-top: 0;
+}
+
+.tutorial-content h2 {
+	font-size: 0.9375rem;
+	font-weight: 400;
+	color: var(--secondary-color);
+	line-height: 1.6;
+	margin-top: 0.75rem;
+	margin-bottom: 0;
+}
+
+.tutorial-content img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 0.25rem;
+	margin-top: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+.tutorial-content b {
+	font-weight: 600;
+}
+
+.tutorial-content a button {
+	margin-top: 0.25rem;
 }

@@ -1,36 +1,78 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { fade } from 'svelte/transition';
+
+	const tutorials = [
+		{
+			title: 'Build an overlay',
+			description: 'Create HUD elements, scenes, layers, and animations from scratch.',
+			path: '/obs/tutorial/new-overlay',
+			icon: '🎨',
+		},
+		{
+			title: 'Integrate with OBS',
+			description: 'Embed overlays, set up WebSocket, and automate scene switching.',
+			path: '/obs/tutorial/integrate-obs',
+			icon: '🔌',
+		},
+		{
+			title: 'Remote control OBS',
+			description: 'Map controller button combos to trigger OBS commands.',
+			path: '/obs/tutorial/remote-obs',
+			icon: '🎮',
+		},
+	];
 </script>
 
 <main
-	class="fixed h-screen w-screen bg-cover bg-center text-secondary-color"
+	class="fixed h-screen w-screen background-primary-color text-secondary-color flex flex-col justify-center items-center p-8"
 	in:fade={{ delay: 50, duration: 150 }}
 	out:fade={{ duration: 300 }}
 >
-	<div class="w-full h-full flex flex-col justify-center items-center p-8 gap-8">
+	<div class="w-full max-w-lg flex flex-col gap-6">
 		<div>
-			<h1 class="font-bold text-4xl">Tutorial</h1>
+			<h1 class="font-bold text-3xl">Tutorials</h1>
+			<p class="text-sm opacity-50 mt-1">Choose a guide to get started.</p>
 		</div>
-		<div class="flex-1 flex flex-col justify-center items-center h-full w-full gap-4">
-			<button
-				class="btn text-xl py-2 px-4 border-secondary rounded w-40 h-20"
-				on:click={() => goto('/obs/tutorial/new-overlay')}
-			>
-				Build an overlay
-			</button>
-			<button
-				class="btn text-xl py-2 px-4 border-secondary rounded w-40 h-20"
-				on:click={() => goto('/obs/tutorial/integrate-obs')}
-			>
-				Integrate with OBS
-			</button>
-			<button
-				class="btn text-xl py-2 px-4 border-secondary rounded w-40 h-20"
-				on:click={() => goto('/obs/tutorial/remote-obs')}
-			>
-				Remote control OBS
-			</button>
+
+		<div class="flex flex-col gap-3">
+			{#each tutorials as tutorial}
+				<button
+					class="tutorial-card w-full text-left"
+					on:click={() => goto(tutorial.path)}
+				>
+					<span class="tutorial-card-icon">{tutorial.icon}</span>
+					<div class="flex flex-col min-w-0">
+						<span class="font-semibold text-base leading-tight">{tutorial.title}</span>
+						<span class="text-sm opacity-55 mt-0.5 leading-snug">{tutorial.description}</span>
+					</div>
+					<span class="ml-auto opacity-30 text-lg shrink-0">→</span>
+				</button>
+			{/each}
 		</div>
 	</div>
 </main>
+
+<style>
+	.tutorial-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.375rem;
+		background-color: var(--primary-color);
+		color: var(--secondary-color);
+		transition: opacity 0.15s, transform 0.15s;
+	}
+
+	.tutorial-card:hover {
+		transform: scale(1.01);
+	}
+
+	.tutorial-card-icon {
+		font-size: 1.5rem;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+</style>

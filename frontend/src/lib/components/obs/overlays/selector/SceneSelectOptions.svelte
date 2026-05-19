@@ -57,7 +57,7 @@
 					/>
 				</div>
 				<button
-					class={`w-32 btn text-md whitespace-nowrap h-10 px-2 xl:text-xl ${
+					class={`w-24 btn text-xs whitespace-nowrap h-7 px-2 ${
 						$statsScene === button.liveScene ? 'border-secondary' : 'border-accent'
 					}`}
 					on:click={() => {
@@ -75,7 +75,7 @@
 				</button>
 				{#if !overlay?.[button.liveScene].active}
 					<div
-						class="w-32"
+						class="w-24"
 						use:tooltip={{
 							content: `When <b>${
 								button.liveScene

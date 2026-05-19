@@ -13,11 +13,12 @@
 	let selectedLayerIndex: number = $currentOverlayEditor.layerIndex ?? 0;
 
 	$: curOverlay = $overlays[overlayId];
-	$: scene = curOverlay[$statsScene];
+	$: scene = curOverlay?.[$statsScene];
 	let layers: Layer[] = [];
 
-	const updateLayers = (overlay: Overlay, statsScene: LiveStatsScene) => {
-		layers = overlay[statsScene].layers;
+	const updateLayers = (overlay: Overlay | undefined, statsScene: LiveStatsScene) => {
+		if (!overlay) return;
+		layers = overlay[statsScene]?.layers ?? [];
 	};
 
 	$: updateLayers(curOverlay, $statsScene);
@@ -36,38 +37,22 @@
 {#if layers && curOverlay}
 	<div class="h-full flex flex-col">
 		<div
-			class="w-full h-12 border-b-1 border-secondary-color gap-2 p-2 grid grid-flow-col grid-cols-6 justify-between background-primary-color bg-opacity-50"
+			class="w-full h-7 border-b-1 border-secondary-color px-2 grid grid-flow-col grid-cols-6 justify-between items-center background-primary-color bg-opacity-50"
 		>
-			<div
-				class="col-span-1 grid justify-center"
-				in:fly|local={{ duration: 750, x: 150, delay: 100 }}
-			>
-				<h1 class="text-lg font-bold text-secondary-color text-shadow-md no-w">Visible</h1>
+			<div class="col-span-1 grid justify-center">
+				<span class="text-[10px] font-semibold text-secondary-color uppercase opacity-50">Vis</span>
 			</div>
-
-			<div
-				class="col-span-2 grid justify-center"
-				in:fly|local={{ duration: 750, x: 150, delay: 100 }}
-			>
-				<h1 class="text-lg font-bold text-secondary-color text-shadow-md no-w">Preview</h1>
+			<div class="col-span-2 grid justify-center">
+				<span class="text-[10px] font-semibold text-secondary-color uppercase opacity-50">Preview</span>
 			</div>
-			<div
-				class="col-span-1 grid justify-center"
-				in:fly|local={{ duration: 750, x: 150, delay: 100 }}
-			>
-				<h1 class="text-lg font-bold text-secondary-color text-shadow-md no-w">Layer</h1>
+			<div class="col-span-1 grid justify-center">
+				<span class="text-[10px] font-semibold text-secondary-color uppercase opacity-50">#</span>
 			</div>
-			<div
-				class="col-span-1 grid justify-center"
-				in:fly|local={{ duration: 750, x: 150, delay: 100 }}
-			>
-				<h1 class="text-lg font-bold text-secondary-color text-shadow-md no-w">Move</h1>
+			<div class="col-span-1 grid justify-center">
+				<span class="text-[10px] font-semibold text-secondary-color uppercase opacity-50">Move</span>
 			</div>
-			<div
-				class="col-span-1 grid justify-center"
-				in:fly|local={{ duration: 750, x: 150, delay: 100 }}
-			>
-				<h1 class="text-lg font-bold text-secondary-color text-shadow-md no-w">Del</h1>
+			<div class="col-span-1 grid justify-center">
+				<span class="text-[10px] font-semibold text-secondary-color uppercase opacity-50">Del</span>
 			</div>
 		</div>
 		<div class={`w-full max-h-full overflow-auto flex-1`} bind:this={scrollElement}>

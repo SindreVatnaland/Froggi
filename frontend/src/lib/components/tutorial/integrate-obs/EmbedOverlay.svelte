@@ -50,11 +50,11 @@
 </h2>
 
 <h2>
-	To see the overlay in action we can either test it out by playing a game, or we can run a
-	simulation in <b>Froggi</b>
+	To see the overlay in action you can either play a game while Froggi is connected to Dolphin, or
+	use the <b>Simulate</b> button at the bottom of the overlay editor. The Simulate button cycles
+	Froggi through each game state (Menu → In Game → Post Game → Post Set) using dummy data, so you
+	can verify your overlay looks correct without needing an active game.
 </h2>
-
-<h2>TODO: Explain simulation button</h2>
 
 <h2>When real data is presented, the embed in OBS should look something like this:</h2>
 

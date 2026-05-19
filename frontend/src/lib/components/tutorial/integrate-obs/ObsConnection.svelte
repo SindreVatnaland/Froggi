@@ -60,6 +60,6 @@
 />
 
 <h2>
-	Once this is done, OBS should be connected to Froggi and the border of th OBS icon on the right
+	Once this is done, OBS should be connected to Froggi and the border of the OBS icon on the right
 	navbar should turn green.
 </h2>

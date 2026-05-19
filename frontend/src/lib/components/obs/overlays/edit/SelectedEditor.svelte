@@ -7,7 +7,7 @@
 		overlays,
 		statsScene,
 	} from '$lib/utils/store.svelte';
-	import { fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import NumberInput from '$lib/components/input/NumberInput.svelte';
 	import { updateScene } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
@@ -170,106 +170,52 @@
 
 <svelte:window on:keydown={throttle(handleKeydown, 50)} />
 
-<h1
-	class="text-secondary-color text-lg font-medium text-secondary-color"
-	transition:fly={{ duration: 250, y: 50 }}
->
-	Selected element
-</h1>
-<div class="h-16">
-	{#if !isNil(selectedItem)}
-		<div class="w-full flex gap-2">
-			<div transition:fly={{ duration: 250, y: 30 }}>
-				<NumberInput
-					value={selectedItem[COL].x}
-					max={COL}
-					label={`X - ${COL}`}
-					on:change={() =>
-						updateSelectItem(
-							curOverlay,
-							$statsScene,
-							overlayEditor?.layerIndex,
-							selectedItem,
-						)}
-				/>
-			</div>
-			<div transition:fly={{ duration: 250, y: 30, delay: 30 }}>
-				<NumberInput
-					value={selectedItem[COL].y}
-					max={ROW}
-					label={`Y - ${ROW}`}
-					on:change={() =>
-						updateSelectItem(
-							curOverlay,
-							$statsScene,
-							overlayEditor?.layerIndex,
-							selectedItem,
-						)}
-				/>
-			</div>
-			<div transition:fly={{ duration: 250, y: 30, delay: 100 }}>
-				<NumberInput
-					value={selectedItem[COL].h}
-					max={ROW}
-					label={`H`}
-					on:change={() =>
-						updateSelectItem(
-							curOverlay,
-							$statsScene,
-							overlayEditor?.layerIndex,
-							selectedItem,
-						)}
-				/>
-			</div>
-			<div transition:fly={{ duration: 250, y: 30, delay: 150 }}>
-				<NumberInput
-					value={selectedItem[COL].w}
-					max={COL}
-					label={`W`}
-					on:change={() =>
-						updateSelectItem(
-							curOverlay,
-							$statsScene,
-							overlayEditor?.layerIndex,
-							selectedItem,
-						)}
-				/>
-			</div>
-			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 200 }}>
-				<button
-					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-					on:click={() => {
-						isElementModalOpen = true;
-					}}
-				>
-					Edit
-				</button>
-			</div>
-			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
-				<button
-					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-					on:click={() => copyElement(overlayEditor.itemId)}
-				>
-					Copy
-				</button>
-			</div>
-			<div class="w-24 flex items-end" transition:fly={{ duration: 250, y: 30, delay: 250 }}>
-				<button
-					class="w-full btn text-md whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-					on:click={() =>
-						deleteElement(
-							curOverlay,
-							$statsScene,
-							overlayEditor.layerIndex,
-							overlayEditor.itemId,
-						)}
-				>
-					Delete
-				</button>
-			</div>
+{#if !isNil(selectedItem)}
+	<div class="w-full flex gap-1 items-end py-1" transition:fade={{ duration: 120 }}>
+		<NumberInput
+			compact
+			value={selectedItem[COL].x}
+			max={COL}
+			label="X pos"
+			on:change={() => updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem)}
+		/>
+		<NumberInput
+			compact
+			value={selectedItem[COL].y}
+			max={ROW}
+			label="Y pos"
+			on:change={() => updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem)}
+		/>
+		<NumberInput
+			compact
+			value={selectedItem[COL].h}
+			max={ROW}
+			label="Height"
+			on:change={() => updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem)}
+		/>
+		<NumberInput
+			compact
+			value={selectedItem[COL].w}
+			max={COL}
+			label="Width"
+			on:change={() => updateSelectItem(curOverlay, $statsScene, overlayEditor?.layerIndex, selectedItem)}
+		/>
+		<div class="flex items-end gap-1 shrink-0">
+			<button
+				class="btn text-xs h-7 px-2 border-secondary rounded whitespace-nowrap"
+				on:click={() => { isElementModalOpen = true; }}
+			>Edit</button>
+			<button
+				class="btn text-xs h-7 px-2 border-secondary rounded whitespace-nowrap"
+				on:click={() => copyElement(overlayEditor.itemId)}
+			>Copy</button>
+			<button
+				class="btn text-xs h-7 px-2 border-secondary rounded whitespace-nowrap"
+				on:click={() => deleteElement(curOverlay, $statsScene, overlayEditor.layerIndex, overlayEditor.itemId)}
+			>Delete</button>
 		</div>
-		{#key isElementModalOpen}
-			<ElementModal bind:open={isElementModalOpen} isEdit={true} />
-		{/key}
-	{/if}
-</div>
+	</div>
+	{#key isElementModalOpen}
+		<ElementModal bind:open={isElementModalOpen} isEdit={true} />
+	{/key}
+{/if}

@@ -59,7 +59,7 @@
 	$: notifyDisabledScene(overlay?.id, $statsScene);
 
 	const availableClass =
-		'btn text-xl py-2 px-4 border border-white rounded w-36 h-20 my-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border-secondary';
+		'btn text-sm px-5 h-9 border rounded border-secondary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100';
 	const unavailableInfo =
 		'Cannot perform this action on a demo overlay, try duplicating it first.';
 
@@ -88,11 +88,9 @@
 
 <Modal bind:open on:close={() => (open = false)}>
 	<div
-		class="h-[80vh] w-[800px] max-w-[80vw] overflow-y-auto items-center flex flex-col gap-4 justify-between bg-cover bg-center border-secondary rounded-md p-2 background-primary-color text-secondary-color"
+		class="h-[80vh] w-[800px] max-w-[80vw] overflow-y-auto items-center flex flex-col gap-2 bg-cover bg-center border-secondary rounded-md p-3 background-primary-color text-secondary-color"
 	>
-		<div>
-			<h1 class="font-bold text-3xl">{overlay?.title}</h1>
-		</div>
+		<h1 class="font-semibold text-lg shrink-0">{overlay?.title}</h1>
 		<div
 			class={`max-h-full max-w-full w-full h-full flex flex-1 justify-center items-start`}
 			style={`aspect-ratio: ${overlay?.aspectRatio?.width}/${overlay?.aspectRatio?.height}`}
@@ -115,8 +113,8 @@
 				</div>
 			{/if}
 		</div>
-		<SceneSelect />
-		<div class="flex gap-2 max-w-full justify-center" style={`width: 100%;`}>
+		<div class="shrink-0"><SceneSelect /></div>
+		<div class="flex flex-wrap gap-2 max-w-full justify-center shrink-0">
 			{#if $isElectron}
 				<button
 					class={availableClass}

@@ -8,19 +8,17 @@
 	};
 </script>
 
-<div class="flex gap-2 items-end justify-end">
-	<div
-		class="w-full items-center"
-		data-tooltip="Set a temporary background image (Only visible if a background isn't already set)"
-	>
+<div class="flex gap-1.5 items-end">
+	<div class="flex-1 min-w-0">
 		<FileToBase64Input
+			compact
+			buttonLabel="Add Background"
 			bind:base64
-			label="Background"
 			acceptedExtensions={'.jpg, .jpeg, .png, .gif, .svg, .webp'}
 		/>
 	</div>
 	<button
-		class="btn border-secondary-color text-md whitespace-nowrap w-full h-10 px-2 xl:text-xl border border-white rounded"
+		class="btn text-xs whitespace-nowrap h-7 px-3 border-secondary rounded"
 		on:click={() => reset()}
 	>
 		Reset

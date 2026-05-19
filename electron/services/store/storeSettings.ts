@@ -8,7 +8,9 @@ import type { ElectronLog } from 'electron-log';
 import getAppDataPath from 'appdata-path';
 import fs from 'fs';
 import os from 'os';
+import path from 'path';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
+import { NotificationType } from '../../../frontend/src/lib/models/enum';
 import { BACKEND_PORT } from '../../../frontend/src/lib/models/const';
 import { getDolphinSettings } from './../../utils/dolphinSettings';
 import { DolphinSettings, DolphinSettingsMainline } from '../../../frontend/src/lib/models/types/dolphinTypes';
@@ -72,8 +74,16 @@ export class ElectronSettingsStore {
 	verifyAndFixDefaultSettings(settings: SlippiLauncherSettings): SlippiLauncherSettings {
 		const defaultPath = this.getSlippiDefaultPath();
 		if (settings?.rootSlpPath === undefined) settings.rootSlpPath = defaultPath;
-		if (settings?.spectateSlpPath === undefined)
-			settings.spectateSlpPath = `${settings.rootSlpPath}/Spectate`;
+
+		if (settings?.spectateSlpPath === undefined) {
+			const defaultSpectatePath = path.join(settings.rootSlpPath, 'Spectate');
+			if (fs.existsSync(defaultSpectatePath)) {
+				settings.spectateSlpPath = defaultSpectatePath;
+			}
+			// If the directory doesn't exist, leave spectateSlpPath undefined.
+			// A notification is emitted later so the user knows to configure it.
+		}
+
 		if (settings?.appDataPath === undefined)
 			settings.appDataPath = getAppDataPath('Slippi Launcher');
 		settings.useMonthlySubfolders = true;
@@ -82,6 +92,17 @@ export class ElectronSettingsStore {
 			JSON.stringify({ settings: settings }),
 		);
 		return settings;
+	}
+
+	notifyMissingSpectateConfig() {
+		const settings = this.getSlippiLauncherSettings();
+		if (!settings?.spectateSlpPath) {
+			this.clientEmitter.emit(
+				'Notification',
+				'Spectate folder not configured. To capture spectated games, open Slippi Launcher → Settings and enable spectating to set a valid folder path.',
+				NotificationType.Warning,
+			);
+		}
 	}
 
 	getDolphinSettings(): DolphinSettings | undefined {

@@ -118,10 +118,7 @@
 	};
 
 	let innerHeight: number;
-	$: rowHeight =
-		((borderHeight ?? 0) *
-			((curOverlay?.aspectRatio.width ?? 1) / (curOverlay?.aspectRatio.width ?? 1))) /
-		ROW;
+	$: rowHeight = (borderHeight ?? 0) / ROW;
 </script>
 
 <svelte:window bind:innerHeight on:error={handleError} />

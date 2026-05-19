@@ -14,6 +14,12 @@
 		localEmitter,
 		urls,
 	} from '$lib/utils/store.svelte';
+
+	// Navbar is 4rem (64px) wide on each side. Add matching padding to content so
+	// nothing renders under the fixed sidebars.
+	$: navPadding = $isElectron && !$isOverlayPage
+		? 'padding-left: 5rem; padding-right: 5rem;'
+		: '';
 	import GlobalModal from '$lib/components/global/GlobalModal.svelte';
 	import Toast from '$lib/components/notification/Toast.svelte';
 	import { initClient } from '$lib/utils/init.svelte';
@@ -69,7 +75,9 @@
 	<GlobalModal />
 	<Toast />
 	<BuyMeACoffeeEmbed />
-	<slot />
+	<div style={navPadding}>
+		<slot />
+	</div>
 {/if}
 
 <style>

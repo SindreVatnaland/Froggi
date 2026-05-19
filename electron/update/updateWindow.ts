@@ -1,43 +1,43 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, nativeTheme } from "electron";
 import { autoUpdater } from "electron-updater";
 import path from "path";
-import { createErrorNotification } from "./../utils/notifications";
 import { ElectronLog } from "electron-log";
 import Store from 'electron-store';
 
-export async function performUpdate(app: Electron.App, log: ElectronLog): Promise<void> {
-  console.log(app)
+export async function performUpdate(_app: Electron.App, log: ElectronLog): Promise<void> {
   const store = new Store();
   autoUpdater.disableDifferentialDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.autoDownload = false;
   autoUpdater.autoRunAppAfterInstall = true;
-  autoUpdater.allowPrerelease = Boolean(store.get('settings.froggi.betaOptIn'))
+  autoUpdater.allowPrerelease = Boolean(store.get('settings.froggi.betaOptIn'));
+
   const updateWindow = createUpdateWindow(log);
+
   try {
-    console.log('Performing update tasks...');
-    await waitForUpdateConfirmation(log);
+    await waitForUpdateConfirmation(log, updateWindow);
     autoUpdater.removeAllListeners();
-    updateWindow.close();
+    if (!updateWindow.isDestroyed()) updateWindow.close();
   } catch (error) {
-    log.error('Error during update tasks:', error);
-    const notification = createErrorNotification(updateWindow, "Update Error", error.message);
-    notification.show();
-    setTimeout(() => {
-      updateWindow.close()
-    }, 5000);
+    log.error('Error during update:', error);
+    if (!updateWindow.isDestroyed()) {
+      updateWindow.webContents.send('autoUpdater:status', 'error');
+      setTimeout(() => { if (!updateWindow.isDestroyed()) updateWindow.close(); }, 2500);
+    }
   }
 }
 
 function createUpdateWindow(log: ElectronLog): BrowserWindow {
   log.info('Creating update window');
+
+  const isDark = nativeTheme.shouldUseDarkColors;
   const updateWindow = new BrowserWindow({
     width: 400,
-    height: 300,
+    height: 260,
     resizable: false,
     frame: false,
-    alwaysOnTop: false,
-    backgroundColor: '#ffffff',
+    alwaysOnTop: true,
+    backgroundColor: isDark ? '#1a1a1a' : '#fbf0e5',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -45,23 +45,41 @@ function createUpdateWindow(log: ElectronLog): BrowserWindow {
     },
   });
 
-  // Load a simple HTML file for the update window
   const updateURL = `file://${path.join(__dirname, '..', 'update', 'update.html')}`;
   updateWindow.loadURL(updateURL);
 
-  autoUpdater.on('update-available', () => {
-    log.info('Update available');
-    updateWindow.webContents.send('autoUpdater:status', 'Update Available');
+  autoUpdater.on('checking-for-update', () => {
+    log.verbose('Checking for update');
+    updateWindow.webContents.send('autoUpdater:status', 'checking');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    log.info('Update available:', info.version);
+    // Embed version in the status string so renderer can display it without a new channel
+    updateWindow.webContents.send('autoUpdater:status', `available:${info.version}`);
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    log.info('No update available');
+    updateWindow.webContents.send('autoUpdater:status', 'up-to-date');
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    log.info("Download progress", progress.percent.toFixed(1));
-    updateWindow.webContents.send('autoUpdater:progress', progress.percent.toFixed(1));
+    const pct = progress.percent.toFixed(1);
+    log.verbose('Download progress:', pct);
+    updateWindow.webContents.send('autoUpdater:status', 'downloading');
+    updateWindow.webContents.send('autoUpdater:progress', pct);
   });
 
   autoUpdater.on('update-downloaded', () => {
-    log.info('Download complete');
-    autoUpdater.quitAndInstall();
+    log.info('Download complete, installing');
+    updateWindow.webContents.send('autoUpdater:status', 'installing');
+    setTimeout(() => autoUpdater.quitAndInstall(), 1500);
+  });
+
+  autoUpdater.on('error', (err) => {
+    log.error('Update error:', err);
+    updateWindow.webContents.send('autoUpdater:status', 'error');
   });
 
   autoUpdater.checkForUpdatesAndNotify();
@@ -69,34 +87,34 @@ function createUpdateWindow(log: ElectronLog): BrowserWindow {
   return updateWindow;
 }
 
+async function waitForUpdateConfirmation(log: ElectronLog, _updateWindow: BrowserWindow): Promise<void> {
+  return new Promise((resolve) => {
+    let resolved = false;
 
-async function waitForUpdateConfirmation(log: ElectronLog): Promise<boolean> {
-  return await new Promise((resolve) => {
-    const skipUpdateHandler = () => {
-      log.info('Skipped update...');
-      ipcMain.removeListener('autoUpdater:download', downloadUpdateHandler);
-      resolve(false);
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      ipcMain.removeListener('autoUpdater:skipUpdate', skipHandler);
+      ipcMain.removeListener('autoUpdater:download', downloadHandler);
+      resolve();
     };
 
-    const downloadUpdateHandler = () => {
-      log.info('Downloading update...');
+    const skipHandler = () => {
+      log.info('Update skipped');
+      done();
+    };
+
+    const downloadHandler = () => {
+      log.info('Downloading update');
       autoUpdater.downloadUpdate();
     };
 
-    ipcMain.on('autoUpdater:skipUpdate', skipUpdateHandler);
-    ipcMain.on('autoUpdater:download', downloadUpdateHandler);
+    ipcMain.on('autoUpdater:skipUpdate', skipHandler);
+    ipcMain.on('autoUpdater:download', downloadHandler);
 
-    autoUpdater.on('update-not-available', () => {
-      log.info('No updates available.');
-      resolve(false);
-    });
-
-    autoUpdater.on('update-cancelled', () => {
-      resolve(false);
-    });
-
-    autoUpdater.on('error', () => {
-      resolve(false);
-    });
+    // Auto-close after brief "up to date" display
+    autoUpdater.on('update-not-available', () => setTimeout(done, 1500));
+    autoUpdater.on('error', () => setTimeout(done, 2500));
+    autoUpdater.on('update-cancelled', () => done());
   });
 }

@@ -3,133 +3,210 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Update Available</title>
-		<script defer src="renderer.js"></script>
-		<script defer src="icon.png"></script>
+		<title>Froggi</title>
 		<style>
-			@font-face {
-				font-family: 'roboto-bold-italic';
-				src: url('./fonts/roboto-bold-italic.ttf') format('truetype');
-				font-weight: normal;
-				font-style: normal;
-			}
-
 			:root {
-				--primary-color: #fbf0e5;
-				--secondary-color: #450d21;
+				--bg: #fbf0e5;
+				--fg: #450d21;
+				--muted: rgba(69, 13, 33, 0.45);
+				--accent: #f9c22e;
+				--border: rgba(69, 13, 33, 0.15);
+				--hover-bg: rgba(69, 13, 33, 0.06);
 			}
 
 			@media (prefers-color-scheme: dark) {
 				:root {
-					--primary-color: #1a1a1a;
-					--secondary-color: #d1d1d1;
+					--bg: #1a1a1a;
+					--fg: #d1d1d1;
+					--muted: rgba(209, 209, 209, 0.45);
+					--accent: #516650;
+					--border: rgba(209, 209, 209, 0.12);
+					--hover-bg: rgba(209, 209, 209, 0.06);
 				}
 			}
 
-			main {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				height: 100vh;
-				width: 100vw;
+			* {
+				box-sizing: border-box;
 				margin: 0;
-				background-color: var(--primary-color);
-				color: var(--secondary-color);
-			}
-
-			header {
-				padding-top: 0.5rem;
-				width: 100vw;
-				-webkit-app-region: drag;
-				display: flex;
-				justify-content: center;
+				padding: 0;
+				user-select: none;
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 			}
 
 			body {
+				background: var(--bg);
+				color: var(--fg);
+				width: 100vw;
+				height: 100vh;
 				display: flex;
 				flex-direction: column;
-				flex: 1;
 				align-items: center;
-				height: 100vh;
-				margin: 0;
-				gap: 1rem;
-				justify-content: space-evenly;
-				padding: 0.5rem;
-				padding-top: 0;
+				justify-content: space-between;
+				padding: 14px 28px 20px;
+				overflow: hidden;
 			}
 
-			img {
-				flex: 1;
-				aspect-ratio: 1;
-				max-height: 70px;
-				pointer-events: none;
-				-webkit-user-drag: none;
-			}
-
-			.buttons {
+			.titlebar {
+				width: 100%;
 				display: flex;
-				flex-direction: row;
+				justify-content: flex-end;
+				align-items: center;
+				-webkit-app-region: drag;
+				height: 20px;
+				flex-shrink: 0;
+			}
+
+			.close-btn {
+				width: 18px;
+				height: 18px;
+				border-radius: 50%;
+				border: 1px solid var(--border);
+				background: transparent;
+				color: var(--muted);
+				font-size: 9px;
+				cursor: pointer;
+				display: flex;
 				align-items: center;
 				justify-content: center;
-				gap: 1rem;
+				-webkit-app-region: no-drag;
+				transition: background 0.15s, color 0.15s;
+				line-height: 1;
 			}
 
-			button {
-				background-color: var(--primary-color);
-				color: var(--secondary-color);
-				border: var(--secondary-color) 1px solid;
-				border-radius: 0.25rem;
-				padding: 1rem;
-				padding-top: 0.4rem;
-				padding-bottom: 0.4rem;
-				font-size: medium;
-				width: 6rem;
-				cursor: pointer;
-				transition:
-					background-color 0.2s ease,
-					color 0.2s ease;
+			.close-btn:hover {
+				background: rgba(244, 67, 54, 0.15);
+				color: #f44336;
+				border-color: rgba(244, 67, 54, 0.3);
 			}
 
-			button:hover {
-				background-color: var(--secondary-color);
-				color: var(--primary-color);
-			}
-
-			button:active {
-				transform: scale(0.95);
-			}
-
-			button:disabled {
-				opacity: 0.5;
-				color: #1a1a1a;
-				cursor: not-allowed;
-			}
-
-			progress {
-				-webkit-appearance: none;
-				appearance: none;
+			.main {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 6px;
+				flex: 1;
+				justify-content: center;
 				width: 100%;
-				height: 100%;
 			}
 
-			* {
-				font-family: 'MyCustomFont', sans-serif;
-				user-select: none;
+			.logo {
+				width: 52px;
+				height: 52px;
+				object-fit: contain;
+				pointer-events: none;
+				-webkit-user-drag: none;
+				margin-bottom: 4px;
+			}
+
+			.app-name {
+				font-size: 17px;
+				font-weight: 700;
+				letter-spacing: -0.2px;
+			}
+
+			.status {
+				font-size: 12px;
+				color: var(--muted);
+				text-align: center;
+				min-height: 16px;
+				transition: opacity 0.25s;
+			}
+
+			.progress-track {
+				width: 100%;
+				height: 3px;
+				background: var(--border);
+				border-radius: 2px;
+				overflow: hidden;
+				opacity: 0;
+				transition: opacity 0.3s;
+				margin-top: 6px;
+			}
+
+			.progress-track.visible {
+				opacity: 1;
+			}
+
+			.progress-fill {
+				height: 100%;
+				background: var(--accent);
+				border-radius: 2px;
+				width: 0%;
+				transition: width 0.4s ease;
+			}
+
+			.progress-label {
+				font-size: 11px;
+				color: var(--muted);
+				min-height: 14px;
+				margin-top: 2px;
+			}
+
+			.actions {
+				display: flex;
+				gap: 8px;
+				width: 100%;
+				justify-content: center;
+			}
+
+			button.action {
+				flex: 1;
+				max-width: 120px;
+				padding: 8px 0;
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				background: transparent;
+				color: var(--fg);
+				font-size: 12px;
+				font-weight: 500;
+				cursor: pointer;
+				transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+			}
+
+			button.action:hover:not(:disabled) {
+				background: var(--fg);
+				color: var(--bg);
+				border-color: var(--fg);
+			}
+
+			button.action:active:not(:disabled) {
+				transform: scale(0.97);
+			}
+
+			button.action:disabled {
+				opacity: 0.3;
+				cursor: default;
+				pointer-events: none;
+			}
+
+			button.action.primary {
+				background: var(--fg);
+				color: var(--bg);
+				border-color: var(--fg);
+			}
+
+			button.action.primary:hover:not(:disabled) {
+				opacity: 0.8;
 			}
 		</style>
 	</head>
-	<main>
-		<header>
-			<h1>Froggi</h1>
-		</header>
-		<body>
-			<img id="icon" src="icon.png" alt="Froggi Icon" />
-			<p id="status-message">Checking for updates...</p>
-			<p id="progress-text"></p>
-			<div class="buttons">
-				<button id="skip-update">Skip</button>
-				<button id="download-updates" disabled>Update</button>
+	<body>
+		<div class="titlebar">
+			<button class="close-btn" id="close-btn" title="Skip">✕</button>
+		</div>
+		<div class="main">
+			<img class="logo" id="icon" src="icon.png" alt="Froggi" />
+			<span class="app-name">Froggi</span>
+			<span class="status" id="status-message">Checking for updates…</span>
+			<div class="progress-track" id="progress-track">
+				<div class="progress-fill" id="progress-fill"></div>
 			</div>
-		</body>
-	</main>
+			<span class="progress-label" id="progress-label"></span>
+		</div>
+		<div class="actions">
+			<button class="action" id="skip-update">Skip</button>
+			<button class="action primary" id="download-updates" disabled>Update</button>
+		</div>
+		<script defer src="renderer.js"></script>
+	</body>
 </html>

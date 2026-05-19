@@ -41,7 +41,7 @@
 	];
 </script>
 
-<div class="flex flex-wrap gap-2 w-full">
+<div class="flex flex-wrap gap-1.5">
 	{#each buttons ?? [] as button}
 		<div
 			class="flex gap-2 justify-start items-center"
@@ -54,7 +54,7 @@
 			}}
 		>
 			<button
-				class={`btn text-md whitespace-nowrap h-10 p-2 xl:text-xl rounded-sm border ${
+				class={`btn text-xs whitespace-nowrap h-7 px-2 rounded-sm border ${
 					$statsScene === button.liveScene
 						? 'border-secondary-color'
 						: 'border-accent-color'
