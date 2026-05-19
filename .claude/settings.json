@@ -61,7 +61,11 @@
       "Bash(grep -n 'urls\\\\b\\\\|$urls\\\\|isElectron\\\\|isBrowser\\\\|clientBase\\\\|local\\\\b\\\\|external\\\\b' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/lib/utils/fetchSubscriptions.svelte)",
       "Bash(grep -n 'clientBase\\\\|$urls\\\\|external\\\\b\\\\|local\\\\b' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/obs/dashboard/+page.svelte)",
       "Bash(npm ls *)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); pkg=d.get\\('packages',{}\\).get\\('node_modules/call-bind-apply-helpers',{}\\); print\\('version:', pkg.get\\('version'\\)\\); print\\('deps:', pkg.get\\('dependencies',{}\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); pkg=d.get\\('packages',{}\\).get\\('node_modules/call-bind-apply-helpers',{}\\); print\\('version:', pkg.get\\('version'\\)\\); print\\('deps:', pkg.get\\('dependencies',{}\\)\\)\")",
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status --short)",
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi ls-files --error-unmatch frontend/package-lock.json)",
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status frontend/package-lock.json)",
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status frontend/package-lock.json --short)"
     ]
   }
 }
