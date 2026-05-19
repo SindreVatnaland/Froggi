@@ -77,8 +77,20 @@ All Electron services use tsyringe `@singleton()` + `@inject()`. Services are re
 | Port | Purpose |
 |---|---|
 | 5173 | Vite dev server |
-| 3100 | WebSocket (external clients) |
-| 3200 | Express HTTP (production static serve + public assets) |
+| 3100 | WebSocket (external clients — OBS browser sources, mobile) |
+| 3200 | Express HTTP + WS upgrade (production static serve, Tailscale/remote clients) |
+
+### Remote access (Tailscale / ngrok)
+
+Remote clients connect via WS upgrade on port 3200 (not port 3100). Tailscale Funnel always exposes `BACKEND_PORT` (3200).
+
+- **Tailscale** (recommended): `electron/services/messageHandler.ts` detects status via `tailscale status --json` (`BackendState` field) and `tailscale serve status --json` (`AllowFunnel` field). Toggle in Settings → Remote Access. After enabling funnel, the URL appears in "Detected tunnel".
+- **ngrok**: run `ngrok http 3200`, Froggi auto-detects the public URL from the ngrok local API at `localhost:4040`. Hit ↻ in Settings to refresh.
+- Dev mode: Express at 3200 proxies page requests to Vite at 5173, so the same port serves both UI and WS — funnel always points to 3200.
+
+### Pending work (TODO)
+
+- **Landing page**: Static GitHub Pages site (`docs/` or `gh-pages` branch) — download link with OS auto-detection, link to repo, BuyMeACoffee link. Reference: project memory `project_stage_striking.md`.
 
 ### Frontend styling conventions
 

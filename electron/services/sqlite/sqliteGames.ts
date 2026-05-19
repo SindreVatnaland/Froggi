@@ -9,7 +9,7 @@ import { MessageHandler } from "../../services/messageHandler";
 
 @singleton()
 export class SqliteGame {
-  private gameStatsRepo: Repository<GameStatsEntity>;
+  private gameStatsRepo!: Repository<GameStatsEntity>;
   constructor(
     @inject('ElectronLog') private log: ElectronLog,
     @inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
@@ -65,7 +65,7 @@ export class SqliteGame {
     try {
       const query = { settings: { matchInfo: { matchId, mode } } } as FindOptionsWhere<GameStatsEntity>;
 
-      const games = await this.gameStatsRepo.find({ where: query });
+      const games = await this.gameStatsRepo.find({ where: query, order: { timestamp: 'ASC' } });
       return games || [];
     } catch (error) {
       this.log.error("Error getting games by id:", error);

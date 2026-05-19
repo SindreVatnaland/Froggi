@@ -45,7 +45,7 @@ jobs:
                   MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
             - name: install dependencies
-              run: npm run install:all
+              run: npm ci --legacy-peer-deps && npm ci --legacy-peer-deps --prefix ./frontend
 
             - name: Test
               run: npm run test
