@@ -23,8 +23,7 @@
 			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDair}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDair}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.dair, playerIndex].some(isNil)
 			? attackCount?.dair
@@ -32,8 +31,7 @@
 			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDash}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDash}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.dash, playerIndex].some(isNil)
 			? attackCount?.dash
@@ -41,8 +39,7 @@
 			? `${28 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDsmash}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDsmash}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.dsmash, playerIndex].some(isNil)
 			? attackCount?.dsmash
@@ -50,8 +47,7 @@
 			? `${8 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDtilt}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountDtilt}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.dtilt, playerIndex].some(isNil)
 			? attackCount?.dtilt
@@ -59,8 +55,7 @@
 			? `${14 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFair}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFair}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.fair, playerIndex].some(isNil)
 			? attackCount?.fair
@@ -68,8 +63,7 @@
 			? `${7 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFsmash}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFsmash}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.fsmash, playerIndex].some(isNil)
 			? attackCount?.fsmash
@@ -77,8 +71,7 @@
 			? `${13 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFtilt}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountFtilt}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.ftilt, playerIndex].some(isNil)
 			? attackCount?.ftilt
@@ -86,8 +79,7 @@
 			? `${13 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.jab1, playerIndex].some(isNil)
 			? attackCount?.jab1
@@ -95,8 +87,7 @@
 			? `${11 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab2}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab2}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.jab2, playerIndex].some(isNil)
 			? attackCount?.jab2
@@ -104,8 +95,7 @@
 			? `${11 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab3}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJab3}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.jab3, playerIndex].some(isNil)
 			? attackCount?.jab3
@@ -113,8 +103,7 @@
 			? `${10 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJabMulti}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountJabMulti}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.jabm, playerIndex].some(isNil)
 			? attackCount?.jabm
@@ -122,8 +111,7 @@
 			? `${2 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountNair}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountNair}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.nair, playerIndex].some(isNil)
 			? attackCount?.nair
@@ -131,8 +119,7 @@
 			? `${22 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUair}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUair}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.uair, playerIndex].some(isNil)
 			? attackCount?.uair
@@ -140,8 +127,7 @@
 			? `${16 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUsmash}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUsmash}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.usmash, playerIndex].some(isNil)
 			? attackCount?.usmash
@@ -149,8 +135,7 @@
 			? `${5 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUtilt}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer2AttackCountUtilt}
 	<TextElement {style} {dataItem}>
 		{![attackCount?.utilt, playerIndex].some(isNil)
 			? attackCount?.utilt

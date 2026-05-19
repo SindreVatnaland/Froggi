@@ -18,60 +18,42 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `GHIJ#456` : player?.rank?.current?.connectCode ?? ''}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankIcon}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankIcon}
 	<PlayerRankIcon
 		{dataItem}
 		{style}
 		rank={player?.rank?.current?.rank?.toUpperCase()}
 		preview={defaultPreview}
 	/>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankText}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2RankText}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `SILVER 1` : player?.rank?.current?.rank ?? 'UNRANKED'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Rating}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Rating}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `1100.0` : player?.rank?.current?.rating.toFixed(1) ?? '-'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Continent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Continent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `N. America` : player?.rank?.current?.continent ?? 'N/A'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2ContinentInitials}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2ContinentInitials}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `NA` : player?.rank?.current?.continentInitials ?? 'N/A'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2DailyGlobalPlacement}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2DailyGlobalPlacement}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `223` : player?.rank?.current?.dailyGlobalPlacement ?? 'N/A'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2DailyRegionalPlacement}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2DailyRegionalPlacement}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `107` : player?.rank?.current?.dailyRegionalPlacement ?? 'N/A'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Wins}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Wins}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `30` : player?.rank?.current?.wins ?? 0}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2WinsPercent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2WinsPercent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `90%`
@@ -79,14 +61,11 @@
 			? `${player?.rank?.current?.winsPercent}%`
 			: '100%'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Losses}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Losses}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `3` : player?.rank?.current?.losses ?? 0}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2LossesPercent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2LossesPercent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `10.0%`
@@ -94,14 +73,11 @@
 			? `${player?.rank?.current?.lossesPercent}%`
 			: '0%'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `Marth` : player?.rank?.current?.characters.at(0)?.characterName ?? ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1Percent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1Percent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `82.0%`
@@ -109,8 +85,7 @@
 			? `${player?.rank?.current?.characters.at(0)?.gameCountPercent}%`
 			: ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1Icon}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character1Icon}
 	<RankedCharacterIcon
 		{dataItem}
 		{style}
@@ -119,13 +94,11 @@
 		characterNumber={0}
 		defaultPreviewId={Number(CHARACTERS['marth'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `Samus` : player?.rank?.current?.characters.at(1)?.characterName ?? ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2Percent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2Percent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `13.8%`
@@ -133,8 +106,7 @@
 			? `${player?.rank?.current?.characters.at(1)?.gameCountPercent}%`
 			: ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2Icon}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character2Icon}
 	<RankedCharacterIcon
 		{dataItem}
 		{style}
@@ -143,13 +115,11 @@
 		characterNumber={1}
 		defaultPreviewId={Number(CHARACTERS['samus'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `Bowser` : player?.rank?.current?.characters.at(2)?.characterName ?? ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3Percent}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3Percent}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `4.2%`
@@ -157,8 +127,7 @@
 			? `${player?.rank?.current?.characters.at(2)?.gameCountPercent}%`
 			: ''}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3Icon}
+{:else if dataItem?.elementId === CustomElement.SlippiRankPlayer2Character3Icon}
 	<RankedCharacterIcon
 		{dataItem}
 		{style}

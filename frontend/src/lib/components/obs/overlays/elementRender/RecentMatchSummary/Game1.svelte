@@ -30,18 +30,15 @@
 		stageId={game?.settings?.stageId}
 		fallbackStageId={Stage.BATTLEFIELD}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player1Score}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player1Score}
 	<TextElement {style} {dataItem}>
 		{game?.score.at(0) ? game.score[0] : defaultPreview ? `1` : '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player2Score}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player2Score}
 	<TextElement {style} {dataItem}>
 		{game?.score.at(1) ? game.score[1] : defaultPreview ? `0` : '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterIcon}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterIcon}
 	<CharacterIcon
 		{style}
 		{dataItem}
@@ -49,8 +46,7 @@
 		{defaultPreview}
 		defaultPreviewId={Character.Ganondorf}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterIcon}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterIcon}
 	<CharacterIcon
 		{style}
 		{dataItem}
@@ -58,8 +54,7 @@
 		{defaultPreview}
 		defaultPreviewId={Character.Falcon}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterRenderLeft}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -68,8 +63,7 @@
 		defaultPreviewId={Character.Ganondorf}
 		direction="left"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player1CharacterRenderRight}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -78,8 +72,7 @@
 		defaultPreviewId={Character.Ganondorf}
 		direction="right"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterRenderLeft}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -88,8 +81,7 @@
 		defaultPreviewId={Character.Falcon}
 		direction="left"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player2CharacterRenderRight}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -98,8 +90,7 @@
 		defaultPreviewId={Character.Falcon}
 		direction="right"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player1StocksRemaining}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
 			? game?.lastFrame?.players?.[player1?.playerIndex ?? 0]?.post.stocksRemaining
@@ -107,8 +98,7 @@
 			? `2`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGame1Player2StocksRemaining}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGame1Player2StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
 			? game?.lastFrame?.players?.[player2?.playerIndex ?? 1]?.post.stocksRemaining

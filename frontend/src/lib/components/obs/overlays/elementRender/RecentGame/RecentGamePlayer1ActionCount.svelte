@@ -23,8 +23,7 @@
 			? `${52 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountDashDance}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountDashDance}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.dashDanceCount, playerIndex].some(isNil)
 			? actionCounts?.dashDanceCount
@@ -32,8 +31,7 @@
 			? `${137 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLedgeGrab}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLedgeGrab}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.ledgegrabCount, playerIndex].some(isNil)
 			? actionCounts?.ledgegrabCount
@@ -41,8 +39,7 @@
 			? `${19 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountRoll}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountRoll}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.rollCount, playerIndex].some(isNil)
 			? actionCounts?.rollCount
@@ -50,8 +47,7 @@
 			? `${13 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountSpotDodge}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountSpotDodge}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.spotDodgeCount, playerIndex].some(isNil)
 			? actionCounts?.spotDodgeCount
@@ -59,8 +55,7 @@
 			? `${18 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountWaveDash}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountWaveDash}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.wavedashCount, playerIndex].some(isNil)
 			? actionCounts?.wavedashCount
@@ -68,8 +63,7 @@
 			? `${63 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountWaveLand}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountWaveLand}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.wavelandCount, playerIndex].some(isNil)
 			? actionCounts?.wavelandCount
@@ -77,8 +71,7 @@
 			? `${37 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabTotal}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabTotal}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.grabCount, playerIndex].some(isNil)
 			? (actionCounts?.grabCount.success ?? 0) + (actionCounts?.grabCount.fail ?? 0)
@@ -86,8 +79,7 @@
 			? `${14 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabSuccess}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabSuccess}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.grabCount.success, playerIndex].some(isNil)
 			? actionCounts?.grabCount.success
@@ -95,8 +87,7 @@
 			? `${9 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabSuccessPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabSuccessPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.grabCount, playerIndex].some(isNil)
 			? Number(
@@ -110,8 +101,7 @@
 			? `${64.2 + 1}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabFail}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabFail}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.grabCount.fail, playerIndex].some(isNil)
 			? actionCounts?.grabCount.fail
@@ -119,8 +109,7 @@
 			? `${5 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabFailPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGrabFailPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.grabCount, playerIndex].some(isNil)
 			? Number(
@@ -134,8 +123,7 @@
 			? `${37.8 - playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechTotal}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechTotal}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? (actionCounts?.groundTechCount.neutral ?? 0) +
@@ -146,8 +134,7 @@
 			? `${23 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechSuccess}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechSuccess}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? (actionCounts?.groundTechCount.neutral ?? 0) +
@@ -157,8 +144,7 @@
 			? `${22 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechSuccessPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechSuccessPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? Number(
@@ -176,8 +162,7 @@
 			? `${95.6 + playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechIn}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechIn}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? actionCounts?.groundTechCount.in
@@ -185,8 +170,7 @@
 			? `${8 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechAway}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechAway}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? actionCounts?.groundTechCount.away
@@ -194,8 +178,7 @@
 			? `${11 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechNeutral}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechNeutral}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? actionCounts?.groundTechCount.neutral
@@ -203,8 +186,7 @@
 			? `${3 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechFail}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechFail}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? actionCounts?.groundTechCount.fail
@@ -212,8 +194,7 @@
 			? `${1 - playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechFailPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountGroundTechFailPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.groundTechCount, playerIndex].some(isNil)
 			? Number(
@@ -229,8 +210,7 @@
 			? `${4.4 - playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelTotal}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelTotal}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.lCancelCount, playerIndex].some(isNil)
 			? (actionCounts?.lCancelCount.success ?? 0) + (actionCounts?.lCancelCount.fail ?? 0)
@@ -238,8 +218,7 @@
 			? `${54 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelSuccess}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelSuccess}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.lCancelCount.success, playerIndex].some(isNil)
 			? actionCounts?.lCancelCount.success
@@ -247,8 +226,7 @@
 			? `${42 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelSuccessPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelSuccessPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.lCancelCount, playerIndex].some(isNil)
 			? Number(
@@ -262,8 +240,7 @@
 			? `${77.8 + playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelFail}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelFail}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.lCancelCount.fail, playerIndex].some(isNil)
 			? actionCounts?.lCancelCount.fail
@@ -271,8 +248,7 @@
 			? `${12 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelFailPercent}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountLCancelFailPercent}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.lCancelCount, playerIndex].some(isNil)
 			? Number(
@@ -286,8 +262,7 @@
 			? `${22.2 + playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowTotal}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowTotal}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.throwCount, playerIndex].some(isNil)
 			? (actionCounts?.throwCount.up ?? 0) +
@@ -298,8 +273,7 @@
 			? `${17 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowUp}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowUp}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.throwCount, playerIndex].some(isNil)
 			? actionCounts?.throwCount.up
@@ -307,8 +281,7 @@
 			? `${8 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowDown}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowDown}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.throwCount, playerIndex].some(isNil)
 			? actionCounts?.throwCount.down
@@ -316,8 +289,7 @@
 			? `${2 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowBack}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowBack}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.throwCount, playerIndex].some(isNil)
 			? actionCounts?.throwCount.back
@@ -325,8 +297,7 @@
 			? `${3 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowForward}
+{:else if dataItem?.elementId === CustomElement.PostGamePlayer1ActionCountThrowForward}
 	<TextElement {style} {dataItem}>
 		{![actionCounts?.throwCount, playerIndex].some(isNil)
 			? actionCounts?.throwCount.forward

@@ -18,16 +18,14 @@
 	<TextElement {style} {dataItem}>
 		{dataItem?.data.string}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CustomBox}
+{:else if dataItem?.elementId === CustomElement.CustomBox}
 	<div
 		class={`w-full h-full ${style.classValue}`}
 		style={`${style.cssValue}; ${
 			dataItem?.data.advancedStyling ? dataItem?.data.css.customBox : ''
 		}; `}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CustomImage}
+{:else if dataItem?.elementId === CustomElement.CustomImage}
 	<div
 		class={`w-full h-full ${style.classValue}`}
 		style={`${style.cssValue}; ${
@@ -44,8 +42,7 @@
 			alt="custom"
 		/>
 	</div>
-{/if}
-{#if dataItem?.elementId === CustomElement.CustomBoxIframe}
+{:else if dataItem?.elementId === CustomElement.CustomBoxIframe}
 	<NonInteractiveIFrame
 		title={'Embed'}
 		style={style.cssValue}

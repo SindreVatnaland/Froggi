@@ -41,7 +41,17 @@
       "Bash(node -e \"const p = require\\('./frontend/package.json'\\); console.log\\('type:', p.type, 'name:', p.name\\)\")",
       "Bash(perl -0777 -i -pe 's/offscreen: \\\\{\\\\n\\\\t+useSharedTexture: true,\\\\n\\\\t+\\\\},/offscreen: \\\\{ useSharedTexture: true \\\\} as boolean,/g' /Users/sindrevatnaland/VSCode/Froggi/electron/services/injectOverlay.ts)",
       "Bash(node -e \"const {version} = require\\('./node_modules/typescript/package.json'\\); console.log\\('project ts:', version\\)\")",
-      "Bash(npx svelte-check *)"
+      "Bash(npx svelte-check *)",
+      "Bash(sort -t= -k2 -n)",
+      "Bash(awk -F'= ' '{print $2, $0}')",
+      "Bash(awk -F'= ' '{print $2}')",
+      "Bash(awk -F'= ' '{print $2, $1}')",
+      "Bash(awk '{print $1}')",
+      "Bash(awk -F'= ' '{print $2 \"\\\\t\" $1}')",
+      "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2 \"\\\\t\" $1}')",
+      "Bash(awk 'NR==1 || $1 != prev+1 {if\\(NR>1\\) print \"\"; printf \"--- GAP at \" $1 \" ---\\\\n\"} {prev=$1; print}')",
+      "Bash(awk 'BEGIN{prev=-1} { *)",
+      "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2}')"
     ]
   }
 }

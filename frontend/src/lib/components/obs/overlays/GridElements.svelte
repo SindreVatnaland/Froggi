@@ -24,6 +24,16 @@
 	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
 	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
+	import {
+		CUSTOM_ELEMENTS,
+		INGAME_ELEMENTS,
+		MATCH_ELEMENTS,
+		RECENTGAME_ELEMENTS,
+		RECENTMATCH_ELEMENTS,
+		RECENTMATCHSUMMARY_ELEMENTS,
+		SESSION_ELEMENTS,
+		SLIPPIRANK_ELEMENTS,
+	} from './elementCategories';
 
 	export let dataItem: GridContentItem;
 	export let edit: boolean = false;
@@ -106,7 +116,7 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <div
-	class="w-full h-full hide-siblings"
+	class="w-full h-full"
 	style={`${`font-family: ${fontFamily};
 	`}; ${style.textStroke};
 		${style.transform};
@@ -115,69 +125,63 @@
 >
 	{#if div && shouldPreview}
 		<div class="w-full h-full">
-			<Custom {dataItem} {style} />
-
-			<InGame
-				{dataItem}
-				{defaultPreview}
-				{style}
-				gameFrame={$gameFrame}
-				gameSettings={$gameSettings}
-				currentPlayer={$currentPlayer}
-				currentPlayers={$currentPlayers}
-			/>
-
-			<Match
-				{dataItem}
-				{defaultPreview}
-				{style}
-				gameScore={$gameScore}
-				gameSettings={$gameSettings}
-				currentPlayers={$currentPlayers}
-			/>
-
-			<RecentGame
-				{dataItem}
-				{defaultPreview}
-				{style}
-				currentPlayer={$currentPlayer}
-				postGame={$postGame}
-			/>
-
-			<RecentMatch
-				{dataItem}
-				{defaultPreview}
-				{style}
-				matchStats={$currentMatch}
-				currentPlayer={$currentPlayer}
-			/>
-
-			<RecentMatchSummary
-				{dataItem}
-				{defaultPreview}
-				{style}
-				recentGames={$recentGames}
-				currentPlayers={$currentPlayers}
-			/>
-
-			<SlippiRank
-				{dataItem}
-				{defaultPreview}
-				{style}
-				currentPlayer={$currentPlayer}
-				currentPlayers={$currentPlayers}
-			/>
-
-			<Session {dataItem} {defaultPreview} {style} />
-
-			<!-- Post Game Stats -->
-			<!-- Post Set Stats -->
+			{#if CUSTOM_ELEMENTS.has(dataItem.elementId)}
+				<Custom {dataItem} {style} />
+			{:else if INGAME_ELEMENTS.has(dataItem.elementId)}
+				<InGame
+					{dataItem}
+					{defaultPreview}
+					{style}
+					gameFrame={$gameFrame}
+					gameSettings={$gameSettings}
+					currentPlayer={$currentPlayer}
+					currentPlayers={$currentPlayers}
+				/>
+			{:else if MATCH_ELEMENTS.has(dataItem.elementId)}
+				<Match
+					{dataItem}
+					{defaultPreview}
+					{style}
+					gameScore={$gameScore}
+					gameSettings={$gameSettings}
+					currentPlayers={$currentPlayers}
+				/>
+			{:else if RECENTGAME_ELEMENTS.has(dataItem.elementId)}
+				<RecentGame
+					{dataItem}
+					{defaultPreview}
+					{style}
+					currentPlayer={$currentPlayer}
+					postGame={$postGame}
+				/>
+			{:else if RECENTMATCH_ELEMENTS.has(dataItem.elementId)}
+				<RecentMatch
+					{dataItem}
+					{defaultPreview}
+					{style}
+					matchStats={$currentMatch}
+					currentPlayer={$currentPlayer}
+				/>
+			{:else if RECENTMATCHSUMMARY_ELEMENTS.has(dataItem.elementId)}
+				<RecentMatchSummary
+					{dataItem}
+					{defaultPreview}
+					{style}
+					recentGames={$recentGames}
+					currentPlayers={$currentPlayers}
+				/>
+			{:else if SLIPPIRANK_ELEMENTS.has(dataItem.elementId)}
+				<SlippiRank
+					{dataItem}
+					{defaultPreview}
+					{style}
+					currentPlayer={$currentPlayer}
+					currentPlayers={$currentPlayers}
+				/>
+			{:else if SESSION_ELEMENTS.has(dataItem.elementId)}
+				<Session {dataItem} {defaultPreview} {style} />
+			{/if}
 		</div>
 	{/if}
 </div>
 
-<style>
-	.hide-siblings :not(:first-child) {
-		display: none;
-	}
-</style>

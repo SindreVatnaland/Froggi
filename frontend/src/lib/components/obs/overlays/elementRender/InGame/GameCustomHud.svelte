@@ -40,8 +40,7 @@
 					),
 			  )}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameTimerSeconds}
+{:else if dataItem?.elementId === CustomElement.InGameTimerSeconds}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '00'
@@ -51,8 +50,7 @@
 					),
 			  )}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameTimerMilliseconds3}
+{:else if dataItem?.elementId === CustomElement.InGameTimerMilliseconds3}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '000'
@@ -61,8 +59,7 @@
 					.split('.')
 					.at(1)}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameTimerMilliseconds2}
+{:else if dataItem?.elementId === CustomElement.InGameTimerMilliseconds2}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '00'
@@ -71,8 +68,7 @@
 					.split('.')
 					.at(1)}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameTimerMilliseconds1}
+{:else if dataItem?.elementId === CustomElement.InGameTimerMilliseconds1}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '0'
@@ -81,8 +77,7 @@
 					.split('.')
 					.at(1)}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameTimerSecondsCountdown}
+{:else if dataItem?.elementId === CustomElement.InGameTimerSecondsCountdown}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '480'
@@ -90,8 +85,7 @@
 					getTimeSeconds(gameSettings?.startingTimerSeconds, gameFrame?.frame),
 			  ).toFixed(0)}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameStage}
+{:else if dataItem?.elementId === CustomElement.InGameStage}
 	{#key gameSettings}
 		<GameStage
 			{style}
@@ -101,8 +95,7 @@
 			fallbackStageId={Stage.BATTLEFIELD}
 		/>
 	{/key}
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayerRadar}
+{:else if dataItem?.elementId === CustomElement.InGamePlayerRadar}
 	{#key gameSettings}
 		<InGamePlayerRadar
 			{style}

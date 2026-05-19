@@ -33,75 +33,65 @@
 		isButtonPressed={buttonPresses?.isAPressed}
 		button="A"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonB}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonB}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isBPressed}
 		button="B"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonX}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonX}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isXPressed}
 		button="X"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonY}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonY}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isYPressed}
 		button="Y"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonL}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonL}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isLPressed}
 		button="L"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonR}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonR}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isRPressed}
 		button="R"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonZ}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonZ}
 	<ControllerInputElement
 		{dataItem}
 		{style}
 		isButtonPressed={buttonPresses?.isZPressed}
 		button="Z"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerDPad}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerDPad}
 	<ControllerDPadElement {dataItem} {style} {buttonPresses} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogL}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogL}
 	<ControllerButtonBackAnalogElement
 		{dataItem}
 		{style}
 		analogValue={analogL}
 		isButtonPressed={buttonPresses?.isLPressed}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogR}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogR}
 	<ControllerButtonBackAnalogElement
 		{dataItem}
 		{style}
 		analogValue={analogR}
 		isButtonPressed={buttonPresses?.isRPressed}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickL}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickL}
 	<ControllerStickAnalogElement
 		{dataItem}
 		{style}
@@ -109,8 +99,7 @@
 		analogYValue={joystickY}
 		ribs={true}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickR}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickR}
 	<ControllerStickAnalogElement
 		{dataItem}
 		{style}

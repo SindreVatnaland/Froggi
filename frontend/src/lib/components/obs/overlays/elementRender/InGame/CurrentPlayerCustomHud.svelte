@@ -20,24 +20,19 @@
 
 {#if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercent}
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentDecimal}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentDecimal}
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentCustom}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentCustom}
 	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentDecimalCustom}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerPercentDecimalCustom}
 	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerStocksRemaining}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerStocksRemaining}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 4
 			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.stocksRemaining ?? '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterIcon}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterIcon}
 	<InGameCharacterIcon
 		{dataItem}
 		{style}
@@ -45,8 +40,7 @@
 		{player}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterRenderLeft}
 	<InGameCharacterRender
 		{dataItem}
 		{style}
@@ -55,8 +49,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction={'left'}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterRenderRight}
 	<InGameCharacterRender
 		{dataItem}
 		{style}
@@ -65,8 +58,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction={'right'}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterSeriesSymbol}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterSeriesSymbol}
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
@@ -74,8 +66,7 @@
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterSeriesSymbolUltimate}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerCharacterSeriesSymbolUltimate}
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
@@ -84,8 +75,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		series={'ultimate'}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGameCurrentPlayerComboCounter}
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerComboCounter}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? '3'

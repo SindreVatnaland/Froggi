@@ -20,24 +20,19 @@
 
 {#if dataItem?.elementId === CustomElement.InGamePlayer1Percent}
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimal}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimal}
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1PercentCustom}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentCustom}
 	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimalCustom}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimalCustom}
 	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1StocksRemaining}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 4
 			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.stocksRemaining ?? '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterIcon}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1CharacterIcon}
 	<InGameCharacterIcon
 		{dataItem}
 		{style}
@@ -45,8 +40,7 @@
 		{player}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1CharacterRenderLeft}
 	<InGameCharacterRender
 		{dataItem}
 		{style}
@@ -55,8 +49,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction="left"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1CharacterRenderRight}
 	<InGameCharacterRender
 		{dataItem}
 		{style}
@@ -65,8 +58,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		direction="right"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterSeriesSymbol}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1CharacterSeriesSymbol}
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
@@ -74,8 +66,7 @@
 		preview={defaultPreview}
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1CharacterSeriesSymbolUltimate}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1CharacterSeriesSymbolUltimate}
 	<InGameCharacterSeriesSymbol
 		{dataItem}
 		{style}
@@ -84,8 +75,7 @@
 		defaultPreviewId={Number(CHARACTERS['fox'])}
 		series={'ultimate'}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.InGamePlayer1ComboCounter}
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1ComboCounter}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? 3

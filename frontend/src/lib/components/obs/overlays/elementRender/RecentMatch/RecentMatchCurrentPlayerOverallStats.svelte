@@ -24,8 +24,7 @@
 			? `${8 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallBeneficialTradeRatio}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallBeneficialTradeRatio}
 	<TextElement {style} {dataItem}>
 		{![overall?.beneficialTradeRatio.ratio, playerIndex].some(
 			(e) => e === undefined || e === null,
@@ -35,8 +34,7 @@
 			? `${75.0 + playerIndex}`
 			: '0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallCounterHitCount}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallCounterHitCount}
 	<TextElement {style} {dataItem}>
 		{![overall?.counterHitRatio?.count, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.counterHitRatio.count
@@ -44,8 +42,7 @@
 			? `${10 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallCounterHitRatio}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallCounterHitRatio}
 	<TextElement {style} {dataItem}>
 		{![overall?.counterHitRatio.ratio, playerIndex].some((e) => e === undefined || e === null)
 			? (overall?.counterHitRatio.ratio ?? 0) * 100
@@ -53,8 +50,7 @@
 			? `${60.0 + playerIndex}`
 			: '0.0'}%
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDamageTotal}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDamageTotal}
 	<TextElement {style} {dataItem}>
 		{![overall?.totalDamage, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.totalDamage.toFixed(1)
@@ -62,8 +58,7 @@
 			? `${360.5 + playerIndex}`
 			: '0.0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallOpeningsTotal}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallOpeningsTotal}
 	<TextElement {style} {dataItem}>
 		{![overall?.openingsPerKill?.total, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.openingsPerKill.total
@@ -71,8 +66,7 @@
 			? `${27 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDamagePerOpening}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDamagePerOpening}
 	<TextElement {style} {dataItem}>
 		{![overall?.damagePerOpening.ratio, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.damagePerOpening.ratio?.toFixed(1)
@@ -80,8 +74,7 @@
 			? `${15.6 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallOpeningsPerKill}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallOpeningsPerKill}
 	<TextElement {style} {dataItem}>
 		{![overall?.openingsPerKill.count, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.openingsPerKill.count.toFixed(1) ?? '0.0'
@@ -89,8 +82,7 @@
 			? `${6.7 + playerIndex}`
 			: '0.0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsTotal}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsTotal}
 	<TextElement {style} {dataItem}>
 		{overall?.digitalInputsPerMinute.total !== undefined
 			? overall?.digitalInputsPerMinute.total
@@ -98,8 +90,7 @@
 			? `${945 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsPerMinute}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsPerMinute}
 	<TextElement {style} {dataItem}>
 		{overall?.digitalInputsPerMinute.count !== undefined
 			? overall?.digitalInputsPerMinute.count.toFixed(0)
@@ -107,8 +98,7 @@
 			? `${315 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsPerSecond}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallDigitalInputsPerSecond}
 	<TextElement {style} {dataItem}>
 		{overall?.digitalInputsPerMinute.count !== undefined
 			? ((overall?.digitalInputsPerMinute?.count ?? 0) / 60).toFixed(2)
@@ -116,8 +106,7 @@
 			? `${(5.25 + playerIndex / 60).toFixed(2)}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsTotal}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsTotal}
 	<TextElement {style} {dataItem}>
 		{![overall?.inputsPerMinute.total, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.inputsPerMinute.total
@@ -125,8 +114,7 @@
 			? `${1200 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsPerMinute}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsPerMinute}
 	<TextElement {style} {dataItem}>
 		{![overall?.inputsPerMinute.count, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.inputsPerMinute.count.toFixed(0)
@@ -134,8 +122,7 @@
 			? `${400 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsPerSecond}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallInputsPerSecond}
 	<TextElement {style} {dataItem}>
 		{![overall?.inputsPerMinute.count, playerIndex].some((e) => e === undefined || e === null)
 			? ((overall?.inputsPerMinute.count ?? 0) / 60).toFixed(2)
@@ -143,8 +130,7 @@
 			? `${(6.67 + playerIndex / 60).toFixed(2)}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallNeutralWinsCount}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallNeutralWinsCount}
 	<TextElement {style} {dataItem}>
 		{![overall?.neutralWinRatio.count, playerIndex].some((e) => e === undefined || e === null)
 			? overall?.neutralWinRatio.count
@@ -152,8 +138,7 @@
 			? `${18 + playerIndex}`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallNeutralWinsRatio}
+{:else if dataItem?.elementId === CustomElement.PostGameMatchCurrentPlayerOverallNeutralWinsRatio}
 	<TextElement {style} {dataItem}>
 		{![overall?.neutralWinRatio.ratio, playerIndex].some((e) => e === undefined || e === null)
 			? (overall?.neutralWinRatio?.ratio ?? 0 * 100).toFixed(1)

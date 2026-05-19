@@ -52,15 +52,11 @@
 		preview={defaultPreview}
 		fallbackIcon="GOLD 3"
 	/>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedWinRankText}
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedWinRankText}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `GOLD 3` : rankWin ? rankWin : 'UNRANKED'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedWinRating}
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedWinRating}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `1702.5`
@@ -68,9 +64,7 @@
 			? player.rank?.predictedRating?.win.ordinal.toFixed(1)
 			: '-'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRankIcon}
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRankIcon}
 	<PlayerRankIcon
 		{dataItem}
 		{style}
@@ -78,15 +72,11 @@
 		preview={defaultPreview}
 		fallbackIcon="GOLD 1"
 	/>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRankText}
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRankText}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `GOLD 1` : rankLoss ? rankLoss : 'UNRANKED'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRating}
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerPredictedLossRating}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `1650.2`
@@ -94,9 +84,7 @@
 			? player.rank?.predictedRating?.loss.ordinal.toFixed(1)
 			: '-'}
 	</TextElement>
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiCurrentPlayerRankChangePredictedWinRatingDifference}
+{:else if dataItem?.elementId === CustomElement.SlippiCurrentPlayerRankChangePredictedWinRatingDifference}
 	{#if defaultPreview || Math.abs(winDifference) > 0.001}
 		<TextElement {style} {dataItem}>
 			{defaultPreview
@@ -106,9 +94,7 @@
 				: ''}
 		</TextElement>
 	{/if}
-{/if}
-
-{#if dataItem?.elementId === CustomElement.SlippiCurrentPlayerRankChangePredictedLossRatingDifference}
+{:else if dataItem?.elementId === CustomElement.SlippiCurrentPlayerRankChangePredictedLossRatingDifference}
 	{#if defaultPreview || Math.abs(lossDifference) > 0.001}
 		<TextElement {style} {dataItem}>
 			{defaultPreview

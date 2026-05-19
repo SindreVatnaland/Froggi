@@ -28,25 +28,21 @@
 		stageId={game?.settings?.stageId}
 		fallbackStageId={Stage.YOSHIS_ISLAND_N64}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.MatchGameMode}
+{:else if dataItem?.elementId === CustomElement.MatchGameMode}
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `UNRANKED`
 			: ($gameSettings?.matchInfo?.mode ?? 'LOCAL').toUpperCase()}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1Score}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1Score}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `1` : $gameScore.at(0) ? $gameScore[0] : '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2Score}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2Score}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? `0` : $gameScore.at(1) ? $gameScore[1] : '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterIcon}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterIcon}
 	<CharacterIcon
 		{style}
 		{dataItem}
@@ -54,8 +50,7 @@
 		{defaultPreview}
 		defaultPreviewId={Character.Ganondorf}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterIcon}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterIcon}
 	<CharacterIcon
 		{style}
 		{dataItem}
@@ -63,8 +58,7 @@
 		{defaultPreview}
 		defaultPreviewId={Character.Falcon}
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterRenderLeft}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -73,8 +67,7 @@
 		defaultPreviewId={Character.Ganondorf}
 		direction="left"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1CharacterRenderRight}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -83,8 +76,7 @@
 		defaultPreviewId={Character.Ganondorf}
 		direction="right"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterRenderLeft}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterRenderLeft}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -93,8 +85,7 @@
 		defaultPreviewId={Character.Falcon}
 		direction="left"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterRenderRight}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2CharacterRenderRight}
 	<CharacterRender
 		{style}
 		{dataItem}
@@ -103,8 +94,7 @@
 		defaultPreviewId={Character.Falcon}
 		direction="right"
 	/>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1StocksRemaining}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
 			? game?.lastFrame?.players?.[currentPlayers?.at(0)?.playerIndex ?? 0]?.post
@@ -113,8 +103,7 @@
 			? `2`
 			: '0'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2StocksRemaining}
+{:else if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer2StocksRemaining}
 	<TextElement {style} {dataItem}>
 		{game
 			? game?.lastFrame?.players?.[currentPlayers?.at(1)?.playerIndex ?? 1]?.post

@@ -23,23 +23,19 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? BestOf.BestOf3 : bestOf ?? BestOf.BestOf3}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.MatchPlayer1Tag}
+{:else if dataItem?.elementId === CustomElement.MatchPlayer1Tag}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? 'Player1' : player1Tag ?? 'Player1'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.MatchPlayer2Tag}
+{:else if dataItem?.elementId === CustomElement.MatchPlayer2Tag}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? 'Player2' : player2Tag ?? 'Player2'}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.MatchPlayer1Score}
+{:else if dataItem?.elementId === CustomElement.MatchPlayer1Score}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? 2 : player1Score ?? 0}
 	</TextElement>
-{/if}
-{#if dataItem?.elementId === CustomElement.MatchPlayer2Score}
+{:else if dataItem?.elementId === CustomElement.MatchPlayer2Score}
 	<TextElement {style} {dataItem}>
 		{defaultPreview ? 1 : player2Score ?? 0}
 	</TextElement>
