@@ -65,7 +65,8 @@
       "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status --short)",
       "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi ls-files --error-unmatch frontend/package-lock.json)",
       "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status frontend/package-lock.json)",
-      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status frontend/package-lock.json --short)"
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi status frontend/package-lock.json --short)",
+      "Bash(git -C /Users/sindrevatnaland/VSCode/Froggi remote get-url origin)"
     ]
   }
 }

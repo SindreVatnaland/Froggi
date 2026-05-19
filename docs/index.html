@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Froggi — Slippi Stream Overlay Tool for Melee</title>
+  <meta name="description" content="Froggi is a free desktop app that reads Slippi data and drives live OBS overlays for Super Smash Bros. Melee tournaments and ranked matches." />
+  <meta name="keywords" content="Slippi, Melee, SSBM, Super Smash Bros Melee, stream overlay, OBS overlay, tournament overlay, Froggi, ranked overlay, slippi overlay" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Froggi — Slippi Stream Overlay Tool" />
+  <meta property="og:description" content="Free desktop app that reads Slippi data and drives live OBS overlays for Melee." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sindrevatnaland.github.io/Froggi/" />
+  <meta property="og:image" content="https://sindrevatnaland.github.io/Froggi/preview.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Froggi — Slippi Stream Overlay Tool" />
+  <meta name="twitter:description" content="Free desktop app that reads Slippi data and drives live OBS overlays for Melee." />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111;
+      --surface: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --text: #e0e0e0;
+      --muted: rgba(255,255,255,0.4);
+      --accent: #40DCA5;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 680px;
+      padding: 4rem 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .tagline {
+      margin-top: 0.75rem;
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    main {
+      width: 100%;
+      max-width: 680px;
+      padding: 0 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+    }
+
+    .card-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* Download */
+    .download-primary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .download-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .download-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    .btn-download {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 0.3rem;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .btn-download:hover { opacity: 0.85; }
+
+    .other-platforms {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-alt {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.3rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-alt:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    /* Features */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .feature {
+      font-size: 0.85rem;
+      color: var(--text);
+      padding-left: 1.1rem;
+      position: relative;
+      opacity: 0.75;
+    }
+    .feature::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    /* Links */
+    .link-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .link-card {
+      flex: 1;
+      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      text-decoration: none;
+      padding: 0.875rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.35rem;
+      transition: border-color 0.15s;
+    }
+    .link-card:hover { border-color: rgba(255,255,255,0.2); }
+
+    .link-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .link-desc {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 2rem 1.5rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🐸 Froggi</div>
+  <p class="tagline">Live OBS overlays for Super Smash Bros. Melee.<br>Reads Slippi data — scoreboard, rank, HUD, and more.</p>
+</header>
+
+<main>
+
+  <!-- Download -->
+  <div class="card">
+    <p class="card-label">Download</p>
+    <div class="download-primary">
+      <div>
+        <p class="download-name" id="dl-name">Loading…</p>
+        <p class="download-sub" id="dl-sub"></p>
+      </div>
+      <a class="btn-download" id="dl-btn" href="https://github.com/SindreVatnaland/Froggi/releases/latest">
+        Download
+      </a>
+    </div>
+    <div class="other-platforms">
+      <a class="btn-alt" id="dl-win" href="https://github.com/SindreVatnaland/Froggi/releases/latest">Windows</a>
+      <a class="btn-alt" id="dl-mac" href="https://github.com/SindreVatnaland/Froggi/releases/latest">macOS</a>
+      <a class="btn-alt" id="dl-linux" href="https://github.com/SindreVatnaland/Froggi/releases/latest">Linux</a>
+      <a class="btn-alt" href="https://github.com/SindreVatnaland/Froggi/releases">All releases →</a>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="card">
+    <p class="card-label">What it does</p>
+    <div class="feature-list">
+      <p class="feature">OBS browser-source overlays — scoreboard, HUD, rank preview, win/loss tracker</p>
+      <p class="feature">Reads live Slippi data via Dolphin memory or .slp replay files</p>
+      <p class="feature">Remote player client pages via Tailscale or ngrok — share with your opponent</p>
+      <p class="feature">Stage striking flow for tournament sets</p>
+      <p class="feature">Discord Rich Presence integration</p>
+      <p class="feature">Works offline, no account required</p>
+    </div>
+  </div>
+
+  <!-- Links -->
+  <div class="link-row">
+    <a class="link-card" href="https://github.com/SindreVatnaland/Froggi">
+      <span class="link-title">GitHub</span>
+      <span class="link-desc">Source code, issues, releases</span>
+    </a>
+    <a class="link-card" href="https://buymeacoffee.com/sindrevatnw">
+      <span class="link-title">Buy Me a Coffee</span>
+      <span class="link-desc">Support development</span>
+    </a>
+  </div>
+
+</main>
+
+<footer>Free and open source · Super Smash Bros. Melee stream tool</footer>
+
+<script>
+  // Detect OS and point primary download button at the right asset
+  (function () {
+    const base = 'https://github.com/SindreVatnaland/Froggi/releases/latest/download/';
+    const ua = navigator.userAgent;
+
+    let name, sub, href;
+
+    if (/Win/i.test(ua)) {
+      name = 'Download for Windows';
+      sub = '.exe installer · x64';
+      href = base + 'Froggi-win-x64.exe';
+      document.getElementById('dl-win').style.display = 'none';
+    } else if (/Mac/i.test(ua)) {
+      name = 'Download for macOS';
+      sub = '.dmg · Apple Silicon & Intel';
+      href = base + 'Froggi-mac.dmg';
+      document.getElementById('dl-mac').style.display = 'none';
+    } else if (/Linux/i.test(ua)) {
+      name = 'Download for Linux';
+      sub = '.AppImage · x64';
+      href = base + 'Froggi-linux-x64.AppImage';
+      document.getElementById('dl-linux').style.display = 'none';
+    } else {
+      name = 'Download';
+      sub = 'Choose your platform below';
+      href = 'https://github.com/SindreVatnaland/Froggi/releases/latest';
+    }
+
+    document.getElementById('dl-name').textContent = name;
+    document.getElementById('dl-sub').textContent = sub;
+    document.getElementById('dl-btn').href = href;
+  })();
+</script>
+
+</body>
+</html>
