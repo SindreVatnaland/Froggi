@@ -46,6 +46,17 @@
       max-width: 680px;
       padding: 4rem 1.5rem 2rem;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .app-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
 
     .logo {
@@ -207,7 +218,8 @@
 <body>
 
 <header>
-  <div class="logo">🐸 Froggi</div>
+  <img class="app-icon" src="icon.png" alt="Froggi" />
+  <div class="logo">Froggi</div>
   <p class="tagline">Live OBS overlays for Super Smash Bros. Melee.<br>Reads Slippi data — scoreboard, rank, HUD, and more.</p>
 </header>
 
@@ -263,37 +275,57 @@
 <footer>Free and open source · Super Smash Bros. Melee stream tool</footer>
 
 <script>
-  // Detect OS and point primary download button at the right asset
-  (function () {
-    const base = 'https://github.com/SindreVatnaland/Froggi/releases/latest/download/';
+  (async function () {
+    const RELEASES = 'https://github.com/SindreVatnaland/Froggi/releases/latest';
+    const API = 'https://api.github.com/repos/SindreVatnaland/Froggi/releases/latest';
     const ua = navigator.userAgent;
 
-    let name, sub, href;
+    const isMac   = /Mac/i.test(ua);
+    const isWin   = /Win/i.test(ua);
+    const isLinux = /Linux/i.test(ua) && !/Android/i.test(ua);
+    const isArm   = /arm|aarch/i.test(navigator.platform || ua);
 
-    if (/Win/i.test(ua)) {
-      name = 'Download for Windows';
-      sub = '.exe installer · x64';
-      href = base + 'Froggi-win-x64.exe';
-      document.getElementById('dl-win').style.display = 'none';
-    } else if (/Mac/i.test(ua)) {
-      name = 'Download for macOS';
-      sub = '.dmg · Apple Silicon & Intel';
-      href = base + 'Froggi-mac.dmg';
-      document.getElementById('dl-mac').style.display = 'none';
-    } else if (/Linux/i.test(ua)) {
-      name = 'Download for Linux';
-      sub = '.AppImage · x64';
-      href = base + 'Froggi-linux-x64.AppImage';
-      document.getElementById('dl-linux').style.display = 'none';
-    } else {
-      name = 'Download';
-      sub = 'Choose your platform below';
-      href = 'https://github.com/SindreVatnaland/Froggi/releases/latest';
+    const btn  = document.getElementById('dl-btn');
+    const name = document.getElementById('dl-name');
+    const sub  = document.getElementById('dl-sub');
+
+    // Hide the redundant platform alt-link
+    if (isMac)   document.getElementById('dl-mac').style.display  = 'none';
+    if (isWin)   document.getElementById('dl-win').style.display  = 'none';
+    if (isLinux) document.getElementById('dl-linux').style.display = 'none';
+
+    // Set label immediately so it doesn't show "Loading…"
+    if (isMac)        { name.textContent = 'Download for macOS';  sub.textContent = 'Fetching latest…'; }
+    else if (isWin)   { name.textContent = 'Download for Windows'; sub.textContent = 'Fetching latest…'; }
+    else if (isLinux) { name.textContent = 'Download for Linux';   sub.textContent = 'Fetching latest…'; }
+    else              { name.textContent = 'Download';              sub.textContent = 'Choose your platform below'; btn.href = RELEASES; return; }
+
+    try {
+      const res = await fetch(API, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!res.ok) throw new Error('API error');
+      const release = await res.json();
+      const assets = release.assets || [];
+
+      let asset;
+      if (isMac) {
+        // Prefer arm64 on Apple Silicon, else x64, else any dmg
+        asset = assets.find(a => a.name.endsWith('.dmg') && (isArm ? /arm64/i.test(a.name) : /x64/i.test(a.name)))
+             || assets.find(a => a.name.endsWith('.dmg'));
+        if (asset) sub.textContent = asset.name;
+      } else if (isWin) {
+        asset = assets.find(a => a.name.endsWith('.exe'));
+        if (asset) sub.textContent = asset.name;
+      } else if (isLinux) {
+        asset = assets.find(a => a.name.endsWith('.AppImage'));
+        if (asset) sub.textContent = asset.name;
+      }
+
+      btn.href = asset ? asset.browser_download_url : RELEASES;
+      if (!asset) sub.textContent = 'See all releases →';
+    } catch (_) {
+      btn.href = RELEASES;
+      sub.textContent = 'See all releases →';
     }
-
-    document.getElementById('dl-name').textContent = name;
-    document.getElementById('dl-sub').textContent = sub;
-    document.getElementById('dl-btn').href = href;
   })();
 </script>
 
