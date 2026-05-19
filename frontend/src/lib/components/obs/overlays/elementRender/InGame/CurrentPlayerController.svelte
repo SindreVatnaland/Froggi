@@ -7,14 +7,23 @@
 	import ControllerButtonBackAnalogElement from '$lib/components/obs/overlays/element/ControllerButtonBackAnalogElement.svelte';
 	import ControllerStickAnalogElement from '$lib/components/obs/overlays/element/ControllerStickAnalogElement .svelte';
 	import { FrameEntryType } from '@slippi/slippi-js';
+	import { memoryReadController } from '$lib/utils/store.svelte';
+	import { getControllerIndex } from '$lib/utils/controllerCommandHelper';
 
 	export let dataItem: GridContentItem;
 	export let style: GridContentItemStyle;
 	export let gameFrame: FrameEntryType | null | undefined;
 	export let playerIndex: number;
 
-	$: playerController = gameFrame?.players?.[playerIndex ?? 0]?.pre ?? null;
-	$: buttonPresses = getButtonPressesGame(playerController?.buttons ?? 0);
+	$: slippiPre = gameFrame?.players?.[playerIndex ?? 0]?.pre ?? null;
+	$: memPort = $memoryReadController?.[getControllerIndex($memoryReadController)];
+	$: buttonPresses = slippiPre ? getButtonPressesGame(slippiPre.buttons ?? 0) : memPort?.buttons;
+	$: analogL = slippiPre?.physicalLTrigger ?? memPort?.analogL ?? 0;
+	$: analogR = slippiPre?.physicalRTrigger ?? memPort?.analogR ?? 0;
+	$: joystickX = slippiPre?.joystickX ?? memPort?.analogJoystickX ?? 0;
+	$: joystickY = slippiPre?.joystickY ?? memPort?.analogJoystickY ?? 0;
+	$: cStickX = slippiPre?.cStickX ?? memPort?.analogCStickX ?? 0;
+	$: cStickY = slippiPre?.cStickY ?? memPort?.analogCStickY ?? 0;
 </script>
 
 {#if dataItem?.elementId === CustomElement.InGameCurrentPlayerControllerButtonA}
@@ -80,7 +89,7 @@
 	<ControllerButtonBackAnalogElement
 		{dataItem}
 		{style}
-		analogValue={playerController?.physicalLTrigger ?? 0}
+		analogValue={analogL}
 		isButtonPressed={buttonPresses?.isLPressed}
 	/>
 {/if}
@@ -88,7 +97,7 @@
 	<ControllerButtonBackAnalogElement
 		{dataItem}
 		{style}
-		analogValue={playerController?.physicalRTrigger ?? 0}
+		analogValue={analogR}
 		isButtonPressed={buttonPresses?.isRPressed}
 	/>
 {/if}
@@ -96,8 +105,8 @@
 	<ControllerStickAnalogElement
 		{dataItem}
 		{style}
-		analogXValue={playerController?.joystickX ?? 0}
-		analogYValue={playerController?.joystickY ?? 0}
+		analogXValue={joystickX}
+		analogYValue={joystickY}
 		ribs={true}
 	/>
 {/if}
@@ -105,7 +114,7 @@
 	<ControllerStickAnalogElement
 		{dataItem}
 		{style}
-		analogXValue={playerController?.cStickX ?? 0}
-		analogYValue={playerController?.cStickY ?? 0}
+		analogXValue={cStickX}
+		analogYValue={cStickY}
 	/>
 {/if}

@@ -33,9 +33,7 @@
 	<TextElement {style} {dataItem}>
 		{defaultPreview
 			? `UNRANKED`
-			: $gameSettings
-			? `${$gameSettings?.matchInfo?.mode}`
-			: 'LOCAL'}
+			: ($gameSettings?.matchInfo?.mode ?? 'LOCAL').toUpperCase()}
 	</TextElement>
 {/if}
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentPlayer1Score}

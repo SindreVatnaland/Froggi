@@ -40,7 +40,8 @@
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('version:', p.version\\); console.log\\('optionalDeps:', JSON.stringify\\(p.optionalDependencies\\)\\); console.log\\('has old overlay in deps:', JSON.stringify\\(Object.keys\\(p.dependencies\\).filter\\(k => k.includes\\('overlay'\\)\\)\\)\\)\")",
       "Bash(node -e \"const p = require\\('./frontend/package.json'\\); console.log\\('type:', p.type, 'name:', p.name\\)\")",
       "Bash(perl -0777 -i -pe 's/offscreen: \\\\{\\\\n\\\\t+useSharedTexture: true,\\\\n\\\\t+\\\\},/offscreen: \\\\{ useSharedTexture: true \\\\} as boolean,/g' /Users/sindrevatnaland/VSCode/Froggi/electron/services/injectOverlay.ts)",
-      "Bash(node -e \"const {version} = require\\('./node_modules/typescript/package.json'\\); console.log\\('project ts:', version\\)\")"
+      "Bash(node -e \"const {version} = require\\('./node_modules/typescript/package.json'\\); console.log\\('project ts:', version\\)\")",
+      "Bash(npx svelte-check *)"
     ]
   }
 }
