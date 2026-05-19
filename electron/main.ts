@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { app, BrowserWindow, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification, powerSaveBlocker, session } from 'electron';
+import { app, BrowserWindow, dialog, IpcMain, ipcMain, Menu, nativeImage, Tray, Notification, powerSaveBlocker, session } from 'electron';
 import contextMenu from 'electron-context-menu';
 import { container } from 'tsyringe';
 import getAppDataPath from 'appdata-path';
@@ -145,8 +145,6 @@ try {
 
 		mainWindow.on('close', () => {
 			windowState.saveState(mainWindow);
-
-			backgroundNotification.show();
 		});
 
 		return mainWindow;
@@ -288,11 +286,25 @@ try {
 			container.resolve(ElectronSettingsStore).notifyMissingSpectateConfig();
 		});
 
-		mainWindow.on('close', (event) => {
+		mainWindow.on('close', async (event) => {
 			if (!isQuitting) {
 				event.preventDefault();
-				mainWindow.minimize();
-				backgroundNotification.show();
+				const { response } = await dialog.showMessageBox(mainWindow, {
+					type: 'question',
+					buttons: ['Minimize to tray', 'Quit'],
+					defaultId: 0,
+					cancelId: 0,
+					title: 'Close Froggi',
+					message: 'Froggi runs in the background to keep the server active.',
+					detail: 'Minimize to tray to keep the server running, or Quit to shut everything down.',
+				});
+				if (response === 1) {
+					isQuitting = true;
+					app.quit();
+				} else {
+					mainWindow.hide();
+					backgroundNotification.show();
+				}
 			}
 		});
 	}

@@ -33,6 +33,7 @@
 	let isResetModalOpen = false;
 	let isBoConfirmOpen = false;
 	let pendingBo: BestOf | null = null;
+	let copiedIdx: number | null = null;
 
 	$: p1 = $currentPlayers?.at(0);
 	$: p2 = $currentPlayers?.at(1);
@@ -277,25 +278,25 @@
 		<p class="dash-label mb-2">Player Clients</p>
 		{#if clientBase}
 			<div class="qr-grid">
-				<div class="qr-col">
-					<span class="qr-label">P1</span>
-					<div class="qr-wrap border-secondary">
-						<QrCode value={p1Url} size="96" color="#ffffff" background="#000000" />
+				{#each [{ name: p1Name, url: p1Url, label: '/client/p1', idx: 1 }, { name: p2Name, url: p2Url, label: '/client/p2', idx: 2 }] as p}
+					<div class="qr-col">
+						<span class="qr-player-name">{p.name}</span>
+						<div class="qr-wrap border-secondary">
+							<QrCode value={p.url} size="140" color="#ffffff" background="#000000" />
+						</div>
+						<div class="qr-footer">
+							<span class="qr-url truncate">{p.label}</span>
+							<button class="qr-copy btn border-secondary" title="Copy URL" on:click={async () => { await navigator.clipboard.writeText(p.url); copiedIdx = p.idx; setTimeout(() => (copiedIdx = null), 2000); }}>
+								{copiedIdx === p.idx ? '✓' : '⎘'}
+							</button>
+						</div>
 					</div>
-					<span class="qr-url">/client/p1</span>
-				</div>
-				<div class="qr-col">
-					<span class="qr-label">P2</span>
-					<div class="qr-wrap border-secondary">
-						<QrCode value={p2Url} size="96" color="#ffffff" background="#000000" />
-					</div>
-					<span class="qr-url">/client/p2</span>
-				</div>
+				{/each}
 			</div>
 			{#if isRanked && matchId}
 				<p class="qr-note mt-2">URL includes match ID — valid only for this active ranked set.</p>
 			{:else}
-				<p class="qr-note mt-2">For ranked: spectate a player before game 1 — Froggi auto-includes the match ID in QR codes so commands are limited to that set.</p>
+				<p class="qr-note mt-2">For ranked: spectate before game 1 — Froggi auto-includes the match ID.</p>
 			{/if}
 		{:else}
 			<div class="no-access-hint">
@@ -674,29 +675,44 @@
 
 	.qr-grid {
 		display: flex;
-		gap: 1rem;
-		justify-content: space-around;
+		gap: 0.75rem;
 	}
 
 	.qr-col {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.35rem;
+		gap: 0.4rem;
+		min-width: 0;
 	}
 
-	.qr-label {
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		opacity: 0.5;
+	.qr-player-name {
+		font-size: 0.7rem;
+		font-weight: 600;
 		color: var(--secondary-color);
+		opacity: 0.75;
+		text-align: center;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.qr-wrap {
 		padding: 0.35rem;
 		border-radius: 0.25rem;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	.qr-footer {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		width: 100%;
+		min-width: 0;
 	}
 
 	.qr-url {
@@ -704,6 +720,20 @@
 		font-family: monospace;
 		opacity: 0.35;
 		color: var(--secondary-color);
+		flex: 1;
+		min-width: 0;
+	}
+
+	.qr-copy {
+		font-size: 0.7rem;
+		height: 1.4rem;
+		width: 1.4rem;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		border-radius: 0.2rem;
 	}
 
 	.qr-note {

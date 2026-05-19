@@ -54,7 +54,12 @@
       "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2}')",
       "Bash(npm list *)",
       "Bash(node -e \"require\\('node-fetch'\\)\")",
-      "Bash(grep -E \"\\\\.\\(ts|svelte\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|svelte\\)$\")",
+      "Bash(grep -n \"error\\\\|Error\\\\|TS\" /dev/null; npx tsc --project electron/tsconfig.json --noEmit 2>&1 | grep \"messageHandler\" | head -20)",
+      "Read(//dev/**)",
+      "Bash(grep -n 'Url\\\\b\\\\|urls\\\\b\\\\|ready\\\\|$urls' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/+layout.svelte)",
+      "Bash(grep -n 'urls\\\\b\\\\|$urls\\\\|isElectron\\\\|isBrowser\\\\|clientBase\\\\|local\\\\b\\\\|external\\\\b' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/lib/utils/fetchSubscriptions.svelte)",
+      "Bash(grep -n 'clientBase\\\\|$urls\\\\|external\\\\b\\\\|local\\\\b' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/obs/dashboard/+page.svelte)"
     ]
   }
 }

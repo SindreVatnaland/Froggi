@@ -30,7 +30,7 @@ import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
-import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
+import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 
 @singleton()
@@ -92,6 +92,17 @@ export class MessageHandler {
 			if (!this.dev) {
 				this.app.use('/', staticFrontendServe);
 				this.app.use('*', staticFrontendServe);
+			} else {
+				// Dev: proxy page requests to Vite so port 3200 can serve the frontend
+				// (allows Tailscale funnel on 3200 to reach both Express WS and Vite UI)
+				this.app.use('/', (req: express.Request, res: express.Response) => {
+					const proxy = http.request(
+						{ hostname: 'localhost', port: VITE_PORT, path: req.url, method: req.method, headers: { ...req.headers, host: `localhost:${VITE_PORT}` } },
+						(proxyRes) => { res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers); proxyRes.pipe(res); },
+					);
+					proxy.on('error', () => res.end());
+					req.pipe(proxy);
+				});
 			}
 
 			this.server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -219,11 +230,11 @@ export class MessageHandler {
 	}
 
 	private sendWebsocketMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
-		this.webSocketWorker.postMessage(
-			JSON.stringify({
-				[topic]: payload,
-			}),
-		);
+		this.webSocketWorker.postMessage(JSON.stringify({ [topic]: payload }));
+		const msg = JSON.stringify({ [topic]: payload });
+		this.expressWsConnections.forEach((socket) => {
+			if (socket.readyState === WebSocket.OPEN) socket.send(msg);
+		});
 	}
 
 	private sendElectronMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
@@ -241,10 +252,17 @@ export class MessageHandler {
 		topic: J,
 		...payload: Parameters<MessageEvents[J]>
 	) {
-		if (socketId) {
-			this.sendWebsocketMessage(topic, ...payload);
-		} else {
+		if (!socketId) {
 			this.sendElectronMessage(topic, ...payload);
+			return;
+		}
+		const expressClient = this.expressWsConnections.get(socketId);
+		if (expressClient) {
+			if (expressClient.readyState === WebSocket.OPEN) {
+				expressClient.send(JSON.stringify({ [topic]: payload }));
+			}
+		} else {
+			this.webSocketWorker.postMessage(JSON.stringify({ [topic]: payload, socketId }));
 		}
 	}
 
@@ -441,7 +459,7 @@ export class MessageHandler {
 				this.sendMessage('Notification', 'Tailscale not installed', 'danger' as any);
 				return;
 			}
-			const port = this.dev ? 5173 : 3200;
+			const port = BACKEND_PORT;
 			const args = enable ? `funnel --bg ${port}` : `funnel reset`;
 			const cmd = `"${bin}" ${args}`;
 			this.log.info('TailscaleFunnel exec:', cmd);

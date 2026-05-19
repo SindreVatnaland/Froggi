@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { dev } from '$app/environment';
+	import { BACKEND_PORT } from '$lib/models/const';
 	import {
 		authorizationKey,
 		electronEmitter,
@@ -11,7 +11,7 @@
 		tailscaleStatus,
 	} from '$lib/utils/store.svelte';
 
-	$: port = dev ? 5173 : 3200;
+	const port = BACKEND_PORT;
 
 	let authKey: string = $authorizationKey;
 
