@@ -10,6 +10,7 @@
 	import {
 		electronEmitter,
 		isElectron,
+		isEditPage,
 		isOverlayPage,
 		localEmitter,
 		urls,
@@ -64,6 +65,11 @@
 
 	const setOverlayPage = (pathname: string) => {
 		isOverlayPage.set(pathname.startsWith('/obs/overlay/'));
+		// Edit pages: any /obs/overlay/[id]/... that isn't a pure preview/inject
+		isEditPage.set(
+			/^\/obs\/overlay\/(?!inject)[^/]+/.test(pathname) &&
+			!pathname.includes('/preview')
+		);
 	};
 	$: setOverlayPage($page.url.pathname);
 

@@ -729,5 +729,28 @@ export enum CustomElement {
     InGamePlayer2CharacterSeriesSymbol = 6231,
     InGamePlayer2CharacterSeriesSymbolUltimate = 6232,
 
+    // Stage Striking
+    StrikeRpsPlayer1Choice = 7000,
+    StrikeRpsPlayer2Choice = 7010,
+    StrikeRpsWinner = 7020,
+    StrikeCurrentStriker = 7030,
+    StrikeFinalStageName = 7040,
+    StrikeFinalStageImage = 7050,
 
+    StrikeStageSlot1 = 7100,
+    StrikeStageSlot2 = 7110,
+    StrikeStageSlot3 = 7120,
+    StrikeStageSlot4 = 7130,
+    StrikeStageSlot5 = 7140,
+    StrikeStageSlot6 = 7150,
+    StrikeStageSlot7 = 7160,
+    StrikeStageSlot8 = 7170,
+    StrikeStageSlot9 = 7180,
+
+    StrikePlayer1Character = 7200,
+    StrikePlayer2Character = 7210,
+
+    StrikeOrderDisplay = 7300,
+    StrikeBansRemaining = 7310,
+    StrikeTimerSeconds = 7320,
 }

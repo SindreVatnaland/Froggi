@@ -33,7 +33,10 @@
 		RECENTMATCHSUMMARY_ELEMENTS,
 		SESSION_ELEMENTS,
 		SLIPPIRANK_ELEMENTS,
+		STRIKING_ELEMENTS,
 	} from './elementCategories';
+	import Striking from './elementRender/Striking.svelte';
+	import { strikeState } from '$lib/utils/store.svelte';
 
 	export let dataItem: GridContentItem;
 	export let edit: boolean = false;
@@ -180,6 +183,8 @@
 				/>
 			{:else if SESSION_ELEMENTS.has(dataItem.elementId)}
 				<Session {dataItem} {defaultPreview} {style} />
+			{:else if STRIKING_ELEMENTS.has(dataItem.elementId)}
+				<Striking {dataItem} {defaultPreview} {style} strikeState={$strikeState} />
 			{/if}
 		</div>
 	{/if}

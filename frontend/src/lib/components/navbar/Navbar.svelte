@@ -4,6 +4,7 @@
 	import {
 		dolphinState,
 		electronEmitter,
+		isEditPage,
 		isElectron,
 		isIframe,
 		isMobile,
@@ -48,7 +49,7 @@
 	$: isVertical = width < height;
 
 	// On overlay pages: timer-based for both. On other pages: Electron always on.
-	$: showNav = $isOverlayPage ? isVisible : ($isElectron || isVisible);
+	$: showNav = !$isEditPage && ($isOverlayPage ? isVisible : ($isElectron || isVisible));
 </script>
 
 <svelte:window

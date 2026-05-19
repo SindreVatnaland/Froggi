@@ -22,6 +22,7 @@
 	import MatchStatsVisibilitySelect from './MatchStatsVisibilitySelect.svelte';
 	import RankPredictionVisibilitySelect from './RankPredictionVisibilitySelect.svelte';
 	import InGameNumberVisibilitySelect from './InGameNumberVisibilitySelect.svelte';
+	import StrikeVisibilitySelect from './StrikeVisibilitySelect.svelte';
 
 	export let selectedVisibilityOption: SelectedVisibilityCondition;
 
@@ -116,6 +117,10 @@
 				LiveStatsScene.PostGame,
 				LiveStatsScene.RankChange,
 			].includes($statsScene),
+		},
+		{
+			category: VisibilityCategory.StageStriking,
+			visible: true,
 		},
 	];
 
@@ -224,6 +229,11 @@
 			{#if selectedCategory === VisibilityCategory.RankPrediction}
 				<div class="flex flex-col gap-2">
 					<RankPredictionVisibilitySelect on:select={select} {selectedVisibilityOption} />
+				</div>
+			{/if}
+			{#if selectedCategory === VisibilityCategory.StageStriking}
+				<div class="flex flex-col gap-2">
+					<StrikeVisibilitySelect on:select={select} {selectedVisibilityOption} />
 				</div>
 			{/if}
 		</div>

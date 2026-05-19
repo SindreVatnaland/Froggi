@@ -119,9 +119,24 @@ export class ElectronGamesStore {
 		await this.sqliteGame.addGameStatsBatch(games);
 	}
 
+	private async reorderRecentGame(fromIndex: number, toIndex: number) {
+		let games = await this.getRecentGames();
+		if (!games?.length || fromIndex === toIndex) return;
+		if (fromIndex < 0 || fromIndex >= games.length || toIndex < 0 || toIndex >= games.length) return;
+		const [moved] = games.splice(fromIndex, 1);
+		games.splice(toIndex, 0, moved);
+		games = this.applyGamesScore(games);
+		const timestamp = dateTimeNow();
+		games.forEach((game, index) => {
+			game.timestamp = new Date(timestamp.getTime() + index * 3 * 60 * 1000);
+		});
+		await this.sqliteGame.updateGamesBatch(games);
+	}
+
 	private initEventListeners() {
 		this.clientEmitter.on('RecentGamesDelete', this.deleteRecentGame.bind(this));
 		this.clientEmitter.on('RecentGamesReset', this.clearRecentGames.bind(this));
 		this.clientEmitter.on('RecentGamesMock', this.insertMockGame.bind(this));
+		this.clientEmitter.on('RecentGamesReorder', this.reorderRecentGame.bind(this));
 	}
 }

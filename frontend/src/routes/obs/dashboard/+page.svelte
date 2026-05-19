@@ -7,6 +7,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import SliderInput from '$lib/components/input/SliderInput.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
+	import { goto } from '$app/navigation';
 	import {
 		controller,
 		currentPlayers,
@@ -82,8 +83,7 @@
 	);
 
 	const trySetBestOf = (v: BestOf) => {
-		if ($recentGames.length > 0 && v !== bestOf) { pendingBo = v; isBoConfirmOpen = true; }
-		else $electronEmitter.emit('BestOfUpdate', v);
+		if (v !== bestOf) { pendingBo = v; isBoConfirmOpen = true; }
 	};
 	const confirmBestOf = () => {
 		if (pendingBo !== null) { $electronEmitter.emit('BestOfUpdate', pendingBo); pendingBo = null; }
@@ -117,8 +117,11 @@
 	};
 
 	$: clientBase = $remoteAccess.url ?? $urls?.external ?? '';
-	$: p1Url = clientBase ? `${clientBase}/client/p1` : '';
-	$: p2Url = clientBase ? `${clientBase}/client/p2` : '';
+	$: matchId = $gameSettings?.matchInfo?.matchId ?? '';
+	$: isRanked = $gameSettings?.matchInfo?.mode === 'ranked';
+	$: matchParam = isRanked && matchId ? `?matchId=${matchId}` : '';
+	$: p1Url = clientBase ? `${clientBase}/client/p1${matchParam}` : '';
+	$: p2Url = clientBase ? `${clientBase}/client/p2${matchParam}` : '';
 </script>
 
 <main class="flex justify-center">
@@ -129,11 +132,11 @@
 <div class="match-bar border-secondary mb-3">
 	<div class="match-names">
 		<button class="player-name" on:click={() => (isTagModalOpen = true)}>{p1Name}</button>
-		<div class="score-block">
+		<button class="score-block" on:click={() => (isScoreModalOpen = true)}>
 			<span class="score-num">{score0}</span>
 			<span class="score-sep">—</span>
 			<span class="score-num">{score1}</span>
-		</div>
+		</button>
 		<button class="player-name text-right" on:click={() => (isTagModalOpen = true)}>{p2Name}</button>
 	</div>
 	<div class="match-controls">
@@ -289,8 +292,19 @@
 					<span class="qr-url">/client/p2</span>
 				</div>
 			</div>
+			{#if isRanked && matchId}
+				<p class="qr-note mt-2">URL includes match ID — valid only for this active ranked set.</p>
+			{:else}
+				<p class="qr-note mt-2">For ranked: spectate a player before game 1 — Froggi auto-includes the match ID in QR codes so commands are limited to that set.</p>
+			{/if}
 		{:else}
-			<p class="clients-hint">Set up remote access in Settings to generate QR codes.</p>
+			<div class="no-access-hint">
+				<p class="text-xs text-secondary-color mb-2" style="opacity:0.7">No tunnel detected — players can't join remotely.</p>
+				<p class="text-xs" style="opacity:0.45; line-height:1.5">
+					Go to <button class="inline-link" on:click={() => goto('/settings')}>Settings → Remote Access</button>
+					and enable Tailscale Funnel or ngrok to generate share links.
+				</p>
+			</div>
 		{/if}
 	</div>
 </div>
@@ -401,7 +415,14 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		padding: 0.2rem 0.5rem;
+		border-radius: 0.25rem;
+		transition: opacity 0.1s;
 	}
+	.score-block:hover { opacity: 0.7; }
 
 	.score-num {
 		font-size: 1.75rem;
@@ -635,6 +656,22 @@
 		margin-top: 0.25rem;
 	}
 
+	.no-access-hint {
+		padding: 0.5rem 0;
+	}
+
+	.inline-link {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		color: var(--secondary-color);
+		text-decoration: underline;
+		font-size: inherit;
+		opacity: 0.75;
+	}
+	.inline-link:hover { opacity: 1; }
+
 	.qr-grid {
 		display: flex;
 		gap: 1rem;
@@ -666,6 +703,13 @@
 		font-size: 0.6rem;
 		font-family: monospace;
 		opacity: 0.35;
+		color: var(--secondary-color);
+	}
+
+	.qr-note {
+		font-size: 0.65rem;
+		opacity: 0.35;
+		line-height: 1.5;
 		color: var(--secondary-color);
 	}
 

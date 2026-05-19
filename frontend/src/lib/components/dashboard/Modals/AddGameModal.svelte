@@ -210,6 +210,10 @@
 					</div>
 					<!-- P2 stocks (left-to-right) -->
 					<div class="stocks-group stocks-group--right">
+						<button
+							class="none-btn btn border-secondary rounded text-xs px-2 h-7"
+							on:click={() => handleStockChange(p2Idx, 0)}
+						>0</button>
 						{#each [...Array(4).keys()] as stock}
 							<button
 								class="stock-btn"
@@ -219,10 +223,6 @@
 								<CharacterIcon characterId={game?.settings?.players[p2Idx]?.characterId ?? 0} />
 							</button>
 						{/each}
-						<button
-							class="none-btn btn border-secondary rounded text-xs px-2 h-7"
-							on:click={() => handleStockChange(p2Idx, 0)}
-						>0</button>
 					</div>
 				</div>
 			</div>

@@ -103,6 +103,14 @@ export class SqliteGame {
     }
   }
 
+  async updateGamesBatch(games: GameStats[]): Promise<void> {
+    await this.sqlite.initializing;
+    if (!games.length) return;
+    const entities = games.map(g => this.gameStatsRepo.create(g));
+    await this.gameStatsRepo.save(entities);
+    this.messageHandler.sendMessage('RecentGames', games);
+  }
+
   private async sendRecentGames() {
     const recentGameId = this.storeGames.getRecentGameId()
     const recentGames = await this.getGamesById(recentGameId)

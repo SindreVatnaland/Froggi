@@ -30,6 +30,7 @@ import type {
 	Player,
 	SessionStats,
 } from '../models/types/slippiData';
+import type { StrikeState } from '../models/types/stageStriking';
 import type { FrameEntryType } from '@slippi/slippi-js';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
@@ -105,7 +106,8 @@ export interface MessageEvents {
 
 	AuthorizationKey: (key: string) => void;
 	AuthorizationKeyUpdate: (key: string) => void;
-	InitAuthentication: (socketId: string, authKey: string) => void;
+	InitAuthentication: (socketId: string, authKey: string, matchId?: string) => void;
+	RecentGamesReorder: (fromIndex: number, toIndex: number) => void;
 
 	CleanupCustomResources: () => void;
 	CleanupCustomResourcesByOverlayId: (overlayId: string) => void;
@@ -133,6 +135,12 @@ export interface MessageEvents {
 
 	RemoteAccessStatus: (url: string | undefined, provider: 'tailscale' | 'ngrok' | undefined) => void;
 	RemoteAccessRefresh: () => void;
+	TailscaleFunnel: (enable: boolean) => void;
+	TailscaleLogin: () => void;
+	TailscaleStatus: (status: { installed: boolean; authenticated: boolean; funnelActive: boolean }) => void;
+
+	StrikeState: (state: StrikeState | undefined) => void;
+	StrikeStateUpdate: (state: StrikeState | undefined) => void;
 }
 
 export class TypedEmitter extends localEmitter {

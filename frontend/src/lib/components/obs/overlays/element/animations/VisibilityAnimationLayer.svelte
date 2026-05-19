@@ -11,6 +11,7 @@
 		postGame,
 		recentGames,
 		sessionStats,
+		strikeState,
 	} from '$lib/utils/store.svelte';
 	import { onMount } from 'svelte';
 	import { inGameVisibilityOption } from './visibilityConditions/InGameVisibilityOptions.svelte';
@@ -35,6 +36,8 @@
 		SessionStats,
 	} from '$lib/models/types/slippiData';
 	import { rankPredictionVisibilityOption } from './visibilityConditions/RankPredictionVisibilityOptions.svelte';
+	import { strikeVisibilityOption } from './visibilityConditions/StrikeVisibilityOptions.svelte';
+	import type { StrikeState } from '$lib/models/types/stageStriking';
 	export let animationIn: Function;
 	export let animationOut: Function;
 	export let dataItem: GridContentItem;
@@ -54,6 +57,7 @@
 		currentPlayer: CurrentPlayer | undefined,
 		currentPlayers: Player[],
 		sessionStats: SessionStats | undefined,
+		strikeStateVal: StrikeState | undefined,
 	) => {
 		if (edit || preview) return true;
 
@@ -109,7 +113,8 @@
 				) ||
 				rankVisibilityOption(option, currentPlayer) ||
 				rankPredictionVisibilityOption(option, currentPlayer, gameSettings) ||
-				sessionVisibilityOption(option, sessionStats)
+				sessionVisibilityOption(option, sessionStats) ||
+				strikeVisibilityOption(option, strikeStateVal)
 			) {
 				return true;
 			}
@@ -129,6 +134,7 @@
 			$currentPlayer,
 			$currentPlayers,
 			$sessionStats,
+			$strikeState,
 		);
 	}
 

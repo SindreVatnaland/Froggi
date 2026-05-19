@@ -27,7 +27,7 @@ const initSocket = (socket: WebSocket) => {
         const parse = JSON.parse(message.data as string);
         parse["socketId"] = connections?.find(conn => conn.socket === message.target)?.id ?? "";
         parentPort?.postMessage([JSON.stringify(parse)]);
-        initAuthentication(connections?.find(conn => conn.socket === message.target)?.id ?? "", parse["AuthorizationKey"] ?? "");
+        initAuthentication(connections?.find(conn => conn.socket === message.target)?.id ?? "", parse["AuthorizationKey"] ?? "", parse["MatchId"] ?? "");
     });
 
     socket.addEventListener('close', () => {
@@ -69,8 +69,8 @@ const initData = (socketId: string) => {
     }));
 }
 
-const initAuthentication = (socketId: string, authKey: string) => {
+const initAuthentication = (socketId: string, authKey: string, matchId: string) => {
     parentPort?.postMessage(JSON.stringify({
-        ["InitAuthentication"]: [socketId, authKey],
+        ["InitAuthentication"]: [socketId, authKey, matchId],
     }));
 }

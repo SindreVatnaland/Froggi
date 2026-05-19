@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
+	import { dev } from '$app/environment';
 	import {
 		authorizationKey,
 		electronEmitter,
@@ -7,7 +8,10 @@
 		isAuthorized,
 		isElectron,
 		remoteAccess,
+		tailscaleStatus,
 	} from '$lib/utils/store.svelte';
+
+	$: port = dev ? 5173 : 3200;
 
 	let authKey: string = $authorizationKey;
 
@@ -34,6 +38,14 @@
 		urlCopied = true;
 		setTimeout(() => (urlCopied = false), 2000);
 	};
+
+	$: tsInstalled = $tailscaleStatus?.installed ?? false;
+	$: tsAuthenticated = $tailscaleStatus?.authenticated ?? false;
+	$: tsFunnelActive = $tailscaleStatus?.funnelActive ?? false;
+
+	const toggleTailscaleFunnel = () => $electronEmitter.emit('TailscaleFunnel', !tsFunnelActive);
+	const tailscaleLogin = () => $electronEmitter.emit('TailscaleLogin');
+	const openTailscaleDownload = () => $electronEmitter.emit('OpenUrl', 'https://tailscale.com/download');
 </script>
 
 <main class="flex justify-center">
@@ -110,9 +122,7 @@
 		<p class="section-label">Remote Access</p>
 		<div class="settings-card border-secondary mt-2">
 			<p class="text-xs opacity-40 mb-3 leading-relaxed">
-				Let player devices connect over the internet for stage striking and character select.
-				Froggi runs on port <span class="font-mono">3200</span> — forward that port using
-				Tailscale or ngrok.
+				Share your Froggi with players over the internet. Use Tailscale or ngrok to expose port <span class="font-mono">{port}</span>.
 			</p>
 
 			<!-- Detected URL -->
@@ -139,17 +149,60 @@
 			</div>
 
 			<div class="remote-option border-secondary">
-				<div class="flex items-center justify-between mb-1">
+				<div class="flex items-center justify-between mb-2">
 					<span class="text-sm font-semibold text-secondary-color">Tailscale Funnel</span>
 					<span class="option-tag">Recommended</span>
 				</div>
-				<ol class="setup-steps">
-					<li>Install Tailscale: <span class="font-mono">tailscale.com/download</span></li>
-					<li>Sign in and connect this device to your tailnet</li>
-					<li>Enable Funnel: <code>tailscale funnel 3200</code></li>
-					<li>Share your Tailscale hostname with players, then hit ↻ above to detect it</li>
-					<li>To disable: <code>tailscale funnel off</code></li>
-				</ol>
+
+				<!-- Step 1: Install -->
+				<div class="ts-step" class:ts-step--done={tsInstalled}>
+					<div class="ts-step-header">
+						<span class="ts-step-num" class:ts-step-num--done={tsInstalled}>1</span>
+						<span class="ts-step-label text-secondary-color">Install Tailscale</span>
+						{#if $tailscaleStatus !== undefined}
+							<span class="ts-pill" class:ts-pill--ok={tsInstalled} class:ts-pill--err={!tsInstalled}>
+								{tsInstalled ? 'Installed' : 'Not found'}
+							</span>
+						{/if}
+					</div>
+					{#if !tsInstalled && $isElectron}
+						<button class="btn text-xs h-7 px-3 border-secondary rounded mt-1" on:click={openTailscaleDownload}>
+							Download →
+						</button>
+					{/if}
+				</div>
+
+				<!-- Step 2: Login -->
+				<div class="ts-step" class:ts-step--done={tsAuthenticated} class:ts-step--disabled={!tsInstalled}>
+					<div class="ts-step-header">
+						<span class="ts-step-num" class:ts-step-num--done={tsAuthenticated}>2</span>
+						<span class="ts-step-label text-secondary-color">Log in to Tailscale</span>
+						{#if tsInstalled && $tailscaleStatus !== undefined}
+							<span class="ts-pill" class:ts-pill--ok={tsAuthenticated} class:ts-pill--err={!tsAuthenticated}>
+								{tsAuthenticated ? 'Connected' : 'Not logged in'}
+							</span>
+						{/if}
+					</div>
+					{#if tsInstalled && !tsAuthenticated && $isElectron}
+						<button class="btn text-xs h-7 px-3 border-secondary rounded mt-1" on:click={tailscaleLogin}>
+							Login with Tailscale
+						</button>
+					{/if}
+				</div>
+
+				<!-- Step 3: Funnel -->
+				<div class="ts-step" class:ts-step--disabled={!tsAuthenticated}>
+					<div class="ts-step-header">
+						<span class="ts-step-num" class:ts-step-num--done={tsFunnelActive}>3</span>
+						<span class="ts-step-label text-secondary-color">Enable Funnel</span>
+					</div>
+					{#if tsAuthenticated && $isElectron}
+						<label class="toggle-row border-secondary mt-1">
+							<span class="toggle-label text-secondary-color">Expose port {port} publicly</span>
+							<input type="checkbox" class="toggle-check" checked={tsFunnelActive} on:change={toggleTailscaleFunnel} />
+						</label>
+					{/if}
+				</div>
 			</div>
 
 			<div class="remote-option border-secondary mt-3">
@@ -158,11 +211,9 @@
 					<span class="option-tag option-tag--alt">Alternative</span>
 				</div>
 				<ol class="setup-steps">
-					<li>Install ngrok: <span class="font-mono">ngrok.com/download</span></li>
-					<li>Create a free account and copy your authtoken</li>
-					<li>Run: <code>ngrok config add-authtoken &lt;token&gt;</code></li>
-					<li>Start tunnel: <code>ngrok http 3200</code></li>
-					<li>Froggi auto-detects the ngrok URL — hit ↻ above if needed</li>
+					<li>Install from <span class="font-mono">ngrok.com/download</span>, add authtoken</li>
+					<li>Run: <code>ngrok http {port}</code></li>
+					<li>Hit ↻ above — Froggi detects the URL automatically</li>
 				</ol>
 			</div>
 		</div>
@@ -285,4 +336,64 @@
 		background: rgba(59, 130, 246, 0.15);
 		color: rgb(96, 165, 250);
 	}
+
+	.toggle-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.4rem 0.6rem;
+		border-radius: 0.25rem;
+		cursor: pointer;
+	}
+
+	.toggle-label { font-size: 0.8rem; font-weight: 500; }
+	.toggle-check { width: 0.9rem; height: 0.9rem; cursor: pointer; flex-shrink: 0; }
+
+	.ts-step {
+		padding: 0.5rem 0;
+		border-bottom: 1px solid rgba(128,128,128,0.1);
+	}
+	.ts-step:last-child { border-bottom: none; }
+	.ts-step--disabled { opacity: 0.35; pointer-events: none; }
+
+	.ts-step-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.ts-step-num {
+		width: 1.2rem;
+		height: 1.2rem;
+		border-radius: 50%;
+		background: rgba(128,128,128,0.15);
+		color: var(--secondary-color);
+		font-size: 0.6rem;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.ts-step-num--done {
+		background: rgba(34,197,94,0.2);
+		color: rgb(34,197,94);
+	}
+
+	.ts-step-label {
+		font-size: 0.8rem;
+		font-weight: 500;
+		flex: 1;
+	}
+
+	.ts-pill {
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 0.1rem 0.4rem;
+		border-radius: 999px;
+	}
+	.ts-pill--ok { background: rgba(34,197,94,0.12); color: rgb(34,197,94); }
+	.ts-pill--err { background: rgba(239,68,68,0.12); color: rgb(239,68,68); }
 </style>

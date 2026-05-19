@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import type { IpcMain } from 'electron';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
+import WebSocket, { WebSocketServer } from 'ws';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { ElectronSettingsStore } from './store/storeSettings';
@@ -23,11 +24,14 @@ import fs from "fs"
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import { Duplex } from 'stream';
 import { OverlayEditor } from '../../frontend/src/lib/models/types/overlay';
 import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
+import { ElectronStrikeStore } from './store/storeStrike';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
+import { newId } from '../utils/functions';
 
 @singleton()
 export class MessageHandler {
@@ -36,6 +40,8 @@ export class MessageHandler {
 	private webSocketWorker: Worker = new Worker(
 		path.join(__dirname, 'workers/websocketWorker.js'),
 	);
+	private expressWss: WebSocketServer = new WebSocketServer({ noServer: true });
+	private expressWsConnections: Map<string, WebSocket> = new Map();
 
 	constructor(
 		@inject('AppDir') private appDir: string,
@@ -60,6 +66,7 @@ export class MessageHandler {
 		@inject(delay(() => ElectronSettingsStore)) private storeSettings: ElectronSettingsStore,
 		@inject(delay(() => ElectronFroggiStore)) private storeFroggi: ElectronFroggiStore,
 		@inject(delay(() => OverlayInjector)) private overlayInjector: OverlayInjector,
+		@inject(delay(() => ElectronStrikeStore)) private storeStrike: ElectronStrikeStore,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -68,6 +75,7 @@ export class MessageHandler {
 		this.initElectronMessageHandler();
 		this.initHtml();
 		this.initWebSocket();
+		this.initExpressWebSocket();
 		this.initEventListeners();
 	}
 
@@ -86,12 +94,64 @@ export class MessageHandler {
 				this.app.use('*', staticFrontendServe);
 			}
 
+			this.server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
+				this.expressWss.handleUpgrade(req, socket, head, (ws) => {
+					this.expressWss.emit('connection', ws);
+				});
+			});
+
 			this.server.listen(BACKEND_PORT, () => {
 				this.log.info(`listening on *:${BACKEND_PORT}`);
 			});
 		} catch (err) {
 			this.log.error(err);
 		}
+	}
+
+	private initExpressWebSocket() {
+		this.expressWss.on('connection', (socket: WebSocket) => {
+			const socketId = newId();
+			this.expressWsConnections.set(socketId, socket);
+			this.log.info('Express WS connected:', socketId);
+
+			socket.on('message', (raw) => {
+				try {
+					const data = JSON.parse(raw.toString());
+					const authKey = data['AuthorizationKey'] ?? '';
+					const matchId = data['MatchId'] ?? '';
+					const serverKey = this.storeSettings.getAuthorizationKey();
+					const currentMatchId = this.storeLiveStats.getGameSettings()?.matchInfo?.matchId ?? null;
+					const gameMode = this.storeLiveStats.getGameMode();
+					const matchIdValid = Boolean(matchId && currentMatchId && matchId === currentMatchId && gameMode === 'ranked');
+					const keyValid = !serverKey || authKey === serverKey;
+					const isAuthorized = matchIdValid || keyValid;
+					const allowUnauth = ['InitData', 'InitElectron', 'InitAuthentication', 'Ping'];
+
+					for (const [key, value] of Object.entries(data)) {
+						if (['AuthorizationKey', 'MatchId'].includes(key)) continue;
+						if (isAuthorized || allowUnauth.includes(key)) {
+							this.clientEmitter.emit(key as keyof MessageEvents, ...(value as any));
+						} else {
+							if (socket.readyState === WebSocket.OPEN) {
+								socket.send(JSON.stringify({ Notification: ['Unauthorized - Update key in settings', NotificationType.Danger] }));
+							}
+						}
+					}
+					this.initData(socketId);
+					this.sendAuthorizedMessage(socketId, authKey, matchId);
+				} catch (err) {
+					this.log.error('Express WS message error:', err);
+				}
+			});
+
+			socket.on('close', () => {
+				this.expressWsConnections.delete(socketId);
+				this.log.info('Express WS disconnected:', socketId);
+			});
+
+			this.initData(socketId);
+			this.sendAuthorizedMessage(socketId, '');
+		});
 	}
 
 	private tryCreatePublicDir(dir: string) {
@@ -135,6 +195,9 @@ export class MessageHandler {
 						parse['socketId'],
 						parse['AuthorizationKey'],
 						this.storeSettings.getAuthorizationKey(),
+						parse['MatchId'] ?? '',
+						this.storeLiveStats.getGameSettings()?.matchInfo?.matchId ?? null,
+						this.storeLiveStats.getGameMode(),
 						this.clientEmitter,
 						this.webSocketWorker,
 						key as keyof MessageEvents,
@@ -214,12 +277,17 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.remoteAccessUrl, this.remoteAccessProvider);
+		if (!socketId) this.detectTailscaleStatus();
+		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 	}
 
-	private sendAuthorizedMessage(socketId: string, clientKey: string) {
+	private sendAuthorizedMessage(socketId: string, clientKey: string, clientMatchId: string = '') {
 		const serverKey = this.storeSettings.getAuthorizationKey();
-		const isAuthorized = !serverKey || clientKey === serverKey;
-		console.log('Is Authorized', isAuthorized, clientKey, serverKey, socketId);
+		const currentMatchId = this.storeLiveStats.getGameSettings()?.matchInfo?.matchId ?? null;
+		const gameMode = this.storeLiveStats.getGameMode();
+		const matchIdValid = Boolean(clientMatchId && currentMatchId && clientMatchId === currentMatchId && gameMode === 'ranked');
+		const keyValid = !serverKey || clientKey === serverKey;
+		const isAuthorized = matchIdValid || keyValid;
 		this.sendInitMessage(socketId, 'Authorize', isAuthorized);
 	}
 
@@ -234,6 +302,57 @@ export class MessageHandler {
 
 	private remoteAccessUrl: string | undefined = undefined;
 	private remoteAccessProvider: 'tailscale' | 'ngrok' | undefined = undefined;
+	private tailscaleBin: string | undefined = undefined;
+
+	private readonly tailscaleCandidates = [
+		'tailscale',
+		'/usr/local/bin/tailscale',
+		'/opt/homebrew/bin/tailscale',
+		'/Applications/Tailscale.app/Contents/MacOS/Tailscale',
+	];
+
+	private async detectTailscaleStatus(): Promise<void> {
+		this.log.info('detectTailscaleStatus: scanning candidates');
+		let bin: string | undefined;
+		for (const candidate of this.tailscaleCandidates) {
+			const exists = await new Promise<boolean>((resolve) => {
+				exec(`"${candidate}" version`, { timeout: 2000 }, (err) => resolve(!err));
+			});
+			this.log.info(`  candidate ${candidate}: ${exists ? 'found' : 'not found'}`);
+			if (exists) { bin = candidate; break; }
+		}
+		this.tailscaleBin = bin;
+		this.log.info('detectTailscaleStatus: bin=', bin);
+
+		if (!bin) {
+			this.log.info('detectTailscaleStatus: not installed');
+			this.sendMessage('TailscaleStatus', { installed: false, authenticated: false, funnelActive: false });
+			return;
+		}
+
+		const status = await new Promise<any>((resolve) => {
+			exec(`"${bin}" status --json`, { timeout: 3000 }, (err, stdout) => {
+				this.log.info('detectTailscaleStatus: status err=', err?.message, 'stdout len=', stdout?.length);
+				if (err || !stdout) { resolve(null); return; }
+				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
+			});
+		});
+
+		const authenticated = status?.BackendState === 'Running';
+
+		const serveStatus = await new Promise<Record<string, unknown> | null>((resolve) => {
+			exec(`"${bin}" serve status --json`, { timeout: 3000 }, (err, stdout) => {
+				this.log.info('detectTailscaleStatus: serve status err=', err?.message, 'stdout=', stdout?.slice(0, 200));
+				if (err || !stdout) { resolve(null); return; }
+				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
+			});
+		});
+		const allowFunnel = serveStatus?.AllowFunnel as Record<string, unknown> | undefined;
+		const funnelActive = Boolean(allowFunnel && Object.keys(allowFunnel).length > 0);
+
+		this.log.info('detectTailscaleStatus: BackendState=', status?.BackendState, 'authenticated=', authenticated, 'AllowFunnel=', allowFunnel, 'funnelActive=', funnelActive);
+		this.sendMessage('TailscaleStatus', { installed: true, authenticated, funnelActive });
+	}
 
 	private detectRemoteAccess = async (): Promise<void> => {
 		// Try ngrok local API
@@ -253,6 +372,7 @@ export class MessageHandler {
 			req.setTimeout(1500, () => { req.destroy(); resolve(undefined); });
 		});
 
+		this.log.info('detectRemoteAccess: ngrokUrl=', ngrokUrl);
 		if (ngrokUrl) {
 			this.remoteAccessUrl = ngrokUrl;
 			this.remoteAccessProvider = 'ngrok';
@@ -260,18 +380,26 @@ export class MessageHandler {
 			return;
 		}
 
-		// Try tailscale
-		const tailscaleUrl = await new Promise<string | undefined>((resolve) => {
-			exec('tailscale status --json', { timeout: 3000 }, (err, stdout) => {
-				if (err) { resolve(undefined); return; }
-				try {
-					const parsed = JSON.parse(stdout);
-					const dnsName = parsed?.Self?.DNSName;
-					resolve(dnsName ? `https://${dnsName.replace(/\.$/, '')}` : undefined);
-				} catch { resolve(undefined); }
-			});
-		});
+		// Try tailscale — try several binary locations since Electron PATH is minimal
+		const tailscaleUrl = await (async () => {
+			for (const bin of this.tailscaleCandidates) {
+				const result = await new Promise<string | undefined>((resolve) => {
+					exec(`"${bin}" status --json`, { timeout: 3000 }, (err, stdout) => {
+						this.log.info(`detectRemoteAccess: tailscale ${bin} err=${err?.message} dnsName=${(() => { try { return JSON.parse(stdout ?? '{}')?.Self?.DNSName; } catch { return '?'; } })()}`);
+						if (err || !stdout) { resolve(undefined); return; }
+						try {
+							const parsed = JSON.parse(stdout);
+							const dnsName = parsed?.Self?.DNSName;
+							resolve(dnsName ? `https://${dnsName.replace(/\.$/, '')}` : undefined);
+						} catch { resolve(undefined); }
+					});
+				});
+				if (result) return result;
+			}
+			return undefined;
+		})();
 
+		this.log.info('detectRemoteAccess: tailscaleUrl=', tailscaleUrl);
 		if (tailscaleUrl) {
 			this.remoteAccessUrl = tailscaleUrl;
 			this.remoteAccessProvider = 'tailscale';
@@ -281,6 +409,7 @@ export class MessageHandler {
 
 		this.remoteAccessUrl = undefined;
 		this.remoteAccessProvider = undefined;
+		this.log.info('detectRemoteAccess: no tunnel found');
 		this.sendMessage('RemoteAccessStatus', undefined, undefined);
 	};
 
@@ -291,8 +420,8 @@ export class MessageHandler {
 		this.clientEmitter.on('InitData', (socketId: string) => {
 			this.initData(socketId);
 		});
-		this.clientEmitter.on('InitAuthentication', (socketId, authKey) => {
-			this.sendAuthorizedMessage(socketId, authKey ?? '');
+		this.clientEmitter.on('InitAuthentication', (socketId, authKey, matchId?) => {
+			this.sendAuthorizedMessage(socketId, authKey ?? '', matchId ?? '');
 		});
 		this.clientEmitter.on('Notification', (message: string, type: NotificationType) => {
 			this.sendMessage('Notification', message, type);
@@ -300,9 +429,43 @@ export class MessageHandler {
 		this.clientEmitter.on('OpenUrl', (url: string) => {
 			openurl.open(url);
 		});
-		this.clientEmitter.on('RemoteAccessRefresh', () => {
-			this.detectRemoteAccess();
+		this.clientEmitter.on('RemoteAccessRefresh', async () => {
+			await this.detectRemoteAccess();
+			await this.detectTailscaleStatus();
 		});
-		this.detectRemoteAccess();
+		this.clientEmitter.on('TailscaleFunnel', (enable: boolean) => {
+			const bin = this.tailscaleBin;
+			this.log.info('TailscaleFunnel', { enable, bin, dev: this.dev });
+			if (!bin) {
+				this.log.warn('TailscaleFunnel: no bin found');
+				this.sendMessage('Notification', 'Tailscale not installed', 'danger' as any);
+				return;
+			}
+			const port = this.dev ? 5173 : 3200;
+			const args = enable ? `funnel --bg ${port}` : `funnel reset`;
+			const cmd = `"${bin}" ${args}`;
+			this.log.info('TailscaleFunnel exec:', cmd);
+			exec(cmd, { timeout: 8000 }, async (err, stdout, stderr) => {
+				this.log.info('TailscaleFunnel result', { err: err?.message, stdout: stdout?.trim(), stderr: stderr?.trim() });
+				if (err) {
+					const msg = stderr?.trim() || err.message || 'Tailscale funnel failed';
+					this.log.error('TailscaleFunnel error:', msg);
+					this.sendMessage('Notification', msg.split('\n')[0].slice(0, 80), 'danger' as any);
+					return;
+				}
+				await this.detectRemoteAccess();
+				await this.detectTailscaleStatus();
+			});
+		});
+		this.clientEmitter.on('TailscaleLogin', () => {
+			const bin = this.tailscaleBin ?? this.tailscaleCandidates[0];
+			exec(`"${bin}" login`, { timeout: 120000 }, () => {
+				setTimeout(async () => {
+					await this.detectRemoteAccess();
+					await this.detectTailscaleStatus();
+				}, 2000);
+			});
+		});
+		this.detectRemoteAccess().then(() => this.detectTailscaleStatus());
 	}
 }

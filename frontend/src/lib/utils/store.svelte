@@ -25,13 +25,19 @@
 	import { Controller, SceneSwitchCommands } from '$lib/models/types/commandTypes';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 	import { Froggi } from '$lib/models/types/froggiConfigTypes';
+	import type { StrikeState } from '$lib/models/types/stageStriking';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
 
-	export const authorizationKey = writable<string>(
-		localStorage.getItem('AuthorizationKey') ?? '',
-	);
+	function safeLocalStorage(key: string): string {
+		try { return localStorage.getItem(key) ?? ''; } catch { return ''; }
+	}
+	function checkIsIframe(): boolean {
+		try { return window.self !== window.top; } catch { return true; }
+	}
+
+	export const authorizationKey = writable<string>(safeLocalStorage('AuthorizationKey'));
 	export const isAuthorized = writable<boolean>(Boolean(window.electron));
 	export const isBrowser = writable<boolean>(!window.electron && browser);
 	export const isDesktop = writable<boolean>(
@@ -40,8 +46,9 @@
 	export const isElectron = writable<boolean>(window.electron);
 	export const isMobile = writable<boolean>(!window.electron && Device.isMobile);
 	export const isTablet = writable<boolean>(!window.electron && Device.isTablet);
-	export const isIframe = writable<boolean>(window.self !== window.top);
+	export const isIframe = writable<boolean>(checkIsIframe());
 	export const isOverlayPage = writable<boolean>(false);
+	export const isEditPage = writable<boolean>(false);
 
 	export const isPwa = writable<boolean>(
 		window.electron ||
@@ -91,4 +98,6 @@
 	export const obs = writable<Obs>();
 	export const urls = writable<Url>();
 	export const remoteAccess = writable<{ url?: string; provider?: 'tailscale' | 'ngrok' }>({});
+	export const tailscaleStatus = writable<{ installed: boolean; authenticated: boolean; funnelActive: boolean } | undefined>(undefined);
+	export const strikeState = writable<StrikeState | undefined>(undefined);
 </script>

@@ -665,3 +665,26 @@ export const SLIPPIRANK_ELEMENTS = new Set<CustomElement>([
 	CustomElement.SlippiPlayer2RankChangePredictedLossRatingDifference,
 	CustomElement.SlippiRankChangeRatingDifference,
 ]);
+
+export const STRIKING_ELEMENTS = new Set<CustomElement>([
+	CustomElement.StrikeRpsPlayer1Choice,
+	CustomElement.StrikeRpsPlayer2Choice,
+	CustomElement.StrikeRpsWinner,
+	CustomElement.StrikeCurrentStriker,
+	CustomElement.StrikeFinalStageName,
+	CustomElement.StrikeFinalStageImage,
+	CustomElement.StrikeStageSlot1,
+	CustomElement.StrikeStageSlot2,
+	CustomElement.StrikeStageSlot3,
+	CustomElement.StrikeStageSlot4,
+	CustomElement.StrikeStageSlot5,
+	CustomElement.StrikeStageSlot6,
+	CustomElement.StrikeStageSlot7,
+	CustomElement.StrikeStageSlot8,
+	CustomElement.StrikeStageSlot9,
+	CustomElement.StrikePlayer1Character,
+	CustomElement.StrikePlayer2Character,
+	CustomElement.StrikeOrderDisplay,
+	CustomElement.StrikeBansRemaining,
+	CustomElement.StrikeTimerSeconds,
+]);

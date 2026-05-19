@@ -53,7 +53,8 @@
       "Bash(awk 'BEGIN{prev=-1} { *)",
       "Bash(awk -F'= ' '{gsub\\(/,$/,\"\",$2\\); print $2}')",
       "Bash(npm list *)",
-      "Bash(node -e \"require\\('node-fetch'\\)\")"
+      "Bash(node -e \"require\\('node-fetch'\\)\")",
+      "Bash(grep -E \"\\\\.\\(ts|svelte\\)$\")"
     ]
   }
 }

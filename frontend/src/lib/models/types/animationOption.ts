@@ -166,6 +166,19 @@ export enum VisibilityOption {
 
     RankPredictionIsPromotionGame = "Rank Prediction Promotion Game",
     RankPredictionIsDemotionGame = "Rank Prediction Demotion Game",
+
+    StrikePhaseRps = "Strike Phase: RPS",
+    StrikePhaseStriking = "Strike Phase: Striking",
+    StrikePhaseCharSelect = "Strike Phase: Char Select",
+    StrikePhasePlaying = "Strike Phase: Playing",
+    StrikePhaseComplete = "Strike Phase: Complete",
+    StrikeIsPlayer1Turn = "Strike Player 1 Turn",
+    StrikeIsPlayer2Turn = "Strike Player 2 Turn",
+    StrikeIsStageFinal = "Strike Stage Final",
+    StrikePlayer1RpsSelected = "Strike Player 1 RPS Selected",
+    StrikePlayer2RpsSelected = "Strike Player 2 RPS Selected",
+    StrikePlayer1CharacterSelected = "Strike Player 1 Character Selected",
+    StrikePlayer2CharacterSelected = "Strike Player 2 Character Selected",
 }
 
 export enum VisibilityCategory {
@@ -186,6 +199,7 @@ export enum VisibilityCategory {
     RecentGame5Summary = "Recent Game 5 Summary",
     RankStats = "Rank Stats",
     RankPrediction = "Rank Prediction",
+    StageStriking = "Stage Striking",
 }
 
 export enum AnimationTriggerCategory {

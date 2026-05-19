@@ -95,6 +95,7 @@ export enum ElementCategory {
 
 	PostSetStats = 'Post Set Stats',
 	CurrentMatchStats = 'Current Match Stats',
+	StageStriking = 'Stage Striking',
 	Custom = 'Custom',
 	CurrentPlayerData = 'Current Player Slippi Rank',
 	Player1Data = 'Player 1 Slippi Rank',

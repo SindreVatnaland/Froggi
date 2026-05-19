@@ -29,6 +29,8 @@
 		froggiSettings,
 		injectedOverlays,
 		remoteAccess,
+		tailscaleStatus,
+		strikeState,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -302,6 +304,12 @@
 					remoteAccess.set({ url: url ?? undefined, provider: provider ?? undefined });
 				})();
 				break;
+			case 'TailscaleStatus':
+				tailscaleStatus.set(payload[0] as Parameters<MessageEvents['TailscaleStatus']>[0]);
+				break;
+			case 'StrikeState':
+				strikeState.set(payload[0] as Parameters<MessageEvents['StrikeState']>[0]);
+				break;
 		}
 	}
 
@@ -342,7 +350,11 @@
 
 		const _localEmitter = await getLocalEmitter();
 
-		const socket = new WebSocket(`ws://${_page.url.hostname}:${WEBSOCKET_PORT}`);
+		const isHttps = window.location.protocol === 'https:';
+		const wsUrl = isHttps
+			? `wss://${window.location.host}`
+			: `ws://${_page.url.hostname}:${WEBSOCKET_PORT}`;
+		const socket = new WebSocket(wsUrl);
 
 		const handleWebSocketMessage = ({ data }: { data: any }) => {
 			const parse = JSON.parse(data);
@@ -358,10 +370,12 @@
 
 		const emitElectronMessage = async (event: any, ...data: any) => {
 			const _authorizationKey = await getAuthorizationKey();
+			const matchId = new URLSearchParams(window.location.search).get('matchId') ?? '';
 			socket.send(
 				JSON.stringify({
 					[event as string]: data,
 					['AuthorizationKey']: _authorizationKey,
+					['MatchId']: matchId,
 				}),
 			);
 		};

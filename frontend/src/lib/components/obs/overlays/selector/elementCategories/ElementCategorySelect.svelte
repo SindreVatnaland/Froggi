@@ -46,6 +46,7 @@
 	import CurrentPlayerPredictedSlippiData from './PredictedSlippiData/CurrentPlayerPredictedSlippiData.svelte';
 	import Player2PredictedSlippiData from './PredictedSlippiData/Player2PredictedSlippiData.svelte';
 	import Player1PredictedSlippiData from './PredictedSlippiData/Player1PredictedSlippiData.svelte';
+	import StrikingElementSelect from './Striking/StrikingElementSelect.svelte';
 
 	export let selectedElementId: CustomElement;
 	export let open: boolean;
@@ -58,6 +59,10 @@
 	let selectedCategory: LiveStatsScene | ElementCategory = $statsScene;
 
 	$: buttons = [
+		{
+			category: ElementCategory.StageStriking,
+			visible: true,
+		},
 		{
 			category: ElementCategory.Custom,
 			visible: true,
@@ -256,38 +261,32 @@
 	];
 </script>
 
-<div class="w-full h-full flex flex-col gap-2 text-secondary-color">
-	<div class="w-full">
-		<h1 class="text-lg font-medium">Category</h1>
-		<div
-			class="w-lg 3xl:w-full flex flex-wrap gap-2 max-h-[13rem] min-h-[9rem] overflow-auto border-t border-b border-secondary-color p-2"
-		>
-			{#each buttons.filter((b) => b.visible) as button}
-				<div class="grid gap-2 justify-start items-start">
-					<button
-						class={`btn text-md whitespace-nowrap h-10 px-2 xl:text-xl rounded ${
-							selectedCategory === button.category
-								? 'border-secondary bg-opacity-50'
-								: 'border-accent bg-opacity-25'
-						}`}
-						on:click={() => {
-							selectedCategory = button.category;
-						}}
-					>
-						{button.category}
-					</button>
-				</div>
-			{/each}
-		</div>
+<div class="selector-root text-secondary-color">
+	<!-- Category sidebar -->
+	<div class="cat-sidebar border-secondary-color">
+		<p class="cat-header">Category</p>
+		{#each buttons.filter((b) => b.visible) as button}
+			<button
+				class="cat-btn"
+				class:cat-btn--active={selectedCategory === button.category}
+				on:click={() => { selectedCategory = button.category; }}
+			>
+				{button.category}
+			</button>
+		{/each}
 	</div>
-	<div class="w-full flex-1 overflow-auto border-t border-b border-secondary-color">
-		<h1 class="text-lg font-medium text-secondary-color">Element</h1>
+
+	<!-- Element panel -->
+	<div class="elem-panel">
 		{#key selectedCategory}
 			<div
-				in:fly={{ duration: 250, x: 50, delay: 250 }}
-				out:fly={{ duration: 250, x: 50 }}
-				class="overflow-y-auto flex flex-col gap-2 text-secondary-color"
+				in:fly={{ duration: 150, x: 16 }}
+				out:fly={{ duration: 100, x: -16 }}
+				class="elem-inner"
 			>
+				{#if selectedCategory === ElementCategory.StageStriking}
+					<StrikingElementSelect on:select={select} />
+				{/if}
 				{#if selectedCategory === ElementCategory.Custom}
 					<CustomElementSelect on:select={select} />
 				{/if}
@@ -421,3 +420,69 @@
 		{/key}
 	</div>
 </div>
+
+<style>
+	.selector-root {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.cat-sidebar {
+		width: 200px;
+		flex-shrink: 0;
+		overflow-y: auto;
+		border-right: 1px solid;
+		padding: 0.5rem 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.cat-header {
+		font-size: 0.6rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.35;
+		padding: 0 0.75rem 0.4rem;
+	}
+
+	.cat-btn {
+		width: 100%;
+		text-align: left;
+		padding: 0.3rem 0.75rem;
+		font-size: 0.75rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: var(--secondary-color);
+		opacity: 0.6;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		transition: opacity 0.1s, background 0.1s;
+	}
+
+	.cat-btn:hover { opacity: 1; background: rgba(128,128,128,0.07); }
+
+	.cat-btn--active {
+		opacity: 1;
+		background: rgba(128,128,128,0.14);
+		font-weight: 600;
+	}
+
+	.elem-panel {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0.75rem;
+		position: relative;
+	}
+
+	.elem-inner {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+</style>
