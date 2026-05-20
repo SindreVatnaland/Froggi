@@ -19,6 +19,7 @@
 		isElectron,
 		obsConnection,
 		obsPreviewFrame,
+		obsProcessStatus,
 		recentGames,
 		sceneSwitch,
 		tailscaleStatus,
@@ -52,6 +53,7 @@
 	$: score1 = $gameScore?.at(1) ?? 0;
 	$: bestOf = $gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3;
 	$: obsConnected = $obsConnection?.state === ConnectionState.Connected;
+	$: obsWebsocketDisabled = $obsProcessStatus?.running && $obsProcessStatus?.websocketEnabled === false;
 	$: isLive = $gameState !== InGameState.Inactive;
 
 	$: p1Idx = p1?.playerIndex ?? 0;
@@ -402,6 +404,9 @@
 				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText(`ws://localhost:${$obsConnection?.port ?? '4455'}`); copiedIdx = 22; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 22 ? '✓' : '⎘'}</button>
 			{:else if $obsConnection?.state === ConnectionState.Searching}
 				<span class="text-xs opacity-40 flex-1">Connecting…</span>
+			{:else if obsWebsocketDisabled}
+				<span class="text-xs opacity-40 flex-1">WebSocket disabled</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={connectObs}>Enable</button>
 			{:else}
 				<span class="text-xs opacity-40 flex-1">Disconnected</span>
 				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={connectObs}>Connect</button>

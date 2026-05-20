@@ -155,17 +155,15 @@ export class ObsWebSocket {
 
 	private searchForObs = async () => {
 		clearTimeout(this.obsConnectionInterval);
-		this.log.info('Searching for OBS connection');
 		this.storeObs.setConnectionState(ConnectionState.Searching);
 		const password = this.storeObs.getPassword();
 		const ipAddress = this.storeObs.getIpAddress();
 		const port = this.storeObs.getPort();
+		this.log.info(`Connecting to OBS: ws://${ipAddress}:${port} (auth: ${password ? 'yes' : 'no'})`);
 		try {
 			await this.obs.connect(`ws://${ipAddress}:${port}`, password);
 		} catch {
-			this.log.error(
-				`Could not connect to OBS: ${`ws://${ipAddress}:${port}`}`,
-			);
+			this.log.error(`Could not connect to OBS: ws://${ipAddress}:${port}`);
 		}
 	};
 
@@ -187,12 +185,17 @@ export class ObsWebSocket {
 
 	private initObsWebSocket = async () => {
 		this.obs.on('ConnectionClosed', async () => {
-			this.startProcessSearchInterval();
+			const wasConnected = this.storeObs.getConnectionState() === ConnectionState.Connected;
+			this.storeObs.setConnectionState(ConnectionState.Disconnected);
 			this.shouldSendNotification = true;
 			this.log.info('OBS Connection Closed');
+			if (wasConnected) {
+				this.startProcessSearchInterval();
+			} else {
+				setTimeout(() => this.startProcessSearchInterval(), 5000);
+			}
 		});
 		this.obs.on('ConnectionError', () => {
-			this.startProcessSearchInterval();
 			this.log.error('OBS Connection Error');
 		});
 		this.obs.on('ConnectionOpened', async () => {
@@ -231,6 +234,7 @@ export class ObsWebSocket {
 	private async startProcessSearchInterval() {
 		const connectionState = this.storeObs.getConnectionState();
 		if (connectionState === ConnectionState.Connected) return;
+		if (connectionState === ConnectionState.Searching) return;
 		this.stopProcessSearchInterval();
 		this.storeObs.setConnectionState(ConnectionState.Searching);
 		this.log.info('Looking For OBS Process');
@@ -252,16 +256,18 @@ export class ObsWebSocket {
 			};
 			this.log.info('OBS WebSocket Config: ', obsWebsocketConfig);
 
+			const effectivePassword = obsWebsocketConfig.auth_required ? (obsWebsocketConfig.server_password ?? '') : '';
 			this.messageHandler.sendMessage('ObsProcessStatus', {
 				running: true,
 				websocketEnabled: obsWebsocketConfig.server_enabled,
 				port: String(obsWebsocketConfig.server_port ?? 4455),
-				password: obsWebsocketConfig.server_password ?? '',
+				password: effectivePassword,
 			});
 
 			if (obsWebsocketConfig?.server_enabled) {
+				this.storeObs.setIpAddress('127.0.0.1');
 				this.storeObs.setPort(String(obsWebsocketConfig?.server_port ?? '4455'));
-				this.storeObs.setPassword(obsWebsocketConfig?.server_password ?? '');
+				this.storeObs.setPassword(effectivePassword);
 				this.searchForObs();
 				this.stopProcessSearchInterval();
 				return;
@@ -342,6 +348,20 @@ export class ObsWebSocket {
 
 	initEventListeners() {
 		this.clientEmitter.on('ObsProcessRefresh', async () => {
+			if (this.storeObs.getConnectionState() === ConnectionState.Connected) {
+				const config = getObsWebsocketConfig();
+				const effectivePassword = config
+					? (config.auth_required ? (config.server_password ?? '') : '')
+					: this.storeObs.getPassword();
+				this.messageHandler.sendMessage('ObsProcessStatus', {
+					running: true,
+					websocketEnabled: true,
+					port: this.storeObs.getPort(),
+					password: effectivePassword,
+				});
+				return;
+			}
+			this.storeObs.setConnectionState(ConnectionState.Disconnected);
 			await this.startProcessSearchInterval();
 		});
 		this.clientEmitter.on('ObsWebsocketEnable', async () => {
@@ -356,14 +376,21 @@ export class ObsWebSocket {
 				this.messageHandler.sendMessage(
 					'Notification',
 					ok
-						? 'OBS WebSocket enabled. Restart OBS to connect.'
+						? 'OBS WebSocket enabled. Connecting…'
 						: 'Could not enable automatically — enable in OBS → Tools → WebSocket Server Settings.',
 					ok ? NotificationType.Success : NotificationType.Warning,
 				);
+				if (ok) {
+					this.storeObs.setIpAddress('127.0.0.1');
+					this.storeObs.setPort(String(config.server_port ?? 4455));
+					this.storeObs.setPassword(config.auth_required ? (config.server_password ?? '') : '');
+					await this.searchForObs();
+				}
 				return;
 			}
+			this.storeObs.setIpAddress('127.0.0.1');
 			this.storeObs.setPort(String(config.server_port ?? 4455));
-			this.storeObs.setPassword(config.server_password ?? '');
+			this.storeObs.setPassword(config.auth_required ? (config.server_password ?? '') : '');
 			await this.searchForObs();
 		});
 		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {

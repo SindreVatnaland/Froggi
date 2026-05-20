@@ -43,7 +43,7 @@ export class ElectronObsStore {
     }
 
     getIpAddress(): string {
-        return (this.store.get('obs.auth.ipAddress') ?? "localhost") as string;
+        return (this.store.get('obs.auth.ipAddress') ?? "127.0.0.1") as string;
     }
 
     setIpAddress(ip: string) {

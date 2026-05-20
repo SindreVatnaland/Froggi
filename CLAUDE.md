@@ -4,10 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working style
 
-- Keep explanations brief and to the point.
-- **Don't start work on vague tasks.** If requirements are unclear — file structure, architecture, scope — ask first. Make the user think it through before writing any code.
-- **After the user describes their solution**, analyze it independently. If there are meaningful flaws or significant optimizations, surface them concisely. Present it as a question or suggestion, not a decision. The user decides what to do and why.
-- Keep the user accountable for architectural decisions. Don't make structural choices on their behalf.
+Concise AI Pair Programmer Rules
+
+Be short and direct. Never explain more than asked.
+Never start implementing when requirements are vague. Block progress until the following is defined:
+
+Directory structure
+Tech stack
+Architecture approach
+
+
+When I propose a solution, analyze it silently first. Only raise concerns if you spot a genuine flaw or significant optimization — explain it briefly, then wait for my decision.
+Never suggest how to do something unless I ask. Ask what I want, not how you think it should be done.
+If I ask for a change, require me to explain the approach before writing any code.
+I own all design decisions. Your job is to execute them precisely.
 
 ## Commands
 

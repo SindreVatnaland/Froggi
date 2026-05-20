@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { electronEmitter, isElectron, obsConnection, urls } from '$lib/utils/store.svelte';
+	import { electronEmitter, isElectron, obsConnection, obsProcessStatus, urls } from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import Clipboard from 'svelte-clipboard';
 	// @ts-ignore
@@ -15,6 +15,7 @@
 	$: externalUrl = `${$urls?.external}/obs/overlay/${overlayId}`;
 
 	$: isObsConnected = $obsConnection?.state === ConnectionState.Connected;
+	$: obsWebsocketDisabled = $obsProcessStatus?.running && $obsProcessStatus?.websocketEnabled === false;
 
 	const addToObs = async () => {
 		const overlay = await getOverlayById(overlayId);
@@ -72,7 +73,7 @@
 					on:click={() => $electronEmitter.emit('ObsWebsocketEnable')}
 					class="btn text-sm h-9 px-5 border-secondary rounded"
 				>
-					Connect OBS
+					{obsWebsocketDisabled ? 'Enable OBS WebSocket' : 'Connect OBS'}
 				</button>
 				{:else}
 				<button

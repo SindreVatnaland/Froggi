@@ -5,10 +5,11 @@
 	import { cloneDeep } from 'lodash';
 	import { onMount } from 'svelte';
 
-	const defaultAuth = { ipAddress: 'localhost', port: '4455', password: '' };
+	const defaultAuth = { ipAddress: '127.0.0.1', port: '4455', password: '' };
 
 	let auth = cloneDeep(defaultAuth);
 	let configApplied = false;
+	let enablingWebsocket = false;
 
 	const isValidIp = (v: string) =>
 		/^(localhost|(?:25[0-5]|2[0-4]\d|[01]?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d?\d)){3})$/.test(v);
@@ -16,8 +17,11 @@
 
 	$: valid = isValidIp(auth.ipAddress) && isValidPort(auth.port) && typeof auth.password === 'string';
 	$: connected = $obsConnection?.state === ConnectionState.Connected;
+	$: connecting = $obsConnection?.state === ConnectionState.Searching;
 	$: obsRunning = $obsProcessStatus?.running;
 	$: websocketEnabled = $obsProcessStatus?.websocketEnabled;
+
+	$: if (websocketEnabled) enablingWebsocket = false;
 
 	$: if ($obsProcessStatus?.port && !configApplied) {
 		auth = {
@@ -38,48 +42,50 @@
 	};
 
 	const resetToDefault = () => { auth = cloneDeep(defaultAuth); configApplied = false; };
-	const enableWebsocket = () => $electronEmitter.emit('ObsWebsocketEnable');
+
+	const autoConnect = () => {
+		if ($obsProcessStatus?.port) {
+			auth = {
+				ipAddress: 'localhost',
+				port: $obsProcessStatus.port,
+				password: $obsProcessStatus.password ?? '',
+			};
+			configApplied = true;
+		}
+		enablingWebsocket = true;
+		$electronEmitter.emit('ObsWebsocketEnable');
+	};
 </script>
 
-<div class="flex items-center gap-3 mb-6">
-	<h1 class="text-xl font-semibold text-secondary-color">OBS WebSocket</h1>
-	<span
-		class="status-pill ml-auto"
-		class:status-pill--ok={connected}
-		class:status-pill--err={!connected}
-	>
-		{connected ? 'Connected' : 'Disconnected'}
-	</span>
-</div>
+<h1 class="text-xl font-semibold text-secondary-color mb-6">OBS WebSocket</h1>
 
 {#if $isElectron}
-<div class="obs-status-row border-secondary mb-5">
+<div class="obs-status-row border-secondary mb-4">
 	<span class="obs-status-label">OBS</span>
 	{#if obsRunning === undefined || obsRunning === null}
 		<span class="obs-status-val">Checking…</span>
 	{:else if obsRunning}
 		<span class="obs-status-val obs-status-val--ok">Running</span>
-		<span class="obs-status-sep">·</span>
-		<span class="obs-status-val">WebSocket</span>
-		{#if websocketEnabled === true}
-			<span class="obs-status-val obs-status-val--ok">Enabled</span>
-		{:else if websocketEnabled === false}
-			<span class="obs-status-val obs-status-val--warn">Disabled</span>
+		{#if connected}
+			<span class="obs-status-sep">·</span>
+			<span class="obs-status-val obs-status-val--ok">Connected</span>
+		{:else if connecting}
+			<span class="obs-status-sep">·</span>
+			<span class="obs-status-val obs-status-val--warn">Connecting…</span>
 		{:else}
-			<span class="obs-status-val">Unknown</span>
+			<span class="obs-status-sep">·</span>
+			<span class="obs-status-val">WebSocket</span>
+			{#if websocketEnabled === true}
+				<span class="obs-status-val obs-status-val--ok">Enabled</span>
+			{:else if websocketEnabled === false}
+				<span class="obs-status-val obs-status-val--warn">Disabled</span>
+			{:else}
+				<span class="obs-status-val">Unknown</span>
+			{/if}
 		{/if}
 	{:else}
 		<span class="obs-status-val obs-status-val--err">Not detected</span>
 	{/if}
-</div>
-{/if}
-
-{#if $isElectron && obsRunning && websocketEnabled === false}
-<div class="enable-banner border-secondary mb-5">
-	<p class="text-xs opacity-60 flex-1">OBS WebSocket is disabled. Enable it with one click, then restart OBS.</p>
-	<button class="btn text-xs h-7 px-4 border-secondary rounded shrink-0" on:click={enableWebsocket}>
-		Enable WebSocket
-	</button>
 </div>
 {/if}
 
@@ -119,12 +125,21 @@
 	</div>
 
 	<div class="flex gap-2 mt-2 flex-wrap">
+		{#if $isElectron && obsRunning && !connected && !connecting}
+		<button
+			class="btn text-xs h-8 px-4 border-secondary rounded disabled:opacity-40"
+			on:click={autoConnect}
+			disabled={connecting || enablingWebsocket}
+		>
+			{connecting || enablingWebsocket ? 'Connecting…' : 'Auto-connect'}
+		</button>
+		{/if}
 		<button
 			class="btn text-xs h-8 px-4 border-secondary rounded disabled:opacity-40"
 			on:click={connect}
-			disabled={!valid || connected}
+			disabled={!valid || connected || connecting}
 		>
-			Connect
+			{connecting ? 'Connecting…' : connected ? 'Connected' : 'Connect'}
 		</button>
 		<button class="btn text-xs h-8 px-4 border-secondary rounded" on:click={resetToDefault}>
 			Reset
@@ -170,25 +185,6 @@
 		outline: none;
 	}
 
-	.status-pill {
-		font-size: 0.65rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		padding: 0.2rem 0.5rem;
-		border-radius: 999px;
-	}
-
-	.status-pill--ok {
-		background: rgba(34, 197, 94, 0.12);
-		color: rgb(34, 197, 94);
-	}
-
-	.status-pill--err {
-		background: rgba(239, 68, 68, 0.12);
-		color: rgb(239, 68, 68);
-	}
-
 	.obs-status-row {
 		display: flex;
 		align-items: center;
@@ -217,12 +213,4 @@
 	.obs-status-val--warn { color: rgb(234, 179, 8); opacity: 1; }
 	.obs-status-val--err { color: rgb(239, 68, 68); opacity: 1; }
 
-	.enable-banner {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.6rem 0.75rem;
-		border-radius: 0.25rem;
-		max-width: 320px;
-	}
 </style>

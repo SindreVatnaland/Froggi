@@ -76,7 +76,8 @@
       "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/frontend/static/icon.png /Users/sindrevatnaland/VSCode/Froggi/build/icon.png /Users/sindrevatnaland/VSCode/Froggi/electron/update/icon.png)",
       "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)",
       "Bash(mkdir -p /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/\\\\[num\\\\])",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(node -e \"const path = require\\('path'\\); const os = require\\('os'\\); const getAppDataPath = require\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/appdata-path'\\); console.log\\(getAppDataPath\\('obs-studio'\\)\\); console.log\\(path.join\\(os.homedir\\(\\), 'Library/Application Support/obs-studio'\\)\\); \")"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p"
