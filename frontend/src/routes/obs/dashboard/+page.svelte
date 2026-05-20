@@ -37,6 +37,7 @@
 	let isResetModalOpen = false;
 	let isBoConfirmOpen = false;
 	let pendingBo: BestOf | null = null;
+	let backdropMousedownSelf = false;
 	let copiedIdx: number | null = null;
 	let obsPreviewEnabled = false;
 
@@ -450,28 +451,6 @@
 </div>
 {/if}
 
-<!-- ── OBS Preview (Electron only) ── -->
-{#if $isElectron && obsConnected}
-<div class="dash-card border-secondary mb-3">
-	<div class="preview-header">
-		<p class="dash-label">OBS Preview</p>
-		<button
-			class="btn text-xs h-6 px-2.5 border-secondary rounded"
-			class:preview-active={obsPreviewEnabled}
-			on:click={toggleObsPreview}
-		>{obsPreviewEnabled ? 'Stop' : 'Live Preview'}</button>
-	</div>
-	{#if obsPreviewEnabled}
-		<div class="preview-frame">
-			{#if $obsPreviewFrame}
-				<img src={$obsPreviewFrame} alt="OBS Preview" class="preview-img" />
-			{:else}
-				<p class="preview-loading">Connecting…</p>
-			{/if}
-		</div>
-	{/if}
-</div>
-{/if}
 
 
 <!-- ── OBS Controls ── -->
@@ -552,7 +531,10 @@
 </ConfirmModal>
 
 {#if isStartSetModalOpen}
-<div class="modal-backdrop" on:click|self={() => (isStartSetModalOpen = false)} role="dialog">
+<div class="modal-backdrop" role="dialog"
+	on:mousedown={(e) => { backdropMousedownSelf = e.target === e.currentTarget; }}
+	on:click|self={() => { if (backdropMousedownSelf) isStartSetModalOpen = false; }}
+>
 	<div class="start-set-box background-primary-color border-secondary">
 		<p class="start-set-title">Start Set</p>
 		<div class="start-set-fields">

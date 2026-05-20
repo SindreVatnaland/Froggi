@@ -12,12 +12,29 @@
 	}
 
 	function clickOutside(node: any) {
+		let mousedownTarget: EventTarget | null = null;
+
+		const handleMousedown = (event: MouseEvent) => {
+			mousedownTarget = event.target;
+		};
 		const handleClick = (event: any) => {
-			if (node && !node.contains(event.target) && !event.defaultPrevented) {
+			if (
+				node &&
+				!node.contains(event.target) &&
+				!node.contains(mousedownTarget) &&
+				!event.defaultPrevented
+			) {
 				node.dispatchEvent(new CustomEvent('click_outside', node));
 			}
 		};
+		document.addEventListener('mousedown', handleMousedown, true);
 		document.addEventListener('click', handleClick, true);
+		return {
+			destroy() {
+				document.removeEventListener('mousedown', handleMousedown, true);
+				document.removeEventListener('click', handleClick, true);
+			},
+		};
 	}
 
 	function modalAction(node: any) {
