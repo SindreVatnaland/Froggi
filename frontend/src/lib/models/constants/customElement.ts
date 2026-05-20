@@ -743,9 +743,6 @@ export enum CustomElement {
     StrikeStageSlot4 = 7130,
     StrikeStageSlot5 = 7140,
     StrikeStageSlot6 = 7150,
-    StrikeStageSlot7 = 7160,
-    StrikeStageSlot8 = 7170,
-    StrikeStageSlot9 = 7180,
 
     StrikePlayer1Character = 7200,
     StrikePlayer2Character = 7210,

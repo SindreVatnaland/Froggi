@@ -181,8 +181,17 @@ export enum VisibilityOption {
     StrikeIsStageFinal = "Strike Stage Final",
     StrikePlayer1RpsSelected = "Strike Player 1 RPS Selected",
     StrikePlayer2RpsSelected = "Strike Player 2 RPS Selected",
+    StrikeEitherRpsSelected  = "Strike Either Player RPS Selected",
     StrikePlayer1CharacterSelected = "Strike Player 1 Character Selected",
     StrikePlayer2CharacterSelected = "Strike Player 2 Character Selected",
+
+    StrikeAnyStageStruck = "Strike: Any Stage Struck",
+    StrikeFoDStruck      = "Strike: Fountain of Dreams Struck (Trigger)",
+    StrikeBFStruck       = "Strike: Battlefield Struck (Trigger)",
+    StrikeFDStruck       = "Strike: Final Destination Struck (Trigger)",
+    StrikeDLStruck       = "Strike: Dream Land Struck (Trigger)",
+    StrikeYSStruck       = "Strike: Yoshis Story Struck (Trigger)",
+    StrikePSStruck       = "Strike: Pokemon Stadium Struck (Trigger)",
 
     // Per-stage: struck (currently banned/struck in active phase)
     StrikeIsFoDStruck = "Strike: Fountain of Dreams Struck",

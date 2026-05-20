@@ -58,7 +58,7 @@
 	</SelectOption>
 
 	<p class="section-label">Stage Slots</p>
-	{#each Array(9) as _, i}
+	{#each Array(6) as _, i}
 		<SelectOption
 			description="Stage slot {i + 1} from your configured list — shows image, name, and strike state"
 			value={CustomElement.StrikeStageSlot1 + i * 10}
