@@ -1,73 +1,76 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { Plug, Clapperboard, Gamepad2 } from 'lucide-svelte';
 
 	const navItems = [
 		{
 			label: 'OBS WebSocket',
-			description: 'IP address, port, and password for OBS connection',
+			description: 'IP address, port, and password for OBS connection.',
 			path: '/obs/settings/websocket',
+			icon: Plug,
 		},
 		{
 			label: 'Scene Commands',
-			description: 'Configure OBS scene switches per game state',
+			description: 'Configure OBS scene switches per game state.',
 			path: '/obs/settings/scene',
+			icon: Clapperboard,
 		},
 		{
 			label: 'Controller Commands',
-			description: 'Bind controller inputs to OBS commands',
+			description: 'Bind controller inputs to OBS commands.',
 			path: '/obs/settings/controller',
+			icon: Gamepad2,
 		},
 	];
 </script>
 
-<h1 class="text-xl font-semibold text-secondary-color mb-6">OBS Settings</h1>
+<main class="background-primary-color text-secondary-color flex justify-center">
+	<div class="w-full max-w-lg flex flex-col gap-6">
+		<div>
+			<h1 class="font-bold text-3xl">OBS Settings</h1>
+			<p class="text-sm opacity-50 mt-1">Connection, scene commands, and controller bindings.</p>
+		</div>
 
-<div class="nav-grid">
-	{#each navItems as item}
-		<button class="nav-card border-secondary text-secondary-color" on:click={() => goto(item.path)}>
-			<span class="nav-card-label">{item.label}</span>
-			<span class="nav-card-desc">{item.description}</span>
-		</button>
-	{/each}
-</div>
+		<div class="flex flex-col gap-3">
+			{#each navItems as item}
+				<button class="nav-card w-full text-left" on:click={() => goto(item.path)}>
+					<span class="nav-card-icon">
+						<svelte:component this={item.icon} size={22} strokeWidth={1.5} />
+					</span>
+					<div class="flex flex-col min-w-0">
+						<span class="font-semibold text-base leading-tight">{item.label}</span>
+						<span class="text-sm opacity-55 mt-0.5 leading-snug">{item.description}</span>
+					</div>
+					<span class="ml-auto opacity-30 text-lg shrink-0">→</span>
+				</button>
+			{/each}
+		</div>
+	</div>
+</main>
 
 <style>
-	.nav-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 0.75rem;
-	}
-
 	.nav-card {
 		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
+		align-items: center;
+		gap: 1rem;
 		padding: 1rem 1.25rem;
-		background: transparent;
-		text-align: left;
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.375rem;
+		background-color: var(--primary-color);
+		color: var(--secondary-color);
+		transition: opacity 0.15s, transform 0.15s;
 		cursor: pointer;
-		transition: background 0.15s, transform 0.1s;
-		border-radius: 0.25rem;
 	}
 
 	.nav-card:hover {
-		background: rgba(128, 128, 128, 0.07);
-		transform: translateY(-1px);
+		transform: scale(1.01);
 	}
 
-	.nav-card:active {
-		opacity: 0.6;
-		transform: none;
-	}
-
-	.nav-card-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
-	.nav-card-desc {
-		font-size: 0.75rem;
-		opacity: 0.55;
-		line-height: 1.4;
+	.nav-card-icon {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
 	}
 </style>

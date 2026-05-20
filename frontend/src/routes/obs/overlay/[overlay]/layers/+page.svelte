@@ -9,13 +9,14 @@
 
 	const getOverlay = async (overlayId: string, statsScene: LiveStatsScene) => {
 		const overlay = $overlays[overlayId];
-		if (!overlay) return;
+		if (!overlay || !overlay[statsScene]) return;
 		layerIds = overlay[statsScene].layers
 			.filter((layer) => layer.preview)
 			.map((layer) => layer.id)
 			.filter((id): id is number => id !== undefined);
 	};
 	$: $overlays, getOverlay(overlayId, $statsScene);
+	$: console.log('[layers page]', { overlayId, statsScene: $statsScene, layerIds, overlayKeys: $overlays[overlayId] ? Object.keys($overlays[overlayId]) : 'missing' });
 </script>
 
 <SecondaryOverlay bind:layerIds preview={true} />

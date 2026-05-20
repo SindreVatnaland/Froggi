@@ -16,7 +16,7 @@
 	export let preview: boolean = false;
 	export let scene: Scene;
 
-	const url = $isElectron ? $urls.localResource : $urls.externalResource;
+	$: url = $isElectron ? $urls?.localResource : $urls?.externalResource;
 	const overlayId = $page.params.overlay;
 
 	let innerHeight: number;

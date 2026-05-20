@@ -30,6 +30,7 @@
 	import { onMount } from 'svelte';
 	import ExternalPreviewSettings from '../preview/ExternalPreviewSettings.svelte';
 	import { goto } from '$app/navigation';
+	import { House } from 'lucide-svelte';
 
 	const overlayId = $page.params.overlay;
 
@@ -132,7 +133,7 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <main
-	class="fixed w-screen h-screen background-primary-color text-secondary-color overflow-hidden"
+	class="fixed top-0 left-0 w-screen h-screen background-primary-color text-secondary-color overflow-hidden"
 	style="padding: 0;"
 	in:fade={{ delay: 50, duration: 150 }}
 >
@@ -195,7 +196,7 @@
 						class="toolbar-btn shrink-0"
 						on:click={() => goto('/')}
 					>
-						<img src="/image/button-icons/home.png" alt="home" class="w-4 h-4" />
+						<House size={16} strokeWidth={1.5} />
 					</button>
 					<span class="font-semibold text-sm truncate flex-1 min-w-0">{overlay.title}</span>
 					{#if !displayPreview && selectedLayer}

@@ -86,7 +86,15 @@
       "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Kirby.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/4.png)",
       "Bash(sed -i '' 's|/image/characters/\\\\\\({[^}]*}\\\\\\)/0/vs-left\\\\.png|/image/characters/css/\\\\1.png|g; s|/image/characters/\\\\\\({[^}]*}\\\\\\)/0/vs-right\\\\.png|/image/characters/css/\\\\1.png|g' \"/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/[num]/+page.svelte\")",
       "Bash(awk '{print $5, $9}')",
-      "Bash(sort -k2 -n)"
+      "Bash(sort -k2 -n)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys; [print\\(l[:200]\\) for l in sys.stdin]\")",
+      "Bash(curl -s http://localhost:3200)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s http://localhost:3200/obs/overlay/player1-controller/layers)",
+      "Bash(grep -rn \"url.*layers\\\\|layers.*url\\\\|\\\\${url}\" /Users/sindrevatnaland/VSCode/Froggi/frontend/src --include=\"*.svelte\")",
+      "Bash(grep -rn \"NonInteractiveIFrame\\\\|\\\\${url}\\\\|src.*overlay.*layers\\\\|layers.*src\" /Users/sindrevatnaland/VSCode/Froggi/frontend/src/lib/components/obs --include=\"*.svelte\" -l)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

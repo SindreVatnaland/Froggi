@@ -118,16 +118,16 @@ export class ElectronOverlayStore {
 		return overlay;
 	}
 
-	cleanupCustomResources() {
-		const overlays = Object.values(this.getOverlays())
-		overlays.forEach((overlay) => this.cleanupCustomResourceByOverlayId(overlay.id))
+	async cleanupCustomResources() {
+		const overlays = await this.getOverlays()
+		Object.values(overlays).forEach((overlay) => this.cleanupCustomResourceByOverlayId(overlay.id))
 	}
 
 	async cleanupCustomResourceByOverlayId(overlayId: string) {
 		const overlay = await this.getOverlayById(overlayId)
 		if (isNil(overlay)) return;
 		const itemsKebabId = Object.values(LiveStatsScene).map(statsScene => {
-			return overlay[statsScene].layers?.map((layer: Layer) => layer.items).flat()
+			return overlay[statsScene]?.layers?.map((layer: Layer) => layer.items).flat() ?? []
 		}).flat()
 			.map(item => kebabCase(item.id))
 		const customFileEntry = path.join(this.appDir, "public", "custom", overlay.id)
@@ -165,6 +165,7 @@ export class ElectronOverlayStore {
 			.filter(key => isNaN(Number(key)))
 			.forEach(key => {
 				const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+				if (!newOverlay[statsScene]) return;
 				newOverlay[statsScene].layers.forEach(layer => {
 					delete layer.id;
 				})
@@ -174,7 +175,9 @@ export class ElectronOverlayStore {
 		this.setOverlay(newOverlay);
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		const destination = path.join(this.appDir, "public", "custom", newOverlay.id)
-		fs.cp(source, destination, { recursive: true }, (err => this.log.error(err)));
+		if (fs.existsSync(source)) {
+			fs.cp(source, destination, { recursive: true }, (err => { if (err) this.log.error(err) }));
+		}
 	}
 
 	async uploadOverlay(overlay: Overlay, overlayId: string = newId()): Promise<void> {
@@ -186,7 +189,7 @@ export class ElectronOverlayStore {
 	async deleteOverlay(overlayId: string): Promise<void> {
 		await this.sqliteOverlay.deleteOverlayById(overlayId)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
-		fs.rm(source, { recursive: true }, (err => this.log.error(err)))
+		fs.rm(source, { recursive: true, force: true }, (err => { if (err) this.log.error(err) }))
 		setTimeout(this.emitOverlayUpdate.bind(this))
 	}
 
@@ -443,7 +446,6 @@ export class ElectronOverlayStore {
 		// if (this.isDev) return;
 		this.log.info("Migrating overlays");
 		const overlays = await this.getOverlays();
-		const newOverlayTemplate = getNewOverlay();
 
 		for (const overlay of Object.values(overlays)) {
 			this.log.info("Migrating overlay", overlay.id, overlay.froggiVersion);
@@ -455,7 +457,9 @@ export class ElectronOverlayStore {
 				this.reverseLayers(overlay);
 			}
 
-			// Add any scenes that didn't exist when this overlay was created
+			// Add any scenes that didn't exist when this overlay was created.
+			// Fresh template per overlay so each gets its own scene entity instances.
+			const newOverlayTemplate = getNewOverlay();
 			for (const key of Object.keys(LiveStatsScene)) {
 				if (!isNaN(Number(key))) continue;
 				const scene = LiveStatsScene[key as keyof typeof LiveStatsScene];
@@ -491,6 +495,7 @@ export class ElectronOverlayStore {
 			if (!isNaN(Number(key))) continue;
 			const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
 			const scene = overlay[statsScene];
+			if (!scene) continue;
 			for (const [index, layer] of scene.layers.entries()) {
 				delete layer.id;
 				layer.index = index;

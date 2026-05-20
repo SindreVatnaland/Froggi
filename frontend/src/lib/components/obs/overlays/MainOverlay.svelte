@@ -10,7 +10,7 @@
 
 {#if curOverlay}
 	<div
-		class="fixed h-full w-full bg-cover bg-center bg-transparent background-primary-color"
+		class="fixed top-0 left-0 h-full w-full bg-cover bg-center bg-transparent background-primary-color"
 		in:fade={{ delay: 50, duration: 150 }}
 		out:fade={{ duration: 300 }}
 	>

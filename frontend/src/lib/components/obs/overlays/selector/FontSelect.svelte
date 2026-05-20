@@ -13,7 +13,7 @@
 	export let fontId: string;
 
 	$: overlayId = $page.params.overlay;
-	const url = $isElectron ? $urls.localResource : $urls.externalResource;
+	$: url = $isElectron ? $urls?.localResource : $urls?.externalResource;
 
 	const getFont = (font: Font | undefined): string | undefined => {
 		if (font?.family === 'default') {

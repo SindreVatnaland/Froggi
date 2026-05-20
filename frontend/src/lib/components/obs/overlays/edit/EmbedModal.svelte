@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { electronEmitter, isElectron, obsConnection, obsProcessStatus, urls } from '$lib/utils/store.svelte';
+	import { electronEmitter, isElectron, obsConnection, obsProcessStatus, remoteAccess, urls } from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import Clipboard from 'svelte-clipboard';
 	// @ts-ignore
@@ -13,6 +13,10 @@
 	export let overlayId: string = $page.params.overlay;
 	$: localUrl = `${$urls?.local}/obs/overlay/${overlayId}`;
 	$: externalUrl = `${$urls?.external}/obs/overlay/${overlayId}`;
+	$: tsUrl = $remoteAccess.tailscale;
+
+	let externalTab: 'local' | 'remote' = 'local';
+	$: activeExternalUrl = externalTab === 'remote' && tsUrl ? `${tsUrl}/obs/overlay/${overlayId}` : externalUrl;
 
 	$: isObsConnected = $obsConnection?.state === ConnectionState.Connected;
 	$: obsWebsocketDisabled = $obsProcessStatus?.running && $obsProcessStatus?.websocketEnabled === false;
@@ -90,27 +94,43 @@
 
 			<!-- Right: external / QR -->
 			<div class="flex-1 p-5 flex flex-col gap-4 items-center min-w-0">
-				<div class="w-full">
-					<p class="embed-label">External devices</p>
-					<p class="text-xs opacity-60 mt-1 leading-relaxed">
-						Open on any device connected to the same network — phone, tablet, laptop, or second monitor.
-					</p>
+				<div class="w-full flex items-start justify-between gap-2">
+					<div>
+						<p class="embed-label">External devices</p>
+						<p class="text-xs opacity-60 mt-1 leading-relaxed">
+							{#if externalTab === 'remote' && tsUrl}
+								Public URL via Tailscale — works from anywhere.
+							{:else}
+								Open on any device on the same network — phone, tablet, laptop, or second monitor.
+							{/if}
+						</p>
+					</div>
+					{#if tsUrl}
+						<div class="tab-row shrink-0">
+							<button class="tab-btn" class:tab-btn--active={externalTab === 'local'} on:click={() => externalTab = 'local'}>Local</button>
+							<button class="tab-btn" class:tab-btn--active={externalTab === 'remote'} on:click={() => externalTab = 'remote'}>Public</button>
+						</div>
+					{/if}
 				</div>
 
 				<div class="border-secondary p-1 rounded-sm">
-					<QrCode value={externalUrl} size="180" />
+					<QrCode value={activeExternalUrl} size="180" />
 				</div>
 
 				<div class="flex items-center gap-2 rounded px-3 py-2 border-secondary w-full">
-					<span class="text-xs font-mono flex-1 truncate opacity-60">{externalUrl}</span>
-					<Clipboard text={externalUrl} let:copy on:copy={() => notifications.success('Copied!', 2000)}>
+					<span class="text-xs font-mono flex-1 truncate opacity-60">{activeExternalUrl}</span>
+					<Clipboard text={activeExternalUrl} let:copy on:copy={() => notifications.success('Copied!', 2000)}>
 						<button on:click={copy} class="btn text-xs h-7 px-3 border-secondary rounded shrink-0">
 							Copy
 						</button>
 					</Clipboard>
 				</div>
 
-				<p class="text-xs opacity-35">Consider setting a static IP on this device for a stable URL.</p>
+				{#if externalTab === 'remote' && tsUrl}
+					<p class="text-xs opacity-35">Tailscale keeps the URL stable — no need to re-scan if your IP changes.</p>
+				{:else}
+					<p class="text-xs opacity-35">Consider setting a static IP on this device for a stable URL.</p>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -123,5 +143,31 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		opacity: 0.45;
+	}
+
+	.tab-row {
+		display: flex;
+		gap: 0.25rem;
+		background: rgba(128,128,128,0.08);
+		border-radius: 0.3rem;
+		padding: 0.15rem;
+	}
+
+	.tab-btn {
+		font-size: 0.7rem;
+		font-weight: 600;
+		padding: 0.2rem 0.6rem;
+		border-radius: 0.2rem;
+		border: none;
+		background: transparent;
+		color: var(--secondary-color);
+		opacity: 0.45;
+		cursor: pointer;
+		transition: opacity 0.1s, background 0.1s;
+	}
+
+	.tab-btn--active {
+		background: rgba(128,128,128,0.15);
+		opacity: 1;
 	}
 </style>

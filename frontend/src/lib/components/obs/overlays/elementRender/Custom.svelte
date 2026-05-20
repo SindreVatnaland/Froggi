@@ -11,7 +11,7 @@
 
 	const overlayId = $page.params.overlay;
 
-	const url = $isElectron ? $urls.localResource : $urls.externalResource;
+	$: url = $isElectron ? $urls?.localResource : $urls?.externalResource;
 </script>
 
 {#if dataItem?.elementId === CustomElement.CustomString}

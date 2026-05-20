@@ -34,6 +34,7 @@ export class SqliteOverlay {
       overlay.postGame?.layers.sort((a, b) => a.index - b.index);
       overlay.postSet?.layers.sort((a, b) => a.index - b.index);
       overlay.rankChange?.layers.sort((a, b) => a.index - b.index);
+      overlay.strikePhase?.layers.sort((a, b) => a.index - b.index);
     });
     return overlays;
   }

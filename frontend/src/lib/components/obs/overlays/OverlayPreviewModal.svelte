@@ -33,7 +33,7 @@
 	let nameInput: HTMLInputElement;
 
 	$: isInjected = $injectedOverlays.includes(overlay?.id ?? '');
-	$: url = $isElectron ? $urls?.local : $urls.external;
+	$: url = $isElectron ? $urls?.local : $urls?.external;
 	$: src = `${url}/obs/overlay/${overlay?.id}/layers`;
 	$: if (overlay && !editingName) draftName = overlay.title ?? '';
 	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 1);

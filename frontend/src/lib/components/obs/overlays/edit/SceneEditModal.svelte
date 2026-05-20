@@ -22,7 +22,7 @@
 
 	$: curScene = overlay[$statsScene];
 
-	const resourceUrl = $isElectron ? $urls.localResource : $urls.localResource;
+	$: resourceUrl = $isElectron ? $urls?.localResource : $urls?.localResource;
 
 	let imageOptions: string[] = [];
 

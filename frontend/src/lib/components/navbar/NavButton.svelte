@@ -6,7 +6,7 @@
 
 <button
 	{disabled}
-	class={`transition  h-10 w-10 bg-inherit justify-center border-secondary rounded-2xl p-1 col-auto disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white`}
+	class={`transition h-10 w-10 bg-inherit flex items-center justify-center border-secondary rounded-2xl p-1 col-auto disabled:opacity-50 disabled:cursor-not-allowed`}
 	style={`${style}; border-radius: 1rem`}
 	on:click={click}
 >

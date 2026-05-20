@@ -1,30 +1,31 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { Paintbrush, Plug, Gamepad2, Trophy } from 'lucide-svelte';
 
 	const tutorials = [
 		{
 			title: 'Build an overlay',
 			description: 'Create HUD elements, scenes, layers, and animations from scratch.',
 			path: '/obs/tutorial/new-overlay',
-			icon: '🎨',
+			icon: Paintbrush,
 		},
 		{
 			title: 'Integrate with OBS',
 			description: 'Embed overlays, set up WebSocket, and automate scene switching.',
 			path: '/obs/tutorial/integrate-obs',
-			icon: '🔌',
+			icon: Plug,
 		},
 		{
 			title: 'Remote control OBS',
 			description: 'Map controller button combos to trigger OBS commands.',
 			path: '/obs/tutorial/remote-obs',
-			icon: '🎮',
+			icon: Gamepad2,
 		},
 		{
 			title: 'Run a tournament',
 			description: 'Stage striking, player links, ngrok and Tailscale setup for online play.',
 			path: '/set/tutorial',
-			icon: '🏆',
+			icon: Trophy,
 		},
 	];
 </script>
@@ -42,7 +43,9 @@
 					class="tutorial-card w-full text-left"
 					on:click={() => goto(tutorial.path)}
 				>
-					<span class="tutorial-card-icon">{tutorial.icon}</span>
+					<span class="tutorial-card-icon">
+						<svelte:component this={tutorial.icon} size={22} strokeWidth={1.5} />
+					</span>
 					<div class="flex flex-col min-w-0">
 						<span class="font-semibold text-base leading-tight">{tutorial.title}</span>
 						<span class="text-sm opacity-55 mt-0.5 leading-snug">{tutorial.description}</span>
@@ -65,6 +68,7 @@
 		background-color: var(--primary-color);
 		color: var(--secondary-color);
 		transition: opacity 0.15s, transform 0.15s;
+		cursor: pointer;
 	}
 
 	.tutorial-card:hover {
@@ -72,8 +76,10 @@
 	}
 
 	.tutorial-card-icon {
-		font-size: 1.5rem;
-		line-height: 1;
 		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
 	}
 </style>

@@ -24,6 +24,7 @@
 	};
 
 	$: url = $isElectron ? $urls?.local : $urls?.external;
+	$: console.log('[overlay page] url:', url, '| $urls:', $urls, '| isElectron:', $isElectron);
 
 	let search = '';
 

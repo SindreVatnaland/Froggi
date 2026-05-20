@@ -43,7 +43,7 @@
 				curOverlay?.aspectRatio.width ?? 16
 			}/${curOverlay?.aspectRatio.height ?? 9};`}
 		>
-			<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />
+			{#if url}<NonInteractiveIFrame {src} title="preview" class="w-full h-full" />{/if}
 		</div>
 	</div>
 	<div class="flex gap-2 w-full">

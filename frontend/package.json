@@ -17,6 +17,7 @@
 		"events": "^3.3.0",
 		"froggi": "file:..",
 		"lodash": "^4.17.21",
+		"lucide-svelte": "^1.0.1",
 		"svelte-ace": "^1.0.21",
 		"svelte-clipboard": "^1.0.0",
 		"svelte-device-info": "^1.0.0",

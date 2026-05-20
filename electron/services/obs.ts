@@ -162,8 +162,16 @@ export class ObsWebSocket {
 				await new Promise(resolve => setTimeout(resolve, 600));
 			}
 			await this.obs.call('StartReplayBuffer');
-		} catch (err) {
-			this.log.error(`Could not start Replay Buffer`, err);
+		} catch (err: any) {
+			if (err?.message?.includes('not available')) {
+				this.messageHandler.sendMessage(
+					'Notification',
+					'Enable Replay Buffer in OBS: Settings → Output → Replay Buffer → Enable Replay Buffer',
+					NotificationType.Warning,
+				);
+			} else {
+				this.log.error(`Could not start Replay Buffer`, err);
+			}
 		}
 	};
 

@@ -98,7 +98,9 @@
 		<p class="section-label">Authorization</p>
 		<div class="settings-card border-secondary mt-2">
 			<div class="flex items-center justify-between mb-1">
-				<span class="text-sm font-medium text-secondary-color">Remote Access Key</span>
+				<span class="text-sm font-medium text-secondary-color">
+					{$isElectron ? 'Create Access Key' : 'Enter Host Key'}
+				</span>
 				<span
 					class="status-pill"
 					class:status-pill--ok={$isAuthorized}
@@ -107,18 +109,24 @@
 					{$isAuthorized ? 'Authorized' : 'Unauthorized'}
 				</span>
 			</div>
-			<p class="text-xs opacity-40 mb-3">Key required for remote devices to send commands</p>
+			<p class="text-xs opacity-40 mb-3">
+				{#if $isElectron}
+					Set a key that client devices must enter to send commands.
+				{:else}
+					Enter the key set on the host device to send commands.
+				{/if}
+			</p>
 			<div class="flex gap-2">
 				<input
 					class="flex-1 text-xs h-8 px-3 background-primary-color text-secondary-color border-secondary rounded"
 					type="text"
-					placeholder="Enter key…"
+					placeholder={$isElectron ? 'Create a key…' : 'Enter host key…'}
 					bind:value={authKey}
 					disabled={!$isElectron && $isAuthorized}
 				/>
 				{#if $isElectron}
 					<button class="btn text-xs h-8 px-4 border-secondary rounded" on:click={updateKey}>
-						Update
+						Save
 					</button>
 				{:else}
 					<button

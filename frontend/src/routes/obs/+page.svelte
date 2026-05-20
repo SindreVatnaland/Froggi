@@ -1,86 +1,89 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthorized } from '$lib/utils/store.svelte';
+	import { Layers, Trophy, Settings, BookOpen } from 'lucide-svelte';
 
 	const navItems = [
 		{
 			label: 'Overlays',
-			description: 'Manage and preview stream overlays',
+			description: 'Manage and preview stream overlays.',
 			path: '/obs/overlay',
+			icon: Layers,
 			requiresAuth: false,
 		},
 		{
-			label: 'Dashboard',
-			description: 'Live control — scores, scenes, replay buffer',
+			label: 'Tournament Dashboard',
+			description: 'Live control — scores, scenes, replay buffer.',
 			path: '/obs/dashboard',
+			icon: Trophy,
 			requiresAuth: true,
 		},
 		{
 			label: 'OBS Settings',
-			description: 'WebSocket connection, scene commands, controller bindings',
+			description: 'WebSocket connection, scene commands, controller bindings.',
 			path: '/obs/settings',
+			icon: Settings,
 			requiresAuth: true,
 		},
 		{
 			label: 'Tutorial',
-			description: 'Step-by-step setup guide',
+			description: 'Step-by-step setup guide.',
 			path: '/obs/tutorial',
+			icon: BookOpen,
 			requiresAuth: false,
 		},
 	];
 </script>
 
-<main class="flex justify-center">
-	<div class="w-full max-w-2xl">
-	<h1 class="text-xl font-semibold text-secondary-color mb-6">OBS</h1>
+<main class="background-primary-color text-secondary-color flex justify-center">
+	<div class="w-full max-w-lg flex flex-col gap-6">
+		<div>
+			<h1 class="font-bold text-3xl">OBS</h1>
+			<p class="text-sm opacity-50 mt-1">Overlays, dashboard, and settings.</p>
+		</div>
 
-	<div class="nav-grid">
-		{#each navItems as item}
-			{@const disabled = item.requiresAuth && !$isAuthorized}
-			<button
-				class="nav-card border-secondary text-secondary-color"
-				class:nav-card--disabled={disabled}
-				on:click={() => !disabled && goto(item.path)}
-				{disabled}
-			>
-				<span class="nav-card-label">{item.label}</span>
-				<span class="nav-card-desc">{item.description}</span>
-				{#if disabled}
-					<span class="nav-card-lock">Not authorized</span>
-				{/if}
-			</button>
-		{/each}
-	</div>
+		<div class="flex flex-col gap-3">
+			{#each navItems as item}
+				{@const disabled = item.requiresAuth && !$isAuthorized}
+				<button
+					class="nav-card w-full text-left"
+					class:nav-card--disabled={disabled}
+					on:click={() => !disabled && goto(item.path)}
+					{disabled}
+				>
+					<span class="nav-card-icon">
+						<svelte:component this={item.icon} size={22} strokeWidth={1.5} />
+					</span>
+					<div class="flex flex-col min-w-0">
+						<span class="font-semibold text-base leading-tight">{item.label}</span>
+						<span class="text-sm opacity-55 mt-0.5 leading-snug">{item.description}</span>
+						{#if disabled}
+							<span class="nav-card-lock">Not authorized</span>
+						{/if}
+					</div>
+					<span class="ml-auto opacity-30 text-lg shrink-0">→</span>
+				</button>
+			{/each}
+		</div>
 	</div>
 </main>
 
 <style>
-	.nav-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 0.75rem;
-	}
-
 	.nav-card {
 		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
+		align-items: center;
+		gap: 1rem;
 		padding: 1rem 1.25rem;
-		background: transparent;
-		text-align: left;
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.375rem;
+		background-color: var(--primary-color);
+		color: var(--secondary-color);
+		transition: opacity 0.15s, transform 0.15s;
 		cursor: pointer;
-		transition: background 0.15s, transform 0.1s;
-		border-radius: 0.25rem;
 	}
 
 	.nav-card:hover:not(:disabled) {
-		background: rgba(128, 128, 128, 0.07);
-		transform: translateY(-1px);
-	}
-
-	.nav-card:active:not(:disabled) {
-		opacity: 0.6;
-		transform: none;
+		transform: scale(1.01);
 	}
 
 	.nav-card--disabled {
@@ -88,15 +91,12 @@
 		cursor: not-allowed;
 	}
 
-	.nav-card-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
-	.nav-card-desc {
-		font-size: 0.75rem;
-		opacity: 0.55;
-		line-height: 1.4;
+	.nav-card-icon {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
 	}
 
 	.nav-card-lock {

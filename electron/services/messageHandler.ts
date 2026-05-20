@@ -149,7 +149,7 @@ export class MessageHandler {
 							this.clientEmitter.emit(key as keyof MessageEvents, ...(value as any));
 						} else {
 							if (socket.readyState === WebSocket.OPEN) {
-								socket.send(JSON.stringify({ Notification: ['Unauthorized - Update key in settings', NotificationType.Danger] }));
+								socket.send(JSON.stringify({ Notification: ['Unauthorized — enter the host key in Settings → Authorization', NotificationType.Danger] }));
 							}
 						}
 					}

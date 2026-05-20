@@ -9,10 +9,10 @@
 	export let title: string;
 	export let isElement: boolean = false;
 
-	$: isSameOrigin =
-		(src.includes($urls.local.split('://')[1]) ||
-			src.includes($urls.external.split('://')[1])) &&
-		isElement;
+	$: isSameOrigin = !!$urls && (
+		src.includes($urls.local.split('://')[1]) ||
+		src.includes($urls.external.split('://')[1])
+	) && isElement;
 
 	let itemWidth = 0;
 	let itemHeight = 0;
@@ -23,6 +23,11 @@
 	};
 
 	$: scale = getScale(itemWidth);
+
+	$: if (src) {
+		const blocked = src.startsWith('undefined');
+		console.log('[NonInteractiveIFrame]', { src, scale, blocked, location: window.location.pathname });
+	}
 </script>
 
 {#if isSameOrigin}
@@ -34,7 +39,7 @@
 		bind:clientWidth={itemWidth}
 		bind:clientHeight={itemHeight}
 	>
-		{#if scale}
+		{#if scale && src && !src.startsWith('undefined')}
 			<iframe
 				class="absolute m-0"
 				style={`transform: scale(${scale}) ;transform-origin: top left; width: ${
