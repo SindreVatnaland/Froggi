@@ -153,26 +153,37 @@
     }
     .btn-alt:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
 
-    /* Features */
-    .feature-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    /* Feature grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
     }
 
-    .feature {
-      font-size: 0.85rem;
-      color: var(--text);
-      padding-left: 1.1rem;
-      position: relative;
-      opacity: 0.75;
+    @media (max-width: 480px) {
+      .feature-grid { grid-template-columns: 1fr; }
     }
-    .feature::before {
-      content: '→';
-      position: absolute;
-      left: 0;
+
+    .feat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem 1.1rem;
+    }
+
+    .feat-title {
+      font-size: 0.8rem;
+      font-weight: 700;
       color: var(--accent);
-      opacity: 0.7;
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.01em;
+    }
+
+    .feat-body {
+      font-size: 0.8rem;
+      color: var(--text);
+      opacity: 0.65;
+      line-height: 1.55;
     }
 
     /* Links */
@@ -220,7 +231,7 @@
 <header>
   <img class="app-icon" src="icon.png" alt="Froggi" />
   <div class="logo">Froggi</div>
-  <p class="tagline">Live OBS overlays for Super Smash Bros. Melee.<br>Reads Slippi data — scoreboard, rank, HUD, and more.</p>
+  <p class="tagline">Realtime Slippi overlays for Super Smash Bros. Melee.<br>Tournament tools, live dashboards, and remote stream control — all in one app.</p>
 </header>
 
 <main>
@@ -246,16 +257,38 @@
   </div>
 
   <!-- Features -->
-  <div class="card">
-    <p class="card-label">What it does</p>
-    <div class="feature-list">
-      <p class="feature">OBS browser-source overlays — scoreboard, HUD, rank preview, win/loss tracker</p>
-      <p class="feature">Reads live Slippi data via Dolphin memory or .slp replay files</p>
-      <p class="feature">Remote player client pages via Tailscale or ngrok — share with your opponent</p>
-      <p class="feature">Stage striking flow for tournament sets</p>
-      <p class="feature">Discord Rich Presence integration</p>
-      <p class="feature">Works offline, no account required</p>
+  <div class="feature-grid">
+
+    <div class="feat-card">
+      <p class="feat-title">Realtime overlays</p>
+      <p class="feat-body">Custom browser-source overlays driven by live Slippi data — scoreboard, HUD, rank preview, win/loss tracker, and more. Build your own layout in the overlay editor.</p>
     </div>
+
+    <div class="feat-card">
+      <p class="feat-title">Tournament ready</p>
+      <p class="feat-body">Stage striking flow, best-of tracking, and ranked set detection. Score updates automatically as games finish.</p>
+    </div>
+
+    <div class="feat-card">
+      <p class="feat-title">Remote stream control</p>
+      <p class="feat-body">Expose your stream over the internet with Tailscale Funnel. Control OBS scenes, volumes, and overlays from your phone — anywhere.</p>
+    </div>
+
+    <div class="feat-card">
+      <p class="feat-title">Live ranked data</p>
+      <p class="feat-body">Pulls realtime Slippi ranked stats — Elo, placement, wins and losses — and surfaces them on stream automatically.</p>
+    </div>
+
+    <div class="feat-card">
+      <p class="feat-title">Dashboard monitoring</p>
+      <p class="feat-body">Live game dashboard shows stocks, percent, stage, and score at a glance. Preview your OBS output directly inside the app.</p>
+    </div>
+
+    <div class="feat-card">
+      <p class="feat-title">No account required</p>
+      <p class="feat-body">Works entirely offline via Dolphin memory reading. Open source, free forever.</p>
+    </div>
+
   </div>
 
   <!-- Links -->

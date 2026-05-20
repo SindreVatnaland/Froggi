@@ -47,6 +47,7 @@
 	],
 	"dependencies": {
 		"@slippi/slippi-js": "github:SindreVatnaland/slippi-js#dist",
+		"call-bind-apply-helpers": "^1.0.2",
 		"@types/lodash": "^4.14.202",
 		"appdata-path": "^1.0.0",
 		"axios": "^1.6.5",

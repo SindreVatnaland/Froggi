@@ -96,6 +96,7 @@
 	export const injectedOverlays = writable<string[]>([]);
 
 	export const obs = writable<Obs>();
+	export const obsPreviewFrame = writable<string>('');
 	export const urls = writable<Url>();
 	export const remoteAccess = writable<{ url?: string; provider?: 'tailscale' | 'ngrok' }>({});
 	export const tailscaleStatus = writable<{ installed: boolean; authenticated: boolean; funnelActive: boolean } | undefined>(undefined);

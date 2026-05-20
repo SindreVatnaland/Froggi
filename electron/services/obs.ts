@@ -16,6 +16,7 @@ export class ObsWebSocket {
 	obs = new OBSWebSocket();
 	private obsConnectionInterval: NodeJS.Timeout | undefined;
 	private obsProcessInterval: NodeJS.Timeout | undefined;
+	private obsPreviewInterval: NodeJS.Timeout | undefined;
 	private shouldSendNotification = true;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -156,18 +157,16 @@ export class ObsWebSocket {
 		clearTimeout(this.obsConnectionInterval);
 		this.log.info('Searching for OBS connection');
 		this.storeObs.setConnectionState(ConnectionState.Searching);
-		this.obsConnectionInterval = setTimeout(async () => {
-			const password = this.storeObs.getPassword();
-			const ipAddress = this.storeObs.getIpAddress();
-			const port = this.storeObs.getPort();
-			try {
-				await this.obs.connect(`ws://${ipAddress}:${port}`, password);
-			} catch {
-				this.log.error(
-					`Could not connect to OBS: ${`ws://${ipAddress}:${port}`}`,
-				);
-			}
-		}, 5000);
+		const password = this.storeObs.getPassword();
+		const ipAddress = this.storeObs.getIpAddress();
+		const port = this.storeObs.getPort();
+		try {
+			await this.obs.connect(`ws://${ipAddress}:${port}`, password);
+		} catch {
+			this.log.error(
+				`Could not connect to OBS: ${`ws://${ipAddress}:${port}`}`,
+			);
+		}
 	};
 
 	private connectToObs = async (ipAddress: string, port: string, password: string) => {
@@ -235,11 +234,12 @@ export class ObsWebSocket {
 		this.stopProcessSearchInterval();
 		this.storeObs.setConnectionState(ConnectionState.Searching);
 		this.log.info('Looking For OBS Process');
-		this.obsProcessInterval = setInterval(async () => {
+
+		const checkObs = async () => {
 			const isRunning = await isObsRunning();
 			if (!isRunning) return;
 			this.log.info('OBS Process Found');
-			const obsWebsocketConfig = getObsWebsocketConfig()
+			const obsWebsocketConfig = getObsWebsocketConfig();
 
 			if (!obsWebsocketConfig) {
 				this.log.error('Could not get OBS Websocket Config');
@@ -269,7 +269,10 @@ export class ObsWebSocket {
 				);
 				this.shouldSendNotification = false;
 			}
-		}, 15000);
+		};
+
+		await checkObs();
+		this.obsProcessInterval = setInterval(checkObs, 15000);
 	}
 
 	private stopProcessSearchInterval() {
@@ -302,6 +305,30 @@ export class ObsWebSocket {
 		}
 	};
 
+	private startPreview = () => {
+		clearInterval(this.obsPreviewInterval);
+		this.obsPreviewInterval = setInterval(async () => {
+			try {
+				const scene = await this.obs.call('GetCurrentProgramScene');
+				const screenshot = await this.obs.call('GetSourceScreenshot', {
+					sourceName: scene.currentProgramSceneName,
+					imageFormat: 'jpeg',
+					imageWidth: 854,
+					imageCompressionQuality: 55,
+				});
+				this.messageHandler.sendMessage('OBSPreview', screenshot.imageData);
+			} catch {
+				// OBS disconnected or source unavailable — stop polling silently
+				this.stopPreview();
+			}
+		}, 1000);
+	};
+
+	private stopPreview = () => {
+		clearInterval(this.obsPreviewInterval);
+		this.obsPreviewInterval = undefined;
+	};
+
 	initEventListeners() {
 		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {
 			this.connectToObs(auth.ipAddress, auth.port, auth.password);
@@ -309,5 +336,8 @@ export class ObsWebSocket {
 		this.clientEmitter.on("ObsCreateBrowserSource", (url: string, inputName: string, aspectRatio: AspectRatio) => {
 			this.addBrowserSource(url, inputName, aspectRatio);
 		})
+		this.clientEmitter.on("OBSPreviewToggle", (enabled: boolean) => {
+			enabled ? this.startPreview() : this.stopPreview();
+		});
 	}
 }

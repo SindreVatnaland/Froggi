@@ -59,6 +59,10 @@
 			"filter": ["dependencies"]
 		},
 		{
+			"from": "node_modules/call-bind-apply-helpers",
+			"to": "node_modules/call-bind-apply-helpers"
+		},
+		{
 			"from": "demo-overlays",
 			"to": "build_electron/electron/demo-overlays"
 		}

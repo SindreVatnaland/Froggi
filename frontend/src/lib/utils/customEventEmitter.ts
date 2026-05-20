@@ -141,6 +141,9 @@ export interface MessageEvents {
 
 	StrikeState: (state: StrikeState | undefined) => void;
 	StrikeStateUpdate: (state: StrikeState | undefined) => void;
+
+	OBSPreview: (imageData: string) => void;
+	OBSPreviewToggle: (enabled: boolean) => void;
 }
 
 export class TypedEmitter extends localEmitter {

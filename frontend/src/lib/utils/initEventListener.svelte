@@ -21,6 +21,7 @@
 		overlays,
 		obsConnection,
 		obs,
+		obsPreviewFrame,
 		currentOverlayEditor,
 		isAuthorized,
 		authorizationKey,
@@ -196,6 +197,9 @@
 					obs.set(value);
 					obsConnection.set(value.connection);
 				})();
+				break;
+			case 'OBSPreview':
+				obsPreviewFrame.set(payload[0] as string);
 				break;
 			case 'ObsConnection':
 				(() => {

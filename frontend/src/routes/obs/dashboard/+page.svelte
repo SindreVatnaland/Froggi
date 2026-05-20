@@ -16,7 +16,9 @@
 		gameScore,
 		gameSettings,
 		gameState,
+		isElectron,
 		obsConnection,
+		obsPreviewFrame,
 		recentGames,
 		sceneSwitch,
 		urls,
@@ -24,7 +26,6 @@
 	} from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
-	import SceneSelect from '$lib/components/obs/overlays/selector/SceneSelect.svelte';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
 	import { getWinnerIndex } from '$lib/utils/gamePredicates';
 
@@ -34,6 +35,12 @@
 	let isBoConfirmOpen = false;
 	let pendingBo: BestOf | null = null;
 	let copiedIdx: number | null = null;
+	let obsPreviewEnabled = false;
+
+	const toggleObsPreview = () => {
+		obsPreviewEnabled = !obsPreviewEnabled;
+		$electronEmitter.emit('OBSPreviewToggle', obsPreviewEnabled);
+	};
 
 	$: p1 = $currentPlayers?.at(0);
 	$: p2 = $currentPlayers?.at(1);
@@ -132,13 +139,35 @@
 <!-- ── Match bar ── -->
 <div class="match-bar border-secondary mb-3">
 	<div class="match-names">
-		<button class="player-name" on:click={() => (isTagModalOpen = true)}>{p1Name}</button>
+		<div class="player-col">
+			<button class="player-name" on:click={() => (isTagModalOpen = true)}>{p1Name}</button>
+			{#if clientBase}
+				<div class="player-qr">
+					<QrCode value={p1Url} size="72" color="#ffffff" background="#000000" />
+					<button class="qr-copy btn border-secondary" title="Copy" on:click={async () => { await navigator.clipboard.writeText(p1Url); copiedIdx = 1; setTimeout(() => (copiedIdx = null), 2000); }}>
+						{copiedIdx === 1 ? '✓' : '⎘'}
+					</button>
+				</div>
+			{/if}
+		</div>
+
 		<button class="score-block" on:click={() => (isScoreModalOpen = true)}>
 			<span class="score-num">{score0}</span>
 			<span class="score-sep">—</span>
 			<span class="score-num">{score1}</span>
 		</button>
-		<button class="player-name text-right" on:click={() => (isTagModalOpen = true)}>{p2Name}</button>
+
+		<div class="player-col player-col--right">
+			<button class="player-name text-right" on:click={() => (isTagModalOpen = true)}>{p2Name}</button>
+			{#if clientBase}
+				<div class="player-qr">
+					<button class="qr-copy btn border-secondary" title="Copy" on:click={async () => { await navigator.clipboard.writeText(p2Url); copiedIdx = 2; setTimeout(() => (copiedIdx = null), 2000); }}>
+						{copiedIdx === 2 ? '✓' : '⎘'}
+					</button>
+					<QrCode value={p2Url} size="72" color="#ffffff" background="#000000" />
+				</div>
+			{/if}
+		</div>
 	</div>
 	<div class="match-controls">
 		<div class="flex gap-1.5 flex-wrap">
@@ -157,6 +186,9 @@
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => $electronEmitter.emit('SimulateGameEnd')}>⏹ End</button>
 		</div>
 	</div>
+	{#if !clientBase}
+		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale or ngrok</button> to share player links</p>
+	{/if}
 </div>
 
 <!-- ── Live game ── -->
@@ -268,47 +300,28 @@
 </div>
 {/if}
 
-<!-- ── Scene + client row ── -->
-<div class="utility-grid mb-3">
-	<div class="dash-card border-secondary">
-		<p class="dash-label mb-3">Scene</p>
-		<SceneSelect />
+<!-- ── OBS Preview (Electron only) ── -->
+{#if $isElectron && obsConnected}
+<div class="dash-card border-secondary mb-3">
+	<div class="preview-header">
+		<p class="dash-label">OBS Preview</p>
+		<button
+			class="btn text-xs h-6 px-2.5 border-secondary rounded"
+			class:preview-active={obsPreviewEnabled}
+			on:click={toggleObsPreview}
+		>{obsPreviewEnabled ? 'Stop' : 'Live Preview'}</button>
 	</div>
-	<div class="dash-card border-secondary">
-		<p class="dash-label mb-2">Player Clients</p>
-		{#if clientBase}
-			<div class="qr-grid">
-				{#each [{ name: p1Name, url: p1Url, label: '/client/p1', idx: 1 }, { name: p2Name, url: p2Url, label: '/client/p2', idx: 2 }] as p}
-					<div class="qr-col">
-						<span class="qr-player-name">{p.name}</span>
-						<div class="qr-wrap border-secondary">
-							<QrCode value={p.url} size="140" color="#ffffff" background="#000000" />
-						</div>
-						<div class="qr-footer">
-							<span class="qr-url truncate">{p.label}</span>
-							<button class="qr-copy btn border-secondary" title="Copy URL" on:click={async () => { await navigator.clipboard.writeText(p.url); copiedIdx = p.idx; setTimeout(() => (copiedIdx = null), 2000); }}>
-								{copiedIdx === p.idx ? '✓' : '⎘'}
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-			{#if isRanked && matchId}
-				<p class="qr-note mt-2">URL includes match ID — valid only for this active ranked set.</p>
+	{#if obsPreviewEnabled}
+		<div class="preview-frame">
+			{#if $obsPreviewFrame}
+				<img src={$obsPreviewFrame} alt="OBS Preview" class="preview-img" />
 			{:else}
-				<p class="qr-note mt-2">For ranked: spectate before game 1 — Froggi auto-includes the match ID.</p>
+				<p class="preview-loading">Connecting…</p>
 			{/if}
-		{:else}
-			<div class="no-access-hint">
-				<p class="text-xs text-secondary-color mb-2" style="opacity:0.7">No tunnel detected — players can't join remotely.</p>
-				<p class="text-xs" style="opacity:0.45; line-height:1.5">
-					Go to <button class="inline-link" on:click={() => goto('/settings')}>Settings → Remote Access</button>
-					and enable Tailscale Funnel or ngrok to generate share links.
-				</p>
-			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
+{/if}
 
 <!-- ── OBS Controls ── -->
 <div class="obs-section" class:obs-section--offline={!obsConnected}>
@@ -391,9 +404,23 @@
 	.match-names {
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
-		align-items: center;
+		align-items: start;
 		gap: 0.75rem;
 		margin-bottom: 0.6rem;
+	}
+
+	.player-col {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.4rem;
+	}
+	.player-col--right { align-items: flex-end; }
+
+	.player-qr {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
 	}
 
 	.player-name {
@@ -411,6 +438,14 @@
 		transition: opacity 0.1s;
 	}
 	.player-name:hover { opacity: 1; }
+
+	.no-tunnel-hint {
+		font-size: 0.7rem;
+		opacity: 0.35;
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid rgba(128,128,128,0.1);
+	}
 
 	.score-block {
 		display: flex;
@@ -643,24 +678,6 @@
 		text-overflow: ellipsis;
 	}
 
-	/* Utility grid */
-	.utility-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 0.75rem;
-	}
-
-	.clients-hint {
-		font-size: 0.75rem;
-		opacity: 0.3;
-		line-height: 1.5;
-		margin-top: 0.25rem;
-	}
-
-	.no-access-hint {
-		padding: 0.5rem 0;
-	}
-
 	.inline-link {
 		background: none;
 		border: none;
@@ -672,57 +689,6 @@
 		opacity: 0.75;
 	}
 	.inline-link:hover { opacity: 1; }
-
-	.qr-grid {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.qr-col {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.4rem;
-		min-width: 0;
-	}
-
-	.qr-player-name {
-		font-size: 0.7rem;
-		font-weight: 600;
-		color: var(--secondary-color);
-		opacity: 0.75;
-		text-align: center;
-		max-width: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.qr-wrap {
-		padding: 0.35rem;
-		border-radius: 0.25rem;
-		width: 100%;
-		display: flex;
-		justify-content: center;
-	}
-
-	.qr-footer {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		width: 100%;
-		min-width: 0;
-	}
-
-	.qr-url {
-		font-size: 0.6rem;
-		font-family: monospace;
-		opacity: 0.35;
-		color: var(--secondary-color);
-		flex: 1;
-		min-width: 0;
-	}
 
 	.qr-copy {
 		font-size: 0.7rem;
@@ -736,11 +702,41 @@
 		border-radius: 0.2rem;
 	}
 
-	.qr-note {
-		font-size: 0.65rem;
-		opacity: 0.35;
-		line-height: 1.5;
-		color: var(--secondary-color);
+	/* OBS Preview */
+	.preview-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+	}
+
+	.preview-active {
+		background-color: rgba(239, 68, 68, 0.15) !important;
+		color: rgb(239, 68, 68) !important;
+		border-color: rgba(239, 68, 68, 0.4) !important;
+	}
+
+	.preview-frame {
+		width: 100%;
+		aspect-ratio: 16/9;
+		background: #000;
+		border-radius: 0.25rem;
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		display: block;
+	}
+
+	.preview-loading {
+		font-size: 0.75rem;
+		opacity: 0.3;
 	}
 
 	/* BO active */
