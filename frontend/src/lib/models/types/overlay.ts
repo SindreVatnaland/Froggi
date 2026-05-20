@@ -171,6 +171,7 @@ export interface Overlay {
 	[LiveStatsScene.PostGame]: Scene;
 	[LiveStatsScene.PostSet]: Scene;
 	[LiveStatsScene.RankChange]: Scene;
+	[LiveStatsScene.StrikePhase]: Scene;
 }
 
 export interface Percent {

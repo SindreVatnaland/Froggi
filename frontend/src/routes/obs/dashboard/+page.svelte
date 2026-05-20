@@ -22,6 +22,7 @@
 		obsProcessStatus,
 		recentGames,
 		sceneSwitch,
+		strikeState,
 		tailscaleStatus,
 		ngrokStatus,
 		urls,
@@ -175,6 +176,10 @@
 
 	$: ngrokLoading = ngrokConfigured && ngrokRunning && !$remoteAccess.ngrok;
 
+	$: strikePhase = $strikeState?.phase ?? 'lobby';
+	$: setComplete = strikePhase === 'setComplete';
+	$: setInProgress = strikePhase !== 'lobby' && strikePhase !== 'setComplete';
+
 	$: buffActive = $obsConnection?.replayBufferState?.outputActive ?? false;
 
 	const SET_BOS: (3 | 5)[] = [3, 5];
@@ -195,14 +200,7 @@
 		isStartSetModalOpen = false;
 	};
 	const enableReplayBuffer = () => {
-		$electronEmitter.emit('ExecuteCommand', CommandType.Obs, 'SetProfileParameter', {
-			parameterCategory: 'Output',
-			parameterName: 'RecRBTime',
-			parameterValue: '30',
-		});
-		setTimeout(() => {
-			$electronEmitter.emit('ExecuteCommand', CommandType.Obs, 'StartReplayBuffer');
-		}, 300);
+		$electronEmitter.emit('EnableReplayBuffer');
 	};
 </script>
 
@@ -256,27 +254,24 @@
 		</div>
 	</div>
 	<div class="match-controls">
-		<div class="flex gap-1.5 flex-wrap">
-			{#each Object.values(BestOf).filter((v) => typeof v === 'number') as bo}
-				<button
-					class="btn text-xs h-6 px-2.5 border-secondary rounded"
-					class:bo-active={bestOf === bo}
-					on:click={() => trySetBestOf(bo)}
-				>BO{bo}</button>
-			{/each}
-		</div>
-		<div class="flex gap-1.5 flex-wrap ml-auto items-center">
-			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={openStartSetModal}>Start Set</button>
+		<div class="ctrl-left">
 			{#if $isElectron && ngrokConfigured}
 				<label class="flex items-center gap-1.5">
 					<span class="text-xs opacity-40">Online</span>
 					<input type="checkbox" class="toggle-check" checked={isOnline} on:change={toggleNgrok} />
 				</label>
 			{/if}
-			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isScoreModalOpen = true)}>Games</button>
-			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isResetModalOpen = true)}>Reset</button>
-			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => $electronEmitter.emit('SimulateGameStart')}>▶ Sim</button>
-			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => $electronEmitter.emit('SimulateGameEnd')}>⏹ End</button>
+		</div>
+		<div class="ctrl-center">
+			<button
+				class="btn text-xs h-6 px-3 border-secondary rounded start-set-btn"
+				class:start-set-btn--complete={setComplete}
+				class:start-set-btn--progress={setInProgress}
+				on:click={openStartSetModal}
+			>Start Set</button>
+		</div>
+		<div class="ctrl-right">
+			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isScoreModalOpen = true)}>Edit Games</button>
 		</div>
 	</div>
 	{#if !strikeBase}
@@ -525,7 +520,6 @@
 
 <ScoreUpdateModal bind:open={isScoreModalOpen} />
 <TagUpdateModal bind:open={isTagModalOpen} />
-<ConfirmModal bind:open={isResetModalOpen} on:confirm={handleReset}>Reset all games?</ConfirmModal>
 <ConfirmModal bind:open={isBoConfirmOpen} on:confirm={confirmBestOf}>
 	Change to BO{pendingBo}? Games already played may affect scoring.
 </ConfirmModal>
@@ -636,10 +630,22 @@
 	}
 
 	.match-controls {
-		display: flex;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
+		padding-top: 0.25rem;
+	}
+	.ctrl-left { display: flex; align-items: center; }
+	.ctrl-center { display: flex; justify-content: center; }
+	.ctrl-right { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+	.start-set-btn { transition: background 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s; }
+	.start-set-btn--progress { opacity: 0.45; }
+	.start-set-btn--complete {
+		background-color: var(--secondary-color) !important;
+		color: var(--primary-color) !important;
+		border-color: transparent !important;
+		opacity: 1;
 	}
 
 	/* ── Live arena ── */

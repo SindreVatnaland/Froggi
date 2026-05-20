@@ -158,8 +158,11 @@ export interface MessageEvents {
 	PickStage: (stageId: number) => void;
 	SelectCharacter: (player: 1 | 2, charId: number) => void;
 	ReportWinner: (player: 1 | 2) => void;
+	UndoLastGame: () => void;
 	MarkWarmup: () => void;
 	ResetSet: () => void;
+
+	EnableReplayBuffer: () => void;
 
 	OBSPreview: (imageData: string) => void;
 	OBSPreviewToggle: (enabled: boolean) => void;

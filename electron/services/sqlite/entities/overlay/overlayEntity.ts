@@ -45,5 +45,9 @@ export class OverlayEntity implements Overlay {
   @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
   rankChange: SceneEntity;
+
+  @OneToOne(() => SceneEntity, { cascade: true, onDelete: "CASCADE", eager: true })
+  @JoinColumn()
+  strikePhase: SceneEntity;
 }
 

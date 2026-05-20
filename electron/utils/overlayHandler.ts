@@ -60,6 +60,7 @@ export function getNewOverlay(aspect: AspectRatio = { width: 16, height: 9 }): O
     [LiveStatsScene.PostGame]: getDefaultScene(),
     [LiveStatsScene.PostSet]: getDefaultScene(false),
     [LiveStatsScene.RankChange]: getDefaultScene(),
+    [LiveStatsScene.StrikePhase]: getDefaultScene(false),
   } as Overlay;
 }
 

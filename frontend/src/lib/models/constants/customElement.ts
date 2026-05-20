@@ -753,4 +753,12 @@ export enum CustomElement {
     StrikeOrderDisplay = 7300,
     StrikeBansRemaining = 7310,
     StrikeTimerSeconds = 7320,
+
+    // Fixed stage slots — one component per stage, fixed stage ID
+    StrikeStageFoD = 7500,  // Fountain of Dreams (ID 2)
+    StrikeStageBF  = 7510,  // Battlefield (ID 31)
+    StrikeStageFD  = 7520,  // Final Destination (ID 32)
+    StrikeStageDL  = 7530,  // Dream Land N64 (ID 28)
+    StrikeStageYS  = 7540,  // Yoshi's Story (ID 8)
+    StrikeStagePS  = 7550,  // Pokémon Stadium (ID 3, counterpick)
 }

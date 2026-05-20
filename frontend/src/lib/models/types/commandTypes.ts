@@ -40,6 +40,7 @@ export interface SceneSwitchCommands {
     [LiveStatsScene.PostGame]: Command[]
     [LiveStatsScene.PostSet]: Command[]
     [LiveStatsScene.RankChange]: Command[]
+    [LiveStatsScene.StrikePhase]: Command[]
 }
 
 

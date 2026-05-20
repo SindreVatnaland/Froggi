@@ -85,6 +85,44 @@
 		Stage Final
 	</SelectOption>
 
+	<p class="section-label">Stage Struck</p>
+	{#each [
+		{ opt: VisibilityOption.StrikeIsFoDStruck, label: 'Fountain of Dreams Struck' },
+		{ opt: VisibilityOption.StrikeIsBFStruck,  label: 'Battlefield Struck' },
+		{ opt: VisibilityOption.StrikeIsFDStruck,  label: 'Final Destination Struck' },
+		{ opt: VisibilityOption.StrikeIsDLStruck,  label: 'Dream Land Struck' },
+		{ opt: VisibilityOption.StrikeIsYSStruck,  label: "Yoshi's Story Struck" },
+		{ opt: VisibilityOption.StrikeIsPSStruck,  label: 'Pokemon Stadium Struck' },
+	] as entry}
+		<SelectOption
+			description="When this stage has been struck or banned"
+			value={entry.opt}
+			bind:selected={selectedVisibilityOption[entry.opt]}
+			on:select={select}
+		>
+			{entry.label}
+		</SelectOption>
+	{/each}
+
+	<p class="section-label">Stage Disabled</p>
+	{#each [
+		{ opt: VisibilityOption.StrikeIsFoDDisabled, label: 'Fountain of Dreams Disabled', desc: 'Stage cannot be picked (DSR or not yet in pool)' },
+		{ opt: VisibilityOption.StrikeIsBFDisabled,  label: 'Battlefield Disabled',        desc: 'Stage cannot be picked (DSR or not yet in pool)' },
+		{ opt: VisibilityOption.StrikeIsFDDisabled,  label: 'Final Destination Disabled',  desc: 'Stage cannot be picked (DSR or not yet in pool)' },
+		{ opt: VisibilityOption.StrikeIsDLDisabled,  label: 'Dream Land Disabled',         desc: 'Stage cannot be picked (DSR or not yet in pool)' },
+		{ opt: VisibilityOption.StrikeIsYSDisabled,  label: "Yoshi's Story Disabled",      desc: 'Stage cannot be picked (DSR or not yet in pool)' },
+		{ opt: VisibilityOption.StrikeIsPSDisabled,  label: 'Pokemon Stadium Disabled',    desc: 'Stage cannot be picked — disabled until after game 1' },
+	] as entry}
+		<SelectOption
+			description={entry.desc}
+			value={entry.opt}
+			bind:selected={selectedVisibilityOption[entry.opt]}
+			on:select={select}
+		>
+			{entry.label}
+		</SelectOption>
+	{/each}
+
 	<p class="section-label">Selections</p>
 	<SelectOption
 		description="When Player 1 has made their RPS choice"

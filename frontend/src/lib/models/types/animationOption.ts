@@ -37,6 +37,10 @@ export enum AnimationTrigger {
     SessionLosses = "Session Losses Change",
     SessionRating = "Session Rating Change",
     SessionGames = "Session Games Number Change",
+
+    StrikeCurrentStrikerChange = "Strike: Current Striker Change",
+    StrikePlayer1CharChange    = "Strike: Player 1 Character Change",
+    StrikePlayer2CharChange    = "Strike: Player 2 Character Change",
 }
 
 export enum VisibilityOption {
@@ -179,6 +183,22 @@ export enum VisibilityOption {
     StrikePlayer2RpsSelected = "Strike Player 2 RPS Selected",
     StrikePlayer1CharacterSelected = "Strike Player 1 Character Selected",
     StrikePlayer2CharacterSelected = "Strike Player 2 Character Selected",
+
+    // Per-stage: struck (currently banned/struck in active phase)
+    StrikeIsFoDStruck = "Strike: Fountain of Dreams Struck",
+    StrikeIsBFStruck  = "Strike: Battlefield Struck",
+    StrikeIsFDStruck  = "Strike: Final Destination Struck",
+    StrikeIsDLStruck  = "Strike: Dream Land Struck",
+    StrikeIsYSStruck  = "Strike: Yoshis Story Struck",
+    StrikeIsPSStruck  = "Strike: Pokemon Stadium Struck",
+
+    // Per-stage: disabled (DSR — winner already won here, or stage not yet in pool)
+    StrikeIsFoDDisabled = "Strike: Fountain of Dreams Disabled",
+    StrikeIsBFDisabled  = "Strike: Battlefield Disabled",
+    StrikeIsFDDisabled  = "Strike: Final Destination Disabled",
+    StrikeIsDLDisabled  = "Strike: Dream Land Disabled",
+    StrikeIsYSDisabled  = "Strike: Yoshis Story Disabled",
+    StrikeIsPSDisabled  = "Strike: Pokemon Stadium Disabled",
 }
 
 export enum VisibilityCategory {
@@ -212,7 +232,8 @@ export enum AnimationTriggerCategory {
     GameState = "Game State",
     MatchState = "Match State",
     RankStats = "Rank Stats",
-    SessionStats = "Session Stats"
+    SessionStats = "Session Stats",
+    StageStriking = "Stage Striking",
 }
 
 export type SelectedAnimationTriggerCondition = {

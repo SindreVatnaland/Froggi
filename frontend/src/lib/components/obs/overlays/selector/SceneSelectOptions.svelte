@@ -42,6 +42,11 @@
 			description: 'When a ranked game ends and rank changes',
 			liveScene: LiveStatsScene.RankChange,
 		},
+		{
+			text: 'Stage Striking',
+			description: 'Active during tournament stage striking, from set start until game launch',
+			liveScene: LiveStatsScene.StrikePhase,
+		},
 	];
 </script>
 

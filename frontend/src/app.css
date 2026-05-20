@@ -211,3 +211,40 @@ img {
 .tutorial-content a button {
 	margin-top: 0.25rem;
 }
+
+.tutorial-content ol,
+.tutorial-content ul {
+	padding-left: 1.4rem;
+	margin-top: 0.5rem;
+	margin-bottom: 0;
+}
+
+.tutorial-content ol { list-style-type: decimal; }
+.tutorial-content ul { list-style-type: disc; }
+
+.tutorial-content li {
+	font-size: 0.9375rem;
+	line-height: 1.6;
+	color: var(--secondary-color);
+	margin-top: 0.25rem;
+}
+
+.tutorial-content pre {
+	background: rgba(128, 128, 128, 0.12);
+	border: 1px solid rgba(128, 128, 128, 0.2);
+	border-radius: 0.3rem;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.8rem;
+	font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+	margin-top: 0.5rem;
+	overflow-x: auto;
+	white-space: pre-wrap;
+}
+
+.tutorial-content code {
+	font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+	font-size: 0.85em;
+	background: rgba(128, 128, 128, 0.12);
+	padding: 0.1em 0.35em;
+	border-radius: 0.2rem;
+}

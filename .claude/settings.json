@@ -77,10 +77,20 @@
       "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)",
       "Bash(mkdir -p /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/\\\\[num\\\\])",
       "Bash(xargs cat)",
-      "Bash(node -e \"const path = require\\('path'\\); const os = require\\('os'\\); const getAppDataPath = require\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/appdata-path'\\); console.log\\(getAppDataPath\\('obs-studio'\\)\\); console.log\\(path.join\\(os.homedir\\(\\), 'Library/Application Support/obs-studio'\\)\\); \")"
+      "Bash(node -e \"const path = require\\('path'\\); const os = require\\('os'\\); const getAppDataPath = require\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/appdata-path'\\); console.log\\(getAppDataPath\\('obs-studio'\\)\\); console.log\\(path.join\\(os.homedir\\(\\), 'Library/Application Support/obs-studio'\\)\\); \")",
+      "Bash(gh api *)",
+      "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Captain%20Falcon.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/0.png)",
+      "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Donkey%20Kong.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/1.png)",
+      "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Fox.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/2.png)",
+      "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Mr%20Game%20%26%20Watch.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/3.png)",
+      "Bash(curl -sf https://raw.githubusercontent.com/Readek/Melee-Stream-Tool/master/Stream%20Tool/Resources/Characters/CSS/Kirby.png -o /Users/sindrevatnaland/VSCode/Froggi/frontend/static/image/characters/css/4.png)",
+      "Bash(sed -i '' 's|/image/characters/\\\\\\({[^}]*}\\\\\\)/0/vs-left\\\\.png|/image/characters/css/\\\\1.png|g; s|/image/characters/\\\\\\({[^}]*}\\\\\\)/0/vs-right\\\\.png|/image/characters/css/\\\\1.png|g' \"/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/[num]/+page.svelte\")",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(sort -k2 -n)"
     ],
     "additionalDirectories": [
-      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p"
+      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",
+      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/[num]"
     ]
   }
 }

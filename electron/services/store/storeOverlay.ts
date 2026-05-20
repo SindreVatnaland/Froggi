@@ -443,6 +443,7 @@ export class ElectronOverlayStore {
 		// if (this.isDev) return;
 		this.log.info("Migrating overlays");
 		const overlays = await this.getOverlays();
+		const newOverlayTemplate = getNewOverlay();
 
 		for (const overlay of Object.values(overlays)) {
 			this.log.info("Migrating overlay", overlay.id, overlay.froggiVersion);
@@ -452,6 +453,16 @@ export class ElectronOverlayStore {
 			}
 			if (semver.gt("0.9.20-beta.1", overlay.froggiVersion)) {
 				this.reverseLayers(overlay);
+			}
+
+			// Add any scenes that didn't exist when this overlay was created
+			for (const key of Object.keys(LiveStatsScene)) {
+				if (!isNaN(Number(key))) continue;
+				const scene = LiveStatsScene[key as keyof typeof LiveStatsScene];
+				if (!overlay[scene]) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					(overlay as any)[scene] = newOverlayTemplate[scene];
+				}
 			}
 
 			overlay.froggiVersion = froggiVersion;

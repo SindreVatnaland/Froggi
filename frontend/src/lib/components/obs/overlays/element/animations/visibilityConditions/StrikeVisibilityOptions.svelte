@@ -52,6 +52,36 @@
 		if (check(VisibilityOption.StrikePlayer2CharacterSelected, p2CharSelected) != null)
 			return check(VisibilityOption.StrikePlayer2CharacterSelected, p2CharSelected)!;
 
+		// Per-stage struck (stage is in current strikes[] list)
+		const strikes = strikeState?.strikes ?? [];
+		const struckChecks: [VisibilityOption, number][] = [
+			[VisibilityOption.StrikeIsFoDStruck, 2],
+			[VisibilityOption.StrikeIsBFStruck,  31],
+			[VisibilityOption.StrikeIsFDStruck,  32],
+			[VisibilityOption.StrikeIsDLStruck,  28],
+			[VisibilityOption.StrikeIsYSStruck,  8],
+			[VisibilityOption.StrikeIsPSStruck,  3],
+		];
+		for (const [opt, id] of struckChecks) {
+			const v = check(opt, strikes.includes(id));
+			if (v != null) return v;
+		}
+
+		// Per-stage disabled: not in current stages pool (DSR or counterpick not yet available)
+		const stagePool = strikeState?.stages ?? [];
+		const disabledChecks: [VisibilityOption, number][] = [
+			[VisibilityOption.StrikeIsFoDDisabled, 2],
+			[VisibilityOption.StrikeIsBFDisabled,  31],
+			[VisibilityOption.StrikeIsFDDisabled,  32],
+			[VisibilityOption.StrikeIsDLDisabled,  28],
+			[VisibilityOption.StrikeIsYSDisabled,  8],
+			[VisibilityOption.StrikeIsPSDisabled,  3],
+		];
+		for (const [opt, id] of disabledChecks) {
+			const v = check(opt, !stagePool.includes(id));
+			if (v != null) return v;
+		}
+
 		return false;
 	};
 </script>

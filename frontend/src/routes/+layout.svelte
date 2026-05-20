@@ -66,7 +66,7 @@
 	const setOverlayPage = (pathname: string) => {
 		isOverlayPage.set(
 			pathname.startsWith('/obs/overlay/') ||
-			pathname.startsWith('/set/') ||
+			pathname.startsWith('/set/p/') ||
 			pathname.startsWith('/client/')
 		);
 		// Edit pages: any /obs/overlay/[id]/... that isn't a pure preview/inject

@@ -24,16 +24,15 @@
 	$: p2Rps = strikeState?.rps?.p2;
 	$: rpsWinner = strikeState?.rps?.winner;
 	$: currentStriker = strikeState?.currentStriker;
-	$: finalStageIndex = strikeState?.finalStageIndex;
 	$: stages = strikeState?.stages ?? [];
-	$: finalStageId = finalStageIndex != null ? stages[finalStageIndex] : undefined;
+	$: finalStageId = strikeState?.finalStageId ?? undefined;
 	$: finalStageName = finalStageId != null ? (STAGE_DATA[finalStageId]?.name ?? '') : '';
 	$: p1Char = strikeState?.characters?.p1;
 	$: p2Char = strikeState?.characters?.p2;
-	$: bansRemaining = strikeState?.bansRemaining ?? null;
-	$: timerSeconds = strikeState?.timerSeconds ?? null;
-	$: dsrP1 = strikeState?.dsrStages?.p1 ?? null;
-	$: dsrP2 = strikeState?.dsrStages?.p2 ?? null;
+	$: bansRemaining = null;  // not in StrikeState
+	$: timerSeconds = null;   // not in StrikeState
+	$: dsrP1 = strikeState?.dsrStages?.p1 ?? [];
+	$: dsrP2 = strikeState?.dsrStages?.p2 ?? [];
 
 	$: strikeOrderText = (() => {
 		const order = strikeState?.strikeOrder ?? [];
@@ -41,6 +40,7 @@
 		return order.map(([p, n]) => `P${p} bans ${n}`).join(' → ');
 	})();
 
+	// Slot-indexed helpers (StrikeStageSlot1–9)
 	function getSlotIndex(elementId: CustomElement): number {
 		return (elementId - CustomElement.StrikeStageSlot1) / 10;
 	}
@@ -49,24 +49,36 @@
 		return stages[slotIdx];
 	}
 
-	function isStruckByP1(slotIdx: number): boolean {
-		return strikeState?.strikes?.p1?.includes(slotIdx) ?? false;
+	function isStruck(stageId: number | undefined): boolean {
+		return stageId != null && (strikeState?.strikes?.includes(stageId) ?? false);
 	}
 
-	function isStruckByP2(slotIdx: number): boolean {
-		return strikeState?.strikes?.p2?.includes(slotIdx) ?? false;
-	}
-
-	function isFinalSlot(slotIdx: number): boolean {
-		return finalStageIndex === slotIdx;
+	function isFinalStage(stageId: number | undefined): boolean {
+		return stageId != null && finalStageId === stageId;
 	}
 
 	function isDsrBannedByP1(stageId: number | undefined): boolean {
-		return stageId != null && dsrP1 === stageId;
+		return stageId != null && (dsrP1?.includes(stageId) ?? false);
 	}
 
 	function isDsrBannedByP2(stageId: number | undefined): boolean {
-		return stageId != null && dsrP2 === stageId;
+		return stageId != null && (dsrP2?.includes(stageId) ?? false);
+	}
+
+	// Fixed-stage helpers (StrikeStageFoD/BF/FD/DL/YS/PS)
+	const FIXED_STAGE_ID: Partial<Record<CustomElement, number>> = {
+		[CustomElement.StrikeStageFoD]: 2,
+		[CustomElement.StrikeStageBF]:  31,
+		[CustomElement.StrikeStageFD]:  32,
+		[CustomElement.StrikeStageDL]:  28,
+		[CustomElement.StrikeStageYS]:  8,
+		[CustomElement.StrikeStagePS]:  3,
+	};
+
+	const FIXED_STAGE_IDS = new Set(Object.values(FIXED_STAGE_ID));
+
+	function isFixedStage(elementId: CustomElement): boolean {
+		return elementId in FIXED_STAGE_ID;
 	}
 
 	function formatTimer(secs: number | null): string {
@@ -170,53 +182,66 @@
 		</span>
 	</div>
 
-{:else}
-	{@const slotIdx = getSlotIndex(id)}
-	{@const stageId = defaultPreview ? [31, 8, 28, 2, 18, 6][slotIdx] : slotStageId(slotIdx)}
-	{@const struckP1 = defaultPreview ? false : isStruckByP1(slotIdx)}
-	{@const struckP2 = defaultPreview ? false : isStruckByP2(slotIdx)}
-	{@const isFinal = defaultPreview ? slotIdx === 0 : isFinalSlot(slotIdx)}
+{:else if isFixedStage(id)}
+	{@const stageId = defaultPreview ? (FIXED_STAGE_ID[id] ?? 31) : (FIXED_STAGE_ID[id] ?? undefined)}
+	{@const struck   = defaultPreview ? false : isStruck(stageId)}
+	{@const isFinal  = defaultPreview ? false : isFinalStage(stageId)}
 	{@const dsrP1Stage = defaultPreview ? false : isDsrBannedByP1(stageId)}
 	{@const dsrP2Stage = defaultPreview ? false : isDsrBannedByP2(stageId)}
-	{@const stageName = stageId != null ? (STAGE_DATA[stageId]?.name ?? '') : ''}
+	{@const stageName  = stageId != null ? (STAGE_DATA[stageId]?.name ?? '') : ''}
 
 	<div
 		class="strike-slot {style.classValue}"
-		class:strike-slot--p1={struckP1}
-		class:strike-slot--p2={struckP2}
+		class:strike-slot--struck={struck}
 		class:strike-slot--final={isFinal}
 		style={style.cssValue}
 	>
 		{#if stageId != null}
-			<img
-				class="strike-slot-img"
-				src="/image/stages/{stageId}.png"
-				alt={stageName}
-				on:error={hideOnError}
-			/>
+			<img class="strike-slot-img" src="/image/stages/{stageId}.png" alt={stageName} on:error={hideOnError} />
 		{/if}
-
 		{#if stageName}
 			<span class="strike-slot-name">{stageName}</span>
 		{/if}
-
-		{#if struckP1 || struckP2}
-			<div class="strike-x" class:strike-x--p1={struckP1} class:strike-x--p2={struckP2}>✕</div>
+		{#if struck}
+			<div class="strike-x">✕</div>
 		{/if}
-
 		{#if isFinal}
 			<div class="strike-final-badge">✓</div>
 		{/if}
-
 		{#if dsrP1Stage || dsrP2Stage}
-			<div
-				class="strike-dsr"
-				class:strike-dsr--p1={dsrP1Stage}
-				class:strike-dsr--p2={dsrP2Stage}
-				title="DSR"
-			>
-				DSR
-			</div>
+			<div class="strike-dsr" class:strike-dsr--p1={dsrP1Stage} class:strike-dsr--p2={dsrP2Stage} title="DSR">DSR</div>
+		{/if}
+	</div>
+
+{:else}
+	{@const slotIdx = getSlotIndex(id)}
+	{@const stageId = defaultPreview ? [31, 8, 28, 2, 18, 6][slotIdx] : slotStageId(slotIdx)}
+	{@const struck   = defaultPreview ? false : isStruck(stageId)}
+	{@const isFinal  = defaultPreview ? slotIdx === 0 : isFinalStage(stageId)}
+	{@const dsrP1Stage = defaultPreview ? false : isDsrBannedByP1(stageId)}
+	{@const dsrP2Stage = defaultPreview ? false : isDsrBannedByP2(stageId)}
+	{@const stageName  = stageId != null ? (STAGE_DATA[stageId]?.name ?? '') : ''}
+
+	<div
+		class="strike-slot {style.classValue}"
+		class:strike-slot--struck={struck}
+		class:strike-slot--final={isFinal}
+		style={style.cssValue}
+	>
+		{#if stageId != null}
+			<img class="strike-slot-img" src="/image/stages/{stageId}.png" alt={stageName} on:error={hideOnError} />
+		{/if}
+		{#if stageName}
+			<span class="strike-slot-name">{stageName}</span>
+		{/if}
+		{#if struck}
+			<div class="strike-x">✕</div>
+		{/if}
+		{#if isFinal}
+			<div class="strike-final-badge">✓</div>
+		{/if}
+		{#if dsrP1Stage || dsrP2Stage}
+			<div class="strike-dsr" class:strike-dsr--p1={dsrP1Stage} class:strike-dsr--p2={dsrP2Stage} title="DSR">DSR</div>
 		{/if}
 	</div>
 {/if}
@@ -263,8 +288,7 @@
 		transition: opacity 0.2s;
 	}
 
-	.strike-slot--p1,
-	.strike-slot--p2 {
+	.strike-slot--struck {
 		opacity: 0.5;
 	}
 
@@ -303,19 +327,11 @@
 		font-weight: 900;
 		line-height: 1;
 		pointer-events: none;
-	}
-
-	.strike-x--p1 {
 		color: rgb(239, 68, 68);
 		text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
 	}
 
-	.strike-x--p2 {
-		color: rgb(96, 165, 250);
-		text-shadow: 0 0 8px rgba(96, 165, 250, 0.8);
-	}
-
-	.strike-final-badge {
+.strike-final-badge {
 		position: absolute;
 		top: 2px;
 		right: 4px;

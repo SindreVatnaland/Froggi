@@ -132,6 +132,7 @@ export enum LiveStatsScene {
 	PostGame = "postGame",
 	PostSet = "postSet",
 	RankChange = "rankChange",
+	StrikePhase = "strikePhase",
 }
 
 export enum NotificationType {

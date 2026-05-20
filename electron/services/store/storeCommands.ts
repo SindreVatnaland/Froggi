@@ -102,6 +102,7 @@ export class ElectronCommandStore {
 				[LiveStatsScene.PostGame]: [],
 				[LiveStatsScene.PostSet]: [],
 				[LiveStatsScene.RankChange]: [],
+				[LiveStatsScene.StrikePhase]: [],
 			}
 		);
 	}

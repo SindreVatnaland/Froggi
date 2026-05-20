@@ -2,8 +2,10 @@ import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { ElectronStrikeStore } from './store/storeStrike';
 import { ElectronGamesStore } from './store/storeGames';
+import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import type { GameRecord, RpsChoice, StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
+import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
 
 const DEFAULT_STARTERS = [2, 8, 28, 31, 32];
 const DEFAULT_COUNTERPICKS = [3, 6, 7, 10, 11, 17, 22, 27];
@@ -53,6 +55,7 @@ export class ElectronSetService {
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => ElectronStrikeStore)) private strikeStore: ElectronStrikeStore,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
+		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 	) {
 		this.log.info('Initializing Set Service');
 		const persisted = this.strikeStore.getStrikeState();
@@ -77,6 +80,7 @@ export class ElectronSetService {
 				connectedPlayers: this.state.connectedPlayers ?? [],
 			};
 			this.setState(s);
+			this.storeLiveStats.setStatsScene(LiveStatsScene.StrikePhase);
 			this.log.info(`Set started: ${p1Name} vs ${p2Name} BO${bestOf}`);
 		});
 
@@ -222,6 +226,7 @@ export class ElectronSetService {
 			s.currentStriker = player;
 			s.phase = 'stageBan';
 			this.setState(s);
+			this.storeLiveStats.setStatsScene(LiveStatsScene.StrikePhase);
 		});
 
 		this.clientEmitter.on('MarkWarmup', () => {
@@ -246,6 +251,34 @@ export class ElectronSetService {
 				s.phase = 'charLock';
 				s.currentStriker = s.lastWinner;
 			}
+			this.setState(s);
+		});
+
+		this.clientEmitter.on('UndoLastGame', () => {
+			const s = { ...this.state };
+			if (!s.games.length) return;
+
+			const last = s.games[s.games.length - 1];
+			s.games = s.games.slice(0, -1);
+
+			if (!last.warmup && last.winner !== null) {
+				const scoreKey: 'p1' | 'p2' = last.winner === 1 ? 'p1' : 'p2';
+				s.score = { ...s.score, [scoreKey]: Math.max(0, s.score[scoreKey] - 1) };
+				if (last.stageId !== -1) {
+					const dsrKey: 'p1' | 'p2' = last.winner === 1 ? 'p1' : 'p2';
+					s.dsrStages = {
+						...s.dsrStages,
+						[dsrKey]: s.dsrStages[dsrKey].filter(id => id !== last.stageId),
+					};
+				}
+				s.gameNum = Math.max(1, s.gameNum - 1);
+			}
+
+			s.phase = 'playing';
+			s.finalStageId = last.stageId !== -1 ? last.stageId : null;
+			s.characters = { p1: last.p1Char, p2: last.p2Char };
+			const prevCounted = [...s.games].filter(g => !g.warmup).slice(-1)[0];
+			s.lastWinner = prevCounted?.winner ?? null;
 			this.setState(s);
 		});
 

@@ -65,6 +65,15 @@
 		$electronEmitter.emit('ResetSet');
 	}
 
+	function undoLastGame() {
+		$electronEmitter.emit('UndoLastGame');
+	}
+
+	$: isOnline = !!($remoteAccess.tailscale || $remoteAccess.ngrok);
+	$: p1Connected = s?.connectedPlayers?.includes(1) ?? false;
+	$: p2Connected = s?.connectedPlayers?.includes(2) ?? false;
+	$: bothConnected = p1Connected && p2Connected;
+
 	$: winsNeeded = s ? Math.ceil(s.bestOf / 2) : 2;
 	$: p1Wins = s?.score?.p1 ?? 0;
 	$: p2Wins = s?.score?.p2 ?? 0;
@@ -86,38 +95,78 @@
 	</div>
 	{/if}
 
-	<!-- LOBBY: start form -->
+	<!-- LOBBY: guided start flow -->
 	{#if phase === 'lobby'}
 	<div class="dash-card border-secondary">
 		<p class="dash-label">New Set</p>
-		<div class="form-row">
-			<input class="name-input" placeholder="Player 1" bind:value={p1Name} />
-			<input class="name-input" placeholder="Player 2" bind:value={p2Name} />
-		</div>
-		<div class="bo-row">
-			<button class="bo-btn" class:bo-active={bestOf === 3} on:click={() => bestOf = 3}>BO3</button>
-			<button class="bo-btn" class:bo-active={bestOf === 5} on:click={() => bestOf = 5}>BO5</button>
-		</div>
-		<button class="start-btn" on:click={startSet}>Start Set</button>
 
-		{#if p1Url || p2Url}
-		<div class="qr-row mt-3">
-			{#if p1Url}
-			<div class="qr-col">
-				<p class="dash-label">P1 URL</p>
-				<QrCode value={p1Url} size="120" color="#ffffff" background="#1a1a1a" />
-				<p class="qr-url">{p1Url}</p>
+		<!-- Step 1: Connect / Share -->
+		<div class="guide-step" class:guide-step--done={bothConnected}>
+			<span class="guide-num">1</span>
+			<div class="guide-body">
+				{#if isOnline}
+				<p class="guide-title">Spectate a player in Slippi</p>
+				<p class="guide-hint">Connect to one of the players via Direct Play → Spectate. Have them start a quick match so Froggi can read the player tags. Then share the player URLs below.</p>
+				{:else}
+				<p class="guide-title">Have players scan their QR code</p>
+				<p class="guide-hint">Both players open their link on a phone or fixed device. Make sure all devices are on the same Wi-Fi.</p>
+				{/if}
+
+				{#if p1Url || p2Url}
+				<div class="qr-row">
+					{#if p1Url}
+					<div class="qr-col">
+						<p class="dash-label">Player 1</p>
+						<QrCode value={p1Url} size="110" color="#ffffff" background="#1a1a1a" />
+						<button class="qr-copy-btn" on:click={() => navigator.clipboard.writeText(p1Url)}>Copy URL</button>
+					</div>
+					{/if}
+					{#if p2Url}
+					<div class="qr-col">
+						<p class="dash-label">Player 2</p>
+						<QrCode value={p2Url} size="110" color="#ffffff" background="#1a1a1a" />
+						<button class="qr-copy-btn" on:click={() => navigator.clipboard.writeText(p2Url)}>Copy URL</button>
+					</div>
+					{/if}
+				</div>
+				{/if}
 			</div>
-			{/if}
-			{#if p2Url}
-			<div class="qr-col">
-				<p class="dash-label">P2 URL</p>
-				<QrCode value={p2Url} size="120" color="#ffffff" background="#1a1a1a" />
-				<p class="qr-url">{p2Url}</p>
-			</div>
-			{/if}
 		</div>
-		{/if}
+
+		<!-- Step 2: Wait for connection -->
+		<div class="guide-step" class:guide-step--done={bothConnected}>
+			<span class="guide-num">2</span>
+			<div class="guide-body">
+				<p class="guide-title">Wait for both players to connect</p>
+				<div class="conn-row">
+					<span class="conn-dot" class:conn-dot--on={p1Connected}></span>
+					<span class="conn-label">Player 1</span>
+					<span class="conn-state">{p1Connected ? 'Connected' : 'Waiting…'}</span>
+				</div>
+				<div class="conn-row">
+					<span class="conn-dot" class:conn-dot--on={p2Connected}></span>
+					<span class="conn-label">Player 2</span>
+					<span class="conn-state">{p2Connected ? 'Connected' : 'Waiting…'}</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Step 3: Names + start -->
+		<div class="guide-step guide-step--last" class:guide-step--active={bothConnected}>
+			<span class="guide-num">3</span>
+			<div class="guide-body">
+				<p class="guide-title">Enter player names and start</p>
+				<div class="form-row mt-1">
+					<input class="name-input" placeholder="Player 1" bind:value={p1Name} />
+					<input class="name-input" placeholder="Player 2" bind:value={p2Name} />
+				</div>
+				<div class="bo-row">
+					<button class="bo-btn" class:bo-active={bestOf === 3} on:click={() => bestOf = 3}>BO3</button>
+					<button class="bo-btn" class:bo-active={bestOf === 5} on:click={() => bestOf = 5}>BO5</button>
+				</div>
+				<button class="start-btn" on:click={startSet}>Start Set</button>
+			</div>
+		</div>
 	</div>
 
 	<!-- RPS -->
@@ -310,6 +359,9 @@
 			<button class="warmup-btn" on:click={markWarmup}>Warmup</button>
 			<button class="winner-btn winner-btn--p2" on:click={() => reportWinner(2)}>{s?.p2Name} wins</button>
 		</div>
+		{#if (s?.games?.length ?? 0) > 0}
+		<button class="undo-btn mt-2" on:click={undoLastGame}>↩ Undo last game</button>
+		{/if}
 	</div>
 
 	<!-- SET COMPLETE -->
@@ -329,7 +381,10 @@
 			{/each}
 		</div>
 		{/if}
-		<button class="start-btn mt-3" on:click={resetSet}>New Set</button>
+		<div class="set-complete-actions">
+			<button class="start-btn" on:click={resetSet}>New Set</button>
+			<button class="undo-btn" on:click={undoLastGame}>↩ Undo last game</button>
+		</div>
 	</div>
 	{/if}
 
@@ -379,9 +434,52 @@
 	}
 	.start-btn:hover { opacity: 0.85; }
 
-	.qr-row { display: flex; gap: 1.5rem; justify-content: center; padding-top: 0.5rem; }
+	/* Guide steps */
+	.guide-step {
+		display: flex; gap: 0.75rem; padding: 0.75rem 0;
+		border-bottom: 1px solid rgba(255,255,255,0.06);
+		opacity: 0.5;
+	}
+	.guide-step--done { opacity: 0.35; }
+	.guide-step--active { opacity: 1; }
+	.guide-step--last { border-bottom: none; }
+	.guide-num {
+		width: 1.4rem; height: 1.4rem; border-radius: 50%; flex-shrink: 0;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.65rem; font-weight: 700;
+		border: 1px solid rgba(255,255,255,0.2);
+		color: rgba(255,255,255,0.5); margin-top: 0.1rem;
+	}
+	.guide-body { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+	.guide-title { font-size: 0.85rem; font-weight: 600; margin: 0; }
+	.guide-hint { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin: 0; line-height: 1.5; }
+	.mt-1 { margin-top: 0.25rem; }
+
+	/* Connection status */
+	.conn-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+	.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+	.conn-dot--on { background: #4ade80; }
+	.conn-label { font-size: 0.75rem; font-weight: 600; min-width: 4.5rem; }
+	.conn-state { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+
+	.qr-row { display: flex; gap: 1.5rem; padding-top: 0.5rem; }
 	.qr-col { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-	.qr-url { font-size: 0.6rem; color: rgba(255,255,255,0.35); word-break: break-all; max-width: 130px; text-align: center; }
+	.qr-copy-btn {
+		font-size: 0.65rem; padding: 0.2rem 0.6rem;
+		background: transparent; border: 1px solid rgba(255,255,255,0.15);
+		border-radius: 0.25rem; color: rgba(255,255,255,0.4); cursor: pointer;
+	}
+	.qr-copy-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+	/* Undo */
+	.undo-btn {
+		width: 100%; padding: 0.4rem; font-size: 0.75rem;
+		background: transparent; border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 0.3rem; color: rgba(255,255,255,0.35); cursor: pointer;
+	}
+	.undo-btn:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.25); }
+
+	.set-complete-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
 
 	.phase-hint { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin: 0.25rem 0; }
 	.phase-big { font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0; }

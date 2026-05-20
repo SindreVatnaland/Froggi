@@ -20,6 +20,12 @@
 			path: '/obs/tutorial/remote-obs',
 			icon: '🎮',
 		},
+		{
+			title: 'Run a tournament',
+			description: 'Stage striking, player links, ngrok and Tailscale setup for online play.',
+			path: '/set/tutorial',
+			icon: '🏆',
+		},
 	];
 </script>
 

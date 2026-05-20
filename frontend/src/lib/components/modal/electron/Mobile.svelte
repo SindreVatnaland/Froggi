@@ -18,10 +18,10 @@
 	<div class="w-[80vw] max-w-[700px] background-primary-color text-secondary-color border-secondary rounded-lg overflow-hidden flex flex-col">
 
 		<!-- Header -->
-		<div class="px-5 py-3 border-b border-secondary-color shrink-0 flex items-center justify-between">
+		<div class="px-5 py-3 pr-10 border-b border-secondary-color shrink-0 flex items-center gap-4">
 			<p class="font-semibold text-sm">Mobile App</p>
 			{#if tsUrl}
-				<div class="tab-row">
+				<div class="tab-row mx-auto">
 					<button class="tab-btn" class:tab-btn--active={tab === 'local'} on:click={() => tab = 'local'}>Local</button>
 					<button class="tab-btn" class:tab-btn--active={tab === 'remote'} on:click={() => tab = 'remote'}>Remote</button>
 				</div>

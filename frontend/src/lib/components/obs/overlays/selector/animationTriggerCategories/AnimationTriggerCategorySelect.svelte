@@ -16,6 +16,7 @@
 	} from '$lib/models/types/animationOption';
 	import Player1DataAnimationTriggerSelect from './Player1DataAnimationTriggerSelect.svelte';
 	import Player2DataAnimationTriggerSelect from './Player2DataAnimationTriggerSelect.svelte';
+	import StrikeAnimationTriggerSelect from './StrikeAnimationTriggerSelect.svelte';
 
 	export let selectedOption: SelectedAnimationTriggerCondition;
 
@@ -80,6 +81,10 @@
 				LiveStatsScene.RankChange,
 			].includes($statsScene),
 		},
+		{
+			category: AnimationTriggerCategory.StageStriking,
+			visible: [LiveStatsScene.StrikePhase].includes($statsScene),
+		},
 	];
 	let selectedCategory: AnimationTriggerCategory =
 		buttons?.find((button) => button.visible)?.category ?? AnimationTriggerCategory.GameState;
@@ -142,6 +147,9 @@
 			{/if}
 			{#if selectedCategory === AnimationTriggerCategory.SessionStats}
 				<SessionStatsAnimationTriggerSelect on:select={select} {selectedOption} />
+			{/if}
+			{#if selectedCategory === AnimationTriggerCategory.StageStriking}
+				<StrikeAnimationTriggerSelect on:select={select} {selectedOption} />
 			{/if}
 		</div>
 		<br />

@@ -687,4 +687,10 @@ export const STRIKING_ELEMENTS = new Set<CustomElement>([
 	CustomElement.StrikeOrderDisplay,
 	CustomElement.StrikeBansRemaining,
 	CustomElement.StrikeTimerSeconds,
+	CustomElement.StrikeStageFoD,
+	CustomElement.StrikeStageBF,
+	CustomElement.StrikeStageFD,
+	CustomElement.StrikeStageDL,
+	CustomElement.StrikeStageYS,
+	CustomElement.StrikeStagePS,
 ]);

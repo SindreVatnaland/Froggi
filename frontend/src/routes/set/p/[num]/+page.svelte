@@ -17,13 +17,17 @@
 		28: 'Dream Land N64', 31: 'Battlefield', 32: 'Final Destination',
 	};
 
-	const MELEE_CHARS = Array.from({ length: 26 }, (_, i) => i);
+	const MELEE_CHARS = [
+		22,  8,  7,  5, 12, 17,  1,  0, 25, // Dr.Mario Mario Luigi Bowser Peach Yoshi DK Falcon Ganon
+		20,  2, 11, 14,  4, 16, 18,  6, 21, // Falco Fox Ness ICs Kirby Samus Zelda Link Y.Link
+		24, 13, 15, 10,  3,  9, 23,          // Pichu Pikachu Puff Mewtwo G&W Marth Roy
+	];
 	const CHAR_NAMES: Record<number, string> = {
-		0:'Falcon',1:'DK',2:'Fox',3:'G&W',4:'Kirby',5:'Bowser',6:'Link',
+		0:'C. Falcon',1:'Donkey Kong',2:'Fox',3:'Mr. Game & Watch',4:'Kirby',5:'Bowser',6:'Link',
 		7:'Luigi',8:'Mario',9:'Marth',10:'Mewtwo',11:'Ness',12:'Peach',
-		13:'Pikachu',14:'ICs',15:'Puff',16:'Samus',17:'Yoshi',
-		18:'Zelda',19:'Sheik',20:'Falco',21:'Y.Link',22:'Doc',
-		23:'Roy',24:'Pichu',25:'Ganon',
+		13:'Pikachu',14:'Ice Climbers',15:'Jigglypuff',16:'Samus',17:'Yoshi',
+		18:'Zelda',19:'Sheik',20:'Falco',21:'Young Link',22:'Dr. Mario',
+		23:'Roy',24:'Pichu',25:'Ganondorf',
 	};
 
 	function stageName(id: number): string {
@@ -87,8 +91,20 @@
 		$electronEmitter.emit('PickStage', stageId);
 	}
 
-	function selectChar(charId: number) {
-		$electronEmitter.emit('SelectCharacter', playerNum, charId);
+	let pendingChar: number | null = null;
+
+	function tapChar(charId: number) {
+		pendingChar = charId;
+	}
+
+	function confirmChar() {
+		if (pendingChar === null) return;
+		$electronEmitter.emit('SelectCharacter', playerNum, pendingChar);
+		pendingChar = null;
+	}
+
+	function cancelChar() {
+		pendingChar = null;
 	}
 
 	const RPS_EMOJI: Record<string, string> = { rock: '✊', paper: '✋', scissors: '✌️' };
@@ -262,7 +278,7 @@
 		<div class="phase-section">
 			{#if myChar !== null && myChar !== undefined}
 			<div class="char-picked">
-				<img src="/image/characters/{myChar}/0/vs-left.png" alt="" class="char-picked-img" />
+				<img src="/image/characters/css/{myChar}.png" alt="" class="char-picked-img" />
 				<p class="phase-sub">Locked in — waiting for opponent…</p>
 			</div>
 			{:else}
@@ -270,11 +286,20 @@
 			<p class="phase-sub">Double blind — don't show your screen</p>
 			<div class="char-grid">
 				{#each MELEE_CHARS as charId}
-				<button class="char-btn" on:click={() => selectChar(charId)} title={CHAR_NAMES[charId]}>
-					<img src="/image/characters/{charId}/0/vs-left.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
+				<button class="char-btn" class:char-btn--pending={pendingChar === charId} on:click={() => tapChar(charId)} title={CHAR_NAMES[charId]}>
+					<img src="/image/characters/css/{charId}.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
 				</button>
 				{/each}
 			</div>
+			{#if pendingChar !== null}
+			<div class="char-confirm-bar">
+				<img src="/image/characters/css/{pendingChar}.png" alt="" class="char-confirm-img" />
+				<div class="char-confirm-btns">
+					<button class="char-confirm-ok" on:click={confirmChar}>Confirm</button>
+					<button class="char-confirm-cancel" on:click={cancelChar}>Cancel</button>
+				</div>
+			</div>
+			{/if}
 			{/if}
 		</div>
 
@@ -284,7 +309,7 @@
 			{#if isWinner}
 			{#if myChar !== null && myChar !== undefined}
 			<div class="char-picked">
-				<img src="/image/characters/{myChar}/0/vs-left.png" alt="" class="char-picked-img" />
+				<img src="/image/characters/css/{myChar}.png" alt="" class="char-picked-img" />
 				<p class="phase-sub">Locked in — opponent is picking…</p>
 			</div>
 			{:else}
@@ -292,11 +317,20 @@
 			<p class="phase-sub">Visible to opponent</p>
 			<div class="char-grid">
 				{#each MELEE_CHARS as charId}
-				<button class="char-btn" on:click={() => selectChar(charId)} title={CHAR_NAMES[charId]}>
-					<img src="/image/characters/{charId}/0/vs-left.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
+				<button class="char-btn" class:char-btn--pending={pendingChar === charId} on:click={() => tapChar(charId)} title={CHAR_NAMES[charId]}>
+					<img src="/image/characters/css/{charId}.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
 				</button>
 				{/each}
 			</div>
+			{#if pendingChar !== null}
+			<div class="char-confirm-bar">
+				<img src="/image/characters/css/{pendingChar}.png" alt="" class="char-confirm-img" />
+				<div class="char-confirm-btns">
+					<button class="char-confirm-ok" on:click={confirmChar}>Confirm</button>
+					<button class="char-confirm-cancel" on:click={cancelChar}>Cancel</button>
+				</div>
+			</div>
+			{/if}
 			{/if}
 			{:else}
 			<p class="phase-title">Opponent is locking their character…</p>
@@ -309,7 +343,7 @@
 			{#if isLoser}
 			{#if myChar !== null && myChar !== undefined}
 			<div class="char-picked">
-				<img src="/image/characters/{myChar}/0/vs-left.png" alt="" class="char-picked-img" />
+				<img src="/image/characters/css/{myChar}.png" alt="" class="char-picked-img" />
 				<p class="phase-sub">Locked in!</p>
 			</div>
 			{:else}
@@ -317,22 +351,31 @@
 			{#if oppChar !== null && oppChar !== undefined}
 			<div class="opp-locked">
 				<span class="phase-sub">Opponent locked:</span>
-				<img src="/image/characters/{oppChar}/0/vs-left.png" alt="" class="char-sm" />
+				<img src="/image/characters/css/{oppChar}.png" alt="" class="char-sm" />
 			</div>
 			{/if}
 			<div class="char-grid">
 				{#each MELEE_CHARS as charId}
-				<button class="char-btn" on:click={() => selectChar(charId)} title={CHAR_NAMES[charId]}>
-					<img src="/image/characters/{charId}/0/vs-left.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
+				<button class="char-btn" class:char-btn--pending={pendingChar === charId} on:click={() => tapChar(charId)} title={CHAR_NAMES[charId]}>
+					<img src="/image/characters/css/{charId}.png" alt={CHAR_NAMES[charId]} class="char-btn-img" />
 				</button>
 				{/each}
 			</div>
+			{#if pendingChar !== null}
+			<div class="char-confirm-bar">
+				<img src="/image/characters/css/{pendingChar}.png" alt="" class="char-confirm-img" />
+				<div class="char-confirm-btns">
+					<button class="char-confirm-ok" on:click={confirmChar}>Confirm</button>
+					<button class="char-confirm-cancel" on:click={cancelChar}>Cancel</button>
+				</div>
+			</div>
+			{/if}
 			{/if}
 			{:else}
 			<p class="phase-title">Opponent is picking their character…</p>
 			{#if myChar !== null && myChar !== undefined}
 			<div class="char-picked">
-				<img src="/image/characters/{myChar}/0/vs-left.png" alt="" class="char-picked-img" />
+				<img src="/image/characters/css/{myChar}.png" alt="" class="char-picked-img" />
 			</div>
 			{/if}
 			{/if}
@@ -351,14 +394,14 @@
 			<div class="char-vs">
 				{#if myChar !== null && myChar !== undefined}
 				<div class="char-vs-side">
-					<img src="/image/characters/{myChar}/0/vs-left.png" alt="" class="char-vs-img" />
+					<img src="/image/characters/css/{myChar}.png" alt="" class="char-vs-img" />
 					<span>{myName}</span>
 				</div>
 				{/if}
 				<span class="vs-label">vs</span>
 				{#if oppChar !== null && oppChar !== undefined}
 				<div class="char-vs-side">
-					<img src="/image/characters/{oppChar}/0/vs-right.png" alt="" class="char-vs-img" />
+					<img src="/image/characters/css/{oppChar}.png" alt="" class="char-vs-img" />
 					<span>{oppName}</span>
 				</div>
 				{/if}
@@ -523,8 +566,9 @@
 	}
 
 	.char-grid {
-		display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.3rem;
+		display: grid; grid-template-columns: repeat(9, 1fr); gap: 0.3rem;
 	}
+	.char-btn:nth-child(19) { grid-column-start: 2; }
 	.char-btn {
 		aspect-ratio: 1; background: rgba(255,255,255,0.04);
 		border: 1px solid rgba(255,255,255,0.1); border-radius: 0.3rem;
@@ -532,6 +576,25 @@
 	}
 	.char-btn:active { border-color: #40dca5; background: rgba(64,220,165,0.1); }
 	.char-btn-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+	.char-btn--pending { border-color: #40dca5; background: rgba(64,220,165,0.15); }
+
+	.char-confirm-bar {
+		display: flex; align-items: center; gap: 0.75rem;
+		background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+		border-radius: 0.5rem; padding: 0.5rem 0.75rem; margin-top: 0.25rem;
+	}
+	.char-confirm-img { width: 48px; height: 48px; object-fit: contain; }
+	.char-confirm-btns { display: flex; gap: 0.5rem; margin-left: auto; }
+	.char-confirm-ok {
+		padding: 0.4rem 1rem; border-radius: 0.35rem; font-size: 0.8rem; font-weight: 700;
+		background: #40dca5; color: #111; border: none; cursor: pointer;
+	}
+	.char-confirm-cancel {
+		padding: 0.4rem 0.75rem; border-radius: 0.35rem; font-size: 0.8rem;
+		background: rgba(255,255,255,0.08); color: #e0e0e0;
+		border: 1px solid rgba(255,255,255,0.15); cursor: pointer;
+	}
 
 	.char-picked { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1rem 0; }
 	.char-picked-img { width: 96px; height: 96px; object-fit: contain; }

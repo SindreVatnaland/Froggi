@@ -28,6 +28,9 @@
 		SessionStats,
 	} from '$lib/models/types/slippiData';
 	import { sessionStatsTrigger } from './animationTriggers/SessionStatsTriggers';
+	import { strikeStateTrigger } from './animationTriggers/StrikeTriggers';
+	import { strikeState } from '$lib/utils/store.svelte';
+	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import {
 		player1RankDataTrigger,
 		player2RankDataTrigger,
@@ -45,6 +48,7 @@
 	let prevPlayers: Player[] | undefined;
 	let prevSettings: GameStartTypeExtended | undefined;
 	let prevSessionStats: SessionStats | undefined;
+	let prevStrikeState: StrikeState | undefined;
 	const updateKeyValue = (
 		gameFrame: FrameEntryType | undefined | null,
 		currentPlayer: CurrentPlayer,
@@ -82,6 +86,7 @@
 			return Math.random();
 		if (rankStateTrigger(option, currentPlayer.rank, prevPlayer?.rank)) return Math.random();
 		if (sessionStatsTrigger(option, sessionStats, prevSessionStats)) return Math.random();
+		if (strikeStateTrigger(option, $strikeState, prevStrikeState)) return Math.random();
 
 		return key;
 	};
@@ -108,6 +113,7 @@
 		prevPlayer = { ...currentPlayer };
 		prevPlayers = { ...currentPlayers };
 		prevSessionStats = { ...(sessionStats ?? {}) } as SessionStats;
+		prevStrikeState = $strikeState ? { ...$strikeState } : undefined;
 	};
 
 	$: updateTriggerValues(

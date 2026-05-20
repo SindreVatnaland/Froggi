@@ -77,11 +77,10 @@ export class ElectronSettingsStore {
 
 		if (settings?.spectateSlpPath === undefined) {
 			const defaultSpectatePath = path.join(settings.rootSlpPath, 'Spectate');
-			if (fs.existsSync(defaultSpectatePath)) {
-				settings.spectateSlpPath = defaultSpectatePath;
+			if (!fs.existsSync(defaultSpectatePath)) {
+				fs.mkdirSync(defaultSpectatePath, { recursive: true });
 			}
-			// If the directory doesn't exist, leave spectateSlpPath undefined.
-			// A notification is emitted later so the user knows to configure it.
+			settings.spectateSlpPath = defaultSpectatePath;
 		}
 
 		if (settings?.appDataPath === undefined)

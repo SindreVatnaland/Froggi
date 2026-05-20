@@ -145,11 +145,25 @@ export class ObsWebSocket {
 
 	private startReplayBuffer = async () => {
 		try {
-			const replayBufferState = await this.obs.call('GetReplayBufferStatus');
-			if (replayBufferState.outputActive) return;
+			// Force 30s duration in whichever output mode is active
+			for (const category of ['SimpleOutput', 'AdvOut']) {
+				try {
+					await this.obs.call('SetProfileParameter', {
+						parameterCategory: category,
+						parameterName: 'RecRBTime',
+						parameterValue: '30',
+					});
+				} catch { /* ignore — category may not exist in this output mode */ }
+			}
+
+			const { outputActive } = await this.obs.call('GetReplayBufferStatus');
+			if (outputActive) {
+				await this.obs.call('StopReplayBuffer');
+				await new Promise(resolve => setTimeout(resolve, 600));
+			}
 			await this.obs.call('StartReplayBuffer');
 		} catch (err) {
-			this.log.error(`Could not save Replay Buffer`, err);
+			this.log.error(`Could not start Replay Buffer`, err);
 		}
 	};
 
@@ -401,6 +415,9 @@ export class ObsWebSocket {
 		})
 		this.clientEmitter.on("OBSPreviewToggle", (enabled: boolean) => {
 			enabled ? this.startPreview() : this.stopPreview();
+		});
+		this.clientEmitter.on('EnableReplayBuffer', () => {
+			this.startReplayBuffer();
 		});
 	}
 }
