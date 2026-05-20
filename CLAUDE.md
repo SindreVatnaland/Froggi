@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working style
+
+- Keep explanations brief and to the point.
+- **Don't start work on vague tasks.** If requirements are unclear — file structure, architecture, scope — ask first. Make the user think it through before writing any code.
+- **After the user describes their solution**, analyze it independently. If there are meaningful flaws or significant optimizations, surface them concisely. Present it as a question or suggestion, not a decision. The user decides what to do and why.
+- Keep the user accountable for architectural decisions. Don't make structural choices on their behalf.
+
 ## Commands
 
 ```bash

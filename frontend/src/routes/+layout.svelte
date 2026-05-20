@@ -64,7 +64,11 @@
 	$: $isOverlayPage, updateBackgroundColor();
 
 	const setOverlayPage = (pathname: string) => {
-		isOverlayPage.set(pathname.startsWith('/obs/overlay/'));
+		isOverlayPage.set(
+			pathname.startsWith('/obs/overlay/') ||
+			pathname.startsWith('/set/') ||
+			pathname.startsWith('/client/')
+		);
 		// Edit pages: any /obs/overlay/[id]/... that isn't a pure preview/inject
 		isEditPage.set(
 			/^\/obs\/overlay\/(?!inject)[^/]+/.test(pathname) &&
@@ -86,13 +90,15 @@
 {/if}
 
 {#if ready && $urls}
-	<Navbar />
+	{#if !$isOverlayPage}<Navbar />{/if}
 	<GlobalModal />
 	<Toast />
 	<BuyMeACoffeeEmbed />
 	<div style={navPadding}>
 		<slot />
 	</div>
+{:else if ready}
+	<slot />
 {/if}
 
 <style>

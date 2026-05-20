@@ -55,4 +55,5 @@ export interface StrikeState {
 	lastWinner: 1 | 2 | null;
 
 	games: GameRecord[];
+	connectedPlayers: (1 | 2)[];
 }

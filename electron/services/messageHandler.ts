@@ -94,6 +94,9 @@ export class MessageHandler {
 			if (!this.dev) {
 				this.app.use('/', staticFrontendServe);
 				this.app.use('*', staticFrontendServe);
+				this.app.use((_req: express.Request, res: express.Response) => {
+					res.sendFile(path.join(this.rootDir, 'build', 'index.html'));
+				});
 			} else {
 				// Dev: proxy page requests to Vite so port 3200 can serve the frontend
 				// (allows Tailscale funnel on 3200 to reach both Express WS and Vite UI)

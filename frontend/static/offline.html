@@ -2,82 +2,123 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-
-		<title>Client disconnected</title>
-
-		<!-- Inline the page's stylesheet. -->
+		<title>Froggi — Disconnected</title>
 		<style>
-			:global(body) {
-				background: transparent;
-			}
+			* { margin: 0; padding: 0; box-sizing: border-box; }
 
 			body {
+				background: transparent;
 				width: 100vw;
 				height: 100vh;
-				font-family: helvetica, arial, sans-serif;
-				padding: 1em;
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				background: transparent;
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+				padding: 1.5rem;
 			}
 
-			img {
-				width: 48px;
-				height: 48px;
+			.card {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+				max-width: 340px;
 			}
 
-			h1 {
-				font-style: italic;
-				color: #ffffff;
-				text-shadow: 1px 1px 3px black;
+			.title {
+				font-size: 1rem;
+				font-weight: 700;
+				color: #fff;
+				text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+				letter-spacing: 0.01em;
 			}
 
-			p {
-				margin-block: 1rem;
-				color: #ffffff;
-				text-shadow: 1px 1px 3px black;
+			.hint {
+				font-size: 0.75rem;
+				color: rgba(255,255,255,0.7);
+				text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+				line-height: 1.5;
 			}
 
-			button {
-				display: block;
+			.status {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				margin-top: 0.25rem;
 			}
 
-			* {
-				margin: 0;
+			.dot {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: #f87171;
+				flex-shrink: 0;
+				animation: pulse 1.4s ease-in-out infinite;
+			}
+
+			.dot--ok {
+				background: #4ade80;
+				animation: none;
+			}
+
+			.status-text {
+				font-size: 0.7rem;
+				color: rgba(255,255,255,0.55);
+				text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+			}
+
+			@keyframes pulse {
+				0%, 100% { opacity: 1; }
+				50% { opacity: 0.3; }
 			}
 		</style>
 	</head>
 	<body>
-		<div>
-			<h1>Froggi Disconnected</h1>
-			<p>Make sure Froggi is open</p>
-			<p>
-				Scan new QR code - IP address might have changed - Use a static IP on hosting device
-			</p>
+		<div class="card">
+			<p class="title">Froggi Disconnected</p>
+			<p class="hint">Make sure the Froggi app is open on the host device.</p>
+			<p class="hint">If the IP changed, scan the QR code again from the dashboard.</p>
+			<div class="status">
+				<div class="dot" id="dot"></div>
+				<span class="status-text" id="status">Reconnecting…</span>
+			</div>
 		</div>
 
-		<!-- Inline the page's JavaScript file. -->
 		<script>
-			// Check if the server is responding and reload the page if it is.
-			// This handles the case when the device is online, but the server
-			// is offline or misbehaving.
-			async function checkNetworkAndReload() {
+			const dot = document.getElementById('dot');
+			const status = document.getElementById('status');
+			let attempts = 0;
+
+			async function checkAndReload() {
+				const INTERVAL = 5000;
 				while (true) {
-					await new Promise((resolve) => setTimeout(resolve, 5000));
+					let countdown = INTERVAL / 1000;
+					const timer = setInterval(() => {
+						countdown--;
+						if (countdown > 0) status.textContent = `Retrying in ${countdown}s (attempt ${attempts + 1})`;
+					}, 1000);
+
+					await new Promise(r => setTimeout(r, INTERVAL));
+					clearInterval(timer);
+					attempts++;
+					status.textContent = `Checking… (attempt ${attempts})`;
+
 					try {
-						const response = await fetch('.');
-						console.log(response.status);
-						if (response.status >= 200 && response.status < 500) {
+						const res = await fetch('.', { cache: 'no-store' });
+						if (res.status >= 200 && res.status < 500) {
+							dot.classList.add('dot--ok');
+							status.textContent = 'Reconnected — reloading…';
+							await new Promise(r => setTimeout(r, 500));
 							window.location.reload();
+							return;
 						}
 					} catch {}
+
+					status.textContent = `Retrying in ${INTERVAL / 1000}s (attempt ${attempts + 1})`;
 				}
 			}
 
-			checkNetworkAndReload();
+			checkAndReload();
 		</script>
 	</body>
 </html>

@@ -147,6 +147,7 @@ export interface MessageEvents {
 
 	StrikeState: (state: StrikeState | undefined) => void;
 	StrikeStateUpdate: (state: StrikeState | undefined) => void;
+	StrikePlayerConnect: (player: 1 | 2) => void;
 	StartSet: (p1Name: string, p2Name: string, bestOf: 3 | 5) => void;
 	RpsChoice: (player: 1 | 2, choice: RpsChoice) => void;
 	RpsWinnerOrder: (firstStriker: 1 | 2) => void;

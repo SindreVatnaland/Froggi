@@ -126,14 +126,11 @@
 		(e.currentTarget as HTMLImageElement).style.display = 'none';
 	};
 
-	$: clientBase = $remoteAccess.tailscale ?? $urls?.external ?? '';
 	$: matchId = $gameSettings?.matchInfo?.matchId ?? '';
-	$: isRanked = $gameSettings?.matchInfo?.mode === 'ranked';
-	$: matchParam = isRanked && matchId ? `?matchId=${matchId}` : '';
 	$: isOnline = ngrokRunning;
-	$: strikeBase = (matchId && $remoteAccess.ngrok) ? $remoteAccess.ngrok : ($remoteAccess.tailscale ?? $urls?.external ?? '');
-	$: p1Url = clientBase ? `${clientBase}/client/p1${matchParam}` : '';
-	$: p2Url = clientBase ? `${clientBase}/client/p2${matchParam}` : '';
+	$: strikeBase = isOnline
+		? ($remoteAccess.ngrok ?? $urls?.external ?? '')
+		: ($remoteAccess.tailscale ?? $urls?.external ?? '');
 	$: strikeP1Url = strikeBase ? `${strikeBase}/set/p/1` : '';
 	$: strikeP2Url = strikeBase ? `${strikeBase}/set/p/2` : '';
 
@@ -174,6 +171,24 @@
 	$: ngrokLoading = ngrokConfigured && ngrokRunning && !$remoteAccess.ngrok;
 
 	$: buffActive = $obsConnection?.replayBufferState?.outputActive ?? false;
+
+	const SET_BOS: (3 | 5)[] = [3, 5];
+	let isStartSetModalOpen = false;
+	let setP1Name = '';
+	let setP2Name = '';
+	let setBo: 3 | 5 = 3;
+
+	const openStartSetModal = () => {
+		setP1Name = p1Name;
+		setP2Name = p2Name;
+		setBo = 3;
+		isStartSetModalOpen = true;
+	};
+
+	const confirmStartSet = () => {
+		$electronEmitter.emit('StartSet', setP1Name || 'Player 1', setP2Name || 'Player 2', setBo);
+		isStartSetModalOpen = false;
+	};
 	const enableReplayBuffer = () => {
 		$electronEmitter.emit('ExecuteCommand', CommandType.Obs, 'SetProfileParameter', {
 			parameterCategory: 'Output',
@@ -195,23 +210,21 @@
 	<div class="match-names">
 		<div class="player-col">
 			<button class="player-name" on:click={() => (isTagModalOpen = true)}>{p1Name}</button>
-			{#if clientBase}
-				<div class="player-qr">
-					<QrCode value={p1Url} size="72" color="#ffffff" background="#000000" />
-					<button class="qr-copy btn border-secondary" title="Copy" on:click={async () => { await navigator.clipboard.writeText(p1Url); copiedIdx = 1; setTimeout(() => (copiedIdx = null), 2000); }}>
-						{copiedIdx === 1 ? '✓' : '⎘'}
-					</button>
-				</div>
-			{/if}
 			{#if strikeBase}
-				<div class="player-qr">
-					<QrCode value={strikeP1Url} size="64" color="#ffffff" background="#000000" />
-					<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
-						{copiedIdx === 11 ? '✓' : '⎘'}
-					</button>
+				<div class="player-qr-group">
+					<span class="qr-type-label">Strike</span>
+					<div class="player-qr">
+						<QrCode value={strikeP1Url} size="64" color="#ffffff" background="#000000" />
+						<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
+							{copiedIdx === 11 ? '✓' : '⎘'}
+						</button>
+					</div>
 				</div>
 			{:else if ngrokLoading}
-				<div class="qr-placeholder" style="width:64px;height:64px;" />
+				<div class="player-qr-group">
+					<span class="qr-type-label">Strike</span>
+					<div class="qr-placeholder" style="width:64px;height:64px;" />
+				</div>
 			{/if}
 		</div>
 
@@ -223,23 +236,21 @@
 
 		<div class="player-col player-col--right">
 			<button class="player-name text-right" on:click={() => (isTagModalOpen = true)}>{p2Name}</button>
-			{#if clientBase}
-				<div class="player-qr">
-					<button class="qr-copy btn border-secondary" title="Copy" on:click={async () => { await navigator.clipboard.writeText(p2Url); copiedIdx = 2; setTimeout(() => (copiedIdx = null), 2000); }}>
-						{copiedIdx === 2 ? '✓' : '⎘'}
-					</button>
-					<QrCode value={p2Url} size="72" color="#ffffff" background="#000000" />
-				</div>
-			{/if}
 			{#if strikeBase}
-				<div class="player-qr">
-					<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
-						{copiedIdx === 12 ? '✓' : '⎘'}
-					</button>
-					<QrCode value={strikeP2Url} size="64" color="#ffffff" background="#000000" />
+				<div class="player-qr-group player-qr-group--right">
+					<span class="qr-type-label">Strike</span>
+					<div class="player-qr">
+						<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
+							{copiedIdx === 12 ? '✓' : '⎘'}
+						</button>
+						<QrCode value={strikeP2Url} size="64" color="#ffffff" background="#000000" />
+					</div>
 				</div>
 			{:else if ngrokLoading}
-				<div class="qr-placeholder" style="width:64px;height:64px;" />
+				<div class="player-qr-group player-qr-group--right">
+					<span class="qr-type-label">Strike</span>
+					<div class="qr-placeholder" style="width:64px;height:64px;" />
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -254,6 +265,7 @@
 			{/each}
 		</div>
 		<div class="flex gap-1.5 flex-wrap ml-auto items-center">
+			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={openStartSetModal}>Start Set</button>
 			{#if $isElectron && ngrokConfigured}
 				<label class="flex items-center gap-1.5">
 					<span class="text-xs opacity-40">Online</span>
@@ -266,8 +278,8 @@
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => $electronEmitter.emit('SimulateGameEnd')}>⏹ End</button>
 		</div>
 	</div>
-	{#if !clientBase}
-		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale</button> for remote player links</p>
+	{#if !strikeBase}
+		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>configure ngrok</button> for strike links</p>
 	{/if}
 </div>
 
@@ -523,6 +535,35 @@
 <ConfirmModal bind:open={isBoConfirmOpen} on:confirm={confirmBestOf}>
 	Change to BO{pendingBo}? Games already played may affect scoring.
 </ConfirmModal>
+
+{#if isStartSetModalOpen}
+<div class="modal-backdrop" on:click|self={() => (isStartSetModalOpen = false)} role="dialog">
+	<div class="start-set-box background-primary-color border-secondary">
+		<p class="start-set-title">Start Set</p>
+		<div class="start-set-fields">
+			<div class="start-set-field">
+				<span class="start-set-hint">Player 1</span>
+				<input class="start-set-input border-secondary" bind:value={setP1Name} placeholder="Tag" />
+			</div>
+			<div class="start-set-field">
+				<span class="start-set-hint">Player 2</span>
+				<input class="start-set-input border-secondary" bind:value={setP2Name} placeholder="Tag" />
+			</div>
+		</div>
+		<div class="flex gap-2 mb-3">
+			{#each SET_BOS as bo}
+			<button class="btn text-xs h-7 px-4 border-secondary rounded flex-1"
+				class:bo-active={setBo === bo}
+				on:click={() => (setBo = bo)}>BO{bo}</button>
+			{/each}
+		</div>
+		<div class="start-set-footer">
+			<button class="btn border-secondary text-sm px-4" on:click={() => (isStartSetModalOpen = false)}>Cancel</button>
+			<button class="start-set-ok" on:click={confirmStartSet}>Start</button>
+		</div>
+	</div>
+</div>
+{/if}
 
 <style>
 	/* ── Match bar ── */
@@ -820,6 +861,23 @@
 	}
 	.inline-link:hover { opacity: 1; }
 
+	.player-qr-group {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+	}
+	.player-qr-group--right { align-items: flex-end; }
+
+	.qr-type-label {
+		font-size: 0.55rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		opacity: 0.35;
+		color: var(--secondary-color);
+	}
+
 	.qr-copy {
 		font-size: 0.7rem;
 		height: 1.4rem;
@@ -1006,4 +1064,56 @@
 		cursor: pointer;
 		flex-shrink: 0;
 	}
+
+	/* Start set modal */
+	.modal-backdrop {
+		position: fixed; inset: 0;
+		background: rgba(0,0,0,0.6);
+		display: flex; align-items: center; justify-content: center;
+		z-index: 50;
+	}
+	.start-set-box {
+		padding: 1.25rem;
+		border-radius: 0.35rem;
+		width: 100%;
+		max-width: 360px;
+	}
+	.start-set-title {
+		font-size: 0.9rem;
+		font-weight: 600;
+		margin-bottom: 0.75rem;
+	}
+	.start-set-fields {
+		display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;
+	}
+	.start-set-field {
+		display: flex; flex-direction: column; gap: 0.2rem;
+	}
+	.start-set-hint {
+		font-size: 0.6rem; opacity: 0.4;
+		text-transform: uppercase; letter-spacing: 0.06em;
+	}
+	.start-set-input {
+		padding: 0.35rem 0.5rem;
+		background: transparent;
+		border-radius: 0.25rem;
+		color: var(--secondary-color);
+		font-size: 0.85rem;
+		outline: none;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.start-set-input:focus { opacity: 0.8; }
+	.start-set-footer {
+		display: flex; gap: 0.5rem; justify-content: flex-end;
+	}
+	.start-set-ok {
+		padding: 0.4rem 1.2rem;
+		background: var(--secondary-color);
+		color: var(--primary-color);
+		border: none; border-radius: 0.25rem;
+		font-size: 0.85rem; font-weight: 600;
+		cursor: pointer;
+	}
+	.start-set-ok:hover { opacity: 0.9; }
 </style>

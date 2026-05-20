@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { strikeState, electronEmitter, isOverlayPage } from '$lib/utils/store.svelte';
+	import { strikeState, electronEmitter, isOverlayPage, urls } from '$lib/utils/store.svelte';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
 
 	onMount(() => {
 		isOverlayPage.set(true);
+		$electronEmitter.emit('StrikePlayerConnect', playerNum);
 		return () => isOverlayPage.set(false);
 	});
 
@@ -88,10 +89,28 @@
 
 	<div class="player-body">
 
-		<!-- LOBBY -->
+		<!-- LOBBY / CONNECTING -->
 		{#if phase === 'lobby'}
+		{@const oppNum = playerNum === 1 ? 2 : 1}
+		{@const connected = s?.connectedPlayers ?? []}
+		{@const iAmConnected = $urls}
+		{@const oppConnected = connected.includes(oppNum)}
 		<div class="waiting-screen">
-			<p class="waiting-label">Waiting for set to start…</p>
+			<p class="app-name">Froggi</p>
+			<p class="waiting-role">Stage Striking · Player {playerNum}</p>
+			<div class="conn-status-list">
+				<div class="conn-status-row">
+					<span class="conn-dot" class:conn-dot--on={iAmConnected} class:conn-dot--off={!iAmConnected}></span>
+					<span class="conn-label">You</span>
+					<span class="conn-state">{iAmConnected ? 'Connected' : 'Connecting…'}</span>
+				</div>
+				<div class="conn-status-row">
+					<span class="conn-dot" class:conn-dot--on={oppConnected} class:conn-dot--off={!oppConnected}></span>
+					<span class="conn-label">Opponent</span>
+					<span class="conn-state">{oppConnected ? 'Connected' : 'Not connected'}</span>
+				</div>
+			</div>
+			<p class="waiting-hint">Waiting for the TO to start the set.</p>
 		</div>
 
 		<!-- RPS -->
@@ -327,6 +346,31 @@
 		</div>
 		{/if}
 
+		<!-- Game history -->
+		{#if phase !== 'lobby' && (s?.games?.filter(g => !g.warmup)?.length ?? 0) > 0}
+		{@const countedGames = (s?.games ?? []).filter(g => !g.warmup)}
+		<div class="game-history">
+			<p class="history-label">Games</p>
+			{#each countedGames as game, i}
+			{@const myCharId = (playerNum === 1 ? game.p1Char : game.p2Char) ?? 0}
+			{@const oppCharId = (playerNum === 1 ? game.p2Char : game.p1Char) ?? 0}
+			{@const iWon = game.winner === playerNum}
+			<div class="history-row">
+				<span class="h-gnum">G{i + 1}</span>
+				<img class="h-char" class:h-win={iWon} class:h-lose={!iWon}
+					src="/image/characters/{myCharId}/0/stock.png" alt="" />
+				<img class="h-stage" src="/image/stages/{game.stageId}.png" alt=""
+					on:error={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+				<img class="h-char" class:h-win={!iWon} class:h-lose={iWon}
+					src="/image/characters/{oppCharId}/0/stock.png" alt="" />
+				<span class="h-result" class:h-result--w={iWon} class:h-result--l={!iWon}>
+					{iWon ? 'W' : 'L'}
+				</span>
+			</div>
+			{/each}
+		</div>
+		{/if}
+
 	</div>
 </div>
 
@@ -336,8 +380,8 @@
 	.player-root {
 		position: fixed; inset: 0;
 		display: flex; flex-direction: column;
-		background: var(--primary-color, #111);
-		color: var(--secondary-color, #e0e0e0);
+		background: #111;
+		color: #e0e0e0;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	}
 
@@ -361,9 +405,46 @@
 	}
 
 	.waiting-screen {
-		flex: 1; display: flex; align-items: center; justify-content: center;
+		flex: 1; display: flex; flex-direction: column; align-items: center;
+		justify-content: center; gap: 0.6rem; text-align: center; padding: 1.5rem;
 	}
-	.waiting-label { font-size: 1rem; color: rgba(255,255,255,0.4); }
+	.app-name {
+		font-size: 1.4rem; font-weight: 800; color: #40dca5; letter-spacing: 0.02em;
+		margin-bottom: 0.1rem;
+	}
+	.waiting-role {
+		font-size: 0.75rem; color: rgba(255,255,255,0.5); letter-spacing: 0.05em;
+		text-transform: uppercase; margin-bottom: 0.5rem;
+	}
+	.conn-status-list {
+		display: flex; flex-direction: column; gap: 0.4rem;
+		background: rgba(255,255,255,0.05); border-radius: 0.5rem;
+		padding: 0.6rem 1rem; min-width: 180px; margin-bottom: 0.25rem;
+	}
+	.conn-status-row {
+		display: flex; align-items: center; gap: 0.6rem;
+	}
+	.conn-dot {
+		width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+	}
+	.conn-dot--on { background: #4ade80; }
+	.conn-dot--off {
+		background: #facc15;
+		animation: blink 1.2s ease-in-out infinite;
+	}
+	.conn-label {
+		font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.6);
+		min-width: 5rem; text-align: left;
+	}
+	.conn-state {
+		font-size: 0.75rem; color: rgba(255,255,255,0.4);
+	}
+	@keyframes blink {
+		0%, 100% { opacity: 1; } 50% { opacity: 0.2; }
+	}
+	.waiting-hint {
+		font-size: 0.72rem; color: rgba(255,255,255,0.3); max-width: 260px; line-height: 1.5;
+	}
 
 	.phase-section { display: flex; flex-direction: column; gap: 0.75rem; }
 	.phase-title { font-size: 1.1rem; font-weight: 700; margin: 0; }
@@ -435,4 +516,28 @@
 	.set-complete-view { align-items: center; padding-top: 2rem; gap: 0.5rem; }
 	.complete-label { font-size: 1.3rem; font-weight: 800; }
 	.complete-score { font-size: 2.5rem; font-weight: 900; color: #40dca5; }
+
+	.game-history {
+		margin-top: 1.25rem;
+		padding-top: 1rem;
+		border-top: 1px solid rgba(255,255,255,0.08);
+	}
+	.history-label {
+		font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+		letter-spacing: 0.08em; opacity: 0.3; margin-bottom: 0.5rem;
+	}
+	.history-row {
+		display: grid;
+		grid-template-columns: 1.5rem 1.25rem 1fr 1.25rem 1.5rem;
+		align-items: center; gap: 0.4rem;
+		padding: 0.2rem 0;
+	}
+	.h-gnum { font-size: 0.65rem; font-weight: 600; opacity: 0.35; }
+	.h-char { width: 1.25rem; height: 1.25rem; object-fit: contain; }
+	.h-win { opacity: 1; }
+	.h-lose { opacity: 0.2; }
+	.h-stage { width: 100%; height: 28px; object-fit: cover; border-radius: 0.2rem; opacity: 0.7; }
+	.h-result { font-size: 0.65rem; font-weight: 800; text-align: right; }
+	.h-result--w { color: #4ade80; }
+	.h-result--l { color: rgba(255,255,255,0.25); }
 </style>

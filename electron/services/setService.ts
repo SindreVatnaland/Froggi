@@ -28,6 +28,7 @@ function makeLobbyState(): StrikeState {
 		dsrStages: { p1: [], p2: [] },
 		lastWinner: null,
 		games: [],
+		connectedPlayers: [],
 	};
 }
 
@@ -70,6 +71,7 @@ export class ElectronSetService {
 				p2Name: p2Name || 'Player 2',
 				bestOf,
 				phase: 'rps',
+				connectedPlayers: this.state.connectedPlayers ?? [],
 			};
 			this.setState(s);
 			this.log.info(`Set started: ${p1Name} vs ${p2Name} BO${bestOf}`);
@@ -253,6 +255,14 @@ export class ElectronSetService {
 
 		this.clientEmitter.on('ResetSet', () => {
 			this.setState(makeLobbyState());
+		});
+
+		this.clientEmitter.on('StrikePlayerConnect', (player) => {
+			const s = { ...this.state };
+			const already = s.connectedPlayers ?? [];
+			if (already.includes(player)) return;
+			s.connectedPlayers = [...already, player];
+			this.setState(s);
 		});
 	}
 }
