@@ -1,6 +1,7 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { ElectronStrikeStore } from './store/storeStrike';
+import { ElectronGamesStore } from './store/storeGames';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import type { GameRecord, RpsChoice, StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 
@@ -51,6 +52,7 @@ export class ElectronSetService {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => ElectronStrikeStore)) private strikeStore: ElectronStrikeStore,
+		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 	) {
 		this.log.info('Initializing Set Service');
 		const persisted = this.strikeStore.getStrikeState();
@@ -64,7 +66,8 @@ export class ElectronSetService {
 	}
 
 	private initListeners() {
-		this.clientEmitter.on('StartSet', (p1Name, p2Name, bestOf) => {
+		this.clientEmitter.on('StartSet', async (p1Name, p2Name, bestOf) => {
+			await this.storeGames.clearRecentGames();
 			const s: StrikeState = {
 				...makeLobbyState(),
 				p1Name: p1Name || 'Player 1',
@@ -88,23 +91,16 @@ export class ElectronSetService {
 				if (!winner) {
 					s.rps = { p1: null, p2: null, winner: null };
 				} else {
+					const second: 1 | 2 = winner === 1 ? 2 : 1;
 					s.rps = { ...s.rps, winner };
-					s.phase = 'rpsResult';
+					s.strikeOrder = [[winner, 1], [second, 2], [winner, 1]];
+					s.strikeOrderIndex = 0;
+					s.currentStriker = winner;
+					s.stages = [...s.starters];
+					s.strikes = [];
+					s.phase = 'striking';
 				}
 			}
-			this.setState(s);
-		});
-
-		this.clientEmitter.on('RpsWinnerOrder', (firstStriker) => {
-			const s = { ...this.state };
-			if (s.phase !== 'rpsResult') return;
-			const second: 1 | 2 = firstStriker === 1 ? 2 : 1;
-			s.strikeOrder = [[firstStriker, 1], [second, 2], [firstStriker, 1]];
-			s.strikeOrderIndex = 0;
-			s.currentStriker = firstStriker;
-			s.stages = [...s.starters];
-			s.strikes = [];
-			s.phase = 'striking';
 			this.setState(s);
 		});
 

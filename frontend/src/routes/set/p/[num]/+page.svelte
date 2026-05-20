@@ -30,6 +30,10 @@
 		return STAGE_DATA[id]?.name ?? STAGE_NAMES[id] ?? `Stage ${id}`;
 	}
 
+	function hideImgOnError(e: Event) {
+		(e.currentTarget as HTMLImageElement).style.display = 'none';
+	}
+
 	$: playerNum = parseInt($page.params.num) as 1 | 2;
 	$: myKey = playerNum === 1 ? 'p1' : 'p2';
 	$: s = $strikeState;
@@ -46,14 +50,34 @@
 	$: myChar = playerNum === 1 ? s?.characters?.p1 : s?.characters?.p2;
 	$: oppChar = playerNum === 1 ? s?.characters?.p2 : s?.characters?.p1;
 
+	const RPS_CHOICES = ['rock', 'paper', 'scissors'] as const;
+	let rpsCountdown = 5;
+	let rpsTimerHandle: ReturnType<typeof setInterval> | null = null;
+
 	function rpsChoice(choice: 'rock' | 'paper' | 'scissors') {
 		if (myRps !== null && myRps !== undefined) return;
+		stopRpsTimer();
 		$electronEmitter.emit('RpsChoice', playerNum, choice);
 	}
 
-	function chooseOrder(first: 1 | 2) {
-		$electronEmitter.emit('RpsWinnerOrder', first);
+	function startRpsTimer() {
+		if (rpsTimerHandle) return;
+		rpsCountdown = 5;
+		rpsTimerHandle = setInterval(() => {
+			rpsCountdown -= 1;
+			if (rpsCountdown <= 0) {
+				stopRpsTimer();
+				if (!myRps) rpsChoice(RPS_CHOICES[Math.floor(Math.random() * 3)]);
+			}
+		}, 1000);
 	}
+
+	function stopRpsTimer() {
+		if (rpsTimerHandle) { clearInterval(rpsTimerHandle); rpsTimerHandle = null; }
+	}
+
+	$: if (phase === 'rps' && !myRps) startRpsTimer();
+	else stopRpsTimer();
 
 	function strikeStage(stageId: number) {
 		$electronEmitter.emit('StrikeStage', stageId);
@@ -120,6 +144,7 @@
 			{#if myRps}
 			<p class="phase-sub">You picked {RPS_EMOJI[myRps]} — waiting for opponent…</p>
 			{:else}
+			<div class="rps-countdown" class:rps-countdown--urgent={rpsCountdown <= 2}>{rpsCountdown}</div>
 			<div class="rps-btns">
 				<button class="rps-btn" on:click={() => rpsChoice('rock')}>✊<span>Rock</span></button>
 				<button class="rps-btn" on:click={() => rpsChoice('paper')}>✋<span>Paper</span></button>
@@ -128,24 +153,12 @@
 			{/if}
 		</div>
 
-		<!-- RPS RESULT -->
-		{:else if phase === 'rpsResult'}
-		<div class="phase-section">
-			<p class="phase-title">{rpsWinner === playerNum ? '🎉 You won RPS!' : `${oppName} won RPS`}</p>
-			{#if rpsWinner === playerNum}
-			<p class="phase-sub">Choose strike order</p>
-			<div class="order-btns">
-				<button class="order-btn" on:click={() => chooseOrder(playerNum)}>I strike first</button>
-				<button class="order-btn" on:click={() => chooseOrder(playerNum === 1 ? 2 : 1)}>I strike second</button>
-			</div>
-			{:else}
-			<p class="phase-sub">Opponent is choosing strike order…</p>
-			{/if}
-		</div>
-
 		<!-- STRIKING (G1) -->
 		{:else if phase === 'striking'}
 		<div class="phase-section">
+			{#if s?.rps?.winner}
+			<p class="rps-result-hint">{s.rps.winner === playerNum ? 'You won RPS · striking first' : `${oppName} won RPS · striking first`}</p>
+			{/if}
 			{#if isMyTurn}
 			<p class="phase-title">Strike a stage</p>
 			<p class="phase-sub">
@@ -170,6 +183,7 @@
 			</div>
 			{:else}
 			<p class="phase-title">Opponent is striking…</p>
+			<p class="phase-sub">&nbsp;</p>
 			<div class="stage-grid-p stage-grid-p--passive">
 				{#each s?.starters ?? [] as stageId}
 				<div class="stage-btn" class:stage-btn--struck={s?.strikes?.includes(stageId)}>
@@ -205,6 +219,15 @@
 			</div>
 			{:else}
 			<p class="phase-title">Opponent is banning a stage…</p>
+			<div class="stage-grid-p stage-grid-p--passive">
+				{#each s?.stages ?? [] as stageId}
+				<div class="stage-btn" class:stage-btn--struck={s?.strikes?.includes(stageId)}>
+					<img src="/image/stages/{stageId}.png" alt={stageName(stageId)} class="stage-btn-img" />
+					<span>{stageName(stageId)}</span>
+					{#if s?.strikes?.includes(stageId)}<span class="strike-x">✕</span>{/if}
+				</div>
+				{/each}
+			</div>
 			{/if}
 		</div>
 
@@ -223,6 +246,14 @@
 			</div>
 			{:else}
 			<p class="phase-title">Opponent is picking a stage…</p>
+			<div class="stage-grid-p stage-grid-p--passive">
+				{#each s?.stages ?? [] as stageId}
+				<div class="stage-btn">
+					<img src="/image/stages/{stageId}.png" alt={stageName(stageId)} class="stage-btn-img" />
+					<span>{stageName(stageId)}</span>
+				</div>
+				{/each}
+			</div>
 			{/if}
 		</div>
 
@@ -360,7 +391,7 @@
 				<img class="h-char" class:h-win={iWon} class:h-lose={!iWon}
 					src="/image/characters/{myCharId}/0/stock.png" alt="" />
 				<img class="h-stage" src="/image/stages/{game.stageId}.png" alt=""
-					on:error={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+					on:error={hideImgOnError} />
 				<img class="h-char" class:h-win={!iWon} class:h-lose={iWon}
 					src="/image/characters/{oppCharId}/0/stock.png" alt="" />
 				<span class="h-result" class:h-result--w={iWon} class:h-result--l={!iWon}>
@@ -450,25 +481,28 @@
 	.phase-title { font-size: 1.1rem; font-weight: 700; margin: 0; }
 	.phase-sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin: 0; }
 
+	.rps-countdown {
+		font-size: 2.5rem; font-weight: 700; text-align: center;
+		color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;
+		transition: color 0.2s;
+	}
+	.rps-countdown--urgent { color: #f87171; }
+
 	.rps-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 	.rps-btn {
 		flex: 1; min-width: 80px; padding: 1.2rem 0.5rem;
 		display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
 		font-size: 2rem; background: rgba(255,255,255,0.06);
 		border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem;
-		color: var(--secondary-color); cursor: pointer;
+		color: #e0e0e0; cursor: pointer;
 	}
 	.rps-btn span { font-size: 0.75rem; }
 	.rps-btn:active { background: rgba(255,255,255,0.12); }
 
-	.order-btns { display: flex; flex-direction: column; gap: 0.5rem; }
-	.order-btn {
-		padding: 0.7rem 1rem; font-size: 0.9rem; font-weight: 600;
-		background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2);
-		border-radius: 0.4rem; color: var(--secondary-color); cursor: pointer;
-		text-align: left;
+	.rps-result-hint {
+		font-size: 0.72rem; color: rgba(255,255,255,0.4);
+		margin: 0 0 0.75rem; text-align: center;
 	}
-	.order-btn:active { background: rgba(64,220,165,0.15); border-color: #40dca5; }
 
 	.stage-grid-p { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 	.stage-grid-p--passive { opacity: 0.6; pointer-events: none; }
@@ -478,11 +512,11 @@
 		min-width: 90px; display: flex; flex-direction: column; align-items: center;
 		background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.15);
 		border-radius: 0.4rem; overflow: hidden; cursor: pointer;
-		font-size: 0.65rem; text-align: center; color: var(--secondary-color);
+		font-size: 0.65rem; text-align: center; color: #e0e0e0;
 	}
 	.stage-btn:active { border-color: #40dca5; }
 	.stage-btn--struck { opacity: 0.3; pointer-events: none; }
-	.stage-btn-img { width: 100%; height: 50px; object-fit: cover; display: block; }
+	.stage-btn-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
 	.strike-x {
 		position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
 		font-size: 1.8rem; color: #ff4444; font-weight: 900;
