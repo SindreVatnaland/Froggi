@@ -86,6 +86,7 @@
 	const toggleNgrok = () => ngrokRunning
 		? $electronEmitter.emit('NgrokStop')
 		: $electronEmitter.emit('NgrokStart');
+	const openNgrokAuthUrl = () => $electronEmitter.emit('OpenUrl', 'https://dashboard.ngrok.com/get-started/your-authtoken');
 </script>
 
 <main class="flex justify-center">
@@ -318,6 +319,9 @@
 									</button>
 								{/if}
 							</div>
+							<p class="ngrok-auth-hint">
+								Get your token at <button class="ngrok-auth-link" on:click={openNgrokAuthUrl}>dashboard.ngrok.com/get-started/your-authtoken</button>
+							</p>
 						{/if}
 					{/if}
 				</div>
@@ -549,4 +553,22 @@
 		background: rgba(139, 92, 246, 0.15);
 		color: rgb(167, 139, 250);
 	}
+
+	.ngrok-auth-hint {
+		font-size: 0.68rem;
+		opacity: 0.45;
+		margin-top: 0.35rem;
+	}
+
+	.ngrok-auth-link {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		color: var(--secondary-color);
+		text-decoration: underline;
+		font-size: inherit;
+		opacity: 0.9;
+	}
+	.ngrok-auth-link:hover { opacity: 1; }
 </style>

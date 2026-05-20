@@ -29,7 +29,9 @@ const NGROK_CANDIDATES = [
 export class NgrokService {
 	private ngrokBin: string | undefined;
 	private ngrokProcess: ChildProcess | undefined;
+	private ngrokPid: number | undefined;
 	private urlPollInterval: NodeJS.Timeout | undefined;
+	private monitorInterval: NodeJS.Timeout | undefined;
 	private status: NgrokStatus = { installed: false, authenticated: false, running: false };
 
 	constructor(
@@ -39,6 +41,7 @@ export class NgrokService {
 		this.log.info('Initializing Ngrok Service');
 		this.initListeners();
 		this.detect();
+		this.startContinuousMonitor();
 	}
 
 	private send(status: NgrokStatus) {
@@ -177,10 +180,13 @@ export class NgrokService {
 
 		this.log.info(`NgrokService: starting tunnel on port ${BACKEND_PORT}`);
 		this.ngrokProcess = spawn(bin, ['http', String(BACKEND_PORT)], { stdio: 'ignore' });
+		this.ngrokPid = this.ngrokProcess.pid;
+		this.log.info('NgrokService: spawned PID', this.ngrokPid);
 
 		this.ngrokProcess.on('error', (err) => {
 			this.log.error('NgrokService process error:', err.message);
 			this.ngrokProcess = undefined;
+			this.ngrokPid = undefined;
 			this.stopUrlPoll();
 			this.send({ ...this.status, running: false, url: undefined });
 			this.clientEmitter.emit('RemoteAccessStatus', undefined, 'ngrok');
@@ -189,6 +195,7 @@ export class NgrokService {
 		this.ngrokProcess.on('exit', (code) => {
 			this.log.info('NgrokService process exited, code=', code);
 			this.ngrokProcess = undefined;
+			this.ngrokPid = undefined;
 			this.stopUrlPoll();
 			this.send({ ...this.status, running: false, url: undefined });
 			this.clientEmitter.emit('RemoteAccessStatus', undefined, 'ngrok');
@@ -212,18 +219,26 @@ export class NgrokService {
 		this.clientEmitter.emit('RemoteAccessStatus', undefined, 'ngrok');
 	}
 
-	private killAllNgrokProcesses(): Promise<void> {
-		return new Promise((resolve) => {
-			const platform = os.platform();
-			if (platform === 'win32') {
+	private async killAllNgrokProcesses(): Promise<void> {
+		// Kill stored PID directly via Node — most reliable
+		if (this.ngrokPid) {
+			try { process.kill(this.ngrokPid, 'SIGKILL'); this.log.info('NgrokService: killed PID', this.ngrokPid); } catch {}
+			this.ngrokPid = undefined;
+		}
+
+		// Also sweep for any stray ngrok processes via pgrep
+		await new Promise<void>((resolve) => {
+			if (os.platform() === 'win32') {
 				exec('taskkill /F /IM ngrok.exe', { timeout: 3000 }, () => resolve());
-			} else {
-				// pkill -9 by process name; also try killing by stored bin path
-				const byName = `pkill -9 ngrok`;
-				const byPath = this.ngrokBin ? `kill -9 $(pgrep -f "${this.ngrokBin}") 2>/dev/null` : '';
-				const cmd = byPath ? `${byName}; ${byPath}` : byName;
-				exec(cmd, { timeout: 3000, shell: '/bin/sh' }, () => resolve());
+				return;
 			}
+			exec('pgrep -x ngrok', { timeout: 2000 }, (_err, stdout) => {
+				const pids = stdout.trim().split('\n').filter(Boolean).map(Number).filter(n => n > 0 && !isNaN(n));
+				for (const pid of pids) {
+					try { process.kill(pid, 'SIGKILL'); this.log.info('NgrokService: killed stray PID', pid); } catch {}
+				}
+				resolve();
+			});
 		});
 	}
 
@@ -287,6 +302,24 @@ export class NgrokService {
 			req.on('error', () => resolve(undefined));
 			req.setTimeout(1000, () => { req.destroy(); resolve(undefined); });
 		});
+	}
+
+	private startContinuousMonitor() {
+		if (this.monitorInterval) return;
+		this.monitorInterval = setInterval(async () => {
+			const url = await this.fetchNgrokUrl();
+			if (url) {
+				if (url !== this.status.url) {
+					this.send({ ...this.status, running: true, url });
+					this.clientEmitter.emit('RemoteAccessStatus', url, 'ngrok');
+				}
+			} else if (this.status.url) {
+				this.ngrokProcess = undefined;
+				this.ngrokPid = undefined;
+				this.send({ ...this.status, running: false, url: undefined });
+				this.clientEmitter.emit('RemoteAccessStatus', undefined, 'ngrok');
+			}
+		}, 5000);
 	}
 
 	private initListeners() {

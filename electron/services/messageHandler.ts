@@ -296,7 +296,8 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
-		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.remoteAccessUrl, this.remoteAccessProvider);
+		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.tailscaleUrl, 'tailscale');
+		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.ngrokUrl, 'ngrok');
 		if (!socketId) {
 			this.detectTailscaleStatus();
 			this.detectRemoteAccess();
@@ -324,8 +325,8 @@ export class MessageHandler {
 		);
 	}
 
-	private remoteAccessUrl: string | undefined = undefined;
-	private remoteAccessProvider: 'tailscale' | 'ngrok' | undefined = undefined;
+	private tailscaleUrl: string | undefined = undefined;
+	private ngrokUrl: string | undefined = undefined;
 	private tailscaleBin: string | undefined = undefined;
 
 	private readonly tailscaleCandidates = [
@@ -379,7 +380,7 @@ export class MessageHandler {
 	}
 
 	private detectRemoteAccess = async (): Promise<void> => {
-		// Try ngrok local API
+		// Check ngrok independently
 		const ngrokUrl = await new Promise<string | undefined>((resolve) => {
 			const req = http.get('http://127.0.0.1:4040/api/tunnels', (res) => {
 				let data = '';
@@ -396,20 +397,17 @@ export class MessageHandler {
 			req.setTimeout(1500, () => { req.destroy(); resolve(undefined); });
 		});
 
-		this.log.info('detectRemoteAccess: ngrokUrl=', ngrokUrl);
-		if (ngrokUrl) {
-			this.remoteAccessUrl = ngrokUrl;
-			this.remoteAccessProvider = 'ngrok';
+		if (ngrokUrl !== this.ngrokUrl) {
+			this.ngrokUrl = ngrokUrl;
+			this.log.info('detectRemoteAccess: ngrokUrl=', ngrokUrl);
 			this.sendMessage('RemoteAccessStatus', ngrokUrl, 'ngrok');
-			return;
 		}
 
-		// Try tailscale — try several binary locations since Electron PATH is minimal
+		// Check tailscale independently (always, regardless of ngrok)
 		const tailscaleUrl = await (async () => {
 			for (const bin of this.tailscaleCandidates) {
 				const result = await new Promise<string | undefined>((resolve) => {
 					exec(`"${bin}" status --json`, { timeout: 3000 }, (err, stdout) => {
-						this.log.info(`detectRemoteAccess: tailscale ${bin} err=${err?.message} dnsName=${(() => { try { return JSON.parse(stdout ?? '{}')?.Self?.DNSName; } catch { return '?'; } })()}`);
 						if (err || !stdout) { resolve(undefined); return; }
 						try {
 							const parsed = JSON.parse(stdout);
@@ -423,18 +421,11 @@ export class MessageHandler {
 			return undefined;
 		})();
 
-		this.log.info('detectRemoteAccess: tailscaleUrl=', tailscaleUrl);
-		if (tailscaleUrl) {
-			this.remoteAccessUrl = tailscaleUrl;
-			this.remoteAccessProvider = 'tailscale';
+		if (tailscaleUrl !== this.tailscaleUrl) {
+			this.tailscaleUrl = tailscaleUrl;
+			this.log.info('detectRemoteAccess: tailscaleUrl=', tailscaleUrl);
 			this.sendMessage('RemoteAccessStatus', tailscaleUrl, 'tailscale');
-			return;
 		}
-
-		this.remoteAccessUrl = undefined;
-		this.remoteAccessProvider = undefined;
-		this.log.info('detectRemoteAccess: no tunnel found');
-		this.sendMessage('RemoteAccessStatus', undefined, undefined);
 	};
 
 	private initEventListeners() {
@@ -449,6 +440,15 @@ export class MessageHandler {
 		});
 		this.clientEmitter.on('Notification', (message: string, type: NotificationType) => {
 			this.sendMessage('Notification', message, type);
+		});
+		this.clientEmitter.on('NgrokStatus', (status: { installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string }) => {
+			this.sendMessage('NgrokStatus', status);
+		});
+		this.clientEmitter.on('RemoteAccessStatus', (url: string | undefined, provider: 'tailscale' | 'ngrok' | undefined) => {
+			if (provider === 'ngrok') {
+				this.ngrokUrl = url ?? undefined;
+				this.sendMessage('RemoteAccessStatus', url, provider);
+			}
 		});
 		this.clientEmitter.on('OpenUrl', (url: string) => {
 			openurl.open(url);
@@ -491,5 +491,10 @@ export class MessageHandler {
 			});
 		});
 		this.detectRemoteAccess().then(() => this.detectTailscaleStatus());
+
+		setInterval(async () => {
+			await this.detectRemoteAccess();
+			await this.detectTailscaleStatus();
+		}, 10000);
 	}
 }

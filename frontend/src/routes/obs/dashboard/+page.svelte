@@ -126,15 +126,12 @@
 		(e.currentTarget as HTMLImageElement).style.display = 'none';
 	};
 
-	let isOnline = false;
-
 	$: clientBase = $remoteAccess.tailscale ?? $urls?.external ?? '';
-	$: strikeBase = isOnline
-		? ($remoteAccess.ngrok ?? '')
-		: ($remoteAccess.tailscale ?? $urls?.external ?? '');
 	$: matchId = $gameSettings?.matchInfo?.matchId ?? '';
 	$: isRanked = $gameSettings?.matchInfo?.mode === 'ranked';
 	$: matchParam = isRanked && matchId ? `?matchId=${matchId}` : '';
+	$: isOnline = ngrokRunning;
+	$: strikeBase = (matchId && $remoteAccess.ngrok) ? $remoteAccess.ngrok : ($remoteAccess.tailscale ?? $urls?.external ?? '');
 	$: p1Url = clientBase ? `${clientBase}/client/p1${matchParam}` : '';
 	$: p2Url = clientBase ? `${clientBase}/client/p2${matchParam}` : '';
 	$: strikeP1Url = strikeBase ? `${strikeBase}/set/p/1` : '';
@@ -154,11 +151,17 @@
 		? $electronEmitter.emit('NgrokStop')
 		: $electronEmitter.emit('NgrokStart');
 
+	let _ngrokAutoStarted = false;
+	$: if ($isElectron && !_ngrokAutoStarted && ngrokConfigured && !ngrokRunning) {
+		_ngrokAutoStarted = true;
+		$electronEmitter.emit('NgrokStart');
+	}
+
 	let ngrokRefreshHint = false;
 	let _prevMatchId = '';
 	$: {
 		const mid = matchId;
-		if (isOnline && ngrokRunning && mid && mid !== _prevMatchId && _prevMatchId !== '') {
+		if (ngrokRunning && mid && mid !== _prevMatchId && _prevMatchId !== '') {
 			ngrokRefreshHint = true;
 		}
 		_prevMatchId = mid;
@@ -166,6 +169,20 @@
 	const restartNgrok = () => {
 		$electronEmitter.emit('NgrokRestart');
 		ngrokRefreshHint = false;
+	};
+
+	$: ngrokLoading = ngrokConfigured && ngrokRunning && !$remoteAccess.ngrok;
+
+	$: buffActive = $obsConnection?.replayBufferState?.outputActive ?? false;
+	const enableReplayBuffer = () => {
+		$electronEmitter.emit('ExecuteCommand', CommandType.Obs, 'SetProfileParameter', {
+			parameterCategory: 'Output',
+			parameterName: 'RecRBTime',
+			parameterValue: '30',
+		});
+		setTimeout(() => {
+			$electronEmitter.emit('ExecuteCommand', CommandType.Obs, 'StartReplayBuffer');
+		}, 300);
 	};
 </script>
 
@@ -186,6 +203,16 @@
 					</button>
 				</div>
 			{/if}
+			{#if strikeBase}
+				<div class="player-qr">
+					<QrCode value={strikeP1Url} size="64" color="#ffffff" background="#000000" />
+					<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
+						{copiedIdx === 11 ? '✓' : '⎘'}
+					</button>
+				</div>
+			{:else if ngrokLoading}
+				<div class="qr-placeholder" style="width:64px;height:64px;" />
+			{/if}
 		</div>
 
 		<button class="score-block" on:click={() => (isScoreModalOpen = true)}>
@@ -204,6 +231,16 @@
 					<QrCode value={p2Url} size="72" color="#ffffff" background="#000000" />
 				</div>
 			{/if}
+			{#if strikeBase}
+				<div class="player-qr">
+					<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
+						{copiedIdx === 12 ? '✓' : '⎘'}
+					</button>
+					<QrCode value={strikeP2Url} size="64" color="#ffffff" background="#000000" />
+				</div>
+			{:else if ngrokLoading}
+				<div class="qr-placeholder" style="width:64px;height:64px;" />
+			{/if}
 		</div>
 	</div>
 	<div class="match-controls">
@@ -216,7 +253,13 @@
 				>BO{bo}</button>
 			{/each}
 		</div>
-		<div class="flex gap-1.5 flex-wrap ml-auto">
+		<div class="flex gap-1.5 flex-wrap ml-auto items-center">
+			{#if $isElectron && ngrokConfigured}
+				<label class="flex items-center gap-1.5">
+					<span class="text-xs opacity-40">Online</span>
+					<input type="checkbox" class="toggle-check" checked={isOnline} on:change={toggleNgrok} />
+				</label>
+			{/if}
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isScoreModalOpen = true)}>Games</button>
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isResetModalOpen = true)}>Reset</button>
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => $electronEmitter.emit('SimulateGameStart')}>▶ Sim</button>
@@ -264,7 +307,7 @@
 				<input type="checkbox" class="toggle-check shrink-0" checked={ngrokRunning} on:change={toggleNgrok} />
 			{:else}
 				<span class="text-xs opacity-40 flex-1">{ngrokRunning ? 'Starting…' : 'Stopped'}</span>
-				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleNgrok}>Start</button>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleNgrok}>{ngrokRunning ? 'Stop' : 'Start'}</button>
 			{/if}
 		</div>
 	</div>
@@ -403,44 +446,6 @@
 </div>
 {/if}
 
-<!-- ── Stage Striking ── -->
-<div class="dash-card border-secondary mb-3">
-	<div class="preview-header">
-		<p class="dash-label">Stage Striking</p>
-		<label class="flex items-center gap-2">
-			<span class="text-xs opacity-40">Online</span>
-			<input type="checkbox" class="toggle-check" bind:checked={isOnline} />
-		</label>
-	</div>
-	{#if strikeBase}
-		<div class="strike-qr-row">
-			<div class="strike-qr-col">
-				<p style="font-size:0.65rem;opacity:0.5;margin-bottom:0.3rem;">Player 1</p>
-				<QrCode value={strikeP1Url} size="88" color="#ffffff" background="#000000" />
-				<button class="qr-copy btn border-secondary" title="Copy P1 link"
-					on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => copiedIdx = null, 2000); }}>
-					{copiedIdx === 11 ? '✓ Copied' : '⎘ Copy'}
-				</button>
-			</div>
-			<div class="strike-qr-col">
-				<p style="font-size:0.65rem;opacity:0.5;margin-bottom:0.3rem;">Player 2</p>
-				<QrCode value={strikeP2Url} size="88" color="#ffffff" background="#000000" />
-				<button class="qr-copy btn border-secondary" title="Copy P2 link"
-					on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => copiedIdx = null, 2000); }}>
-					{copiedIdx === 12 ? '✓ Copied' : '⎘ Copy'}
-				</button>
-			</div>
-		</div>
-	{:else}
-		<p class="no-tunnel-hint">
-			{#if isOnline}
-				No ngrok tunnel — <button class="inline-link" on:click={() => goto('/settings')}>set up ngrok</button> for online games
-			{:else}
-				No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale</button> for offline games
-			{/if}
-		</p>
-	{/if}
-</div>
 
 <!-- ── OBS Controls ── -->
 <div class="obs-section" class:obs-section--offline={!obsConnected}>
@@ -496,8 +501,14 @@
 
 		<div class="dash-card border-secondary">
 			<p class="dash-label mb-1">Replay Buffer</p>
-			<p class="replay-hint">Enable in OBS → Output → Replay Buffer</p>
-			<div class="mt-3"><ReplayBufferHandler /></div>
+			{#if buffActive}
+				<div class="mt-3"><ReplayBufferHandler /></div>
+			{:else}
+				<p class="replay-hint">Captures last 30s of gameplay</p>
+				<button class="btn text-xs h-8 px-4 border-secondary rounded mt-3" on:click={enableReplayBuffer}>
+					Enable 30s
+				</button>
+			{/if}
 		</div>
 
 	</div>
@@ -869,6 +880,17 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0.4rem;
+	}
+	.qr-placeholder {
+		width: 88px;
+		height: 88px;
+		border-radius: 0.25rem;
+		background: rgba(128,128,128,0.1);
+		animation: qr-pulse 1.4s ease-in-out infinite;
+	}
+	@keyframes qr-pulse {
+		0%, 100% { opacity: 0.3; }
+		50% { opacity: 0.7; }
 	}
 
 	.conn-row {
