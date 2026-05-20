@@ -2,13 +2,12 @@
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { electronEmitter, obsConnection, urls } from '$lib/utils/store.svelte';
+	import { electronEmitter, isElectron, obsConnection, urls } from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import Clipboard from 'svelte-clipboard';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
 	import { getOverlayById } from './OverlayHandler.svelte';
-	import { tooltip } from 'svooltip';
 	import { ConnectionState } from '$lib/models/enum';
 
 	export let overlayId: string = $page.params.overlay;
@@ -68,20 +67,22 @@
 					</Clipboard>
 				</div>
 
+				{#if $isElectron && !isObsConnected}
+				<button
+					on:click={() => $electronEmitter.emit('ObsWebsocketEnable')}
+					class="btn text-sm h-9 px-5 border-secondary rounded"
+				>
+					Connect OBS
+				</button>
+				{:else}
 				<button
 					on:click={addToObs}
 					disabled={!isObsConnected}
-					use:tooltip={isObsConnected ? {} : {
-						content: `<p>Connect OBS first</p><p class="opacity-60">OBS → Tools → Websocket Server Settings → Enable</p>`,
-						html: true,
-						placement: 'top',
-						delay: [250, 0],
-						offset: 15,
-					}}
 					class="btn text-sm h-9 px-5 border-secondary rounded disabled:opacity-40"
 				>
 					Add to OBS automatically
 				</button>
+				{/if}
 
 				<p class="text-xs opacity-35">This URL only works on this device.</p>
 			</div>

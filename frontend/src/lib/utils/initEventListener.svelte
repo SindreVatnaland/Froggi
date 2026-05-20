@@ -32,6 +32,7 @@
 		remoteAccess,
 		tailscaleStatus,
 		ngrokStatus,
+		obsProcessStatus,
 		strikeState,
 	} from '$lib/utils/store.svelte';
 	import {
@@ -318,6 +319,9 @@
 				break;
 			case 'NgrokStatus':
 				ngrokStatus.set(payload[0] as Parameters<MessageEvents['NgrokStatus']>[0]);
+				break;
+			case 'ObsProcessStatus':
+				obsProcessStatus.set(payload[0] as Parameters<MessageEvents['ObsProcessStatus']>[0]);
 				break;
 			case 'StrikeState':
 				strikeState.set(payload[0] as Parameters<MessageEvents['StrikeState']>[0]);

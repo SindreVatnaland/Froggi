@@ -24,6 +24,7 @@ export interface ObsConnection {
         outputState: string,
     } | undefined,
     state: ConnectionState,
+    port?: string,
 }
 
 export interface ObsScenes {

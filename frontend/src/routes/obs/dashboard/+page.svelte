@@ -143,6 +143,8 @@
 	$: ngrokRunning = $ngrokStatus?.running ?? false;
 	$: ngrokConfigured = ngrokInstalled && ngrokAuthenticated;
 
+	const connectObs = () => $electronEmitter.emit('ObsWebsocketEnable');
+
 	const toggleTailscaleFunnel = () => $electronEmitter.emit('TailscaleFunnel', !tsFunnelActive);
 	const toggleNgrok = () => ngrokRunning
 		? $electronEmitter.emit('NgrokStop')
@@ -213,12 +215,10 @@
 			{#if strikeBase}
 				<div class="player-qr-group">
 					<span class="qr-type-label">Strike</span>
-					<div class="player-qr">
+					<button class="qr-click" title={strikeP1Url} on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
 						<QrCode value={strikeP1Url} size="64" color="#ffffff" background="#000000" />
-						<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
-							{copiedIdx === 11 ? '✓' : '⎘'}
-						</button>
-					</div>
+						{#if copiedIdx === 11}<span class="qr-copied-overlay">✓</span>{/if}
+					</button>
 				</div>
 			{:else if ngrokLoading}
 				<div class="player-qr-group">
@@ -239,12 +239,10 @@
 			{#if strikeBase}
 				<div class="player-qr-group player-qr-group--right">
 					<span class="qr-type-label">Strike</span>
-					<div class="player-qr">
-						<button class="qr-copy btn border-secondary" title="Copy strike link" on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
-							{copiedIdx === 12 ? '✓' : '⎘'}
-						</button>
+					<button class="qr-click" title={strikeP2Url} on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
 						<QrCode value={strikeP2Url} size="64" color="#ffffff" background="#000000" />
-					</div>
+						{#if copiedIdx === 12}<span class="qr-copied-overlay">✓</span>{/if}
+					</button>
 				</div>
 			{:else if ngrokLoading}
 				<div class="player-qr-group player-qr-group--right">
@@ -282,49 +280,6 @@
 		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>configure ngrok</button> for strike links</p>
 	{/if}
 </div>
-
-<!-- ── Connectivity ── -->
-{#if $isElectron}
-<div class="dash-card border-secondary mb-3">
-	<p class="dash-label mb-3">Connectivity</p>
-	<div class="flex flex-col gap-2">
-		<div class="conn-row">
-			<span class="conn-tag conn-tag--ts">Remote Control</span>
-			{#if !tsConfigured}
-				<span class="text-xs opacity-40 flex-1">Not configured</span>
-				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
-			{:else if tsFunnelActive && $remoteAccess.tailscale}
-				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.tailscale}</span>
-				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.tailscale ?? ''); copiedIdx = 20; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 20 ? '✓' : '⎘'}</button>
-				<input type="checkbox" class="toggle-check shrink-0" checked={tsFunnelActive} on:change={toggleTailscaleFunnel} />
-			{:else}
-				<span class="text-xs opacity-40 flex-1">Funnel off</span>
-				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleTailscaleFunnel}>Enable</button>
-			{/if}
-		</div>
-		<div class="conn-row">
-			<span class="conn-tag conn-tag--ngrok">Stage Striking</span>
-			{#if !ngrokConfigured}
-				<span class="text-xs opacity-40 flex-1">Not configured</span>
-				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
-			{:else if ngrokRunning && $remoteAccess.ngrok}
-				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.ngrok}</span>
-				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.ngrok ?? ''); copiedIdx = 21; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 21 ? '✓' : '⎘'}</button>
-				<button
-					class="btn text-xs h-6 px-2 border-secondary rounded shrink-0"
-					class:conn-refresh-pulse={ngrokRefreshHint}
-					title="Restart tunnel for a fresh URL"
-					on:click={restartNgrok}
-				>↻</button>
-				<input type="checkbox" class="toggle-check shrink-0" checked={ngrokRunning} on:change={toggleNgrok} />
-			{:else}
-				<span class="text-xs opacity-40 flex-1">{ngrokRunning ? 'Starting…' : 'Stopped'}</span>
-				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleNgrok}>{ngrokRunning ? 'Stop' : 'Start'}</button>
-			{/if}
-		</div>
-	</div>
-</div>
-{/if}
 
 <!-- ── Live game ── -->
 {#if isLive}
@@ -431,6 +386,61 @@
 					src="/image/characters/{gp2c}/{gp2col}/stock.png" alt="" />
 			</div>
 		{/each}
+	</div>
+</div>
+{/if}
+
+<!-- ── Connectivity ── -->
+{#if $isElectron}
+<div class="dash-card border-secondary mb-3">
+	<p class="dash-label mb-3">Connectivity</p>
+	<div class="flex flex-col gap-2">
+		<div class="conn-row">
+			<span class="conn-tag conn-tag--obs">OBS</span>
+			{#if obsConnected}
+				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">ws://localhost:{$obsConnection?.port ?? '4455'}</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText(`ws://localhost:${$obsConnection?.port ?? '4455'}`); copiedIdx = 22; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 22 ? '✓' : '⎘'}</button>
+			{:else if $obsConnection?.state === ConnectionState.Searching}
+				<span class="text-xs opacity-40 flex-1">Connecting…</span>
+			{:else}
+				<span class="text-xs opacity-40 flex-1">Disconnected</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={connectObs}>Connect</button>
+			{/if}
+		</div>
+		<div class="conn-row">
+			<span class="conn-tag conn-tag--ts">Remote Control</span>
+			{#if !tsConfigured}
+				<span class="text-xs opacity-40 flex-1">Not configured</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
+			{:else if tsFunnelActive && $remoteAccess.tailscale}
+				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.tailscale}</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.tailscale ?? ''); copiedIdx = 20; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 20 ? '✓' : '⎘'}</button>
+				<input type="checkbox" class="toggle-check shrink-0" checked={tsFunnelActive} on:change={toggleTailscaleFunnel} />
+			{:else}
+				<span class="text-xs opacity-40 flex-1">Funnel off</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleTailscaleFunnel}>Enable</button>
+			{/if}
+		</div>
+		<div class="conn-row">
+			<span class="conn-tag conn-tag--ngrok">Stage Striking</span>
+			{#if !ngrokConfigured}
+				<span class="text-xs opacity-40 flex-1">Not configured</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
+			{:else if ngrokRunning && $remoteAccess.ngrok}
+				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.ngrok}</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.ngrok ?? ''); copiedIdx = 21; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 21 ? '✓' : '⎘'}</button>
+				<button
+					class="btn text-xs h-6 px-2 border-secondary rounded shrink-0"
+					class:conn-refresh-pulse={ngrokRefreshHint}
+					title="Restart tunnel for a fresh URL"
+					on:click={restartNgrok}
+				>↻</button>
+				<input type="checkbox" class="toggle-check shrink-0" checked={ngrokRunning} on:change={toggleNgrok} />
+			{:else}
+				<span class="text-xs opacity-40 flex-1">{ngrokRunning ? 'Starting…' : 'Stopped'}</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleNgrok}>{ngrokRunning ? 'Stop' : 'Start'}</button>
+			{/if}
+		</div>
 	</div>
 </div>
 {/if}
@@ -587,12 +597,6 @@
 		gap: 0.4rem;
 	}
 	.player-col--right { align-items: flex-end; }
-
-	.player-qr {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-	}
 
 	.player-name {
 		font-size: 0.9rem;
@@ -878,16 +882,29 @@
 		color: var(--secondary-color);
 	}
 
-	.qr-copy {
-		font-size: 0.7rem;
-		height: 1.4rem;
-		width: 1.4rem;
+	.qr-click {
+		position: relative;
+		background: none;
+		border: none;
+		cursor: pointer;
 		padding: 0;
+		display: block;
+		border-radius: 0.2rem;
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+	.qr-click:hover { opacity: 0.8; }
+
+	.qr-copied-overlay {
+		position: absolute;
+		inset: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		flex-shrink: 0;
-		border-radius: 0.2rem;
+		background: rgba(0,0,0,0.65);
+		color: #fff;
+		font-size: 1.3rem;
+		font-weight: 700;
 	}
 
 	/* OBS Preview */
@@ -975,6 +992,10 @@
 	.conn-tag--ngrok {
 		background: rgba(139, 92, 246, 0.15);
 		color: rgb(167, 139, 250);
+	}
+	.conn-tag--obs {
+		background: rgba(59, 130, 246, 0.15);
+		color: rgb(96, 165, 250);
 	}
 
 	@keyframes refresh-pulse {

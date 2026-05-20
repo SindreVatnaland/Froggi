@@ -89,6 +89,9 @@ export interface MessageEvents {
 	Obs: (obs: Obs | undefined) => void;
 	ObsConnection: (connection: ObsConnection) => void;
 	ObsManualConnect: (auth: ObsAuth) => void;
+	ObsWebsocketEnable: () => void;
+	ObsProcessRefresh: () => void;
+	ObsProcessStatus: (status: { running: boolean; websocketEnabled?: boolean; port?: string; password?: string }) => void;
 	ObsCreateBrowserSource: (url: string, inputName: string, aspectRatio: AspectRatio) => void;
 	Overlays: (overlays: Record<string, Overlay> | undefined) => void;
 	OverlayCreate: (aspectRatio: AspectRatio) => void;

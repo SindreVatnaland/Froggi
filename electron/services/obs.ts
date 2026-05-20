@@ -7,7 +7,7 @@ import { ElectronObsStore } from './store/storeObs';
 import { ObsAuth, ObsInputs, ObsItem, ObsScenes } from '../../frontend/src/lib/models/types/obsTypes';
 import { MessageHandler } from './messageHandler';
 import { NotificationType, ConnectionState } from '../../frontend/src/lib/models/enum';
-import { getObsWebsocketConfig, isObsRunning } from '../utils/obsProcess';
+import { enableObsWebsocket, getObsWebsocketConfig, isObsRunning } from '../utils/obsProcess';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 
@@ -237,16 +237,27 @@ export class ObsWebSocket {
 
 		const checkObs = async () => {
 			const isRunning = await isObsRunning();
-			if (!isRunning) return;
+			if (!isRunning) {
+				this.messageHandler.sendMessage('ObsProcessStatus', { running: false });
+				return;
+			}
 			this.log.info('OBS Process Found');
 			const obsWebsocketConfig = getObsWebsocketConfig();
 
 			if (!obsWebsocketConfig) {
+				this.messageHandler.sendMessage('ObsProcessStatus', { running: true });
 				this.log.error('Could not get OBS Websocket Config');
 				this.pauseProcessSearchInterval(60000);
 				return;
 			};
 			this.log.info('OBS WebSocket Config: ', obsWebsocketConfig);
+
+			this.messageHandler.sendMessage('ObsProcessStatus', {
+				running: true,
+				websocketEnabled: obsWebsocketConfig.server_enabled,
+				port: String(obsWebsocketConfig.server_port ?? 4455),
+				password: obsWebsocketConfig.server_password ?? '',
+			});
 
 			if (obsWebsocketConfig?.server_enabled) {
 				this.storeObs.setPort(String(obsWebsocketConfig?.server_port ?? '4455'));
@@ -330,6 +341,31 @@ export class ObsWebSocket {
 	};
 
 	initEventListeners() {
+		this.clientEmitter.on('ObsProcessRefresh', async () => {
+			await this.startProcessSearchInterval();
+		});
+		this.clientEmitter.on('ObsWebsocketEnable', async () => {
+			if (this.storeObs.getConnectionState() === ConnectionState.Connected) return;
+			const config = getObsWebsocketConfig();
+			if (!config) {
+				this.messageHandler.sendMessage('Notification', 'OBS not found. Make sure OBS is running.', NotificationType.Warning);
+				return;
+			}
+			if (!config.server_enabled) {
+				const ok = enableObsWebsocket();
+				this.messageHandler.sendMessage(
+					'Notification',
+					ok
+						? 'OBS WebSocket enabled. Restart OBS to connect.'
+						: 'Could not enable automatically — enable in OBS → Tools → WebSocket Server Settings.',
+					ok ? NotificationType.Success : NotificationType.Warning,
+				);
+				return;
+			}
+			this.storeObs.setPort(String(config.server_port ?? 4455));
+			this.storeObs.setPassword(config.server_password ?? '');
+			await this.searchForObs();
+		});
 		this.clientEmitter.on("ObsManualConnect", (auth: ObsAuth) => {
 			this.connectToObs(auth.ipAddress, auth.port, auth.password);
 		})

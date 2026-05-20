@@ -35,6 +35,39 @@ export const isObsRunning = async () => {
 const possibleWinConfigPaths
 	= ['plugin_config/obs-websocket/config.json', 'plugin_config/obs-websocket/config.json'];
 
+export const enableObsWebsocket = (): boolean => {
+	const isWindows = os.platform() === 'win32';
+	const isMac = os.platform() === 'darwin';
+	const isLinux = os.platform() === 'linux';
+	const appDataPath = getAppDataPath('obs-studio');
+
+	if (isWindows) {
+		const configPath = path.join(appDataPath, 'plugin_config/obs-websocket/config.json');
+		if (!fs.existsSync(configPath)) return false;
+		try {
+			const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as ObsWebsocketConfig;
+			config.server_enabled = true;
+			fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+			return true;
+		} catch { return false; }
+	}
+
+	if (isMac || isLinux) {
+		const configPath = path.join(appDataPath, 'global.ini');
+		if (!fs.existsSync(configPath)) return false;
+		try {
+			const iniContent = fs.readFileSync(configPath, 'utf8');
+			const config = ini.parse(iniContent);
+			if (!config.OBSWebSocket) config.OBSWebSocket = {};
+			config.OBSWebSocket.ServerEnabled = true;
+			fs.writeFileSync(configPath, ini.stringify(config));
+			return true;
+		} catch { return false; }
+	}
+
+	return false;
+};
+
 export const getObsWebsocketConfig = (): ObsWebsocketConfig | undefined => {
 	const isWindows = os.platform() === 'win32';
 	const isMac = os.platform() === 'darwin';

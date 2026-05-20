@@ -90,7 +90,8 @@ export class ElectronObsStore {
 
     private initListeners() {
         this.store.onDidChange("obs.connection", (connection) => {
-            this.messageHandler.sendMessage("ObsConnection", { ...(connection as ObsConnection), auth: undefined } as ObsConnection);
+            const port = this.getPort();
+            this.messageHandler.sendMessage("ObsConnection", { ...(connection as ObsConnection), port } as ObsConnection);
         })
     }
 }
