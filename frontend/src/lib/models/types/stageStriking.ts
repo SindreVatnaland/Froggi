@@ -1,27 +1,58 @@
 export type RpsChoice = 'rock' | 'paper' | 'scissors';
-export type StrikePhase = 'rps' | 'striking' | 'charSelect' | 'charLock' | 'playing' | 'complete';
+
+export type StrikePhase =
+	| 'lobby'
+	| 'rps'
+	| 'rpsResult'
+	| 'striking'
+	| 'stageBan'
+	| 'stagePick'
+	| 'charSelect'
+	| 'charLock'
+	| 'charPick'
+	| 'playing'
+	| 'setComplete';
+
+export interface GameRecord {
+	stageId: number;
+	winner: 1 | 2 | null;
+	p1Char: number | null;
+	p2Char: number | null;
+	warmup: boolean;
+}
 
 export interface StrikeState {
-    phase: StrikePhase;
-    stages: number[];
-    strikes: { p1: number[]; p2: number[] };
-    currentStriker: 1 | 2 | null;
-    finalStageIndex: number | null;
-    rps: {
-        p1: RpsChoice | null;
-        p2: RpsChoice | null;
-        winner: 1 | 2 | null;
-    };
-    characters: {
-        p1: number | null;
-        p2: number | null;
-    };
-    /** Each entry is [playerNum, banCount]. E.g. [[2,1],[1,2],[2,1]] */
-    strikeOrder: [1 | 2, number][];
-    bansRemaining: number | null;
-    /** Seconds remaining in the current phase timer. null = no timer. */
-    timerSeconds: number | null;
-    timerRunning: boolean;
-    /** Stage IDs that each player is banned from picking (DSR). */
-    dsrStages: { p1: number | null; p2: number | null };
+	p1Name: string;
+	p2Name: string;
+	bestOf: 3 | 5;
+	score: { p1: number; p2: number };
+	gameNum: number;
+
+	phase: StrikePhase;
+
+	starters: number[];
+	counterpicks: number[];
+	stages: number[];
+	strikes: number[];
+	finalStageId: number | null;
+
+	currentStriker: 1 | 2 | null;
+	strikeOrder: [1 | 2, number][];
+	strikeOrderIndex: number;
+
+	rps: {
+		p1: RpsChoice | null;
+		p2: RpsChoice | null;
+		winner: 1 | 2 | null;
+	};
+
+	characters: {
+		p1: number | null;
+		p2: number | null;
+	};
+
+	dsrStages: { p1: number[]; p2: number[] };
+	lastWinner: 1 | 2 | null;
+
+	games: GameRecord[];
 }

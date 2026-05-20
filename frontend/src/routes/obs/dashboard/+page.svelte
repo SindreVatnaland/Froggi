@@ -21,6 +21,8 @@
 		obsPreviewFrame,
 		recentGames,
 		sceneSwitch,
+		tailscaleStatus,
+		ngrokStatus,
 		urls,
 		remoteAccess,
 	} from '$lib/utils/store.svelte';
@@ -124,12 +126,47 @@
 		(e.currentTarget as HTMLImageElement).style.display = 'none';
 	};
 
-	$: clientBase = $remoteAccess.url ?? $urls?.external ?? '';
+	let isOnline = false;
+
+	$: clientBase = $remoteAccess.tailscale ?? $urls?.external ?? '';
+	$: strikeBase = isOnline
+		? ($remoteAccess.ngrok ?? '')
+		: ($remoteAccess.tailscale ?? $urls?.external ?? '');
 	$: matchId = $gameSettings?.matchInfo?.matchId ?? '';
 	$: isRanked = $gameSettings?.matchInfo?.mode === 'ranked';
 	$: matchParam = isRanked && matchId ? `?matchId=${matchId}` : '';
 	$: p1Url = clientBase ? `${clientBase}/client/p1${matchParam}` : '';
 	$: p2Url = clientBase ? `${clientBase}/client/p2${matchParam}` : '';
+	$: strikeP1Url = strikeBase ? `${strikeBase}/set/p/1` : '';
+	$: strikeP2Url = strikeBase ? `${strikeBase}/set/p/2` : '';
+
+	$: tsInstalled = $tailscaleStatus?.installed ?? false;
+	$: tsAuthenticated = $tailscaleStatus?.authenticated ?? false;
+	$: tsFunnelActive = $tailscaleStatus?.funnelActive ?? false;
+	$: tsConfigured = tsInstalled && tsAuthenticated;
+	$: ngrokInstalled = $ngrokStatus?.installed ?? false;
+	$: ngrokAuthenticated = $ngrokStatus?.authenticated ?? false;
+	$: ngrokRunning = $ngrokStatus?.running ?? false;
+	$: ngrokConfigured = ngrokInstalled && ngrokAuthenticated;
+
+	const toggleTailscaleFunnel = () => $electronEmitter.emit('TailscaleFunnel', !tsFunnelActive);
+	const toggleNgrok = () => ngrokRunning
+		? $electronEmitter.emit('NgrokStop')
+		: $electronEmitter.emit('NgrokStart');
+
+	let ngrokRefreshHint = false;
+	let _prevMatchId = '';
+	$: {
+		const mid = matchId;
+		if (isOnline && ngrokRunning && mid && mid !== _prevMatchId && _prevMatchId !== '') {
+			ngrokRefreshHint = true;
+		}
+		_prevMatchId = mid;
+	}
+	const restartNgrok = () => {
+		$electronEmitter.emit('NgrokRestart');
+		ngrokRefreshHint = false;
+	};
 </script>
 
 <main class="flex justify-center">
@@ -187,9 +224,52 @@
 		</div>
 	</div>
 	{#if !clientBase}
-		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale or ngrok</button> to share player links</p>
+		<p class="no-tunnel-hint">No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale</button> for remote player links</p>
 	{/if}
 </div>
+
+<!-- ── Connectivity ── -->
+{#if $isElectron}
+<div class="dash-card border-secondary mb-3">
+	<p class="dash-label mb-3">Connectivity</p>
+	<div class="flex flex-col gap-2">
+		<div class="conn-row">
+			<span class="conn-tag conn-tag--ts">Remote Control</span>
+			{#if !tsConfigured}
+				<span class="text-xs opacity-40 flex-1">Not configured</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
+			{:else if tsFunnelActive && $remoteAccess.tailscale}
+				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.tailscale}</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.tailscale ?? ''); copiedIdx = 20; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 20 ? '✓' : '⎘'}</button>
+				<input type="checkbox" class="toggle-check shrink-0" checked={tsFunnelActive} on:change={toggleTailscaleFunnel} />
+			{:else}
+				<span class="text-xs opacity-40 flex-1">Funnel off</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleTailscaleFunnel}>Enable</button>
+			{/if}
+		</div>
+		<div class="conn-row">
+			<span class="conn-tag conn-tag--ngrok">Stage Striking</span>
+			{#if !ngrokConfigured}
+				<span class="text-xs opacity-40 flex-1">Not configured</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
+			{:else if ngrokRunning && $remoteAccess.ngrok}
+				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.ngrok}</span>
+				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.ngrok ?? ''); copiedIdx = 21; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 21 ? '✓' : '⎘'}</button>
+				<button
+					class="btn text-xs h-6 px-2 border-secondary rounded shrink-0"
+					class:conn-refresh-pulse={ngrokRefreshHint}
+					title="Restart tunnel for a fresh URL"
+					on:click={restartNgrok}
+				>↻</button>
+				<input type="checkbox" class="toggle-check shrink-0" checked={ngrokRunning} on:change={toggleNgrok} />
+			{:else}
+				<span class="text-xs opacity-40 flex-1">{ngrokRunning ? 'Starting…' : 'Stopped'}</span>
+				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={toggleNgrok}>Start</button>
+			{/if}
+		</div>
+	</div>
+</div>
+{/if}
 
 <!-- ── Live game ── -->
 {#if isLive}
@@ -322,6 +402,45 @@
 	{/if}
 </div>
 {/if}
+
+<!-- ── Stage Striking ── -->
+<div class="dash-card border-secondary mb-3">
+	<div class="preview-header">
+		<p class="dash-label">Stage Striking</p>
+		<label class="flex items-center gap-2">
+			<span class="text-xs opacity-40">Online</span>
+			<input type="checkbox" class="toggle-check" bind:checked={isOnline} />
+		</label>
+	</div>
+	{#if strikeBase}
+		<div class="strike-qr-row">
+			<div class="strike-qr-col">
+				<p style="font-size:0.65rem;opacity:0.5;margin-bottom:0.3rem;">Player 1</p>
+				<QrCode value={strikeP1Url} size="88" color="#ffffff" background="#000000" />
+				<button class="qr-copy btn border-secondary" title="Copy P1 link"
+					on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => copiedIdx = null, 2000); }}>
+					{copiedIdx === 11 ? '✓ Copied' : '⎘ Copy'}
+				</button>
+			</div>
+			<div class="strike-qr-col">
+				<p style="font-size:0.65rem;opacity:0.5;margin-bottom:0.3rem;">Player 2</p>
+				<QrCode value={strikeP2Url} size="88" color="#ffffff" background="#000000" />
+				<button class="qr-copy btn border-secondary" title="Copy P2 link"
+					on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => copiedIdx = null, 2000); }}>
+					{copiedIdx === 12 ? '✓ Copied' : '⎘ Copy'}
+				</button>
+			</div>
+		</div>
+	{:else}
+		<p class="no-tunnel-hint">
+			{#if isOnline}
+				No ngrok tunnel — <button class="inline-link" on:click={() => goto('/settings')}>set up ngrok</button> for online games
+			{:else}
+				No tunnel — <button class="inline-link" on:click={() => goto('/settings')}>enable Tailscale</button> for offline games
+			{/if}
+		</p>
+	{/if}
+</div>
 
 <!-- ── OBS Controls ── -->
 <div class="obs-section" class:obs-section--offline={!obsConnected}>
@@ -737,6 +856,55 @@
 	.preview-loading {
 		font-size: 0.75rem;
 		opacity: 0.3;
+	}
+
+	.strike-qr-row {
+		display: flex;
+		gap: 1.5rem;
+		margin-top: 0.75rem;
+		flex-wrap: wrap;
+	}
+	.strike-qr-col {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.conn-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+	.conn-tag {
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 0.15rem 0.45rem;
+		border-radius: 999px;
+		flex-shrink: 0;
+		min-width: 6.5rem;
+		text-align: center;
+	}
+	.conn-tag--ts {
+		background: rgba(34, 197, 94, 0.12);
+		color: rgb(34, 197, 94);
+	}
+	.conn-tag--ngrok {
+		background: rgba(139, 92, 246, 0.15);
+		color: rgb(167, 139, 250);
+	}
+
+	@keyframes refresh-pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.4; }
+	}
+	.conn-refresh-pulse {
+		animation: refresh-pulse 1.2s ease-in-out infinite;
+		color: rgb(167, 139, 250) !important;
+		border-color: rgba(139, 92, 246, 0.4) !important;
 	}
 
 	/* BO active */

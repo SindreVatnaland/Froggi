@@ -98,7 +98,8 @@
 	export const obs = writable<Obs>();
 	export const obsPreviewFrame = writable<string>('');
 	export const urls = writable<Url>();
-	export const remoteAccess = writable<{ url?: string; provider?: 'tailscale' | 'ngrok' }>({});
+	export const remoteAccess = writable<{ tailscale?: string; ngrok?: string }>({});
 	export const tailscaleStatus = writable<{ installed: boolean; authenticated: boolean; funnelActive: boolean } | undefined>(undefined);
+	export const ngrokStatus = writable<{ installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string } | undefined>(undefined);
 	export const strikeState = writable<StrikeState | undefined>(undefined);
 </script>

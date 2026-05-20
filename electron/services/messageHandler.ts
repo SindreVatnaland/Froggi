@@ -30,6 +30,7 @@ import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
+import { NgrokService } from './ngrokService';
 import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 
@@ -67,6 +68,7 @@ export class MessageHandler {
 		@inject(delay(() => ElectronFroggiStore)) private storeFroggi: ElectronFroggiStore,
 		@inject(delay(() => OverlayInjector)) private overlayInjector: OverlayInjector,
 		@inject(delay(() => ElectronStrikeStore)) private storeStrike: ElectronStrikeStore,
+		@inject(delay(() => NgrokService)) private ngrokService: NgrokService,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -299,6 +301,7 @@ export class MessageHandler {
 			this.detectTailscaleStatus();
 			this.detectRemoteAccess();
 		}
+		this.sendInitMessage(socketId, 'NgrokStatus', this.ngrokService.getStatus());
 		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 	}
 

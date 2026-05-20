@@ -30,7 +30,7 @@ import type {
 	Player,
 	SessionStats,
 } from '../models/types/slippiData';
-import type { StrikeState } from '../models/types/stageStriking';
+import type { RpsChoice, StrikeState } from '../models/types/stageStriking';
 import type { FrameEntryType } from '@slippi/slippi-js';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
@@ -138,9 +138,24 @@ export interface MessageEvents {
 	TailscaleFunnel: (enable: boolean) => void;
 	TailscaleLogin: () => void;
 	TailscaleStatus: (status: { installed: boolean; authenticated: boolean; funnelActive: boolean }) => void;
+	NgrokStatus: (status: { installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string }) => void;
+	NgrokStart: () => void;
+	NgrokStop: () => void;
+	NgrokRestart: () => void;
+	NgrokSetAuthtoken: (token: string) => void;
+	NgrokInstall: () => void;
 
 	StrikeState: (state: StrikeState | undefined) => void;
 	StrikeStateUpdate: (state: StrikeState | undefined) => void;
+	StartSet: (p1Name: string, p2Name: string, bestOf: 3 | 5) => void;
+	RpsChoice: (player: 1 | 2, choice: RpsChoice) => void;
+	RpsWinnerOrder: (firstStriker: 1 | 2) => void;
+	StrikeStage: (stageId: number) => void;
+	PickStage: (stageId: number) => void;
+	SelectCharacter: (player: 1 | 2, charId: number) => void;
+	ReportWinner: (player: 1 | 2) => void;
+	MarkWarmup: () => void;
+	ResetSet: () => void;
 
 	OBSPreview: (imageData: string) => void;
 	OBSPreviewToggle: (enabled: boolean) => void;

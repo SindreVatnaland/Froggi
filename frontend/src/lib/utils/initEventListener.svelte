@@ -31,6 +31,7 @@
 		injectedOverlays,
 		remoteAccess,
 		tailscaleStatus,
+		ngrokStatus,
 		strikeState,
 	} from '$lib/utils/store.svelte';
 	import {
@@ -305,11 +306,18 @@
 			case 'RemoteAccessStatus':
 				(() => {
 					const [url, provider] = payload as Parameters<MessageEvents['RemoteAccessStatus']>;
-					remoteAccess.set({ url: url ?? undefined, provider: provider ?? undefined });
+					remoteAccess.update(prev => {
+						if (provider === 'tailscale') return { ...prev, tailscale: url ?? undefined };
+						if (provider === 'ngrok') return { ...prev, ngrok: url ?? undefined };
+						return prev;
+					});
 				})();
 				break;
 			case 'TailscaleStatus':
 				tailscaleStatus.set(payload[0] as Parameters<MessageEvents['TailscaleStatus']>[0]);
+				break;
+			case 'NgrokStatus':
+				ngrokStatus.set(payload[0] as Parameters<MessageEvents['NgrokStatus']>[0]);
 				break;
 			case 'StrikeState':
 				strikeState.set(payload[0] as Parameters<MessageEvents['StrikeState']>[0]);

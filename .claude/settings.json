@@ -74,7 +74,12 @@
       "Bash(npx asar *)",
       "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/call-bind-apply-helpers/package.json'\\)\\); print\\('version:', d['version']\\)\")",
       "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/frontend/static/icon.png /Users/sindrevatnaland/VSCode/Froggi/build/icon.png /Users/sindrevatnaland/VSCode/Froggi/electron/update/icon.png)",
-      "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)"
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)",
+      "Bash(mkdir -p /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/\\\\[num\\\\])",
+      "Bash(xargs cat)"
+    ],
+    "additionalDirectories": [
+      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p"
     ]
   }
 }

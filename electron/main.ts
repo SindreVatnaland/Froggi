@@ -29,6 +29,8 @@ import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
 import { ElectronSettingsStore } from './services/store/storeSettings';
+import { ElectronSetService } from './services/setService';
+import { NgrokService } from './services/ngrokService';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -282,6 +284,8 @@ try {
 			container.resolve(FileHandler);
 			container.resolve(FrontendLogger);
 			container.resolve(PacketCapture);
+			container.resolve(ElectronSetService);
+			container.resolve(NgrokService);
 
 			// Notify the frontend of any missing spectate configuration now that
 			// MessageHandler is ready and listening for Notification events.

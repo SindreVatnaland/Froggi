@@ -1,34 +1,32 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
+import Store from 'electron-store';
 import { MessageHandler } from '../messageHandler';
-import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
+
 import type { StrikeState } from '../../../frontend/src/lib/models/types/stageStriking';
+
+const STORE_KEY = 'strike.state';
 
 @singleton()
 export class ElectronStrikeStore {
-    private strikeState: StrikeState | undefined = undefined;
-
     constructor(
         @inject('ElectronLog') private log: ElectronLog,
-        @inject('ClientEmitter') private clientEmitter: TypedEmitter,
+        @inject('ElectronStore') private store: Store,
         @inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
     ) {
         this.log.info('Initializing Strike Store');
-        this.initListeners();
     }
 
     getStrikeState(): StrikeState | undefined {
-        return this.strikeState;
+        return this.store.get(STORE_KEY) as StrikeState | undefined;
     }
 
     setStrikeState(state: StrikeState | undefined) {
-        this.strikeState = state;
+        if (state) {
+            this.store.set(STORE_KEY, state);
+        } else {
+            this.store.delete(STORE_KEY as any);
+        }
         this.messageHandler.sendMessage('StrikeState', state);
-    }
-
-    private initListeners() {
-        this.clientEmitter.on('StrikeStateUpdate', (state: StrikeState | undefined) => {
-            this.setStrikeState(state);
-        });
     }
 }
