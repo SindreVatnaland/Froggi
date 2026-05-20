@@ -72,7 +72,9 @@
       "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/sindrevatnaland/VSCode/Froggi/package-lock.json'\\)\\); pkg=d.get\\('packages',{}\\).get\\('node_modules/typeorm',{}\\); print\\('typeorm locked version:', pkg.get\\('version'\\)\\)\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d['version']\\)\")",
       "Bash(npx asar *)",
-      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/call-bind-apply-helpers/package.json'\\)\\); print\\('version:', d['version']\\)\")"
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/sindrevatnaland/VSCode/Froggi/node_modules/call-bind-apply-helpers/package.json'\\)\\); print\\('version:', d['version']\\)\")",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/frontend/static/icon.png /Users/sindrevatnaland/VSCode/Froggi/build/icon.png /Users/sindrevatnaland/VSCode/Froggi/electron/update/icon.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)"
     ]
   }
 }

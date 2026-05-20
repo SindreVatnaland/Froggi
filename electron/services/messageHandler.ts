@@ -295,7 +295,10 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.remoteAccessUrl, this.remoteAccessProvider);
-		if (!socketId) this.detectTailscaleStatus();
+		if (!socketId) {
+			this.detectTailscaleStatus();
+			this.detectRemoteAccess();
+		}
 		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 	}
 

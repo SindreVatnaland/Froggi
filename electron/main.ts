@@ -177,10 +177,12 @@ try {
 	}
 
 	function createTray(): Tray {
-		const imagePath = path.join(__dirname, '../../build/icon-tray.png');
-		const image = nativeImage.createFromPath(imagePath);
-		tray = new Tray(image.resize({ width: 16, height: 16 }));
-		if (isMac) app.dock.setIcon(image);
+		const trayImagePath = path.join(__dirname, '../../build/icon-tray.png');
+		const dockImagePath = path.join(__dirname, '../../build/icon.png');
+		const trayImage = nativeImage.createFromPath(trayImagePath).resize({ width: 16, height: 16 });
+		const dockImage = nativeImage.createFromPath(dockImagePath);
+		tray = new Tray(trayImage);
+		if (isMac) app.dock.setIcon(dockImage);
 		tray.setToolTip('Froggi');
 
 		const contextMenu = Menu.buildFromTemplate([
