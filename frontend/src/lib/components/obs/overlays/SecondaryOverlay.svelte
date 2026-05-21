@@ -6,9 +6,12 @@
 
 	export let layerIds: number[] | undefined = undefined;
 	export let preview: boolean = false;
+	export let overlayId: string | undefined = undefined;
+	export let designWidth: number | undefined = undefined;
+	export let designHeight: number | undefined = undefined;
 
-	const overlayId = $page.params.overlay;
-	$: curOverlay = $overlays[overlayId];
+	$: _overlayId = overlayId ?? $page.params.overlay;
+	$: curOverlay = $overlays[_overlayId];
 
 	const handleError = (e: Error) => {
 		console.error(e);
@@ -25,6 +28,6 @@
 		in:fade={{ delay: 50, duration: 150 }}
 		out:fade={{ duration: 300 }}
 	>
-		<Board bind:curOverlay bind:layerIds {preview} />
+		<Board bind:curOverlay bind:layerIds {preview} {designWidth} {designHeight} />
 	</div>
 {/if}

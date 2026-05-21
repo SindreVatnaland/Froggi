@@ -13,6 +13,10 @@
 	export let curOverlay: Overlay;
 	export let layerIds: number[] | undefined;
 	export let preview: boolean = false;
+	export let designWidth: number | undefined = undefined;
+	export let designHeight: number | undefined = undefined;
+
+	$: overlayId = curOverlay?.id;
 
 	let ready = false;
 
@@ -71,7 +75,9 @@
 
 	let innerHeight = 0;
 	let innerWidth = 0;
-	$: rowHeight = innerHeight / ROW;
+	$: effectiveWidth = designWidth ?? innerWidth;
+	$: effectiveHeight = designHeight ?? innerHeight;
+	$: rowHeight = effectiveHeight / ROW;
 	$: curScene = curOverlay[curStatsScene];
 
 	const handleError = (e: ErrorEvent) => {
@@ -101,7 +107,7 @@
 {#if curScene && rowHeight && fixedLayers.length && ready}
 	<div
 		class="w-full h-full overflow-hidden relative origin-top-left"
-		style={`width: ${innerWidth}px; height: ${innerHeight}px;`}
+		style={`width: ${effectiveWidth}px; height: ${effectiveHeight}px;`}
 	>
 		<BoardContainer
 			scene={curScene}
@@ -118,11 +124,14 @@
 					cols={[[COL, COL]]}
 					fastStart={true}
 				>
-					{#key innerHeight * innerWidth}
+					{#key effectiveHeight * effectiveWidth}
 						<GridContent
 							{preview}
 							{dataItem}
 							bind:curScene
+							{designWidth}
+							{designHeight}
+							{overlayId}
 							additionalDelay={SCENE_TRANSITION_DELAY +
 								curScene.animation.layerRenderDelay * i}
 						/>

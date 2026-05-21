@@ -1,8 +1,7 @@
 <script lang="ts">
 	import Modal from '$lib/components/modal/Modal.svelte';
-	import NonInteractiveIFrame from './preview/NonInteractiveIFrame.svelte';
+	import OverlayPreviewScaled from './preview/OverlayPreviewScaled.svelte';
 	import {
-		urls,
 		isElectron,
 		statsScene,
 		electronEmitter,
@@ -33,8 +32,6 @@
 	let nameInput: HTMLInputElement;
 
 	$: isInjected = $injectedOverlays.includes(overlay?.id ?? '');
-	$: url = $isElectron ? $urls?.local : $urls?.external;
-	$: src = `${url}/obs/overlay/${overlay?.id}/layers`;
 	$: if (overlay && !editingName) draftName = overlay.title ?? '';
 	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 1);
 	$: arW = overlay?.aspectRatio?.width ?? 16;
@@ -123,12 +120,8 @@
 				class="preview-frame border-secondary"
 				style="aspect-ratio: {arW}/{arH}; {isVertical ? 'height: min(55vh, 100%)' : 'width: 100%'};"
 			>
-				{#if url}
-					<NonInteractiveIFrame
-						{src}
-						title="overlay"
-						style="width: 100%; height: 100%;"
-					/>
+				{#if overlay?.id}
+					<OverlayPreviewScaled overlayId={overlay.id} />
 				{/if}
 			</div>
 		</div>

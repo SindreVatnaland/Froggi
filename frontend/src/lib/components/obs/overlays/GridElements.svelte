@@ -43,8 +43,14 @@
 	export let preview: boolean = false;
 	export let boardHeight: number | undefined = undefined;
 	export let boardWidth: number | undefined = undefined;
+	export let designWidth: number | undefined = undefined;
+	export let designHeight: number | undefined = undefined;
+	export let overlayId: string | undefined = undefined;
 
-	$: overlayId = $page.params.overlay;
+	$: scaleW = designWidth ?? innerWidth;
+	$: scaleH = designHeight ?? innerHeight;
+
+	$: _overlayId = overlayId ?? $page.params.overlay;
 
 	$: isInjected = Boolean($page.url.searchParams.get('isInjected'));
 	$: isUsingDisallowedInjectedElement = isDisallowedInjectedElement(dataItem.elementId);
@@ -60,12 +66,12 @@
 
 	$: style = {} as GridContentItemStyle;
 
-	$: innerWidth,
+	$: scaleW, scaleH,
 		(style.classValue = Object.entries(dataItem?.data.class ?? {})
 			.map(([_, value]) => `${value}`)
 			.join(' '));
 
-	$: innerWidth,
+	$: scaleW, scaleH,
 		(style.cssValue = Object.entries(dataItem?.data.css ?? {})
 			.map(relativeBoarderSize)
 			.map(([key, value]) => `${toKebabCase(key)}: ${value}`)
@@ -78,29 +84,29 @@
 			key,
 			`${getRelativePixelSize(
 				Number(value.slice(0, -9)),
-				innerHeight,
-				innerWidth,
+				scaleH,
+				scaleW,
 			)}${value.slice(-9)}`,
 		];
 	};
 
-	const getFont = (font: Font | undefined) => {
-		if (isNil($overlays[overlayId])) return;
+	const getFont = (id: string | undefined, font: Font | undefined) => {
+		if (!id || isNil($overlays[id])) return;
 		if (font?.family === 'default') {
-			if ($overlays[overlayId][$statsScene].active)
-				return $overlays[overlayId][$statsScene].font.family;
-			const fallbackScene = $overlays[overlayId][$statsScene].fallback;
-			return $overlays[overlayId][fallbackScene].font.family;
+			if ($overlays[id][$statsScene].active)
+				return $overlays[id][$statsScene].font.family;
+			const fallbackScene = $overlays[id][$statsScene].fallback;
+			return $overlays[id][fallbackScene].font.family;
 		}
 		return font?.family;
 	};
 
-	$: shadowSizeX = getRelativePixelSize(dataItem?.data.shadow?.x, innerHeight, innerWidth);
-	$: shadowSizeY = getRelativePixelSize(dataItem?.data.shadow?.y, innerHeight, innerWidth);
-	$: shadowBlur = Math.max(0, getRelativePixelSize((dataItem?.data.shadow?.spread ?? 0) - 1, innerHeight, innerWidth));
+	$: shadowSizeX = getRelativePixelSize(dataItem?.data.shadow?.x, scaleH, scaleW);
+	$: shadowSizeY = getRelativePixelSize(dataItem?.data.shadow?.y, scaleH, scaleW);
+	$: shadowBlur = Math.max(0, getRelativePixelSize((dataItem?.data.shadow?.spread ?? 0) - 1, scaleH, scaleW));
 	$: style.shadow = `filter: drop-shadow(${shadowSizeX}px ${shadowSizeY}px ${shadowBlur}px ${dataItem?.data.shadow?.color ?? '#000000'});`;
 
-	$: strokeSize = getRelativePixelSize(dataItem.data.textStroke.size, innerHeight, innerWidth);
+	$: strokeSize = getRelativePixelSize(dataItem.data.textStroke.size, scaleH, scaleW);
 	$: style.textStroke = `-webkit-text-stroke-width: ${strokeSize}px;
 						-webkit-text-stroke-color: ${dataItem.data.textStroke.color};`;
 
@@ -108,7 +114,7 @@
 		dataItem.data.transform.translate.y ?? 0
 	}%) scale(${dataItem.data.transform.scale}) rotate(${dataItem.data.transform.rotate ?? 0}deg);`;
 
-	$: fontFamily = getFont(dataItem.data?.font);
+	$: fontFamily = getFont(_overlayId, dataItem.data?.font);
 
 	function toKebabCase(str: string) {
 		return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();

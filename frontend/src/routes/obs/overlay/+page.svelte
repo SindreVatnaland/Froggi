@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { isElectron, isMobile, overlays, urls } from '$lib/utils/store.svelte';
+	import { isElectron, isMobile, overlays } from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
 	import OverlayModal from '$lib/components/obs/overlays/OverlayModal.svelte';
 	import OverlayPreviewModal from '$lib/components/obs/overlays/OverlayPreviewModal.svelte';
-	import NonInteractiveIFrame from '$lib/components/obs/overlays/preview/NonInteractiveIFrame.svelte';
+	import OverlayPreviewScaled from '$lib/components/obs/overlays/preview/OverlayPreviewScaled.svelte';
 	import SceneSelect from '$lib/components/obs/overlays/selector/SceneSelect.svelte';
 	import type { Overlay } from '$lib/models/types/overlay';
 	import { getOverlayById } from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
@@ -22,9 +22,6 @@
 		// @ts-ignore
 		setTimeout(location.reload, 2000);
 	};
-
-	$: url = $isElectron ? $urls?.local : $urls?.external;
-	$: console.log('[overlay page] url:', url, '| $urls:', $urls, '| isElectron:', $isElectron);
 
 	let search = '';
 
@@ -98,12 +95,7 @@
 									class="preview-frame border-secondary"
 									style="aspect-ratio: {overlay.aspectRatio?.width ?? 16} / {overlay.aspectRatio?.height ?? 9};"
 								>
-									{#if url}
-										<NonInteractiveIFrame
-											src={`${url}/obs/overlay/${overlay.id}/layers`}
-											title={overlay.title}
-										/>
-									{/if}
+									<OverlayPreviewScaled overlayId={overlay.id} />
 								</div>
 								<p class="card-title text-secondary-color">{overlay.title}</p>
 							</button>
@@ -132,12 +124,7 @@
 									class="preview-frame border-secondary"
 									style="aspect-ratio: {overlay.aspectRatio?.width ?? 16} / {overlay.aspectRatio?.height ?? 9};"
 								>
-									{#if url}
-										<NonInteractiveIFrame
-											src={`${url}/obs/overlay/${overlay.id}/layers`}
-											title={overlay.title}
-										/>
-									{/if}
+									<OverlayPreviewScaled overlayId={overlay.id} />
 								</div>
 								<p class="card-title text-secondary-color">{overlay.title}</p>
 							</button>

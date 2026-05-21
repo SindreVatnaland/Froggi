@@ -16,6 +16,9 @@
 	export let demoItem: GridContentItem | undefined = undefined;
 	export let edit: boolean = false;
 	export let preview: boolean = false;
+	export let designWidth: number | undefined = undefined;
+	export let designHeight: number | undefined = undefined;
+	export let overlayId: string | undefined = undefined;
 
 	function updateDemoData() {
 		if (demoItem) dataItem = demoItem;
@@ -69,7 +72,7 @@
 				} bg-opacity-50 relative`}
 			>
 				{#if edit}
-					<GridElements {dataItem} {edit} />
+					<GridElements {dataItem} {edit} {designWidth} {designHeight} {overlayId} />
 					<h1
 						class="text-secondary-color absolute top-0 left-0"
 						style={`font-size: 0.5rem; line-height: 0.5rem;`}
@@ -131,7 +134,7 @@
 									{edit}
 									isDemo={!!demoItem}
 								>
-									<GridElements {dataItem} {preview} />
+									<GridElements {dataItem} {preview} {designWidth} {designHeight} {overlayId} />
 								</AnimationLayer>
 							</VisibilityAnimationLayer>
 						{/if}
