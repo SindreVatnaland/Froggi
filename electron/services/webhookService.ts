@@ -1,7 +1,12 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { characterNameByExternalId } from '../../frontend/src/lib/models/constants/ids';
+const CHARACTER_NAMES_BY_ID = [
+	'Captain Falcon', 'Donkey Kong', 'Fox', 'Mr. Game & Watch', 'Kirby', 'Bowser', 'Link', 'Luigi',
+	'Mario', 'Marth', 'Mewtwo', 'Ness', 'Peach', 'Pikachu', 'Ice Climbers', 'Jigglypuff', 'Samus',
+	'Yoshi', 'Zelda', 'Sheik', 'Falco', 'Young Link', 'Dr. Mario', 'Roy', 'Pichu', 'Ganondorf',
+	'Master Hand', 'Wireframe Male', 'Wireframe Female', 'Giga Bowser', 'Crazy Hand', 'Sandbag', 'Popo',
+] as const;
 import { ElectronWebhookStore } from './store/storeWebhook';
 import { ElectronPlayersStore } from './store/storePlayers';
 import {
@@ -104,6 +109,7 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 @singleton()
 export class WebhookService {
 	private oauthCache = new Map<string, OAuthTokenCache>();
+	private sendTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private lastGameSettingsId: string | null = null;
 	private prevFrameState = new Map<number, FrameState>();
 	private currentPlayerConnectCode: string | null = null;
@@ -235,7 +241,7 @@ export class WebhookService {
 					playerIndex: p.playerIndex,
 					port: p.port,
 					characterId: p.characterId,
-					characterName: p.characterId != null ? (characterNameByExternalId[p.characterId] ?? null) : null,
+					characterName: p.characterId != null ? (CHARACTER_NAMES_BY_ID[p.characterId] ?? null) : null,
 					characterColor: p.characterColor,
 					connectCode: p.connectCode,
 					displayName: p.displayName,
@@ -284,7 +290,7 @@ export class WebhookService {
 			playerIndex: player.playerIndex,
 			port: player.port,
 			characterId: player.characterId,
-			characterName: player.characterId != null ? (characterNameByExternalId[player.characterId] ?? null) : null,
+			characterName: player.characterId != null ? (CHARACTER_NAMES_BY_ID[player.characterId] ?? null) : null,
 			characterColor: player.characterColor,
 			connectCode: player.connectCode,
 			displayName: player.displayName,
@@ -330,15 +336,21 @@ export class WebhookService {
 		}
 	}
 
-	private async dispatch<T>(eventName: WebhookEvent, payload: T) {
+	private dispatch<T>(eventName: WebhookEvent, payload: T) {
 		if (!this.webhookStore.getEnabled()) return;
 		const profiles = this.webhookStore
 			.getProfiles()
 			.filter((p) => p.enabled && p.events.includes(eventName));
 		for (const profile of profiles) {
-			await this.send(profile, eventName, payload).catch((err: Error) => {
-				this.log.error(`Webhook "${profile.name}" (${eventName}) failed: ${err.message}`);
-			});
+			const key = `${profile.id}:${eventName}`;
+			const existing = this.sendTimers.get(key);
+			if (existing) clearTimeout(existing);
+			this.sendTimers.set(key, setTimeout(() => {
+				this.sendTimers.delete(key);
+				this.send(profile, eventName, payload).catch((err: Error) => {
+					this.log.error(`Webhook "${profile.name}" (${eventName}) failed: ${err.message}`);
+				});
+			}, 50));
 		}
 	}
 
