@@ -97,9 +97,8 @@
 
 	$: shadowSizeX = getRelativePixelSize(dataItem?.data.shadow?.x, innerHeight, innerWidth);
 	$: shadowSizeY = getRelativePixelSize(dataItem?.data.shadow?.y, innerHeight, innerWidth);
-	$: style.shadow = `filter: drop-shadow(${shadowSizeX}px ${shadowSizeY}px ${
-		(dataItem?.data.shadow.spread ?? 0) - 1
-	}px ${dataItem?.data.shadow?.color ?? '#000000'});`;
+	$: shadowBlur = Math.max(0, getRelativePixelSize((dataItem?.data.shadow?.spread ?? 0) - 1, innerHeight, innerWidth));
+	$: style.shadow = `filter: drop-shadow(${shadowSizeX}px ${shadowSizeY}px ${shadowBlur}px ${dataItem?.data.shadow?.color ?? '#000000'});`;
 
 	$: strokeSize = getRelativePixelSize(dataItem.data.textStroke.size, innerHeight, innerWidth);
 	$: style.textStroke = `-webkit-text-stroke-width: ${strokeSize}px;
