@@ -7,7 +7,7 @@ import { Api } from "../../electron/services/api";
 import { ElectronSessionStore } from "../../electron/services/store/storeSession";
 import { ElectronPlayersStore } from "../../electron/services/store/storePlayers";
 import { ElectronCurrentPlayerStore } from "../../electron/services/store/storeCurrentPlayer";
-import { CurrentPlayer, GameStartMode, Player, RatingPrediction, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayer, GameStartMode, GameStats, Player, RatingPrediction, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
 import { ElectronLiveStatsStore } from "../../electron/services/store/storeLiveStats";
 import { ElectronSettingsStore } from "../../electron/services/store/storeSettings";
 import log from 'electron-log';
@@ -20,6 +20,7 @@ import { indexOf } from "lodash";
 import { MessageHandler } from "../../electron/services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
 import { predictNewRating } from "../../electron/utils/rankPrediction";
+import { isTiedGame, getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
 
 
 //jest.mock("../../electron/services/api")
@@ -400,5 +401,147 @@ describe('ElectronGamesStore', () => {
         afterAll(() => {
             storeLiveStats["getBestOf"] = ElectronLiveStatsStore.prototype.getBestOf.bind(storeLiveStats);
         });
+    });
+});
+
+describe('isTiedGame', () => {
+    function makeGame(overrides: {
+        stocksP1?: number;
+        stocksP2?: number;
+        percentP1?: number;
+        percentP2?: number;
+        bombRain?: boolean;
+        placements?: { playerIndex: number; position: number }[];
+        noLastFrame?: boolean;
+    } = {}): GameStats {
+        const { stocksP1 = 1, stocksP2 = 1, percentP1 = 50, percentP2 = 50, bombRain = false, placements = [], noLastFrame = false } = overrides;
+        return {
+            gameEnd: {
+                gameEndMethod: 2,
+                lrasInitiatorIndex: null,
+                placements,
+            } as any,
+            isMock: false,
+            isReplay: false,
+            lastFrame: noLastFrame ? null : {
+                frame: 1000,
+                players: {
+                    0: { pre: {} as any, post: { stocksRemaining: stocksP1, percent: percentP1, playerIndex: 0 } as any },
+                    1: { pre: {} as any, post: { stocksRemaining: stocksP2, percent: percentP2, playerIndex: 1 } as any },
+                },
+            } as any,
+            postGameStats: null,
+            score: [0, 0],
+            settings: {
+                players: [{ playerIndex: 0 }, { playerIndex: 1 }],
+                gameInfoBlock: { bombRainEnabled: bombRain },
+                matchInfo: { matchId: null, gameNumber: null, tiebreakerNumber: null, mode: 'local', bestOf: undefined },
+                isSimulated: null,
+            } as any,
+            timestamp: null,
+        };
+    }
+
+    test('returns false for null/undefined', () => {
+        expect(isTiedGame(null)).toBe(false);
+        expect(isTiedGame(undefined)).toBe(false);
+    });
+
+    test('returns true for bomb rain', () => {
+        expect(isTiedGame(makeGame({ bombRain: true }))).toBe(true);
+    });
+
+    test('returns true when both players have 0 stocks (simultaneous death)', () => {
+        expect(isTiedGame(makeGame({ stocksP1: 0, stocksP2: 0 }))).toBe(true);
+    });
+
+    test('returns false when only one player has 0 stocks', () => {
+        expect(isTiedGame(makeGame({ stocksP1: 0, stocksP2: 1 }))).toBe(false);
+    });
+
+    test('returns true when both players have same stocks and same floored percent', () => {
+        expect(isTiedGame(makeGame({ stocksP1: 2, stocksP2: 2, percentP1: 45.7, percentP2: 45.2 }))).toBe(true);
+    });
+
+    test('returns false when stocks match but percent differs after floor', () => {
+        expect(isTiedGame(makeGame({ stocksP1: 2, stocksP2: 2, percentP1: 45, percentP2: 46 }))).toBe(false);
+    });
+
+    test('returns false when stocks differ', () => {
+        expect(isTiedGame(makeGame({ stocksP1: 2, stocksP2: 1, percentP1: 50, percentP2: 50 }))).toBe(false);
+    });
+
+    test('returns true when placements both have position 0 (Slippi assigns tie via placements)', () => {
+        const placements = [{ playerIndex: 0, position: 0 }, { playerIndex: 1, position: 0 }];
+        expect(isTiedGame(makeGame({ stocksP1: 0, stocksP2: 1, placements }))).toBe(true);
+    });
+
+    test('returns true for null lastFrame (no frame data → cannot determine winner, treat as tie)', () => {
+        expect(isTiedGame(makeGame({ noLastFrame: true }))).toBe(true);
+    });
+});
+
+describe('getWinnerIndex', () => {
+    function makeGame(overrides: {
+        stocksP1?: number;
+        stocksP2?: number;
+        percentP1?: number;
+        percentP2?: number;
+        placements?: { playerIndex: number; position: number }[];
+        lrasIndex?: number | null;
+    } = {}): GameStats {
+        const { stocksP1 = 0, stocksP2 = 1, percentP1 = 0, percentP2 = 50, placements = [{ playerIndex: 0, position: 1 }, { playerIndex: 1, position: 0 }], lrasIndex = null } = overrides;
+        return {
+            gameEnd: {
+                gameEndMethod: 2,
+                lrasInitiatorIndex: lrasIndex,
+                placements,
+            } as any,
+            isMock: false,
+            isReplay: false,
+            lastFrame: {
+                frame: 1000,
+                players: {
+                    0: { pre: {} as any, post: { stocksRemaining: stocksP1, percent: percentP1, playerIndex: 0 } as any },
+                    1: { pre: {} as any, post: { stocksRemaining: stocksP2, percent: percentP2, playerIndex: 1 } as any },
+                },
+            } as any,
+            postGameStats: { overall: [{ totalDamage: 200, killCount: 3 }, { totalDamage: 0, killCount: 0 }], stocks: [] } as any,
+            score: [0, 0],
+            settings: {
+                players: [{ playerIndex: 0, startStocks: 4 }, { playerIndex: 1, startStocks: 4 }],
+                gameInfoBlock: { bombRainEnabled: false, gameBitfield3: 143 },
+                matchInfo: { matchId: 'mode.ranked-test', gameNumber: 1, tiebreakerNumber: 0, mode: 'ranked', bestOf: undefined },
+                isSimulated: null,
+            } as any,
+            timestamp: null,
+        };
+    }
+
+    test('returns undefined for tied game (both 0 stocks)', () => {
+        expect(getWinnerIndex(makeGame({ stocksP1: 0, stocksP2: 0, placements: [] }))).toBeUndefined();
+    });
+
+    test('returns undefined for tied game (same stocks + percent)', () => {
+        const placements = [{ playerIndex: 0, position: 1 }, { playerIndex: 1, position: 1 }];
+        expect(getWinnerIndex(makeGame({ stocksP1: 2, stocksP2: 2, percentP1: 50, percentP2: 50, placements }))).toBeUndefined();
+    });
+
+    test('returns winner index from placements', () => {
+        expect(getWinnerIndex(makeGame())).toBe(1);
+    });
+
+    test('returns opponent when LRAS initiated by player 0', () => {
+        const placements = [{ playerIndex: 0, position: 1 }, { playerIndex: 1, position: 0 }];
+        expect(getWinnerIndex(makeGame({ lrasIndex: 0, placements }))).toBe(1);
+    });
+
+    test('returns opponent when LRAS initiated by player 1', () => {
+        const placements = [{ playerIndex: 0, position: 0 }, { playerIndex: 1, position: 1 }];
+        expect(getWinnerIndex(makeGame({ lrasIndex: 1, stocksP1: 1, stocksP2: 0, placements }))).toBe(0);
+    });
+
+    test('returns undefined for null input', () => {
+        expect(getWinnerIndex(undefined)).toBeUndefined();
     });
 });

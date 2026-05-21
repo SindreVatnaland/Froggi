@@ -19,11 +19,13 @@ export const getWinnerIndex = (game: GameStats | undefined): number | undefined 
 export const isTiedGame = (game: GameStats | undefined | null) => {
     if (!game) return false
     if (hasGameBombRain(game)) return true
+    const placements = game.gameEnd.placements ?? [];
+    if (placements.length >= 2 && placements.filter(p => p.position === 0).length >= 2) return true;
     const players = Object.values(game.lastFrame?.players ?? {})
     if (players.every((player) => isNil(player) || player.post.stocksRemaining === 0)) return true
     if (players.every(player => {
         const reference = players[0];
-        if (!reference) return;
+        if (!reference) return false;
         return reference.post.stocksRemaining === player?.post.stocksRemaining && Math.floor(reference.post.percent ?? 0) === Math.floor(player?.post.percent ?? -1)
     })) return true
     return false

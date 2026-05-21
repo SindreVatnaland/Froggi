@@ -454,18 +454,19 @@ export class StatsDisplay {
 		console.log("Finding game from settings:", settings)
 		const matchId = settings.matchInfo?.matchId;
 		const gameNumber = settings.matchInfo?.gameNumber;
+		const tiebreakerNumber = settings.matchInfo?.tiebreakerNumber ?? 0;
 		const randomSeed = settings.randomSeed;
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 		const file = files.find((file) => {
-			const settings = new SlippiGame(file).getSettings();
+			const fileSettings = new SlippiGame(file).getSettings();
 			return matchId
 				? (
-					settings?.matchInfo?.matchId === matchId &&
-					settings?.matchInfo?.gameNumber === gameNumber &&
-					settings?.matchInfo?.tiebreakerNumber === 0
+					fileSettings?.matchInfo?.matchId === matchId &&
+					fileSettings?.matchInfo?.gameNumber === gameNumber &&
+					(fileSettings?.matchInfo?.tiebreakerNumber ?? 0) === tiebreakerNumber
 				)
-				: settings?.randomSeed === randomSeed;
+				: fileSettings?.randomSeed === randomSeed;
 		});
 		if (!file) return;
 		return new SlippiGame(file);
