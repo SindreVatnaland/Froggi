@@ -155,72 +155,59 @@
 {#key selectedElementId}
 	{#key loadTrigger}
 		<div
-			class="w-full my-4 flex flex-col gap-8"
+			class="w-full my-2 flex flex-col gap-5"
 			in:fly={{ duration: 250, x: 150, delay: 250 }}
 			out:fly={{ duration: 250, x: 150 }}
 		>
 			{#if savedStyle}
-				<div class="flex gap-4">
-					<button
-						class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary rounded"
-						on:click={loadStyling}
-						use:tooltip={{
-							content:
-								'Load previously loaded styling and animation settings. This will overwrite the current settings.',
-							placement: 'top-start',
-							offset: 15,
-							delay: [200, 0],
-						}}
-					>
-						Load Style and Animation Settings
-					</button>
-				</div>
+				<button
+					class="btn text-xs h-8 px-4 border-secondary rounded"
+					on:click={loadStyling}
+					use:tooltip={{
+						content: 'Load previously saved styling and animation settings. Overwrites current.',
+						placement: 'top-start',
+						offset: 15,
+						delay: [200, 0],
+					}}
+				>
+					Load Style and Animation
+				</button>
 			{/if}
 			{#if selectedElementId === CustomElement.CustomString}
-				<div class="w-full h-fit flex flex-wrap">
-					<h1 class="text-xl font-medium">Custom text</h1>
-					<div class="w-full h-10">
-						<input
-							type="text"
-							id="default-input"
-							placeholder="Text"
-							bind:value={payload.string}
-							class="w-full h-full border-secondary text-secondary-color background-primary-color text-lg rounded-lg block p-2.5"
-						/>
-					</div>
-				</div>
+				<section class="styling-section">
+					<p class="section-label">Custom Text</p>
+					<input
+						type="text"
+						placeholder="Text"
+						bind:value={payload.string}
+						class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
+					/>
+				</section>
 			{/if}
 			{#if selectedElementId === CustomElement.CustomBoxIframe}
-				<div class="w-full h-fit flex flex-wrap">
-					<h1 class="text-xl font-medium">Embed Url</h1>
-					<div class="w-full h-10">
-						<input
-							type="text"
-							id="default-input"
-							placeholder="Text"
-							bind:value={payload.url}
-							class="w-full h-full border-secondary text-secondary-color background-primary-color text-lg rounded-lg block p-2.5"
-						/>
-					</div>
-				</div>
+				<section class="styling-section">
+					<p class="section-label">Embed URL</p>
+					<input
+						type="text"
+						placeholder="https://..."
+						bind:value={payload.url}
+						class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
+					/>
+				</section>
 			{/if}
 
 			{#if selectedElementId === CustomElement.CustomImage}
-				<h1 class="text-secondary-color text-xl font-medium">Select Image</h1>
-				<div class="w-full h-fit flex flex-wrap">
-					<div class="w-full h-24">
-						<FileUpload
-							fileName={selectedItemId}
-							directory="image"
-							label="Upload"
-							acceptedExtensions={['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']}
-							on:change={(event) => {
-								payload.image.name = event.detail;
-							}}
-						/>
-					</div>
-				</div>
-				<h1 class="text-secondary-color text-xl font-medium">Image Positioning</h1>
+				<section class="styling-section">
+					<p class="section-label">Image</p>
+					<FileUpload
+						fileName={selectedItemId}
+						directory="image"
+						label="Upload"
+						acceptedExtensions={['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']}
+						on:change={(event) => { payload.image.name = event.detail; }}
+					/>
+				</section>
+				<p class="section-label">Image Positioning</p>
 			{/if}
 
 			{#if stringSettings || customStringSettings}
@@ -269,9 +256,7 @@
 			{#if stringSettings && (!percentSettings || !customPercentSettings)}
 				<section class="styling-section">
 					<p class="section-label">Text Color</p>
-					<div class="h-12">
-						<ColorInput bind:valueConcat={payload.css.color} opacity={true} />
-					</div>
+					<ColorInput bind:valueConcat={payload.css.color} opacity={true} />
 				</section>
 			{/if}
 
@@ -357,9 +342,7 @@
 
 			<section class="styling-section">
 				<p class="section-label">Background Color</p>
-				<div class="h-12">
-					<ColorInput bind:valueConcat={payload.css.background} opacity={true} />
-				</div>
+				<ColorInput bind:valueConcat={payload.css.background} opacity={true} />
 			</section>
 
 			<section class="styling-section">
@@ -403,105 +386,72 @@
 				<p class="section-label">Opacity · {`${((payload.css.opacity ?? 0) * 100).toFixed()}%`}</p>
 				<SliderInput bind:value={payload.css.opacity} />
 			</section>
-			<div class="items-center gap-2 flex">
-				<h1
-					class="text-secondary-color text-xl font-medium mb-2"
+			<section class="styling-section">
+				<p
+					class="section-label"
 					use:tooltip={{
-						content: 'Animations that triggers on in-game events such as taking damage',
+						content: 'Animations that trigger on in-game events such as taking damage',
 						placement: 'top-start',
 						offset: 15,
 						delay: [200, 0],
 					}}
 				>
 					Animation Triggers
-				</h1>
-			</div>
-			<h1 class="text-secondary-color text-lg font-medium">Trigger</h1>
-			{#if !preAnimatedElement}
-				<AnimationTriggerSelect
-					bind:selectedOption={payload.animationTrigger.selectedOptions}
-					on:update={handleTriggerUpdate}
-				/>
-			{/if}
-			{#if payload.animationTrigger.selectedOptions && !preAnimatedElement}
-				<div class="w-full flex gap-4" in:fly={{ duration: 250, x: 100 }}>
-					<AnimationInput
-						bind:animation={payload.animationTrigger.in}
-						label="In"
-						max={ELEMENT_TRANSITION_LIMIT}
+				</p>
+				{#if !preAnimatedElement}
+					<AnimationTriggerSelect
+						bind:selectedOption={payload.animationTrigger.selectedOptions}
+						on:update={handleTriggerUpdate}
 					/>
-					<AnimationInput
-						bind:animation={payload.animationTrigger.out}
-						label="Out"
-						max={ELEMENT_TRANSITION_LIMIT}
-					/>
-				</div>
-			{/if}
-			{#if payload.animationTrigger.selectedOptions && !preAnimatedElement}
-				<button
-					in:fly={{ duration: 250, x: 100 }}
-					on:click={testAnimationTriggers}
-					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
-				>
-					Test animation
-				</button>
-			{/if}
-			{#if preAnimatedElement}
-				<button
-					in:fly={{ duration: 250, x: 100 }}
-					on:click={testCustomAnimationTriggers}
-					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
-				>
-					Test animation
-				</button>
-			{/if}
+				{/if}
+				{#if payload.animationTrigger.selectedOptions && !preAnimatedElement}
+					<div class="w-full flex gap-4" in:fly={{ duration: 250, x: 100 }}>
+						<AnimationInput bind:animation={payload.animationTrigger.in} label="In" max={ELEMENT_TRANSITION_LIMIT} />
+						<AnimationInput bind:animation={payload.animationTrigger.out} label="Out" max={ELEMENT_TRANSITION_LIMIT} />
+					</div>
+				{/if}
+				{#if payload.animationTrigger.selectedOptions && !preAnimatedElement}
+					<button in:fly={{ duration: 250, x: 100 }} on:click={testAnimationTriggers} class="btn text-xs h-8 px-4 border-secondary rounded">
+						Test animation
+					</button>
+				{/if}
+				{#if preAnimatedElement}
+					<button in:fly={{ duration: 250, x: 100 }} on:click={testCustomAnimationTriggers} class="btn text-xs h-8 px-4 border-secondary rounded">
+						Test animation
+					</button>
+				{/if}
+			</section>
 
-			<div class="items-center gap-2 flex">
-				<h1
-					class="text-secondary-color text-xl font-medium mb-2"
+			<section class="styling-section">
+				<p
+					class="section-label"
 					use:tooltip={{
-						content:
-							'Conditions that decides when an element should be visible. For example, when a game is paused or if player is alive',
+						content: 'Conditions that decide when an element is visible — e.g. game paused, player alive',
 						placement: 'top-start',
 						offset: 15,
 						delay: [200, 0],
 					}}
 				>
-					Visibility conditions
-				</h1>
-			</div>
+					Visibility Conditions
+				</p>
+				<VisibilitySelect
+					bind:selectedVisibilityOptions={payload.visibility.selectedOptions}
+					on:update={handleVisibilityUpdate}
+				/>
+				{#if payload.visibility.selectedOptions.length}
+					<div class="w-full flex gap-4" in:fly={{ duration: 250, x: 100 }}>
+						<AnimationInput bind:animation={payload.visibility.in} label="In" max={ELEMENT_TRANSITION_LIMIT} />
+						<AnimationInput bind:animation={payload.visibility.out} label="Out" max={ELEMENT_TRANSITION_LIMIT} />
+					</div>
+					<button in:fly={{ duration: 250, x: 100 }} on:click={() => testVisibilityAnimation()} class="btn text-xs h-8 px-4 border-secondary rounded">
+						Test animation
+					</button>
+				{/if}
+			</section>
 
-			<VisibilitySelect
-				bind:selectedVisibilityOptions={payload.visibility.selectedOptions}
-				on:update={handleVisibilityUpdate}
-			/>
-
-			{#if payload.visibility.selectedOptions.length}
-				<div class="w-full flex gap-4" in:fly={{ duration: 250, x: 100 }}>
-					<AnimationInput
-						bind:animation={payload.visibility.in}
-						label="In"
-						max={ELEMENT_TRANSITION_LIMIT}
-					/>
-					<AnimationInput
-						bind:animation={payload.visibility.out}
-						label="Out"
-						max={ELEMENT_TRANSITION_LIMIT}
-					/>
-				</div>
-				<button
-					in:fly={{ duration: 250, x: 100 }}
-					on:click={() => testVisibilityAnimation()}
-					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
-				>
-					Test animation
-				</button>
-			{/if}
-			<div class="items-center gap-2 flex">
-				<h1 class="text-secondary-color text-xl font-medium mb-2">Advanced styling</h1>
-				<div class="mb-2">
-					<BooleanInput bind:checked={payload.advancedStyling} />
-				</div>
+			<div class="flex items-center gap-3">
+				<p class="section-label">Advanced Styling</p>
+				<BooleanInput bind:checked={payload.advancedStyling} />
 			</div>
 			{#if payload.advancedStyling}
 				{#if stringSettings || imageSettings}
@@ -537,22 +487,18 @@
 					</div>
 				{/if}
 			{/if}
-			<div>
-				<button
-					class="btn text-lg whitespace-nowrap h-10 px-2 xl:text-xl border-secondary"
-					on:click={saveStyling}
-					use:tooltip={{
-						content:
-							'Save the current styling and animation settings. This can be loaded later. Does <b>NOT</b> save custom image or font.',
-						placement: 'top-start',
-						offset: 15,
-						delay: [1000, 0],
-						html: true,
-					}}
-				>
-					Save Styling and Animation
-				</button>
-			</div>
+			<button
+				class="btn text-xs h-8 px-4 border-secondary rounded"
+				on:click={saveStyling}
+				use:tooltip={{
+					content: 'Save current styling and animation settings for later. Does NOT save custom image or font.',
+					placement: 'top-start',
+					offset: 15,
+					delay: [1000, 0],
+				}}
+			>
+				Save Styling and Animation
+			</button>
 		</div>
 	{/key}
 {/key}
