@@ -7,7 +7,7 @@ import { Api } from "../../electron/services/api";
 import { ElectronSessionStore } from "../../electron/services/store/storeSession";
 import { ElectronPlayersStore } from "../../electron/services/store/storePlayers";
 import { ElectronCurrentPlayerStore } from "../../electron/services/store/storeCurrentPlayer";
-import { CurrentPlayer, GameStartMode, GameStats, Player, RatingPrediction, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
+import { CurrentPlayer, GameStartMode, GameStats, Player, SlippiLauncherSettings } from "../../frontend/src/lib/models/types/slippiData";
 import { ElectronLiveStatsStore } from "../../electron/services/store/storeLiveStats";
 import { ElectronSettingsStore } from "../../electron/services/store/storeSettings";
 import log from 'electron-log';
@@ -19,7 +19,6 @@ import { SqliteGame } from "../../electron/services/sqlite/sqliteGames";
 import { indexOf } from "lodash";
 import { MessageHandler } from "../../electron/services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
-import { predictNewRating } from "../../electron/utils/rankPrediction";
 import { isTiedGame, getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
 
 
@@ -83,40 +82,11 @@ describe('ElectronGamesStore', () => {
     ]
 
     beforeAll(async () => {
+        log.transports.console.level = false;
+
         store = new Store({ cwd: `${__dirname}/..` })
         store.delete("player")
         store.delete("stats")
-
-        // TODO: Write actual tests for the rating prediction
-
-        const apiTest: Api = new Api(log)
-
-        const player1 = await apiTest.getPlayerRankStats("HBOX#305")
-        const player2 = await apiTest.getPlayerRankStats("BBB#445")
-
-        const player1Prediction = {
-            rank: {
-                current: {
-                    ratingMu: player1?.ratingMu,
-                    ratingSigma: player1?.ratingSigma,
-                }
-            }
-        } as Player
-
-        const player2Prediction = {
-            rank: {
-                current: {
-                    ratingMu: player2?.ratingMu,
-                    ratingSigma: player2?.ratingSigma,
-                }
-            }
-        } as Player
-
-        const predictedRating: RatingPrediction = predictNewRating(player1Prediction, player2Prediction)
-
-        console.log(predictedRating)
-
-        console.log("Win:", predictedRating.win.ordinal.toFixed(1), `(+${(predictedRating.win.ordinal - (player1?.rating ?? 0)).toFixed(1)})`, " Loss: ", predictedRating.loss.ordinal.toFixed(1), `(${(predictedRating.loss.ordinal - (player1?.rating ?? 0)).toFixed(1)})`)
 
         const api: Api = new Api(log)
         const messageHandler = {
@@ -198,120 +168,37 @@ describe('ElectronGamesStore', () => {
     });
 
     test.each(rankedGameTest)(
-        'Set Score Is As Expected for %s',
+        '$file',
         async (gameTest) => {
-            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-            }));
-
             if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
 
-            connectCode = gameTest.connectCode
-            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
+            statsDisplay["getGameFiles"] = async () => [`${__dirname}/../sample-games/${gameTest.file}`];
+            connectCode = gameTest.connectCode;
+            storeLiveStats.setBestOf(gameTest.setBestOf);
+
+            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`);
             const currentGameEnd = game.getGameEnd();
             const currentGameSettings = game.getSettings();
             if (!currentGameEnd || !currentGameSettings) return;
-            await statsDisplay.handleGameStart(currentGameSettings)
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const gameScore = electronGamesStore.getGameScore()
-            expect(gameScore).toStrictEqual(gameTest.expectedScore)
-        },
-        10000 // Set a timeout of 10 seconds for each test
-    );
 
-    test.each(rankedGameTest)(
-        'Is New Game The Same As Recent Game for %s',
-        async (gameTest) => {
-            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-            }));
+            await statsDisplay.handleGameStart(currentGameSettings);
+            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings);
 
-            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
+            const recentGames = await electronGamesStore.getRecentGames();
+            const lastRecentGame = recentGames?.at(-1);
+            const firstRecentGame = recentGames?.at(0);
+            const matchGames = await sqliteGame.getGamesById(firstRecentGame?.settings?.matchInfo.matchId ?? "local");
 
-            connectCode = gameTest.connectCode
-            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-            const currentGameEnd = game.getGameEnd();
-            const currentGameSettings = game.getSettings();
-            if (!currentGameEnd || !currentGameSettings) return;
-            await statsDisplay.handleGameStart(currentGameSettings)
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGames = await electronGamesStore.getRecentGames()
-            const recentGame = recentGames?.at(-1)
-            if (currentGameSettings.matchInfo?.matchId) {
-                expect(currentGameSettings.matchInfo?.matchId).toStrictEqual(recentGame?.settings?.matchInfo?.matchId);
-            }
-            expect(currentGameSettings.matchInfo?.gameNumber).toStrictEqual(recentGame?.settings?.matchInfo?.gameNumber);
-        },
-        10000 // Set a timeout of 10 seconds for each test
-    );
-
-    test.each(rankedGameTest)(
-        'Is Returned Match Games Length As Expected for %s',
-        async (gameTest) => {
-            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-            }));
-
-            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
-
-            connectCode = gameTest.connectCode
-            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-            const currentGameEnd = game.getGameEnd();
-            const currentGameSettings = game.getSettings();
-            if (!currentGameEnd || !currentGameSettings) return;
-            await statsDisplay.handleGameStart(currentGameSettings)
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
-            const matchGames = await sqliteGame.getGamesById(recentGame?.settings?.matchInfo.matchId ?? "local")
+            expect(electronGamesStore.getGameScore()).toStrictEqual(gameTest.expectedScore);
             expect(matchGames).toHaveLength(gameTest.expectedLength);
-        },
-        10000 // Set a timeout of 10 seconds for each test
-    );
-
-    test.each(rankedGameTest)(
-        'Is Post Game Scene As Expected for %s',
-        async (gameTest) => {
-            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-            }));
-
-            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
-
-            storeLiveStats.setBestOf(gameTest.setBestOf)
-            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-            const currentGameEnd = game.getGameEnd();
-            const currentGameSettings = game.getSettings();
-            if (!currentGameEnd || !currentGameSettings) return;
-            await statsDisplay.handleGameStart(currentGameSettings)
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const liveScene = storeLiveStats.getStatsScene();
-            console.log(gameTest.file, liveScene)
-            expect(liveScene).toStrictEqual(gameTest.expectedScene);
-        },
-        10000 // Set a timeout of 10 seconds for each test
-    );
-
-    test.each(rankedGameTest)(
-        'Game Mode As Expected for %s',
-        async (gameTest) => {
-            statsDisplay["getGameFiles"] = async (): Promise<string[]> => await (new Promise<string[]>(resolve => {
-                resolve([`${__dirname}/../sample-games/${gameTest.file}`])
-            }));
-
-            if (indexOf(rankedGameTest, gameTest) === 0) await sqlite.clearAllTables();
-
-            connectCode = gameTest.connectCode
-            const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`)
-            const currentGameEnd = game.getGameEnd();
-            const currentGameSettings = game.getSettings();
-            if (!currentGameEnd || !currentGameSettings) return;
-            await statsDisplay.handleGameStart(currentGameSettings)
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings)
-            const recentGame = (await electronGamesStore.getRecentGames())?.at(0)
-            expect(recentGame?.settings?.matchInfo.mode).toStrictEqual(gameTest.expectedMode)
+            expect(storeLiveStats.getStatsScene()).toStrictEqual(gameTest.expectedScene);
+            expect(firstRecentGame?.settings?.matchInfo.mode).toStrictEqual(gameTest.expectedMode);
+            if (currentGameSettings.matchInfo?.matchId) {
+                expect(currentGameSettings.matchInfo?.matchId).toStrictEqual(lastRecentGame?.settings?.matchInfo?.matchId);
+            }
+            expect(currentGameSettings.matchInfo?.gameNumber).toStrictEqual(lastRecentGame?.settings?.matchInfo?.gameNumber);
         },
         10000
-        // Set a timeout of 10 seconds for each test
     );
 
     describe('Score Reset Between Sets', () => {

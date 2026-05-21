@@ -24,12 +24,16 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #111;
-      --surface: #1a1a1a;
-      --border: rgba(255,255,255,0.08);
-      --text: #e0e0e0;
-      --muted: rgba(255,255,255,0.4);
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.18);
+      --text: #111111;
+      --muted: rgba(0,0,0,0.4);
       --accent: #40DCA5;
+      --accent-dark: #2bb88a;
+      --bmc: #FFDD00;
+      --bmc-dark: #e6c800;
     }
 
     body {
@@ -57,14 +61,14 @@
       height: 96px;
       border-radius: 22px;
       margin-bottom: 1.25rem;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
 
     .logo {
       font-size: 2.5rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      color: #fff;
+      color: var(--text);
     }
 
     .tagline {
@@ -88,6 +92,7 @@
       border: 1px solid var(--border);
       border-radius: 0.5rem;
       padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
 
     .card-label {
@@ -111,7 +116,7 @@
     .download-name {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #fff;
+      color: var(--text);
     }
 
     .download-sub {
@@ -130,9 +135,9 @@
       border-radius: 0.3rem;
       text-decoration: none;
       white-space: nowrap;
-      transition: opacity 0.15s;
+      transition: background 0.15s;
     }
-    .btn-download:hover { opacity: 0.85; }
+    .btn-download:hover { background: var(--accent-dark); }
 
     .other-platforms {
       margin-top: 1rem;
@@ -152,7 +157,7 @@
       border-radius: 0.25rem;
       transition: color 0.15s, border-color 0.15s;
     }
-    .btn-alt:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .btn-alt:hover { color: var(--text); border-color: var(--border-hover); }
 
     /* Feature grid */
     .feature-grid {
@@ -170,12 +175,13 @@
       border: 1px solid var(--border);
       border-radius: 0.5rem;
       padding: 1rem 1.1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
 
     .feat-title {
       font-size: 0.8rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--accent-dark);
       margin-bottom: 0.35rem;
       letter-spacing: 0.01em;
     }
@@ -183,7 +189,7 @@
     .feat-body {
       font-size: 0.8rem;
       color: var(--text);
-      opacity: 0.65;
+      opacity: 0.6;
       line-height: 1.55;
     }
 
@@ -202,22 +208,32 @@
       gap: 0.25rem;
       text-decoration: none;
       padding: 0.875rem 1rem;
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 0.35rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
       transition: border-color 0.15s;
     }
-    .link-card:hover { border-color: rgba(255,255,255,0.2); }
+    .link-card:hover { border-color: var(--border-hover); }
 
     .link-title {
       font-size: 0.85rem;
       font-weight: 600;
-      color: #fff;
+      color: var(--text);
     }
     .link-desc {
       font-size: 0.72rem;
       color: var(--muted);
     }
+
+    /* BuyMeACoffee card */
+    .link-card--bmc {
+      border-color: var(--bmc);
+      background: #fffde7;
+    }
+    .link-card--bmc:hover { border-color: var(--bmc-dark); background: #fff9c4; }
+    .link-card--bmc .link-title { color: #7a5f00; }
+    .link-card--bmc .link-desc  { color: #a08000; }
 
     footer {
       padding: 2rem 1.5rem;
@@ -298,8 +314,8 @@
       <span class="link-title">GitHub</span>
       <span class="link-desc">Source code, issues, releases</span>
     </a>
-    <a class="link-card" href="https://buymeacoffee.com/sindrevatnw">
-      <span class="link-title">Buy Me a Coffee</span>
+    <a class="link-card link-card--bmc" href="https://buymeacoffee.com/sindrevatnw">
+      <span class="link-title">☕ Buy Me a Coffee</span>
       <span class="link-desc">Support development</span>
     </a>
   </div>
@@ -307,6 +323,8 @@
 </main>
 
 <footer>Free and open source · Super Smash Bros. Melee stream tool</footer>
+
+<script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="sindrevatnw" data-description="Support Froggi development!" data-message="" data-color="#FFDD00" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 
 <script>
   (async function () {
@@ -323,12 +341,10 @@
     const name = document.getElementById('dl-name');
     const sub  = document.getElementById('dl-sub');
 
-    // Hide the redundant platform alt-link
     if (isMac)   document.getElementById('dl-mac').style.display  = 'none';
     if (isWin)   document.getElementById('dl-win').style.display  = 'none';
     if (isLinux) document.getElementById('dl-linux').style.display = 'none';
 
-    // Set label immediately so it doesn't show "Loading…"
     if (isMac)        { name.textContent = 'Download for macOS';  sub.textContent = 'Fetching latest…'; }
     else if (isWin)   { name.textContent = 'Download for Windows'; sub.textContent = 'Fetching latest…'; }
     else if (isLinux) { name.textContent = 'Download for Linux';   sub.textContent = 'Fetching latest…'; }
@@ -342,7 +358,6 @@
 
       let asset;
       if (isMac) {
-        // Prefer arm64 on Apple Silicon, else x64, else any dmg
         asset = assets.find(a => a.name.endsWith('.dmg') && (isArm ? /arm64/i.test(a.name) : /x64/i.test(a.name)))
              || assets.find(a => a.name.endsWith('.dmg'));
         if (asset) sub.textContent = asset.name;

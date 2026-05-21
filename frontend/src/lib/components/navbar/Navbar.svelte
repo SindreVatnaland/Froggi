@@ -158,9 +158,7 @@
 			<div
 				class="fixed top-0 right-0 h-screen w-16 m-0 flex flex-col background-primary-color border-l border-secondary-color justify-between py-4 items-center space-y-4 z-50"
 			>
-				<div class="h-[20%] w-full flex flex-col gap-2 justify-start items-center">
-					<div class="h-100 w-12 bg-black bg-opacity-30 justify-start items-center rounded-2xl space-y-2 p-1" />
-				</div>
+				<div class="h-[20%]" />
 
 				<div class="flex-1 flex flex-col gap-2 justify-center">
 					<div

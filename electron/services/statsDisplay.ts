@@ -148,7 +148,7 @@ export class StatsDisplay {
 	): Promise<{ settings: GameStartType; isNewGame: boolean }> {
 		const previousGameSettings = recentGames.at(-1)?.settings;
 		const replay = await retryFunctionAsync(5, () => this.findGameFromSettings(settings));
-		console.log("Replay:", replay);
+		this.log.debug("Replay:", replay);
 		const replaySettings = replay?.getSettings();
 
 		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
@@ -451,7 +451,7 @@ export class StatsDisplay {
 
 	private findGameFromSettings = async (settings: GameStartType | undefined): Promise<SlippiGame | undefined> => {
 		if (!settings) return;
-		console.log("Finding game from settings:", settings)
+		this.log.debug("Finding game from settings:", settings)
 		const matchId = settings.matchInfo?.matchId;
 		const gameNumber = settings.matchInfo?.gameNumber;
 		const tiebreakerNumber = settings.matchInfo?.tiebreakerNumber ?? 0;
