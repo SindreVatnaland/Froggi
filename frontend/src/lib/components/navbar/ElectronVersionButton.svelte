@@ -35,8 +35,12 @@
 		}
 	};
 
-	const fmtVersion = (v: string | undefined) =>
-		!v || v === 'dev' ? 'dev' : `v${v}`;
+	const fmtVersion = (v: string | undefined) => {
+		if (!v || v === 'dev') return 'dev';
+		const beta = v.match(/-beta\.(\d+)$/);
+		if (beta) return `β${beta[1]}`;
+		return `v${v}`;
+	};
 
 	const getContent = (autoUpdater: AutoUpdater) => {
 		switch (autoUpdater.status) {
@@ -75,7 +79,7 @@
 <div
 	class="w-12 h-12 relative flex justify-center items-center"
 	use:tooltip={{
-		content: `<p>${$autoUpdater.status}</p>`,
+		content: `<p>${$autoUpdater.status}</p><p style="opacity:0.5;font-size:0.7rem">${$autoUpdater.version ?? ''}</p>`,
 		html: true,
 		placement: 'left',
 		delay: [1000, 0],
