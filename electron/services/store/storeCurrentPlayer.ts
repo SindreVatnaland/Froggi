@@ -5,6 +5,7 @@ import type {
 	Player,
 	RankedNetplayProfile,
 } from '../../../frontend/src/lib/models/types/slippiData';
+import type { RankChangeDiff } from '../../../frontend/src/lib/models/types/webhook';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { ElectronSettingsStore } from './storeSettings';
@@ -112,6 +113,21 @@ export class ElectronCurrentPlayerStore {
 		if (!player) return;
 		this.log.info('Handling rank change');
 		this.log.info(`Previous rating: ${player.rank?.current?.rating}. New rating: ${player.rank?.new?.rating}`);
+		if (player.rank?.current && player.rank?.new) {
+			const diff: RankChangeDiff = {
+				connectCode: player.connectCode,
+				displayName: player.displayName,
+				before: player.rank.current,
+				after: player.rank.new,
+				diff: {
+					rating: (player.rank.new.rating ?? 0) - (player.rank.current.rating ?? 0),
+					wins: (player.rank.new.wins ?? 0) - (player.rank.current.wins ?? 0),
+					losses: (player.rank.new.losses ?? 0) - (player.rank.current.losses ?? 0),
+					rankChanged: player.rank.new.rank !== player.rank.current.rank,
+				},
+			};
+			this.messageHandler.sendMessage('RankChange', diff);
+		}
 		setTimeout(async () => {
 			this.log.info("Setting new rank to current rank");
 			await this.setCurrentPlayerCurrentRankStats(player.rank?.new);

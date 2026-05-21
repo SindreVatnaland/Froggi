@@ -222,7 +222,7 @@
 							background-image: url('{tempBackgroundImage}');
 						"
 					>
-						<BoardEdit bind:borderHeight={constrainedBoardHeight} />
+						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} />
 					</div>
 				</div>
 

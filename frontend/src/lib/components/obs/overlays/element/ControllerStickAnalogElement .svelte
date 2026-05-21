@@ -16,6 +16,8 @@
 		(div?.clientHeight ?? 0) > (div?.clientWidth ?? 0)
 			? div?.clientWidth ?? 0
 			: div?.clientHeight ?? 0;
+
+	$: filledStyle = `transform: translate(${analogXValuePercent}px, ${analogYValuePercent}px);`;
 </script>
 
 <div
@@ -28,10 +30,19 @@
 		src="/image/controller-buttons-component/joystick-gate.png"
 		alt="Joystick Gate"
 	/>
-	<img
-		class="w-full h-full absolute object-contain"
-		style={`transform: translate(${analogXValuePercent}px, ${analogYValuePercent}px);`}
-		src={`/image/controller-buttons-component/joystick${ribs ? '-ribs' : ''}-filled.png`}
-		alt="Joystick Mask"
-	/>
+	{#if ribs}
+		<img
+			class="w-full h-full absolute object-contain"
+			style={filledStyle}
+			src="/image/controller-buttons-component/joystick-ribs-filled.png"
+			alt="Joystick Mask"
+		/>
+	{:else}
+		<img
+			class="w-full h-full absolute object-contain"
+			style={filledStyle}
+			src="/image/controller-buttons-component/joystick-filled.png"
+			alt="Joystick Filled"
+		/>
+	{/if}
 </div>

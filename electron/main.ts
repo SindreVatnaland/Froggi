@@ -31,6 +31,8 @@ import { performUpdate } from './update/updateWindow';
 import { ElectronSettingsStore } from './services/store/storeSettings';
 import { ElectronSetService } from './services/setService';
 import { NgrokService } from './services/ngrokService';
+import { ElectronWebhookStore } from './services/store/storeWebhook';
+import { WebhookService } from './services/webhookService';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -286,6 +288,8 @@ try {
 			container.resolve(PacketCapture);
 			container.resolve(ElectronSetService);
 			container.resolve(NgrokService);
+			container.resolve(ElectronWebhookStore);
+			container.resolve(WebhookService);
 
 			// Notify the frontend of any missing spectate configuration now that
 			// MessageHandler is ready and listening for Notification events.

@@ -26,6 +26,7 @@
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 	import { Froggi } from '$lib/models/types/froggiConfigTypes';
 	import type { StrikeState } from '$lib/models/types/stageStriking';
+	import type { WebhookProfile } from '$lib/models/types/webhook';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -103,4 +104,6 @@
 	export const ngrokStatus = writable<{ installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string } | undefined>(undefined);
 	export const obsProcessStatus = writable<{ running: boolean; websocketEnabled?: boolean; port?: string; password?: string } | null>(null);
 	export const strikeState = writable<StrikeState | undefined>(undefined);
+	export const webhookProfiles = writable<WebhookProfile[]>([]);
+	export const webhooksEnabled = writable<boolean>(true);
 </script>

@@ -21,6 +21,7 @@
 	const overlayId = $page.params.overlay;
 
 	export let borderHeight: number | undefined = undefined;
+	export let borderWidth: number | undefined = undefined;
 
 	$: selectedLayerIndex = $currentOverlayEditor.layerIndex ?? 0;
 	$: selectedItemId = $currentOverlayEditor.itemId;
@@ -158,7 +159,7 @@
 											: 'outline-dotted'
 									}`}
 								>
-									<GridContent edit={true} {dataItem} />
+									<GridContent edit={true} {dataItem} designWidth={borderWidth} designHeight={borderHeight} />
 								</div>
 								<div
 									class="bottom-0 right-0 w-[5%] h-[5%] max-w-[0.8em] max-h-[0.8em] absolute resizer overflow-hidden z-5"

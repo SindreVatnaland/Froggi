@@ -31,6 +31,7 @@ import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
 import { NgrokService } from './ngrokService';
+import { ElectronWebhookStore } from './store/storeWebhook';
 import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 
@@ -69,6 +70,7 @@ export class MessageHandler {
 		@inject(delay(() => OverlayInjector)) private overlayInjector: OverlayInjector,
 		@inject(delay(() => ElectronStrikeStore)) private storeStrike: ElectronStrikeStore,
 		@inject(delay(() => NgrokService)) private ngrokService: NgrokService,
+		@inject(delay(() => ElectronWebhookStore)) private storeWebhook: ElectronWebhookStore,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -307,6 +309,8 @@ export class MessageHandler {
 		}
 		this.sendInitMessage(socketId, 'NgrokStatus', this.ngrokService.getStatus());
 		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
+		this.sendInitMessage(socketId, 'WebhookProfiles', this.storeWebhook.getProfiles());
+		this.sendInitMessage(socketId, 'WebhooksEnabled', this.storeWebhook.getEnabled());
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string, clientMatchId: string = '') {

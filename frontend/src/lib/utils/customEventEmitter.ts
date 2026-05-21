@@ -35,6 +35,7 @@ import type { FrameEntryType } from '@slippi/slippi-js';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
+import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -166,6 +167,14 @@ export interface MessageEvents {
 
 	OBSPreview: (imageData: string) => void;
 	OBSPreviewToggle: (enabled: boolean) => void;
+
+	WebhookProfiles: (profiles: WebhookProfile[]) => void;
+	SetWebhookProfile: (profile: WebhookProfile) => void;
+	DeleteWebhookProfile: (id: string) => void;
+	WebhooksEnabled: (enabled: boolean) => void;
+	SetWebhooksEnabled: (enabled: boolean) => void;
+	TestWebhookProfile: (profileId: string) => void;
+	RankChange: (diff: RankChangeDiff) => void;
 }
 
 export class TypedEmitter extends localEmitter {

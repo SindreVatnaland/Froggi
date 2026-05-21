@@ -34,6 +34,8 @@
 		ngrokStatus,
 		obsProcessStatus,
 		strikeState,
+		webhookProfiles,
+		webhooksEnabled,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -325,6 +327,12 @@
 				break;
 			case 'StrikeState':
 				strikeState.set(payload[0] as Parameters<MessageEvents['StrikeState']>[0]);
+				break;
+			case 'WebhookProfiles':
+				webhookProfiles.set(payload[0] as Parameters<MessageEvents['WebhookProfiles']>[0]);
+				break;
+			case 'WebhooksEnabled':
+				webhooksEnabled.set(payload[0] as Parameters<MessageEvents['WebhooksEnabled']>[0]);
 				break;
 		}
 	}
