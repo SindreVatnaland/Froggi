@@ -37,6 +37,7 @@
 		"entitlements": "entitlements.mac.plist",
 		"entitlementsInherit": "entitlements.mac.plist",
 		"hardenedRuntime": true,
+		"notarize": true,
 		"files": [
 			"build_electron/**/*",
 			"build/**/*",
