@@ -16,7 +16,6 @@
 			.filter((id): id is number => id !== undefined);
 	};
 	$: $overlays, getOverlay(overlayId, $statsScene);
-	$: console.log('[layers page]', { overlayId, statsScene: $statsScene, layerIds, overlayKeys: $overlays[overlayId] ? Object.keys($overlays[overlayId]) : 'missing' });
 </script>
 
 <SecondaryOverlay bind:layerIds preview={true} />
