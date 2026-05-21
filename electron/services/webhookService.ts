@@ -340,15 +340,19 @@ export class WebhookService {
 	}
 
 	private async send<T>(profile: WebhookProfile, eventName: WebhookEvent, payload: T) {
-		const token = await this.getToken(profile);
 		const body: WebhookPayload<T> = {
 			eventName,
 			timestamp: new Date().toISOString(),
 			payload,
 		};
+		const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+		if (profile.authType !== 'none') {
+			const token = await this.getToken(profile);
+			headers['Authorization'] = `Bearer ${token}`;
+		}
 		const res = await fetch(profile.url, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+			headers,
 			body: JSON.stringify(body),
 		});
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -130,7 +130,7 @@
 		name: '',
 		url: '',
 		enabled: true,
-		authType: 'bearer',
+		authType: 'none',
 		bearerToken: '',
 		clientId: '',
 		clientSecret: '',
@@ -198,7 +198,9 @@
 		editingProfile.name.trim().length > 0 &&
 		editingProfile.url.trim().length > 0 &&
 		editingProfile.events.length > 0 &&
-		(editingProfile.authType === 'bearer'
+		(editingProfile.authType === 'none'
+			? true
+			: editingProfile.authType === 'bearer'
 			? editingProfile.bearerToken.trim().length > 0
 			: editingProfile.clientId.trim().length > 0 &&
 			  editingProfile.clientSecret.trim().length > 0 &&
@@ -315,18 +317,11 @@
 				</div>
 
 				<div class="field">
-					<p class="field-label">Auth Type</p>
-					<div class="auth-tabs">
-						<button
-							class="auth-tab"
-							class:auth-tab--active={editingProfile.authType === 'bearer'}
-							on:click={() => (editingProfile.authType = 'bearer')}
-						>Bearer Token</button>
-						<button
-							class="auth-tab"
-							class:auth-tab--active={editingProfile.authType === 'oauth2'}
-							on:click={() => (editingProfile.authType = 'oauth2')}
-						>OAuth2 Client Credentials</button>
+					<p class="field-label">Auth</p>
+					<div class="tab-row">
+						<button class="tab-btn" class:tab-btn--active={editingProfile.authType === 'none'} on:click={() => (editingProfile.authType = 'none')}>None</button>
+						<button class="tab-btn" class:tab-btn--active={editingProfile.authType === 'bearer'} on:click={() => (editingProfile.authType = 'bearer')}>Bearer Token</button>
+						<button class="tab-btn" class:tab-btn--active={editingProfile.authType === 'oauth2'} on:click={() => (editingProfile.authType = 'oauth2')}>OAuth2</button>
 					</div>
 				</div>
 
@@ -335,7 +330,7 @@
 						<p class="field-label">Bearer Token</p>
 						<input class="field-input border-secondary" type="password" placeholder="eyJ…" bind:value={editingProfile.bearerToken} />
 					</div>
-				{:else}
+				{:else if editingProfile.authType === 'oauth2'}
 					<div class="field" in:fly={{ duration: 150, x: 20 }}>
 						<p class="field-label">Login URL</p>
 						<input class="field-input border-secondary" type="url" placeholder="https://auth.example.com/oauth/token" bind:value={editingProfile.loginUrl} />
@@ -588,22 +583,32 @@
 		width: 100%;
 	}
 
-	.auth-tabs { display: flex; gap: 0.25rem; }
-
-	.auth-tab {
-		font-size: 0.7rem;
-		font-weight: 600;
-		padding: 0.35rem 0.75rem;
-		border-radius: 0.2rem;
-		border: 1px solid transparent;
-		background: none;
-		color: var(--secondary-color);
-		cursor: pointer;
-		opacity: 0.4;
-		transition: opacity 0.15s;
+	.tab-row {
+		display: flex;
+		gap: 0.25rem;
+		background: rgba(128, 128, 128, 0.08);
+		border-radius: 0.3rem;
+		padding: 0.15rem;
+		align-self: flex-start;
 	}
 
-	.auth-tab--active { opacity: 1; border-color: var(--secondary-color); }
+	.tab-btn {
+		font-size: 0.7rem;
+		font-weight: 600;
+		padding: 0.2rem 0.6rem;
+		border-radius: 0.2rem;
+		border: none;
+		background: transparent;
+		color: var(--secondary-color);
+		opacity: 0.45;
+		cursor: pointer;
+		transition: opacity 0.1s, background 0.1s;
+	}
+
+	.tab-btn--active {
+		background: rgba(128, 128, 128, 0.15);
+		opacity: 1;
+	}
 
 	.event-checkboxes { display: flex; flex-direction: column; gap: 0.5rem; }
 

@@ -11,7 +11,7 @@ export enum WebhookEvent {
 	PlayerInfo = 'PlayerInfo',
 }
 
-export type WebhookAuthType = 'bearer' | 'oauth2';
+export type WebhookAuthType = 'none' | 'bearer' | 'oauth2';
 
 export interface WebhookProfile {
 	id: string;
