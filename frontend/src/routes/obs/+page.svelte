@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthorized } from '$lib/utils/store.svelte';
-	import { Layers, Trophy, Settings, BookOpen } from 'lucide-svelte';
+	import { Layers, Trophy, Settings, BookOpen, Send } from 'lucide-svelte';
 
 	const navItems = [
 		{
@@ -23,6 +23,13 @@
 			description: 'WebSocket connection, scene commands, controller bindings.',
 			path: '/obs/settings',
 			icon: Settings,
+			requiresAuth: true,
+		},
+		{
+			label: 'Webhooks',
+			description: 'Send real-time game events to external HTTP endpoints.',
+			path: '/obs/webhook',
+			icon: Send,
 			requiresAuth: true,
 		},
 		{

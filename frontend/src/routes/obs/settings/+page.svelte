@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { Plug, Clapperboard, Gamepad2, Send } from 'lucide-svelte';
+	import { Plug, Clapperboard, Gamepad2 } from 'lucide-svelte';
 
 	const navItems = [
 		{
@@ -20,12 +20,6 @@
 			description: 'Bind controller inputs to OBS commands.',
 			path: '/obs/settings/controller',
 			icon: Gamepad2,
-		},
-		{
-			label: 'Webhooks',
-			description: 'Send game events to external HTTP endpoints.',
-			path: '/obs/settings/webhook',
-			icon: Send,
 		},
 	];
 </script>

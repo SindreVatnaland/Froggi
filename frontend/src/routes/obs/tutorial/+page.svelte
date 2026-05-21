@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { Paintbrush, Plug, Gamepad2, Trophy } from 'lucide-svelte';
+	import { Paintbrush, Plug, Gamepad2, Trophy, Webhook } from 'lucide-svelte';
 
 	const tutorials = [
 		{
@@ -26,6 +26,12 @@
 			description: 'Stage striking, player links, ngrok and Tailscale setup for online play.',
 			path: '/set/tutorial',
 			icon: Trophy,
+		},
+		{
+			title: 'Webhooks',
+			description: 'Send real-time game events to any HTTP endpoint.',
+			path: '/obs/tutorial/webhook',
+			icon: Webhook,
 		},
 	];
 </script>
