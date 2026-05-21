@@ -38,6 +38,7 @@ export interface GameStartPlayer {
 	playerIndex: number;
 	port: number;
 	characterId: number | null;
+	characterName: string | null;
 	characterColor: number | null;
 	connectCode: string;
 	displayName: string;
@@ -101,6 +102,7 @@ export interface PlayerInfoEntry {
 	playerIndex: number;
 	port: number;
 	characterId: number | null;
+	characterName: string | null;
 	characterColor: number | null;
 	connectCode: string;
 	displayName: string;

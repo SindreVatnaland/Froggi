@@ -1,6 +1,7 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { characterNameByExternalId } from '../../frontend/src/lib/models/constants/ids';
 import { ElectronWebhookStore } from './store/storeWebhook';
 import { ElectronPlayersStore } from './store/storePlayers';
 import {
@@ -42,8 +43,8 @@ const DUMMY_GAME_START: GameStartPayload = {
 	gameNumber: 1,
 	bestOf: 5,
 	players: [
-		{ playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1' },
-		{ playerIndex: 1, port: 2, characterId: 9, characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2' },
+		{ playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1' },
+		{ playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2' },
 	],
 };
 
@@ -94,9 +95,9 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, prev: 4, current: 3, diff: -1 },
 	},
 	[WebhookEvent.PlayerInfo]: {
-		p1: { playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
-		p2: { playerIndex: 1, port: 2, characterId: 9, characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2', rank: null },
-		currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
+		p1: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
+		p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2', rank: null },
+		currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
 	},
 };
 
@@ -234,6 +235,7 @@ export class WebhookService {
 					playerIndex: p.playerIndex,
 					port: p.port,
 					characterId: p.characterId,
+					characterName: p.characterId != null ? (characterNameByExternalId[p.characterId] ?? null) : null,
 					characterColor: p.characterColor,
 					connectCode: p.connectCode,
 					displayName: p.displayName,
@@ -282,6 +284,7 @@ export class WebhookService {
 			playerIndex: player.playerIndex,
 			port: player.port,
 			characterId: player.characterId,
+			characterName: player.characterId != null ? (characterNameByExternalId[player.characterId] ?? null) : null,
 			characterColor: player.characterColor,
 			connectCode: player.connectCode,
 			displayName: player.displayName,

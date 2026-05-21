@@ -44,8 +44,8 @@
 				gameNumber: 1,
 				bestOf: 5,
 				players: [
-					{ playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1' },
-					{ playerIndex: 1, port: 2, characterId: 9, characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2' },
+					{ playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1' },
+					{ playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2' },
 				],
 			},
 		},
@@ -114,9 +114,9 @@
 			eventName: 'PlayerInfo',
 			timestamp: '2026-01-01T00:00:00.000Z',
 			payload: {
-				p1: { playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
-				p2: { playerIndex: 1, port: 2, characterId: 9, characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2', rank: null },
-				currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
+				p1: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
+				p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2', rank: null },
+				currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
 			},
 		},
 	};
