@@ -34,6 +34,11 @@ export interface WebhookPayload<T = unknown> {
 
 // ── Stripped payload types (only these fields are sent) ──────────────────────
 
+export interface StageInfo {
+	id: number;
+	name: string;
+}
+
 export interface GameStartPlayer {
 	playerIndex: number;
 	port: number;
@@ -45,7 +50,7 @@ export interface GameStartPlayer {
 }
 
 export interface GameStartPayload {
-	stageId: number | null;
+	stage: StageInfo | null;
 	mode: string | null;
 	matchId: string | null;
 	gameNumber: number | null;
@@ -55,9 +60,35 @@ export interface GameStartPayload {
 
 export interface GameEndPayload {
 	score: number[];
-	stageId: number | null;
+	stage: StageInfo | null;
 	mode: string | null;
 	timestamp: string | null;
+}
+
+export interface GameRecordPayload {
+	stage: StageInfo | null;
+	winner: 1 | 2 | null;
+	p1Char: number | null;
+	p2Char: number | null;
+}
+
+export interface StrikeStatePayload {
+	p1Name: string;
+	p2Name: string;
+	bestOf: number;
+	score: { p1: number; p2: number };
+	gameNum: number;
+	phase: string;
+	starters: StageInfo[];
+	counterpicks: StageInfo[];
+	strikes: StageInfo[];
+	finalStage: StageInfo | null;
+	currentStriker: 1 | 2 | null;
+	rps: { p1: string | null; p2: string | null; winner: 1 | 2 | null };
+	characters: { p1: number | null; p2: number | null };
+	dsrStages: { p1: StageInfo[]; p2: StageInfo[] };
+	lastWinner: 1 | 2 | null;
+	games: GameRecordPayload[];
 }
 
 export interface StrippedRankProfile {
@@ -96,6 +127,19 @@ export interface PlayerStatChangePayload {
 	p1: PlayerStatDiff | null;
 	p2: PlayerStatDiff | null;
 	currentPlayer: PlayerStatDiff | null;
+}
+
+export interface PlayerStockDiff {
+	connectCode: string | null;
+	displayName: string | null;
+	isCurrentPlayer: boolean;
+	current: number;
+}
+
+export interface StockChangePayload {
+	p1: PlayerStockDiff | null;
+	p2: PlayerStockDiff | null;
+	currentPlayer: PlayerStockDiff | null;
 }
 
 export interface PlayerInfoEntry {

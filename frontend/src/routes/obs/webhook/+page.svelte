@@ -38,7 +38,7 @@
 			eventName: 'GameStart',
 			timestamp: '2026-01-01T00:00:00.000Z',
 			payload: {
-				stageId: 8,
+				stage: { id: 8, name: "Yoshi's Story" },
 				mode: 'ranked',
 				matchId: 'mode.ranked-2026-...',
 				gameNumber: 1,
@@ -52,7 +52,7 @@
 		[WebhookEvent.GameEnd]: {
 			eventName: 'GameEnd',
 			timestamp: '2026-01-01T00:00:00.000Z',
-			payload: { score: [1, 0], stageId: 8, mode: 'ranked', timestamp: '2026-01-01T00:00:00.000Z' },
+			payload: { score: [1, 0], stage: { id: 8, name: "Yoshi's Story" }, mode: 'ranked', timestamp: '2026-01-01T00:00:00.000Z' },
 		},
 		[WebhookEvent.GameScore]: {
 			eventName: 'GameScore',
@@ -69,10 +69,16 @@
 				score: { p1: 0, p2: 0 },
 				gameNum: 1,
 				phase: 'striking',
-				starters: [2, 3, 8, 28, 31],
-				counterpicks: [3],
-				strikes: [2],
-				finalStageId: null,
+				starters: [
+					{ id: 2, name: 'Fountain of Dreams' },
+					{ id: 3, name: 'Pokémon Stadium' },
+					{ id: 8, name: "Yoshi's Story" },
+					{ id: 28, name: 'Dream Land N64' },
+					{ id: 31, name: 'Battlefield' },
+				],
+				counterpicks: [{ id: 3, name: 'Pokémon Stadium' }],
+				strikes: [{ id: 2, name: 'Fountain of Dreams' }],
+				finalStage: null,
 				currentStriker: 2,
 				rps: { p1: null, p2: null, winner: null },
 				characters: { p1: null, p2: null },
@@ -105,9 +111,9 @@
 			eventName: 'StockChange',
 			timestamp: '2026-01-01T00:00:00.000Z',
 			payload: {
-				p1: STAT_DIFF('ABC#123', 'Player 1', true, 4, 3),
+				p1: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
 				p2: null,
-				currentPlayer: STAT_DIFF('ABC#123', 'Player 1', true, 4, 3),
+				currentPlayer: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
 			},
 		},
 		[WebhookEvent.PlayerInfo]: {

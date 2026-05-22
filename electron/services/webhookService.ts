@@ -7,6 +7,14 @@ const CHARACTER_NAMES_BY_ID = [
 	'Yoshi', 'Zelda', 'Sheik', 'Falco', 'Young Link', 'Dr. Mario', 'Roy', 'Pichu', 'Ganondorf',
 	'Master Hand', 'Wireframe Male', 'Wireframe Female', 'Giga Bowser', 'Crazy Hand', 'Sandbag', 'Popo',
 ] as const;
+const STAGE_NAMES_BY_ID: string[] = [
+	'Dummy', 'TEST', 'Fountain of Dreams', 'Pokémon Stadium', "Princess Peach's Castle", 'Kongo Jungle',
+	'Brinstar', 'Corneria', "Yoshi's Story", 'Onett', 'Mute City', 'Rainbow Cruise', 'Jungle Japes',
+	'Great Bay', 'Hyrule Temple', 'Brinstar Depths', "Yoshi's Island", 'Green Greens', 'Fourside',
+	'Mushroom Kingdom I', 'Mushroom Kingdom II', 'Akaneia', 'Venom', 'Poké Floats', 'Big Blue',
+	'Icicle Mountain', 'Icetop', 'Flat Zone', 'Dream Land N64', "Yoshi's Island N64", 'Kongo Jungle N64',
+	'Battlefield', 'Final Destination',
+];
 import { ElectronWebhookStore } from './store/storeWebhook';
 import { ElectronPlayersStore } from './store/storePlayers';
 import {
@@ -17,12 +25,17 @@ import {
 	type PlayerInfoPayload,
 	type PlayerStatChangePayload,
 	type PlayerStatDiff,
+	type PlayerStockDiff,
 	type RankChangePayload,
+	type StageInfo,
+	type StockChangePayload,
+	type StrikeStatePayload,
 	type StrippedRankProfile,
 	type WebhookPayload,
 	type WebhookProfile,
 	type RankChangeDiff,
 } from '../../frontend/src/lib/models/types/webhook';
+import type { StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 import type {
 	CurrentPlayer,
 	GameStartTypeExtended,
@@ -42,7 +55,7 @@ interface FrameState {
 }
 
 const DUMMY_GAME_START: GameStartPayload = {
-	stageId: 8,
+	stage: { id: 8, name: "Yoshi's Story" },
 	mode: 'ranked',
 	matchId: 'mode.ranked-test-001',
 	gameNumber: 1,
@@ -55,7 +68,7 @@ const DUMMY_GAME_START: GameStartPayload = {
 
 const DUMMY_GAME_END: GameEndPayload = {
 	score: [1, 0],
-	stageId: 8,
+	stage: { id: 8, name: "Yoshi's Story" },
 	mode: 'ranked',
 	timestamp: new Date().toISOString(),
 };
@@ -77,12 +90,20 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 	[WebhookEvent.StrikeState]: {
 		p1Name: 'Player 1', p2Name: 'Player 2', bestOf: 5,
 		score: { p1: 0, p2: 0 }, gameNum: 1, phase: 'striking',
-		starters: [2, 3, 8, 28, 31], counterpicks: [4, 0, 36],
-		strikes: [2], finalStageId: null, currentStriker: 2,
+		starters: [
+			{ id: 2, name: 'Fountain of Dreams' },
+			{ id: 3, name: 'Pokémon Stadium' },
+			{ id: 8, name: "Yoshi's Story" },
+			{ id: 28, name: 'Dream Land N64' },
+			{ id: 31, name: 'Battlefield' },
+		],
+		counterpicks: [{ id: 3, name: 'Pokémon Stadium' }],
+		strikes: [{ id: 2, name: 'Fountain of Dreams' }],
+		finalStage: null, currentStriker: 2,
 		rps: { p1: 'rock', p2: 'scissors', winner: 1 },
 		characters: { p1: null, p2: null },
 		dsrStages: { p1: [], p2: [] }, lastWinner: null, games: [],
-	},
+	} satisfies StrikeStatePayload,
 	[WebhookEvent.RankChange]: {
 		connectCode: 'TEST#001', displayName: 'Player 1',
 		before: DUMMY_RANK_PROFILE,
@@ -95,10 +116,10 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, prev: 45.3, current: 67.8, diff: 22.5 },
 	},
 	[WebhookEvent.StockChange]: {
-		p1: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, prev: 4, current: 3, diff: -1 },
+		p1: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
 		p2: null,
-		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, prev: 4, current: 3, diff: -1 },
-	},
+		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
+	} satisfies StockChangePayload,
 	[WebhookEvent.PlayerInfo]: {
 		p1: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
 		p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2', rank: null },
@@ -155,9 +176,9 @@ export class WebhookService {
 			this.dispatch(WebhookEvent.GameScore, score);
 		});
 
-		this.localEmitter.on('StrikeState', (state) => {
+		this.localEmitter.on('StrikeState', (state: StrikeState | undefined) => {
 			if (!state) return;
-			this.dispatch(WebhookEvent.StrikeState, state);
+			this.dispatch(WebhookEvent.StrikeState, this.stripStrikeState(state));
 		});
 
 		this.localEmitter.on('RankChange', (diff: RankChangeDiff) => {
@@ -208,14 +229,12 @@ export class WebhookService {
 			}
 
 			if (stockChanged) {
-				const p1diff = this.buildDiff(p1, p1prev.stocks, p1curr.stocks, ccCode);
-				const p2diff = p2 && p2curr && p2prev ? this.buildDiff(p2, p2prev.stocks, p2curr.stocks, ccCode) : null;
-				const cpPrev = cpPlayer === p2 ? p2prev?.stocks : p1prev.stocks;
-				const cpCurr = cpPlayer === p2 ? p2curr?.stocks : p1curr.stocks;
-				const payload: PlayerStatChangePayload = {
-					p1: p1diff, p2: p2diff,
-					currentPlayer: cpPlayer && cpPrev != null && cpCurr != null
-						? this.buildDiff(cpPlayer, cpPrev, cpCurr, ccCode) : null,
+				const payload: StockChangePayload = {
+					p1: this.buildStockDiff(p1, p1curr.stocks, ccCode),
+					p2: p2 && p2curr ? this.buildStockDiff(p2, p2curr.stocks, ccCode) : null,
+					currentPlayer: cpPlayer
+						? this.buildStockDiff(cpPlayer, cpPlayer === p2 ? (p2curr?.stocks ?? 0) : p1curr.stocks, ccCode)
+						: null,
 				};
 				this.dispatch(WebhookEvent.StockChange, payload);
 			}
@@ -228,9 +247,16 @@ export class WebhookService {
 
 	// ── Strip helpers ─────────────────────────────────────────────────────────
 
+	private stageInfo(id: number | null): StageInfo | null {
+		if (id == null) return null;
+		const name = STAGE_NAMES_BY_ID[id];
+		if (!name) return null;
+		return { id, name };
+	}
+
 	private stripGameStart(settings: GameStartTypeExtended): GameStartPayload {
 		return {
-			stageId: settings.stageId ?? null,
+			stage: this.stageInfo(settings.stageId ?? null),
 			mode: settings.matchInfo?.mode ?? null,
 			matchId: settings.matchInfo?.matchId ?? null,
 			gameNumber: settings.matchInfo?.gameNumber ?? null,
@@ -252,9 +278,40 @@ export class WebhookService {
 	private stripGameEnd(stats: GameStats): GameEndPayload {
 		return {
 			score: stats.score,
-			stageId: stats.settings?.stageId ?? null,
+			stage: this.stageInfo(stats.settings?.stageId ?? null),
 			mode: stats.settings?.matchInfo?.mode ?? null,
 			timestamp: stats.timestamp ? new Date(stats.timestamp).toISOString() : null,
+		};
+	}
+
+	private stripStrikeState(state: StrikeState): StrikeStatePayload {
+		return {
+			p1Name: state.p1Name,
+			p2Name: state.p2Name,
+			bestOf: state.bestOf,
+			score: state.score,
+			gameNum: state.gameNum,
+			phase: state.phase,
+			starters: state.starters.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+			counterpicks: state.counterpicks.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+			strikes: state.strikes.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+			finalStage: this.stageInfo(state.finalStageId),
+			currentStriker: state.currentStriker,
+			rps: state.rps,
+			characters: state.characters,
+			dsrStages: {
+				p1: state.dsrStages.p1.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+				p2: state.dsrStages.p2.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+			},
+			lastWinner: state.lastWinner,
+			games: state.games
+				.filter((g) => !g.warmup)
+				.map((g) => ({
+					stage: this.stageInfo(g.stageId),
+					winner: g.winner,
+					p1Char: g.p1Char,
+					p2Char: g.p2Char,
+				})),
 		};
 	}
 
@@ -321,6 +378,15 @@ export class WebhookService {
 			prev,
 			current,
 			diff: current - prev,
+		};
+	}
+
+	private buildStockDiff(player: Player, current: number, ccCode: string | null): PlayerStockDiff {
+		return {
+			connectCode: player.connectCode ?? null,
+			displayName: player.displayName ?? null,
+			isCurrentPlayer: Boolean(ccCode && player.connectCode === ccCode),
+			current,
 		};
 	}
 
