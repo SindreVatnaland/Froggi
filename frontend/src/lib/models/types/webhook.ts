@@ -55,6 +55,7 @@ export interface GameStartPayload {
 	matchId: string | null;
 	gameNumber: number | null;
 	bestOf: number | null;
+	isTeams: boolean | null;
 	players: GameStartPlayer[];
 }
 
@@ -62,6 +63,8 @@ export interface GameEndPayload {
 	score: number[];
 	stage: StageInfo | null;
 	mode: string | null;
+	gameEndMethod: string | null;
+	lrasInitiatorIndex: number | null;
 	timestamp: string | null;
 }
 

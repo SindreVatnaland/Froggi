@@ -60,6 +60,7 @@ const DUMMY_GAME_START: GameStartPayload = {
 	matchId: 'mode.ranked-test-001',
 	gameNumber: 1,
 	bestOf: 5,
+	isTeams: false,
 	players: [
 		{ playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1' },
 		{ playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2' },
@@ -70,6 +71,8 @@ const DUMMY_GAME_END: GameEndPayload = {
 	score: [1, 0],
 	stage: { id: 8, name: "Yoshi's Story" },
 	mode: 'ranked',
+	gameEndMethod: 'game',
+	lrasInitiatorIndex: null,
 	timestamp: new Date().toISOString(),
 };
 
@@ -125,6 +128,14 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2', rank: null },
 		currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
 	},
+};
+
+const GAME_END_METHODS: Record<number, string> = {
+	0: 'unresolved', 1: 'time', 2: 'game', 3: 'resolved', 7: 'no_contest',
+};
+
+const DEBOUNCE_MS: Partial<Record<WebhookEvent, number>> = {
+	[WebhookEvent.PercentChange]: 300,
 };
 
 @singleton()
@@ -261,6 +272,7 @@ export class WebhookService {
 			matchId: settings.matchInfo?.matchId ?? null,
 			gameNumber: settings.matchInfo?.gameNumber ?? null,
 			bestOf: settings.matchInfo?.bestOf ?? null,
+			isTeams: settings.isTeams ?? null,
 			players: (settings.players ?? [])
 				.filter((p) => p != null)
 				.map((p) => ({
@@ -276,10 +288,13 @@ export class WebhookService {
 	}
 
 	private stripGameEnd(stats: GameStats): GameEndPayload {
+		const method = stats.gameEnd?.gameEndMethod;
 		return {
 			score: stats.score,
 			stage: this.stageInfo(stats.settings?.stageId ?? null),
 			mode: stats.settings?.matchInfo?.mode ?? null,
+			gameEndMethod: method != null ? (GAME_END_METHODS[method] ?? null) : null,
+			lrasInitiatorIndex: stats.gameEnd?.lrasInitiatorIndex ?? null,
 			timestamp: stats.timestamp ? new Date(stats.timestamp).toISOString() : null,
 		};
 	}
@@ -416,7 +431,7 @@ export class WebhookService {
 				this.send(profile, eventName, payload).catch((err: Error) => {
 					this.log.error(`Webhook "${profile.name}" (${eventName}) failed: ${err.message}`);
 				});
-			}, 50));
+			}, DEBOUNCE_MS[eventName] ?? 50));
 		}
 	}
 

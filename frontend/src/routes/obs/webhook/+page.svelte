@@ -43,6 +43,7 @@
 				matchId: 'mode.ranked-2026-...',
 				gameNumber: 1,
 				bestOf: 5,
+				isTeams: false,
 				players: [
 					{ playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1' },
 					{ playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2' },
@@ -52,7 +53,7 @@
 		[WebhookEvent.GameEnd]: {
 			eventName: 'GameEnd',
 			timestamp: '2026-01-01T00:00:00.000Z',
-			payload: { score: [1, 0], stage: { id: 8, name: "Yoshi's Story" }, mode: 'ranked', timestamp: '2026-01-01T00:00:00.000Z' },
+			payload: { score: [1, 0], stage: { id: 8, name: "Yoshi's Story" }, mode: 'ranked', gameEndMethod: 'game', lrasInitiatorIndex: null, timestamp: '2026-01-01T00:00:00.000Z' },
 		},
 		[WebhookEvent.GameScore]: {
 			eventName: 'GameScore',
