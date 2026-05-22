@@ -92,10 +92,10 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		score: { p1: 0, p2: 0 }, gameNum: 1, phase: 'striking',
 		starters: [
 			{ id: 2, name: 'Fountain of Dreams' },
-			{ id: 3, name: 'Pokémon Stadium' },
 			{ id: 8, name: "Yoshi's Story" },
 			{ id: 28, name: 'Dream Land N64' },
 			{ id: 31, name: 'Battlefield' },
+			{ id: 32, name: 'Final Destination' },
 		],
 		counterpicks: [{ id: 3, name: 'Pokémon Stadium' }],
 		strikes: [{ id: 2, name: 'Fountain of Dreams' }],

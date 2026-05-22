@@ -71,10 +71,10 @@
 				phase: 'striking',
 				starters: [
 					{ id: 2, name: 'Fountain of Dreams' },
-					{ id: 3, name: 'Pokémon Stadium' },
 					{ id: 8, name: "Yoshi's Story" },
 					{ id: 28, name: 'Dream Land N64' },
 					{ id: 31, name: 'Battlefield' },
+					{ id: 32, name: 'Final Destination' },
 				],
 				counterpicks: [{ id: 3, name: 'Pokémon Stadium' }],
 				strikes: [{ id: 2, name: 'Fountain of Dreams' }],
@@ -526,6 +526,7 @@
 		cursor: pointer;
 		color: var(--secondary-color);
 		text-align: left;
+		transform: none !important;
 	}
 
 	.schema-name { font-size: 0.8rem; font-weight: 600; }
