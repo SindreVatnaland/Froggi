@@ -18,7 +18,7 @@
 	import ElectronVersionButton from './ElectronVersionButton.svelte';
 	import { tooltip } from 'svooltip';
 	import BuyMeACoffee from './BuyMeACoffee.svelte';
-	import { House, Smartphone, Settings } from 'lucide-svelte';
+	import { House, Smartphone, Settings, FlaskConical } from 'lucide-svelte';
 
 	// Non-overlay pages: Electron always on, browser timer-based.
 	// Overlay pages: timer-based for both (auto-hide, reveal on activity).
@@ -194,6 +194,11 @@
 							<NavButton click={() => goto('/settings')}>
 								<Settings size={22} strokeWidth={1.5} />
 							</NavButton>
+							{#if import.meta.env.DEV}
+								<NavButton click={() => goto('/obs/debug')}>
+									<FlaskConical size={22} strokeWidth={1.5} />
+								</NavButton>
+							{/if}
 						</div>
 					</div>
 				</div>

@@ -775,6 +775,8 @@ export enum CustomElement {
     InGameCurrentPlayerJumpsRemaining = 8012,
     InGameCurrentPlayerShieldSize = 8013,
     InGameCurrentPlayerLCancel = 8014,
+    InGameCurrentPlayerStateCategory = 8015,
+    InGameCurrentPlayerTechnique = 8016,
 
     // Action State — Player 1
     InGamePlayer1ActionStateName = 8100,
@@ -792,6 +794,8 @@ export enum CustomElement {
     InGamePlayer1JumpsRemaining = 8112,
     InGamePlayer1ShieldSize = 8113,
     InGamePlayer1LCancel = 8114,
+    InGamePlayer1StateCategory = 8115,
+    InGamePlayer1Technique = 8116,
 
     // Action State — Player 2
     InGamePlayer2ActionStateName = 8200,
@@ -809,4 +813,6 @@ export enum CustomElement {
     InGamePlayer2JumpsRemaining = 8212,
     InGamePlayer2ShieldSize = 8213,
     InGamePlayer2LCancel = 8214,
+    InGamePlayer2StateCategory = 8215,
+    InGamePlayer2Technique = 8216,
 }

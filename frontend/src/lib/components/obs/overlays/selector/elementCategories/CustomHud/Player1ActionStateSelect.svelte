@@ -26,4 +26,6 @@
 	<SelectOption description="Player 1 jumps remaining" value={CustomElement.InGamePlayer1JumpsRemaining} on:select={select}>Jumps Remaining</SelectOption>
 	<SelectOption description="Player 1 shield size" value={CustomElement.InGamePlayer1ShieldSize} on:select={select}>Shield Size</SelectOption>
 	<SelectOption description="Player 1 L-cancel result — ✓ / ✗ / empty" value={CustomElement.InGamePlayer1LCancel} on:select={select}>L-Cancel</SelectOption>
+	<SelectOption description="Player 1 high-level state category (Jumping, Attacking, Hitstun…)" value={CustomElement.InGamePlayer1StateCategory} on:select={select}>State Category</SelectOption>
+	<SelectOption description="Player 1 last detected technique — clears after 3 seconds" value={CustomElement.InGamePlayer1Technique} on:select={select}>Technique</SelectOption>
 </div>

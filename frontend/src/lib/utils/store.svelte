@@ -27,6 +27,7 @@
 	import { Froggi } from '$lib/models/types/froggiConfigTypes';
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import type { WebhookProfile } from '$lib/models/types/webhook';
+	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -106,4 +107,7 @@
 	export const strikeState = writable<StrikeState | undefined>(undefined);
 	export const webhookProfiles = writable<WebhookProfile[]>([]);
 	export const webhooksEnabled = writable<boolean>(true);
+
+	export const techniqueEvents = writable<Record<number, TechniqueDetectedPayload | null>>({});
+	export const actionStateHistories = writable<Record<number, ActionStateHistoryEntry[]>>({});
 </script>

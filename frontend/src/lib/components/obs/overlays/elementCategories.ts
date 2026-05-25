@@ -126,6 +126,8 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGameCurrentPlayerJumpsRemaining,
 	CustomElement.InGameCurrentPlayerShieldSize,
 	CustomElement.InGameCurrentPlayerLCancel,
+	CustomElement.InGameCurrentPlayerStateCategory,
+	CustomElement.InGameCurrentPlayerTechnique,
 	// Action state — Player 1
 	CustomElement.InGamePlayer1ActionStateName,
 	CustomElement.InGamePlayer1ActionStateId,
@@ -142,6 +144,8 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGamePlayer1JumpsRemaining,
 	CustomElement.InGamePlayer1ShieldSize,
 	CustomElement.InGamePlayer1LCancel,
+	CustomElement.InGamePlayer1StateCategory,
+	CustomElement.InGamePlayer1Technique,
 	// Action state — Player 2
 	CustomElement.InGamePlayer2ActionStateName,
 	CustomElement.InGamePlayer2ActionStateId,
@@ -158,6 +162,8 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGamePlayer2JumpsRemaining,
 	CustomElement.InGamePlayer2ShieldSize,
 	CustomElement.InGamePlayer2LCancel,
+	CustomElement.InGamePlayer2StateCategory,
+	CustomElement.InGamePlayer2Technique,
 ]);
 
 export const RECENTGAME_ELEMENTS = new Set<CustomElement>([

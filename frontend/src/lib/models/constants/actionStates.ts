@@ -301,3 +301,33 @@ export const getActionStateName = (id: number | undefined | null): string => {
 	if (id == null) return '—';
 	return ACTION_STATE_NAMES[id] ?? `State ${id}`;
 };
+
+export const getStateCategory = (id: number | undefined | null): string => {
+	if (id == null) return '—';
+	if (id <= 10) return 'Dead';
+	if (id <= 13) return 'Respawning';
+	if (id <= 17) return 'Idle';
+	if (id === 18) return 'Walking';
+	if (id === 19) return 'Turning';
+	if (id <= 23) return 'Dashing';
+	if (id <= 30) return 'Jumping';
+	if (id <= 34) return 'Falling';
+	if (id === 38) return 'Tumbling';
+	if (id <= 41) return 'Crouching';
+	if (id === STATE_LANDING_FALL_SPECIAL) return 'Special Landing';
+	if (id <= 47) return 'Landing';
+	if (id <= 74) return 'Attacking';
+	if (id <= 112) return 'Hitstun';
+	if (id <= 177) return 'Other';
+	if (id <= STATE_GUARD_END) return 'Shielding';
+	if (id <= STATE_DOWN_END) return 'Down';
+	if (id <= STATE_TECH_END) return 'Tech';
+	if (id <= 214) return 'Shield Break';
+	if (id <= 222) return 'Grabbing';
+	if (id <= STATE_CAPTURE_END) return 'Grabbed';
+	if (id <= STATE_AIR_DODGE) return 'Dodging';
+	if (id === 244) return 'Platform Drop';
+	if (id <= 251) return 'Teetering';
+	if (id <= STATE_CLIFF_END) return 'Ledge';
+	return 'Other';
+};

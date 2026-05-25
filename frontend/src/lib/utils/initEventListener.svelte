@@ -36,6 +36,8 @@
 		strikeState,
 		webhookProfiles,
 		webhooksEnabled,
+		techniqueEvents,
+		actionStateHistories,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -333,6 +335,23 @@
 				break;
 			case 'WebhooksEnabled':
 				webhooksEnabled.set(payload[0] as Parameters<MessageEvents['WebhooksEnabled']>[0]);
+				break;
+			case 'TechniqueDetected':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['TechniqueDetected']>[0];
+					if (!value) return;
+					techniqueEvents.update((prev) => ({ ...prev, [value.playerIndex]: value }));
+					setTimeout(() => {
+						techniqueEvents.update((prev) => ({ ...prev, [value.playerIndex]: null }));
+					}, 3000);
+				})();
+				break;
+			case 'ActionStateHistory':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['ActionStateHistory']>[0];
+					if (!value) return;
+					actionStateHistories.update((prev) => ({ ...prev, [value.playerIndex]: value.history }));
+				})();
 				break;
 		}
 	}

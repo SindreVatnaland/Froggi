@@ -26,4 +26,6 @@
 	<SelectOption description="Current player jumps remaining" value={CustomElement.InGameCurrentPlayerJumpsRemaining} on:select={select}>Jumps Remaining</SelectOption>
 	<SelectOption description="Current player shield size" value={CustomElement.InGameCurrentPlayerShieldSize} on:select={select}>Shield Size</SelectOption>
 	<SelectOption description="Current player L-cancel result — ✓ / ✗ / empty" value={CustomElement.InGameCurrentPlayerLCancel} on:select={select}>L-Cancel</SelectOption>
+	<SelectOption description="Current player high-level state category (Jumping, Attacking, Hitstun…)" value={CustomElement.InGameCurrentPlayerStateCategory} on:select={select}>State Category</SelectOption>
+	<SelectOption description="Current player last detected technique — clears after 3 seconds" value={CustomElement.InGameCurrentPlayerTechnique} on:select={select}>Technique</SelectOption>
 </div>

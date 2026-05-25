@@ -8,12 +8,15 @@
 	import InGameCharacterSeriesSymbol from '$lib/components/obs/overlays/element/inGame/InGameCharacterSeriesSymbol.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import {
-		getActionStateName, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
+		getActionStateName, getStateCategory, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
 		HURTBOX_INVULNERABLE, HURTBOX_INTANGIBLE, STATE_LANDING_FALL_SPECIAL, STATE_AIR_DODGE,
 	} from '$lib/models/constants/actionStates';
+	import { techniqueEvents } from '$lib/utils/store.svelte';
+	import { TECHNIQUE_LABELS } from '$lib/models/constants/techniqueLabels';
 
 	$: _cppost = gameFrame?.players?.[player?.playerIndex ?? 0]?.post;
 	$: _cpstateId = _cppost?.actionStateId ?? null;
+	$: _cptechnique = $techniqueEvents[player?.playerIndex ?? 0]?.techniqueId ?? null;
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
 	import { Player } from '$lib/models/types/slippiData';
 	import { FrameEntryType } from '@slippi/slippi-js';
@@ -118,4 +121,10 @@
 	<TextElement {style} {dataItem}>{defaultPreview ? 50 : Math.floor(_cppost?.shieldSize ?? 0)}</TextElement>
 {:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerLCancel}
 	<TextElement {style} {dataItem}>{defaultPreview ? '✓' : _cppost?.lCancelStatus === 1 ? '✓' : _cppost?.lCancelStatus === 2 ? '✗' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerStateCategory}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Dashing' : getStateCategory(_cpstateId)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerTechnique}
+	{#key _cptechnique}
+		<TextElement {style} {dataItem}>{defaultPreview ? 'Wavedash' : (_cptechnique ? (TECHNIQUE_LABELS[_cptechnique] ?? _cptechnique) : '')}</TextElement>
+	{/key}
 {/if}

@@ -36,6 +36,7 @@ import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
+import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -175,6 +176,9 @@ export interface MessageEvents {
 	SetWebhooksEnabled: (enabled: boolean) => void;
 	TestWebhookProfile: (profileId: string) => void;
 	RankChange: (diff: RankChangeDiff) => void;
+
+	TechniqueDetected: (data: TechniqueDetectedPayload) => void;
+	ActionStateHistory: (data: ActionStateHistoryPayload) => void;
 }
 
 export class TypedEmitter extends localEmitter {

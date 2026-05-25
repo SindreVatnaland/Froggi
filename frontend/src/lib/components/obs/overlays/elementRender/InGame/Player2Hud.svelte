@@ -11,12 +11,15 @@
 	import InGameCharacterRender from '../../element/inGame/InGameCharacterRender.svelte';
 	import InGameCharacterSeriesSymbol from '../../element/inGame/InGameCharacterSeriesSymbol.svelte';
 	import {
-		getActionStateName, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
+		getActionStateName, getStateCategory, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
 		HURTBOX_INVULNERABLE, HURTBOX_INTANGIBLE, STATE_LANDING_FALL_SPECIAL, STATE_AIR_DODGE,
 	} from '$lib/models/constants/actionStates';
+	import { techniqueEvents } from '$lib/utils/store.svelte';
+	import { TECHNIQUE_LABELS } from '$lib/models/constants/techniqueLabels';
 
 	$: _p2post = gameFrame?.players?.[player?.playerIndex ?? 0]?.post;
 	$: _p2stateId = _p2post?.actionStateId ?? null;
+	$: _p2technique = $techniqueEvents[player?.playerIndex ?? 1]?.techniqueId ?? null;
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
@@ -118,4 +121,10 @@
 	<TextElement {style} {dataItem}>{defaultPreview ? 50 : Math.floor(_p2post?.shieldSize ?? 0)}</TextElement>
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2LCancel}
 	<TextElement {style} {dataItem}>{defaultPreview ? '✓' : _p2post?.lCancelStatus === 1 ? '✓' : _p2post?.lCancelStatus === 2 ? '✗' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2StateCategory}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Dashing' : getStateCategory(_p2stateId)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer2Technique}
+	{#key _p2technique}
+		<TextElement {style} {dataItem}>{defaultPreview ? 'Wavedash' : (_p2technique ? (TECHNIQUE_LABELS[_p2technique] ?? _p2technique) : '')}</TextElement>
+	{/key}
 {/if}
