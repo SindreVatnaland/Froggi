@@ -137,6 +137,7 @@ export interface PlayerStockDiff {
 	displayName: string | null;
 	isCurrentPlayer: boolean;
 	current: number;
+	deathDirection: 'left' | 'right' | 'up' | 'down' | 'star' | null;
 }
 
 export interface StockChangePayload {

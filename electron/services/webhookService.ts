@@ -119,9 +119,9 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, prev: 45.3, current: 67.8, diff: 22.5 },
 	},
 	[WebhookEvent.StockChange]: {
-		p1: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
+		p1: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3, deathDirection: 'left' },
 		p2: null,
-		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
+		currentPlayer: { connectCode: 'TEST#001', displayName: 'Player 1', isCurrentPlayer: true, current: 3, deathDirection: 'left' },
 	} satisfies StockChangePayload,
 	[WebhookEvent.PlayerInfo]: {
 		p1: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
@@ -134,8 +134,15 @@ const GAME_END_METHODS: Record<number, string> = {
 	0: 'unresolved', 1: 'time', 2: 'game', 3: 'resolved', 7: 'no_contest',
 };
 
+const DEATH_DIRECTION_MAP: Record<number, PlayerStockDiff['deathDirection']> = {
+	0: 'down', 1: 'left', 2: 'right',
+	3: 'up', 4: 'star', 5: 'star',
+	6: 'up', 7: 'up', 8: 'up', 9: 'up', 10: 'up',
+};
+
 const DEBOUNCE_MS: Partial<Record<WebhookEvent, number>> = {
 	[WebhookEvent.PercentChange]: 300,
+	[WebhookEvent.StockChange]: 0,
 };
 
 @singleton()
@@ -222,9 +229,8 @@ export class WebhookService {
 				Math.round(p1curr.percent * 10) !== Math.round(p1prev.percent * 10) ||
 				(p2curr && p2prev && Math.round(p2curr.percent * 10) !== Math.round(p2prev.percent * 10));
 
-			const stockChanged =
-				p1curr.stocks !== p1prev.stocks ||
-				(p2curr && p2prev && p2curr.stocks !== p2prev.stocks);
+			const p1StockChanged = p1curr.stocks !== p1prev.stocks;
+			const p2StockChanged = Boolean(p2curr && p2prev && p2curr.stocks !== p2prev.stocks);
 
 			if (percentChanged) {
 				const p1diff = this.buildDiff(p1, p1prev.percent, p1curr.percent, ccCode);
@@ -239,12 +245,15 @@ export class WebhookService {
 				this.dispatch(WebhookEvent.PercentChange, payload);
 			}
 
-			if (stockChanged) {
+			if (p1StockChanged || p2StockChanged) {
+				const p1StateId = p1StockChanged ? (p1post?.actionStateId ?? null) : null;
+				const p2StateId = p2StockChanged ? (p2post?.actionStateId ?? null) : null;
+				const cpStateId = cpPlayer === p2 ? p2StateId : p1StateId;
 				const payload: StockChangePayload = {
-					p1: this.buildStockDiff(p1, p1curr.stocks, ccCode),
-					p2: p2 && p2curr ? this.buildStockDiff(p2, p2curr.stocks, ccCode) : null,
+					p1: this.buildStockDiff(p1, p1curr.stocks, ccCode, p1StateId),
+					p2: p2 && p2curr ? this.buildStockDiff(p2, p2curr.stocks, ccCode, p2StateId) : null,
 					currentPlayer: cpPlayer
-						? this.buildStockDiff(cpPlayer, cpPlayer === p2 ? (p2curr?.stocks ?? 0) : p1curr.stocks, ccCode)
+						? this.buildStockDiff(cpPlayer, cpPlayer === p2 ? (p2curr?.stocks ?? 0) : p1curr.stocks, ccCode, cpStateId)
 						: null,
 				};
 				this.dispatch(WebhookEvent.StockChange, payload);
@@ -396,12 +405,13 @@ export class WebhookService {
 		};
 	}
 
-	private buildStockDiff(player: Player, current: number, ccCode: string | null): PlayerStockDiff {
+	private buildStockDiff(player: Player, current: number, ccCode: string | null, actionStateId: number | null): PlayerStockDiff {
 		return {
 			connectCode: player.connectCode ?? null,
 			displayName: player.displayName ?? null,
 			isCurrentPlayer: Boolean(ccCode && player.connectCode === ccCode),
 			current,
+			deathDirection: actionStateId != null ? (DEATH_DIRECTION_MAP[actionStateId] ?? null) : null,
 		};
 	}
 

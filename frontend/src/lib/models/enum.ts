@@ -114,6 +114,10 @@ export enum ElementCategory {
 	Game3Summary = 'Game 3 Summary',
 	Game4Summary = 'Game 4 Summary',
 	Game5Summary = 'Game 5 Summary',
+
+	CurrentPlayerActionState = 'Current Player Action State',
+	Player1ActionState = 'Player 1 Action State',
+	Player2ActionState = 'Player 2 Action State',
 }
 
 export enum InGameState {

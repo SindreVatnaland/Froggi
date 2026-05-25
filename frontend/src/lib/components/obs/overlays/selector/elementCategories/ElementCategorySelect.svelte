@@ -47,6 +47,9 @@
 	import Player2PredictedSlippiData from './PredictedSlippiData/Player2PredictedSlippiData.svelte';
 	import Player1PredictedSlippiData from './PredictedSlippiData/Player1PredictedSlippiData.svelte';
 	import StrikingElementSelect from './Striking/StrikingElementSelect.svelte';
+	import CurrentPlayerActionStateSelect from './CustomHud/CurrentPlayerActionStateSelect.svelte';
+	import Player1ActionStateSelect from './CustomHud/Player1ActionStateSelect.svelte';
+	import Player2ActionStateSelect from './CustomHud/Player2ActionStateSelect.svelte';
 
 	export let selectedElementId: CustomElement;
 	export let open: boolean;
@@ -103,6 +106,18 @@
 		},
 		{
 			category: ElementCategory.Player2ControllerInput,
+			visible: [LiveStatsScene.InGame].includes($statsScene),
+		},
+		{
+			category: ElementCategory.CurrentPlayerActionState,
+			visible: [LiveStatsScene.InGame].includes($statsScene),
+		},
+		{
+			category: ElementCategory.Player1ActionState,
+			visible: [LiveStatsScene.InGame].includes($statsScene),
+		},
+		{
+			category: ElementCategory.Player2ActionState,
 			visible: [LiveStatsScene.InGame].includes($statsScene),
 		},
 		{
@@ -310,6 +325,15 @@
 				{/if}
 				{#if selectedCategory === ElementCategory.Player2ControllerInput}
 					<Player2ControllerInput on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.CurrentPlayerActionState}
+					<CurrentPlayerActionStateSelect on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.Player1ActionState}
+					<Player1ActionStateSelect on:select={select} />
+				{/if}
+				{#if selectedCategory === ElementCategory.Player2ActionState}
+					<Player2ActionStateSelect on:select={select} />
 				{/if}
 
 				{#if selectedCategory === ElementCategory.CurrentMatchStats}

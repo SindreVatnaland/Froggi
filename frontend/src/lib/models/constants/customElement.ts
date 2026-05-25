@@ -758,4 +758,55 @@ export enum CustomElement {
     StrikeStageDL  = 7530,  // Dream Land N64 (ID 28)
     StrikeStageYS  = 7540,  // Yoshi's Story (ID 8)
     StrikeStagePS  = 7550,  // Pokémon Stadium (ID 3, counterpick)
+
+    // Action State — Current Player
+    InGameCurrentPlayerActionStateName = 8000,
+    InGameCurrentPlayerActionStateId = 8001,
+    InGameCurrentPlayerInvincibilityState = 8002,
+    InGameCurrentPlayerIsAirborne = 8003,
+    InGameCurrentPlayerIsShielding = 8004,
+    InGameCurrentPlayerIsInHitstun = 8005,
+    InGameCurrentPlayerIsInHitlag = 8006,
+    InGameCurrentPlayerIsOnLedge = 8007,
+    InGameCurrentPlayerIsGrabbed = 8008,
+    InGameCurrentPlayerIsInTech = 8009,
+    InGameCurrentPlayerIsWavedashLanding = 8010,
+    InGameCurrentPlayerIsAirdodging = 8011,
+    InGameCurrentPlayerJumpsRemaining = 8012,
+    InGameCurrentPlayerShieldSize = 8013,
+    InGameCurrentPlayerLCancel = 8014,
+
+    // Action State — Player 1
+    InGamePlayer1ActionStateName = 8100,
+    InGamePlayer1ActionStateId = 8101,
+    InGamePlayer1InvincibilityState = 8102,
+    InGamePlayer1IsAirborne = 8103,
+    InGamePlayer1IsShielding = 8104,
+    InGamePlayer1IsInHitstun = 8105,
+    InGamePlayer1IsInHitlag = 8106,
+    InGamePlayer1IsOnLedge = 8107,
+    InGamePlayer1IsGrabbed = 8108,
+    InGamePlayer1IsInTech = 8109,
+    InGamePlayer1IsWavedashLanding = 8110,
+    InGamePlayer1IsAirdodging = 8111,
+    InGamePlayer1JumpsRemaining = 8112,
+    InGamePlayer1ShieldSize = 8113,
+    InGamePlayer1LCancel = 8114,
+
+    // Action State — Player 2
+    InGamePlayer2ActionStateName = 8200,
+    InGamePlayer2ActionStateId = 8201,
+    InGamePlayer2InvincibilityState = 8202,
+    InGamePlayer2IsAirborne = 8203,
+    InGamePlayer2IsShielding = 8204,
+    InGamePlayer2IsInHitstun = 8205,
+    InGamePlayer2IsInHitlag = 8206,
+    InGamePlayer2IsOnLedge = 8207,
+    InGamePlayer2IsGrabbed = 8208,
+    InGamePlayer2IsInTech = 8209,
+    InGamePlayer2IsWavedashLanding = 8210,
+    InGamePlayer2IsAirdodging = 8211,
+    InGamePlayer2JumpsRemaining = 8212,
+    InGamePlayer2ShieldSize = 8213,
+    InGamePlayer2LCancel = 8214,
 }

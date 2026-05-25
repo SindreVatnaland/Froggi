@@ -7,6 +7,13 @@
 	import InGameCharacterRender from '$lib/components/obs/overlays/element/inGame/InGameCharacterRender.svelte';
 	import InGameCharacterSeriesSymbol from '$lib/components/obs/overlays/element/inGame/InGameCharacterSeriesSymbol.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
+	import {
+		getActionStateName, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
+		HURTBOX_INVULNERABLE, HURTBOX_INTANGIBLE, STATE_LANDING_FALL_SPECIAL, STATE_AIR_DODGE,
+	} from '$lib/models/constants/actionStates';
+
+	$: _cppost = gameFrame?.players?.[player?.playerIndex ?? 0]?.post;
+	$: _cpstateId = _cppost?.actionStateId ?? null;
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
 	import { Player } from '$lib/models/types/slippiData';
 	import { FrameEntryType } from '@slippi/slippi-js';
@@ -81,4 +88,34 @@
 			? '3'
 			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.currentComboCount ?? '0'}
 	</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerActionStateName}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Landing (Special Fall)' : getActionStateName(_cpstateId)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerActionStateId}
+	<TextElement {style} {dataItem}>{defaultPreview ? 43 : (_cpstateId ?? '')}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerInvincibilityState}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Invincible' : _cppost?.hurtboxCollisionState === HURTBOX_INVULNERABLE ? 'Invincible' : _cppost?.hurtboxCollisionState === HURTBOX_INTANGIBLE ? 'Intangible' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsAirborne}
+	<TextElement {style} {dataItem}>{defaultPreview || _cppost?.isAirborne ? 'Airborne' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsShielding}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cpstateId != null && isShielding(_cpstateId)) ? 'Shielding' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsInHitstun}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cpstateId != null && isDamaged(_cpstateId)) ? 'Hitstun' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsInHitlag}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cppost?.hitlagRemaining ?? 0) > 0 ? 'Hitlag' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsOnLedge}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cpstateId != null && isOnLedge(_cpstateId)) ? 'Ledge' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsGrabbed}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cpstateId != null && isCaptured(_cpstateId)) ? 'Grabbed' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsInTech}
+	<TextElement {style} {dataItem}>{defaultPreview || (_cpstateId != null && isInTech(_cpstateId)) ? 'Tech' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsWavedashLanding}
+	<TextElement {style} {dataItem}>{defaultPreview || _cpstateId === STATE_LANDING_FALL_SPECIAL ? 'Special Land' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerIsAirdodging}
+	<TextElement {style} {dataItem}>{defaultPreview || _cpstateId === STATE_AIR_DODGE ? 'Air Dodge' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerJumpsRemaining}
+	<TextElement {style} {dataItem}>{defaultPreview ? 1 : (_cppost?.jumpsRemaining ?? 0)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerShieldSize}
+	<TextElement {style} {dataItem}>{defaultPreview ? 50 : Math.floor(_cppost?.shieldSize ?? 0)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGameCurrentPlayerLCancel}
+	<TextElement {style} {dataItem}>{defaultPreview ? '✓' : _cppost?.lCancelStatus === 1 ? '✓' : _cppost?.lCancelStatus === 2 ? '✗' : ''}</TextElement>
 {/if}

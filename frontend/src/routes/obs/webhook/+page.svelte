@@ -112,9 +112,9 @@
 			eventName: 'StockChange',
 			timestamp: '2026-01-01T00:00:00.000Z',
 			payload: {
-				p1: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
+				p1: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3, deathDirection: 'left' },
 				p2: null,
-				currentPlayer: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3 },
+				currentPlayer: { connectCode: 'ABC#123', displayName: 'Player 1', isCurrentPlayer: true, current: 3, deathDirection: 'left' },
 			},
 		},
 		[WebhookEvent.PlayerInfo]: {

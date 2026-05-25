@@ -21,8 +21,8 @@
 		recentGames,
 		statsScene,
 	} from '$lib/utils/store.svelte';
-	import { page } from '$app/stores';
 	import { isNil } from 'lodash';
+	import { getContext } from 'svelte';
 	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
 	import {
 		CUSTOM_ELEMENTS,
@@ -52,7 +52,7 @@
 
 	$: _overlayId = overlayId ?? $page.params.overlay;
 
-	$: isInjected = Boolean($page.url.searchParams.get('isInjected'));
+	$: isInjected = Boolean(getContext('isInjected'));
 	$: isUsingDisallowedInjectedElement = isDisallowedInjectedElement(dataItem.elementId);
 	$: shouldPreview = !isInjected || (isInjected && !isUsingDisallowedInjectedElement);
 

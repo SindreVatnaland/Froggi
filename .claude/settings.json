@@ -103,7 +103,11 @@
       "Bash(python3)",
       "Bash(sips -g all /Users/sindrevatnaland/VSCode/Froggi/build/icon-tray.png)",
       "Bash(sips -g all /Users/sindrevatnaland/VSCode/Froggi/frontend/static/icon.png)",
-      "Bash(grep \"\\\\.svelte$\")"
+      "Bash(grep \"\\\\.svelte$\")",
+      "WebFetch(domain:docs.google.com)",
+      "Bash(gh repo *)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:gist.githubusercontent.com)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

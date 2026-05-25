@@ -10,6 +10,13 @@
 	import InGameCharacterIcon from '../../element/inGame/InGameCharacterIcon.svelte';
 	import InGameCharacterRender from '../../element/inGame/InGameCharacterRender.svelte';
 	import InGameCharacterSeriesSymbol from '../../element/inGame/InGameCharacterSeriesSymbol.svelte';
+	import {
+		getActionStateName, isDamaged, isShielding, isOnLedge, isCaptured, isInTech,
+		HURTBOX_INVULNERABLE, HURTBOX_INTANGIBLE, STATE_LANDING_FALL_SPECIAL, STATE_AIR_DODGE,
+	} from '$lib/models/constants/actionStates';
+
+	$: _p1post = gameFrame?.players?.[player?.playerIndex ?? 0]?.post;
+	$: _p1stateId = _p1post?.actionStateId ?? null;
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
@@ -81,4 +88,34 @@
 			? 3
 			: gameFrame?.players?.[player?.playerIndex ?? 0]?.post.currentComboCount ?? '0'}
 	</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1ActionStateName}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Landing (Special Fall)' : getActionStateName(_p1stateId)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1ActionStateId}
+	<TextElement {style} {dataItem}>{defaultPreview ? 43 : (_p1stateId ?? '')}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1InvincibilityState}
+	<TextElement {style} {dataItem}>{defaultPreview ? 'Invincible' : _p1post?.hurtboxCollisionState === HURTBOX_INVULNERABLE ? 'Invincible' : _p1post?.hurtboxCollisionState === HURTBOX_INTANGIBLE ? 'Intangible' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsAirborne}
+	<TextElement {style} {dataItem}>{defaultPreview || _p1post?.isAirborne ? 'Airborne' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsShielding}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1stateId != null && isShielding(_p1stateId)) ? 'Shielding' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsInHitstun}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1stateId != null && isDamaged(_p1stateId)) ? 'Hitstun' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsInHitlag}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1post?.hitlagRemaining ?? 0) > 0 ? 'Hitlag' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsOnLedge}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1stateId != null && isOnLedge(_p1stateId)) ? 'Ledge' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsGrabbed}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1stateId != null && isCaptured(_p1stateId)) ? 'Grabbed' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsInTech}
+	<TextElement {style} {dataItem}>{defaultPreview || (_p1stateId != null && isInTech(_p1stateId)) ? 'Tech' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsWavedashLanding}
+	<TextElement {style} {dataItem}>{defaultPreview || _p1stateId === STATE_LANDING_FALL_SPECIAL ? 'Special Land' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1IsAirdodging}
+	<TextElement {style} {dataItem}>{defaultPreview || _p1stateId === STATE_AIR_DODGE ? 'Air Dodge' : ''}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1JumpsRemaining}
+	<TextElement {style} {dataItem}>{defaultPreview ? 1 : (_p1post?.jumpsRemaining ?? 0)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1ShieldSize}
+	<TextElement {style} {dataItem}>{defaultPreview ? 50 : Math.floor(_p1post?.shieldSize ?? 0)}</TextElement>
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1LCancel}
+	<TextElement {style} {dataItem}>{defaultPreview ? '✓' : _p1post?.lCancelStatus === 1 ? '✓' : _p1post?.lCancelStatus === 2 ? '✗' : ''}</TextElement>
 {/if}

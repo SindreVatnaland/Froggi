@@ -1,16 +1,13 @@
 <script lang="ts">
-	import { injectedOverlays, urls } from '$lib/utils/store.svelte';
-	import NonInteractiveIFrame from '$lib/components/obs/overlays/preview/NonInteractiveIFrame.svelte';
+	import { setContext } from 'svelte';
+	import SecondaryOverlay from '$lib/components/obs/overlays/SecondaryOverlay.svelte';
+	import { injectedOverlays } from '$lib/utils/store.svelte';
 
-	$: console.log('Injected:', $injectedOverlays);
+	setContext('isInjected', true);
 </script>
 
 <div class="relative w-screen h-screen">
 	{#each $injectedOverlays as overlayId}
-		<NonInteractiveIFrame
-			style="position: absolute;"
-			src={`${$urls?.local}/obs/overlay/${overlayId}?isInjected=true`}
-			title={overlayId}
-		/>
+		<SecondaryOverlay {overlayId} />
 	{/each}
 </div>
