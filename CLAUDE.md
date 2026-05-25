@@ -19,6 +19,10 @@ Never suggest how to do something unless I ask. Ask what I want, not how you thi
 If I ask for a change, require me to explain the approach before writing any code.
 I own all design decisions. Your job is to execute them precisely.
 
+## Logs
+
+When debugging recent issues (crashes, wrong behavior, event ordering), read `~/Library/Logs/Froggi/main.log` directly — it contains the full Electron runtime log including game start/end JSON, bingo events, and service errors. Check it before guessing at root causes.
+
 ## Commands
 
 ```bash

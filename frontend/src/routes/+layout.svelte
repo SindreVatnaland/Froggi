@@ -66,6 +66,7 @@
 	const setOverlayPage = (pathname: string) => {
 		isOverlayPage.set(
 			pathname.startsWith('/obs/overlay/') ||
+			pathname.startsWith('/obs/bingo/overlay') ||
 			pathname.startsWith('/set/p/') ||
 			pathname.startsWith('/client/')
 		);

@@ -720,6 +720,10 @@ export const SLIPPIRANK_ELEMENTS = new Set<CustomElement>([
 	CustomElement.SlippiRankChangeRatingDifference,
 ]);
 
+export const BINGO_ELEMENTS = new Set<CustomElement>([
+	CustomElement.BingoBoard,
+]);
+
 export const STRIKING_ELEMENTS = new Set<CustomElement>([
 	CustomElement.StrikeRpsPlayer1Choice,
 	CustomElement.StrikeRpsPlayer2Choice,

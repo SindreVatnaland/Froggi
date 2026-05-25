@@ -107,11 +107,17 @@
       "WebFetch(domain:docs.google.com)",
       "Bash(gh repo *)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:gist.githubusercontent.com)"
+      "WebFetch(domain:gist.githubusercontent.com)",
+      "Bash(xargs ls)",
+      "Bash(xargs ls -la)",
+      "Bash(cat > *)",
+      "Bash(node -e \"const {ConversionType} = require\\('./node_modules/@slippi/slippi-js'\\); console.log\\(ConversionType\\)\")",
+      "Bash(awk -F: '$2 > 860 && $2 < 900')"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",
-      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/[num]"
+      "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p/[num]",
+      "/tmp"
     ]
   }
 }

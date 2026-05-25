@@ -118,6 +118,8 @@ export enum ElementCategory {
 	CurrentPlayerActionState = 'Current Player Action State',
 	Player1ActionState = 'Player 1 Action State',
 	Player2ActionState = 'Player 2 Action State',
+
+	Bingo = 'Bingo',
 }
 
 export enum InGameState {

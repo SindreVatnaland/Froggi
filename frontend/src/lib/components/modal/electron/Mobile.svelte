@@ -56,6 +56,9 @@
 						<p class="text-xs opacity-35 leading-relaxed">
 							Tailscale keeps the URL stable — no need to re-scan if your IP changes.
 						</p>
+						<p class="text-xs opacity-35 leading-relaxed mt-1">
+							⚠ Do not share this URL — it gives access to your Froggi instance.
+						</p>
 					{:else}
 						<p class="text-xs opacity-35 leading-relaxed">
 							The URL may change if your local IP address changes. Re-scan the QR code if the app stops working.

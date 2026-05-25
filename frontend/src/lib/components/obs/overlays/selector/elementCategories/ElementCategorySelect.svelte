@@ -47,6 +47,7 @@
 	import Player2PredictedSlippiData from './PredictedSlippiData/Player2PredictedSlippiData.svelte';
 	import Player1PredictedSlippiData from './PredictedSlippiData/Player1PredictedSlippiData.svelte';
 	import StrikingElementSelect from './Striking/StrikingElementSelect.svelte';
+	import BingoElementSelect from './Bingo/BingoElementSelect.svelte';
 	import CurrentPlayerActionStateSelect from './CustomHud/CurrentPlayerActionStateSelect.svelte';
 	import Player1ActionStateSelect from './CustomHud/Player1ActionStateSelect.svelte';
 	import Player2ActionStateSelect from './CustomHud/Player2ActionStateSelect.svelte';
@@ -62,6 +63,10 @@
 	let selectedCategory: LiveStatsScene | ElementCategory = $statsScene;
 
 	$: buttons = [
+		{
+			category: ElementCategory.Bingo,
+			visible: true,
+		},
 		{
 			category: ElementCategory.StageStriking,
 			visible: true,
@@ -299,6 +304,9 @@
 				out:fly={{ duration: 100, x: -16 }}
 				class="elem-inner"
 			>
+				{#if selectedCategory === ElementCategory.Bingo}
+					<BingoElementSelect on:select={select} />
+				{/if}
 				{#if selectedCategory === ElementCategory.StageStriking}
 					<StrikingElementSelect on:select={select} />
 				{/if}

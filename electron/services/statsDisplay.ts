@@ -16,14 +16,18 @@ import { delay, inject, singleton } from 'tsyringe';
 import { Api } from './api';
 import {
 	CurrentPlayer,
+	EdgeGuard,
 	GameStartTypeExtended,
 	GameStats,
+	OverallTypeExtended,
 	Player,
 	Rank,
 	RankedNetplayProfile,
 	SlippiLauncherSettings,
 	StatsTypeExtended,
 } from '../../frontend/src/lib/models/types/slippiData';
+import { STAGE_DATA } from '../../frontend/src/lib/models/constants/stageData';
+import { isDamaged } from '../../frontend/src/lib/models/constants/actionStates';
 import { InGameState, LiveStatsScene, NotificationType } from '../../frontend/src/lib/models/enum';
 import fs from 'fs/promises';
 import { ElectronGamesStore } from './store/storeGames';
@@ -45,6 +49,53 @@ import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
 import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
 import { getGameMode } from '../../frontend/src/lib/utils/gamePredicates';
+
+function computeEdgeguardStats(
+	frames: Record<number, FrameEntryType>,
+	defenderIdx: number,
+	stageData: { leftLedgeX: number; rightLedgeX: number },
+): EdgeGuard {
+	let attempts = 0;
+	let successes = 0;
+	let attemptActive = false;
+	let prevStocks = -1;
+
+	const sortedFrames = Object.values(frames).sort((a, b) => (a.frame ?? 0) - (b.frame ?? 0));
+	for (const frameEntry of sortedFrames) {
+		const defPost = frameEntry.players?.[defenderIdx]?.post;
+		if (!defPost) continue;
+
+		const defX = defPost.positionX ?? 0;
+		const defStocks = defPost.stocksRemaining ?? 0;
+		const offStage = defX < stageData.leftLedgeX || defX > stageData.rightLedgeX;
+		const inHitstun = isDamaged(defPost.actionStateId ?? -1);
+		const stockLost = prevStocks > 0 && defStocks < prevStocks;
+
+		if (!attemptActive) {
+			if (offStage && inHitstun) {
+				attemptActive = true;
+				attempts++;
+			}
+		} else {
+			if (stockLost) {
+				successes++;
+				attemptActive = false;
+			} else if (!offStage && !inHitstun) {
+				attemptActive = false;
+			}
+		}
+		prevStocks = defStocks;
+	}
+
+	const unsuccessful = attempts - successes;
+	return {
+		totalAttempts: attempts,
+		successfulAttempts: successes,
+		unsuccessfulAttempts: unsuccessful,
+		successfulAttemptsPercent: attempts > 0 ? (successes / attempts) * 100 : 0,
+		unsuccessfulAttemptsPercent: attempts > 0 ? (unsuccessful / attempts) * 100 : 0,
+	};
+}
 
 @singleton()
 export class StatsDisplay {
@@ -124,7 +175,7 @@ export class StatsDisplay {
 	}
 
 	async handleGameStart(settings: GameStartType) {
-		this.log.info("Game start:", settings);
+		this.log.info("Game start:\n" + JSON.stringify(settings, null, 2));
 		this.cancelSimulation();
 		this.packetCapture.stopPacketCapture();
 		if (!settings) return;
@@ -177,7 +228,7 @@ export class StatsDisplay {
 			await this.storeCurrentPlayer.setCurrentPlayerBaseData(currentPlayer);
 		}
 
-		this.log.info("Current players:", currentPlayers);
+		this.log.debug("Current players:", currentPlayers);
 		if (currentPlayers.every(p => "rank" in p)) {
 			this.storePlayers.setCurrentPlayers(currentPlayers);
 		}
@@ -189,7 +240,7 @@ export class StatsDisplay {
 		latestGameFrame: FrameEntryType | null,
 		settings: GameStartType | GameStartTypeExtended,
 	) {
-		this.log.info("Game end:", gameEnd)
+		this.log.info("Game end:\n" + JSON.stringify(gameEnd, null, 2));
 		this.cancelSimulation();
 		this.packetCapture.startPacketCapture();
 		this.stopPauseInterval();
@@ -209,6 +260,7 @@ export class StatsDisplay {
 		}
 
 		gameStats = await this.handleGameSetStats(gameStats);
+		if (gameStats) this.storeLiveStats.setGameStats(gameStats);
 		await this.handlePostGameScene(gameStats);
 		this.storeLiveStats.deleteGameFrame();
 		setTimeout(() => {
@@ -218,14 +270,14 @@ export class StatsDisplay {
 
 	private async handlePostGameScene(game: GameStats | undefined): Promise<void> {
 		if (isNil(game)) return;
-		this.log.info("Handle post game scene:")
+		this.log.debug("Handle post game scene:")
 
 		const playerConnectCode = this.storeSettings.getCurrentPlayerConnectCode()
 
 		const bestOf = this.storeLiveStats.getBestOf();
-		this.log.info("Best of:", bestOf)
+		this.log.debug("Best of:", bestOf)
 		const isPostSet = game.score.some((score) => score >= Math.ceil(bestOf / 2));
-		this.log.info("Is post set:", isPostSet)
+		this.log.debug("Is post set:", isPostSet)
 		const isRanked = game.settings?.matchInfo?.mode === 'ranked';
 		const player = await this.storeCurrentPlayer.getCurrentPlayer();
 
@@ -339,7 +391,7 @@ export class StatsDisplay {
 	}
 
 	private async getCurrentPlayersWithRankStats(settings: GameStartType, isNewGame: boolean): Promise<Player[]> {
-		this.log.info("Getting current players with rank stats")
+		this.log.debug("Getting current players with rank stats")
 
 		const currentPlayers = settings.players.filter((player) => player);
 		const previousPlayers = this.storePlayers.getCurrentPlayers();
@@ -531,12 +583,29 @@ export class StatsDisplay {
 		return gameStats;
 	}
 
-	// TODO: Add additional data not included in the default stats
 	private enrichPostGameStats(game: SlippiGame | null): StatsTypeExtended | null {
 		if (!game) return null;
-		return {
-			...game.getStats(),
-		} as StatsTypeExtended;
+		const stats = game.getStats();
+		if (!stats) return null;
+
+		const settings = game.getSettings();
+		const stageId = settings?.stageId ?? null;
+		const stageData = stageId != null ? (STAGE_DATA[stageId] ?? null) : null;
+		const frames = stageData ? game.getFrames() : null;
+		const players = settings?.players ?? [];
+
+		const overall: OverallTypeExtended[] = (stats.overall ?? []).map(playerOverall => {
+			let edgeGuard: EdgeGuard | undefined;
+			if (frames && stageData) {
+				const myIdx = playerOverall.playerIndex;
+				const oppPlayer = players.find(p => p && p.playerIndex !== myIdx);
+				const oppIdx = oppPlayer?.playerIndex ?? (myIdx === 0 ? 1 : 0);
+				edgeGuard = computeEdgeguardStats(frames, oppIdx, stageData);
+			}
+			return { ...playerOverall, edgeGuard, recovery: undefined };
+		});
+
+		return { ...stats, overall } as StatsTypeExtended;
 	}
 
 	private getRecentReplay = async (): Promise<SlippiGame | undefined> => {

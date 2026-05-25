@@ -37,6 +37,7 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
+import type { BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession } from '../models/types/bingo';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -179,6 +180,16 @@ export interface MessageEvents {
 
 	TechniqueDetected: (data: TechniqueDetectedPayload) => void;
 	ActionStateHistory: (data: ActionStateHistoryPayload) => void;
+
+	BingoStartLobby: () => void;
+	StartBingo: (session: BingoSession) => void;
+	StopBingo: () => void;
+	BingoLobbyState: (data: BingoLobbyPayload | null) => void;
+	BingoState: (data: BingoStatePayload) => void;
+	BingoChallengeUpdates: (data: BingoChallengeUpdatePayload) => void;
+	BingoRevert: (message: string) => void;
+	BingoPeerConnect: (hostUrl: string) => void;
+	BingoDevSimulate: (instanceId: string, player: 'local' | 'opponent') => void;
 }
 
 export class TypedEmitter extends localEmitter {

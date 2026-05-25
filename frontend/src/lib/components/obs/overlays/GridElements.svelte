@@ -10,6 +10,7 @@
 	import RecentMatchSummary from './elementRender/RecentMatchSummary.svelte';
 	import Match from './elementRender/Match.svelte';
 	import {
+		bingoSession,
 		currentMatch,
 		currentPlayer,
 		currentPlayers,
@@ -23,8 +24,10 @@
 	} from '$lib/utils/store.svelte';
 	import { isNil } from 'lodash';
 	import { getContext } from 'svelte';
+	import { page } from '$app/stores';
 	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
 	import {
+		BINGO_ELEMENTS,
 		CUSTOM_ELEMENTS,
 		INGAME_ELEMENTS,
 		MATCH_ELEMENTS,
@@ -35,6 +38,7 @@
 		SLIPPIRANK_ELEMENTS,
 		STRIKING_ELEMENTS,
 	} from './elementCategories';
+	import BingoBoard from './elementRender/BingoBoard.svelte';
 	import Striking from './elementRender/Striking.svelte';
 	import { strikeState } from '$lib/utils/store.svelte';
 
@@ -190,6 +194,8 @@
 				<Session {dataItem} {defaultPreview} {style} />
 			{:else if STRIKING_ELEMENTS.has(dataItem.elementId)}
 				<Striking {dataItem} {defaultPreview} {style} strikeState={$strikeState} />
+			{:else if BINGO_ELEMENTS.has(dataItem.elementId)}
+				<BingoBoard {defaultPreview} {style} session={$bingoSession} />
 			{/if}
 		</div>
 	{/if}

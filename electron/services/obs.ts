@@ -102,15 +102,28 @@ export class ObsWebSocket {
 				sceneItemEnabled: true
 			};
 
-			const response = await this.obs.call("CreateInput", params);
-			this.log.info(`Browser Source Added: ${response}`);
+			try {
+				const response = await this.obs.call("CreateInput", params);
+				this.log.info(`Browser Source Added: ${response}`);
+			} catch (createErr: any) {
+				if (createErr?.message?.includes('already exists')) {
+					this.log.info(`Browser source "${inputName}" already exists — updating URL`);
+					await this.obs.call("SetInputSettings", {
+						inputName,
+						inputSettings: { url, width, height },
+						overlay: true,
+					});
+				} else {
+					throw createErr;
+				}
+			}
 
 			await this.reloadBrowserSources();
 
 			this.messageHandler.sendMessage("Notification", "Browser Source Added", NotificationType.Success, 2000);
 		} catch (err) {
 			this.log.error(`Could not add browser source`, err);
-			this.messageHandler.sendMessage("Notification", "Browser Source Could Not Be Added", NotificationType.Success, 2000);
+			this.messageHandler.sendMessage("Notification", "Browser Source Could Not Be Added", NotificationType.Danger, 2000);
 		}
 	};
 

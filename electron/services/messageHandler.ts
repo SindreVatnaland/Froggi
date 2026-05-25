@@ -34,6 +34,7 @@ import { NgrokService } from './ngrokService';
 import { ElectronWebhookStore } from './store/storeWebhook';
 import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
+import { BingoService } from './bingoService';
 
 @singleton()
 export class MessageHandler {
@@ -44,6 +45,7 @@ export class MessageHandler {
 	);
 	private expressWss: WebSocketServer = new WebSocketServer({ noServer: true });
 	private expressWsConnections: Map<string, WebSocket> = new Map();
+	readonly bingoPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
 
 	constructor(
 		@inject('AppDir') private appDir: string,
@@ -71,6 +73,7 @@ export class MessageHandler {
 		@inject(delay(() => ElectronStrikeStore)) private storeStrike: ElectronStrikeStore,
 		@inject(delay(() => NgrokService)) private ngrokService: NgrokService,
 		@inject(delay(() => ElectronWebhookStore)) private storeWebhook: ElectronWebhookStore,
+		@inject(delay(() => BingoService)) private bingoService: BingoService,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -113,9 +116,15 @@ export class MessageHandler {
 			}
 
 			this.server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
-				this.expressWss.handleUpgrade(req, socket, head, (ws) => {
-					this.expressWss.emit('connection', ws);
-				});
+				if (req.url?.startsWith('/bingo-peer')) {
+					this.bingoPeerWss.handleUpgrade(req, socket, head, (ws) => {
+						this.bingoPeerWss.emit('connection', ws);
+					});
+				} else {
+					this.expressWss.handleUpgrade(req, socket, head, (ws) => {
+						this.expressWss.emit('connection', ws);
+					});
+				}
 			});
 
 			this.server.listen(BACKEND_PORT, () => {
@@ -251,10 +260,9 @@ export class MessageHandler {
 				[topic]: payload,
 			}),
 		);
-		this.localEmitter.emit(topic, ...payload);
 	}
 
-	private sendInitMessage<J extends keyof MessageEvents>(
+	sendInitMessage<J extends keyof MessageEvents>(
 		socketId: string | undefined,
 		topic: J,
 		...payload: Parameters<MessageEvents[J]>
@@ -311,6 +319,8 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 		this.sendInitMessage(socketId, 'WebhookProfiles', this.storeWebhook.getProfiles());
 		this.sendInitMessage(socketId, 'WebhooksEnabled', this.storeWebhook.getEnabled());
+		this.sendInitMessage(socketId, 'BingoLobbyState', this.bingoService.getLobby());
+		this.sendInitMessage(socketId, 'BingoState', { session: this.bingoService.getSession() });
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string, clientMatchId: string = '') {
@@ -335,6 +345,7 @@ export class MessageHandler {
 	private tailscaleUrl: string | undefined = undefined;
 	private ngrokUrl: string | undefined = undefined;
 	private tailscaleBin: string | undefined = undefined;
+	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
 
 	private readonly tailscaleCandidates = [
 		'tailscale',
@@ -344,27 +355,33 @@ export class MessageHandler {
 	];
 
 	private async detectTailscaleStatus(): Promise<void> {
-		this.log.info('detectTailscaleStatus: scanning candidates');
-		let bin: string | undefined;
-		for (const candidate of this.tailscaleCandidates) {
-			const exists = await new Promise<boolean>((resolve) => {
-				exec(`"${candidate}" version`, { timeout: 2000 }, (err) => resolve(!err));
-			});
-			this.log.info(`  candidate ${candidate}: ${exists ? 'found' : 'not found'}`);
-			if (exists) { bin = candidate; break; }
+		// Re-scan candidates only if bin not yet found
+		if (!this.tailscaleBin) {
+			this.log.info('detectTailscaleStatus: scanning candidates');
+			for (const candidate of this.tailscaleCandidates) {
+				const exists = await new Promise<boolean>((resolve) => {
+					exec(`"${candidate}" version`, { timeout: 2000 }, (err) => resolve(!err));
+				});
+				this.log.info(`  candidate ${candidate}: ${exists ? 'found' : 'not found'}`);
+				if (exists) { this.tailscaleBin = candidate; break; }
+			}
+			this.log.info('detectTailscaleStatus: bin=', this.tailscaleBin);
 		}
-		this.tailscaleBin = bin;
-		this.log.info('detectTailscaleStatus: bin=', bin);
 
+		const bin = this.tailscaleBin;
 		if (!bin) {
-			this.log.info('detectTailscaleStatus: not installed');
-			this.sendMessage('TailscaleStatus', { installed: false, authenticated: false, funnelActive: false });
+			const next = { installed: false, authenticated: false, funnelActive: false };
+			if (!this.tailscaleLastStatus) {
+				this.log.info('detectTailscaleStatus: not installed');
+				this.tailscaleLastStatus = next;
+				this.sendMessage('TailscaleStatus', next);
+			}
 			return;
 		}
 
 		const status = await new Promise<any>((resolve) => {
 			exec(`"${bin}" status --json`, { timeout: 3000 }, (err, stdout) => {
-				this.log.info('detectTailscaleStatus: status err=', err?.message, 'stdout len=', stdout?.length);
+				this.log.debug('detectTailscaleStatus: status err=', err?.message, 'stdout len=', stdout?.length);
 				if (err || !stdout) { resolve(null); return; }
 				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
 			});
@@ -374,7 +391,7 @@ export class MessageHandler {
 
 		const serveStatus = await new Promise<Record<string, unknown> | null>((resolve) => {
 			exec(`"${bin}" serve status --json`, { timeout: 3000 }, (err, stdout) => {
-				this.log.info('detectTailscaleStatus: serve status err=', err?.message, 'stdout=', stdout?.slice(0, 200));
+				this.log.debug('detectTailscaleStatus: serve status err=', err?.message, 'stdout=', stdout?.slice(0, 200));
 				if (err || !stdout) { resolve(null); return; }
 				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
 			});
@@ -382,8 +399,15 @@ export class MessageHandler {
 		const allowFunnel = serveStatus?.AllowFunnel as Record<string, unknown> | undefined;
 		const funnelActive = Boolean(allowFunnel && Object.keys(allowFunnel).length > 0);
 
-		this.log.info('detectTailscaleStatus: BackendState=', status?.BackendState, 'authenticated=', authenticated, 'AllowFunnel=', allowFunnel, 'funnelActive=', funnelActive);
-		this.sendMessage('TailscaleStatus', { installed: true, authenticated, funnelActive });
+		const next = { installed: true, authenticated, funnelActive };
+		const last = this.tailscaleLastStatus;
+		const changed = !last || last.installed !== next.installed || last.authenticated !== next.authenticated || last.funnelActive !== next.funnelActive;
+
+		if (changed) {
+			this.log.info('detectTailscaleStatus: BackendState=', status?.BackendState, 'authenticated=', authenticated, 'AllowFunnel=', allowFunnel, 'funnelActive=', funnelActive);
+			this.tailscaleLastStatus = next;
+			this.sendMessage('TailscaleStatus', next);
+		}
 	}
 
 	private detectRemoteAccess = async (): Promise<void> => {

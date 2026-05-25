@@ -815,4 +815,7 @@ export enum CustomElement {
     InGamePlayer2LCancel = 8214,
     InGamePlayer2StateCategory = 8215,
     InGamePlayer2Technique = 8216,
+
+    // Bingo
+    BingoBoard = 9000,
 }

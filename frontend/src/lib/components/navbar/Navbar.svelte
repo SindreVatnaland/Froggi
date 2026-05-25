@@ -194,12 +194,12 @@
 							<NavButton click={() => goto('/settings')}>
 								<Settings size={22} strokeWidth={1.5} />
 							</NavButton>
-							{#if import.meta.env.DEV}
-								<NavButton click={() => goto('/obs/debug')}>
-									<FlaskConical size={22} strokeWidth={1.5} />
-								</NavButton>
-							{/if}
 						</div>
+						{#if import.meta.env.DEV}
+							<NavButton click={() => goto('/obs/debug')}>
+								<FlaskConical size={22} strokeWidth={1.5} />
+							</NavButton>
+						{/if}
 					</div>
 				</div>
 

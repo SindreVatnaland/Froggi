@@ -38,6 +38,9 @@
 		webhooksEnabled,
 		techniqueEvents,
 		actionStateHistories,
+		bingoSession,
+		bingoLobby,
+		bingoRevertMessage,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -351,6 +354,42 @@
 					const value = payload[0] as Parameters<MessageEvents['ActionStateHistory']>[0];
 					if (!value) return;
 					actionStateHistories.update((prev) => ({ ...prev, [value.playerIndex]: value.history }));
+				})();
+				break;
+			case 'BingoLobbyState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoLobbyState']>[0];
+					bingoLobby.set(value ?? null);
+				})();
+				break;
+			case 'BingoState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoState']>[0];
+					if (!value) return;
+					bingoSession.set(value.session);
+				})();
+				break;
+			case 'BingoChallengeUpdates':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoChallengeUpdates']>[0];
+					if (!value?.updates) return;
+					bingoSession.update((session) => {
+						if (!session) return session;
+						const map = new Map(value.updates.map(u => [u.instanceId, u]));
+						const boxes = session.board.boxes.map(box => {
+							const u = map.get(box.instanceId);
+							if (!u) return box;
+							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy };
+						});
+						return { ...session, board: { ...session.board, boxes } };
+					});
+				})();
+				break;
+			case 'BingoRevert':
+				(() => {
+					const msg = payload[0] as string;
+					bingoRevertMessage.set(msg);
+					setTimeout(() => bingoRevertMessage.set(null), 5000);
 				})();
 				break;
 		}
