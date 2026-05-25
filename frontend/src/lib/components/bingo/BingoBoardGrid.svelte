@@ -28,12 +28,12 @@
 	function labelFontSize(label: string): string {
 		const n = label.length;
 		if (n <= 8)  return '1.15em';
-		if (n <= 12) return '1.0em';
-		if (n <= 16) return '0.88em';
-		if (n <= 20) return '0.78em';
-		if (n <= 26) return '0.68em';
-		if (n <= 32) return '0.60em';
-		return '0.54em';
+		if (n <= 12) return '1.05em';
+		if (n <= 16) return '0.95em';
+		if (n <= 20) return '0.88em';
+		if (n <= 26) return '0.80em';
+		if (n <= 32) return '0.72em';
+		return '0.65em';
 	}
 
 	function showProg(box: BingoBox): boolean {
@@ -97,6 +97,9 @@
 					/>
 				{/if}
 				<span class="label" style="font-size:{labelFontSize(box.label)}">{box.label}</span>
+				{#if box.description && box.description !== box.label}
+					<span class="desc">{box.description}</span>
+				{/if}
 			</div>
 			{#if sp && box.hasProgress && !box.completed}
 				<span class="sub">{box.progress}/{box.target}</span>
@@ -190,10 +193,11 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.15em;
-		padding: 0.2em 0.25em;
+		gap: 0.2em;
+		padding: 0.3em 0.35em 0.5em;
 		z-index: 1;
 		width: 100%;
+		min-height: 0;
 	}
 
 	.char-icon {
@@ -207,10 +211,22 @@
 		color: #fff;
 		font-weight: 600;
 		text-align: center;
-		line-height: 1.2;
+		line-height: 1.25;
 		overflow-wrap: break-word;
 		hyphens: none;
 		font-family: sans-serif;
+	}
+
+	.desc {
+		color: rgba(255, 255, 255, 0.55);
+		font-size: var(--bingo-desc-size, 0.7em);
+		font-weight: 500;
+		text-align: center;
+		line-height: 1.25;
+		overflow-wrap: break-word;
+		hyphens: none;
+		font-family: sans-serif;
+		margin-top: 0.1em;
 	}
 
 	.sub {

@@ -48,8 +48,8 @@ export const CHALLENGE_DEFINITIONS: ChallengeDefinition[] = [
 		maxPerBoard: 6,
 		difficulties: {
 			easy:   { target: 1 },
-			medium: { target: { min: 1, max: 2 } },
-			hard:   { target: { min: 2, max: 3 } },
+			medium: { target: 1 },
+			hard:   { target: 1 },
 		},
 	},
 	{

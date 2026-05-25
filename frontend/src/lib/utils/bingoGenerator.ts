@@ -165,6 +165,7 @@ function pickChallenges(count: number, difficulty: BingoDifficulty): BingoBox[] 
 }
 
 function spreadByCategory(boxes: BingoBox[]): BingoBox[] {
+	const n = boxes.length;
 	const groups = new Map<string, BingoBox[]>();
 	for (const box of boxes) {
 		const cat = CHALLENGE_CATEGORY[box.challengeId] ?? 'other';
@@ -173,19 +174,31 @@ function spreadByCategory(boxes: BingoBox[]): BingoBox[] {
 	}
 	for (const group of groups.values()) shuffle(group);
 
-	// Round-robin interleave across categories so same-category boxes land
-	// ~numCategories cells apart in the grid read order
+	// Shuffle category order so the same category doesn't always get column 0
 	const lists = [...groups.values()];
-	const result: BingoBox[] = [];
+	shuffle(lists);
+
+	// Build a flat round-robin sequence (same-category items spaced ~numCategories apart)
+	const sequence: BingoBox[] = [];
 	let i = 0;
-	while (result.length < boxes.length) {
+	while (sequence.length < n) {
 		for (const list of lists) {
 			if (i < list.length) {
-				result.push(list[i]);
-				if (result.length >= boxes.length) break;
+				sequence.push(list[i]);
+				if (sequence.length >= n) break;
 			}
 		}
 		i++;
+	}
+
+	// Scatter using a stride coprime to n (7 is coprime to 9, 16, and 25).
+	// Pure round-robin maps sequence[k] → grid position k, which on a 5-wide
+	// board places every Nth item in the same column. The stride breaks that.
+	const result = new Array<BingoBox>(n);
+	let pos = 0;
+	for (let j = 0; j < n; j++) {
+		result[pos] = sequence[j];
+		pos = (pos + 7) % n;
 	}
 	return result;
 }

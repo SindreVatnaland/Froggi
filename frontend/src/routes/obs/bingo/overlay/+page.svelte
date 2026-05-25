@@ -298,7 +298,7 @@
 				</div>
 			{/if}
 
-			<div style="flex:1; min-height:0; --bingo-font-size:2.5vmin; --bingo-char-size:4vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-gap:3px; --bingo-radius:4px;">
+			<div style="flex:1; min-height:0; --bingo-font-size:2.8vmin; --bingo-char-size:4vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-desc-size:1.9vmin; --bingo-gap:3px; --bingo-radius:4px;">
 				<BingoBoardGrid
 					boxes={displayBoard?.boxes ?? []}
 					{size}

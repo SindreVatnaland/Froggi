@@ -381,7 +381,6 @@ export class MessageHandler {
 
 		const status = await new Promise<any>((resolve) => {
 			exec(`"${bin}" status --json`, { timeout: 3000 }, (err, stdout) => {
-				this.log.debug('detectTailscaleStatus: status err=', err?.message, 'stdout len=', stdout?.length);
 				if (err || !stdout) { resolve(null); return; }
 				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
 			});
@@ -391,7 +390,6 @@ export class MessageHandler {
 
 		const serveStatus = await new Promise<Record<string, unknown> | null>((resolve) => {
 			exec(`"${bin}" serve status --json`, { timeout: 3000 }, (err, stdout) => {
-				this.log.debug('detectTailscaleStatus: serve status err=', err?.message, 'stdout=', stdout?.slice(0, 200));
 				if (err || !stdout) { resolve(null); return; }
 				try { resolve(JSON.parse(stdout)); } catch { resolve(null); }
 			});
