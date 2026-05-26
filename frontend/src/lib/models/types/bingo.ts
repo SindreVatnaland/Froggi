@@ -38,7 +38,14 @@ export type BingoChallengeId =
 	| 'airborne_win'
 	| 'same_move_kills'
 	| 'no_smash_win'
-	| 'win_low_apm';
+	| 'win_low_apm'
+	| 'win_high_apm'
+	| 'win_low_damage_dealt'
+	| 'rest_kill'
+	| 'falcon_punch_kill'
+	| 'gwm_judge_kill'
+	| 'peach_turnip_hold'
+	| 'yoshi_egg_lay';
 
 export interface BingoChallengeConfig {
 	id: BingoChallengeId;
@@ -74,6 +81,7 @@ export interface BingoBox {
 	completed: boolean;
 	completedBy: 'local' | 'opponent' | 'both' | null;
 	hasProgress: boolean;
+	frozen?: boolean;
 }
 
 export interface BingoBoard {
@@ -98,6 +106,8 @@ export interface BingoSettings {
 	lines: { rows: boolean; columns: boolean; diagonals: boolean };
 	requireQueueAfterGame: boolean;
 	timer: { enabled: boolean; durationMinutes: number };
+	twitchEnabled: boolean;
+	twitchChannel: string;
 }
 
 export interface BingoSession {
@@ -116,13 +126,41 @@ export type BingoChallengeUpdate = {
 	progress: number;
 	completed: boolean;
 	completedBy?: 'local' | 'opponent' | 'both';
+	frozen?: boolean;
 };
+
+export type BingoVoteActionType = 'randomize_opponent_tile' | 'freeze_tile' | 'swap_tiles';
+
+export interface BingoVoteOption {
+	id: BingoVoteActionType;
+	label: string;
+	description: string;
+	votes: number;
+}
+
+export interface BingoVoteState {
+	active: boolean;
+	options: BingoVoteOption[];
+	startedAt: number;
+	durationMs: number;
+	result?: {
+		winner: BingoVoteActionType;
+		description: string;
+	};
+}
+
+export interface BingoTileReplacedPayload {
+	instanceId: string;
+	box: BingoBox;
+}
 
 export interface BingoLobbyPayload {
 	opponentConnected: boolean;
 	opponentName: string | null;
 	localName: string;
 	settings?: BingoSettings;
+	localTwitchUsername?: string;
+	opponentTwitchUsername?: string;
 }
 
 export interface BingoStatePayload {

@@ -146,6 +146,14 @@ export class ElectronSettingsStore {
 		};
 	}
 
+	getTwitchUsername(): string {
+		return (this.store.get('settings.twitchUsername') as string) ?? '';
+	}
+
+	setTwitchUsername(username: string) {
+		this.store.set('settings.twitchUsername', username);
+	}
+
 	getBingoLeaderboard(): Record<string, BingoLeaderboardEntry[]> {
 		return (this.store.get('bingo.leaderboard') as Record<string, BingoLeaderboardEntry[]>) ?? {};
 	}

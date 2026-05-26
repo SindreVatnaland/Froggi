@@ -116,7 +116,13 @@
       "Bash(node -e ' *)",
       "Bash(grep -v \"^--$\")",
       "Bash(grep -n 'Join Iron Man\\\\|imGuestUrl\\\\|imMode === '\\\\''guest'\\\\'' && !$ironManLobby' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/minigames/+page.svelte)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(python3 -c \"import sys,json; c=json.load\\(sys.stdin\\); print\\(json.dumps\\(c.get\\('jest',{}\\), indent=2\\)\\)\")",
+      "Bash(grep -n '^import\\\\|from '\\\\''$lib\\\\|from '\\\\''../' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/minigames/+page.svelte)",
+      "Bash(npx jest *)",
+      "Bash(git stash *)",
+      "Bash(node -e \"const s = require\\('./node_modules/@slippi/slippi-js'\\); const keys = Object.keys\\(s\\); console.log\\(keys.filter\\(k => /item|Item/i.test\\(k\\)\\).join\\('\\\\n'\\)\\);\")",
+      "Bash(npm test *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

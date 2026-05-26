@@ -3,14 +3,15 @@
 		bingoSession, bingoLobby, electronEmitter, currentPlayer,
 		urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoLeaderboard,
 		ironManSession, ironManLobby, ironManLeaderboard, ironManCurrentChar,
-		froggiSettings,
+		froggiSettings, twitchUsername, bingoVoteState,
 	} from '$lib/utils/store.svelte';
 	import { encryptUrl, decryptUrl, isEncryptedHash } from '$lib/utils/urlCrypto';
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
+	import { countLines, countControlledLines, hasWon as bingoHasWon, scoreTarget as bingoScoreTarget } from '$lib/utils/bingoWinCondition';
 	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
-	import type { IronManSettings, IronManRoster } from '$lib/models/types/ironman';
+	import type { IronManSettings, IronManRoster, IronManCharSelection, IronManRandomSync } from '$lib/models/types/ironman';
 	import { IRONMAN_CHARS, IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 	import { tooltip } from 'svooltip';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
@@ -101,10 +102,16 @@
 		lines: { rows: true, columns: true, diagonals: true },
 		requireQueueAfterGame: false,
 		timer: { enabled: false, durationMinutes: 60 },
+		twitchEnabled: false,
+		twitchChannel: '',
 	};
 
 	let previewBoard = generateBoard(settings);
-	$: if (settings) previewBoard = generateBoard(settings);
+	let _boardHash = `${settings.boardSize}|${settings.difficulty}|${settings.winCondition}|${JSON.stringify(settings.lines)}`;
+	$: {
+		const h = `${settings.boardSize}|${settings.difficulty}|${settings.winCondition}|${JSON.stringify(settings.lines)}`;
+		if (h !== _boardHash) { _boardHash = h; previewBoard = generateBoard(settings); }
+	}
 
 	function enterLobby() {
 		$electronEmitter.emit('BingoStartLobby');
@@ -268,7 +275,47 @@
 		}
 		$electronEmitter.emit('GetBingoLeaderboard');
 		$electronEmitter.emit('GetIronManLeaderboard');
+		$electronEmitter.emit('GetTwitchUsername');
 	});
+
+	// Keep settings in sync with saved Twitch username (only pre-fill, don't re-verify here)
+	$: if ($twitchUsername && !settings.twitchChannel) {
+		settings = { ...settings, twitchChannel: $twitchUsername };
+		twitchChannelStatus = 'idle';
+	}
+
+	function saveTwitchChannel(channel: string) {
+		$electronEmitter.emit('SaveTwitchUsername', channel);
+	}
+
+	let twitchChannelStatus: 'idle' | 'checking' | 'valid' | 'invalid' = 'idle';
+	let _twitchVerifyTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function onTwitchChannelInput() {
+		twitchChannelStatus = 'idle';
+		if (_twitchVerifyTimer) clearTimeout(_twitchVerifyTimer);
+		const val = settings.twitchChannel.trim();
+		if (!val) return;
+		_twitchVerifyTimer = setTimeout(() => verifyTwitchChannel(val), 600);
+	}
+
+	async function verifyTwitchChannel(channel: string) {
+		if (!channel) { twitchChannelStatus = 'idle'; return; }
+		twitchChannelStatus = 'checking';
+		try {
+			const res = await fetch('https://gql.twitch.tv/gql', {
+				method: 'POST',
+				headers: { 'Client-Id': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'application/json' },
+				body: JSON.stringify([{ query: `{ user(login: "${channel}") { id } }` }]),
+			});
+			const data = await res.json();
+			const exists = data?.[0]?.data?.user != null;
+			twitchChannelStatus = exists ? 'valid' : 'invalid';
+			if (exists) saveTwitchChannel(channel);
+		} catch {
+			twitchChannelStatus = 'idle';
+		}
+	}
 
 
 	function getRowControlBoxes(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): Set<number> {
@@ -278,16 +325,9 @@
 		const check = (line: number[]) => { if (line.filter(i => mine(boxes[i])).length >= required) line.forEach(i => controlled.add(i)); };
 		for (let r = 0; r < sz; r++) check(Array.from({ length: sz }, (_, c) => r * sz + c));
 		for (let c = 0; c < sz; c++) check(Array.from({ length: sz }, (_, r) => r * sz + c));
+		check(Array.from({ length: sz }, (_, i) => i * sz + i));
+		check(Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)));
 		return controlled;
-	}
-
-	function countControlledLines(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): number {
-		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
-		const required = Math.floor(sz / 2) + 1;
-		let n = 0;
-		for (let r = 0; r < sz; r++) { const line = Array.from({ length: sz }, (_, c) => r * sz + c); if (line.filter(i => mine(boxes[i])).length >= required) n++; }
-		for (let c = 0; c < sz; c++) { const line = Array.from({ length: sz }, (_, r) => r * sz + c); if (line.filter(i => mine(boxes[i])).length >= required) n++; }
-		return n;
 	}
 
 	function getWinBoxesFiltered(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
@@ -315,38 +355,7 @@
 		? getRowControlBoxes(board.boxes, size, 'opponent')
 		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
 
-	function countLines(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): number {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		let n = 0;
-		for (let r = 0; r < sz; r++) {
-			if (Array.from({ length: sz }, (_, c) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		for (let c = 0; c < sz; c++) {
-			if (Array.from({ length: sz }, (_, r) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		if (Array.from({ length: sz }, (_, i) => i * sz + i).every(i => done.has(i))) n++;
-		if (Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)).every(i => done.has(i))) n++;
-		return n;
-	}
-
-	$: hasWon = (() => {
-		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'full') return boxes.every(b => b.completed);
-		if (wc === 'lockout') {
-			const total = boxes.length;
-			const localCount = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const oppCount = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return localCount > total / 2 || oppCount > total / 2;
-		}
-		if (wc === 'rowcontrol') {
-			return countControlledLines(boxes, size, 'local') >= 3 || countControlledLines(boxes, size, 'opponent') >= 3;
-		}
-		const n = wc as number;
-		const localLines = countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-		const oppLines = countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-		return localLines >= n || oppLines >= n;
-	})();
+	$: hasWon = bingoHasWon(board.boxes, size, activeWinCondition);
 
 	$: localScore = (() => {
 		const wc = activeWinCondition;
@@ -364,13 +373,7 @@
 		return countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
 	})();
 
-	$: scoreTarget = (() => {
-		const wc = activeWinCondition;
-		if (wc === 'rowcontrol') return 3;
-		if (wc === 'lockout') return Math.floor(board.boxes.length / 2) + 1;
-		if (wc === 'full') return board.boxes.length;
-		return wc as number;
-	})();
+	$: scoreTarget = bingoScoreTarget(board.boxes, size, activeWinCondition);
 
 	$: scoreUnit = activeWinCondition === 'lockout' || activeWinCondition === 'full' ? 'tiles' : 'lines';
 
@@ -385,6 +388,8 @@
 		hideOpponent: false,
 		stocksPerChar: 4,
 		charOrder: 'fixed',
+		charSelection: 'pick',
+		randomSync: 'shared',
 	};
 	let imSettings = { ...defaultIronManSettings };
 	const imVariants: { value: IronManSettings['variant']; label: string; tip: string }[] = [
@@ -396,6 +401,14 @@
 		{ value: 'free', label: 'Free', tip: 'Play any remaining character each game.\nThe active character updates when a game starts.' },
 		{ value: 'fixed', label: 'Fixed', tip: 'Play in the exact order you set.\nThe next character is shown before each game.' },
 		{ value: 'random', label: 'Random', tip: 'Order is randomised when you start.\nThe next character is shown before each game.' },
+	];
+	const imCharSelections: { value: IronManCharSelection; label: string; tip: string }[] = [
+		{ value: 'pick', label: 'Pick', tip: 'Choose your characters manually before starting' },
+		{ value: 'random', label: 'Random', tip: 'Characters are selected randomly when the game starts' },
+	];
+	const imRandomSyncOptions: { value: IronManRandomSync; label: string; tip: string }[] = [
+		{ value: 'shared', label: 'Shared', tip: 'Both players receive the same randomly-selected roster' },
+		{ value: 'independent', label: 'Independent', tip: 'Each player gets their own random roster' },
 	];
 	const imRosterSizes = [5, 7, 11, 15, 25, 26] as const;
 	// Melee CSS rows: row1=9, row2=10, row3=7
@@ -442,7 +455,8 @@
 	$: imLocalName = imSession?.localName ?? 'You';
 	$: imOpponentName = imSession?.opponentName ?? 'Opponent';
 	$: imPendingCarry = imSession?.pendingCarryStocks ?? null;
-	$: imCanStart = imSettings.rosterSize === 26 || imSelectedChars.length === imSettings.rosterSize;
+	$: imCanStart = imSettings.charSelection === 'random' || imSettings.rosterSize === 26 || imSelectedChars.length === imSettings.rosterSize;
+	$: imIsSharedRandom = imSettings.charSelection === 'random' && imSettings.randomSync === 'shared';
 
 	$: imLocalProgress = (() => {
 		if (!imLocalRoster) return { score: 0, target: 0 };
@@ -509,8 +523,20 @@
 	}
 
 	function imStart(role: 'solo' | 'host' | 'guest') {
-		const chars = imSettings.rosterSize === 26 ? [...IRONMAN_CHARS] : imSelectedChars.slice(0, imSettings.rosterSize);
-		if (chars.length < 1 && imSettings.rosterSize < 26) return;
+		let chars: number[];
+		if (imSettings.rosterSize === 26) {
+			chars = [...IRONMAN_CHARS];
+		} else if (imSettings.charSelection === 'random') {
+			const all = [...IRONMAN_CHARS] as number[];
+			for (let i = all.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[all[i], all[j]] = [all[j], all[i]];
+			}
+			chars = all.slice(0, imSettings.rosterSize);
+		} else {
+			chars = imSelectedChars.slice(0, imSettings.rosterSize);
+		}
+		if (chars.length < 1) return;
 		const localRoster = imBuildRoster(chars);
 		$electronEmitter.emit('StartIronMan', {
 			settings: imSettings,
@@ -635,7 +661,7 @@
 					{:else if imInLobby}
 						{#if $ironManLobby?.opponentConnected && imMode !== 'guest'}
 							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('host')}>Start Iron Man</button>
-						{:else if imMode === 'guest'}
+						{:else if imMode === 'guest' && !imIsSharedRandom}
 							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('guest')}>Start Guest</button>
 						{/if}
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={imStop}>Cancel</button>
@@ -751,21 +777,67 @@
 					{/if}
 				</div>
 				{/if}
+				{#if mode === 'host' && !(mode === 'guest' && inLobby)}
+				<div class="settings-group twitch-group">
+					<span class="settings-label">Twitch</span>
+					<div class="pill-group">
+						<button class="pill" class:pill--active={!settings.twitchEnabled}
+							on:click={() => { settings = { ...settings, twitchEnabled: false }; twitchChannelStatus = 'idle'; }}>Off</button>
+						<button class="pill" class:pill--active={settings.twitchEnabled}
+							on:click={() => { settings = { ...settings, twitchEnabled: true }; if (settings.twitchChannel) verifyTwitchChannel(settings.twitchChannel); }}>On</button>
+					</div>
+					{#if settings.twitchEnabled}
+						<input
+							class="twitch-input border-secondary background-primary-color text-secondary-color"
+							class:twitch-input--valid={twitchChannelStatus === 'valid'}
+							class:twitch-input--invalid={twitchChannelStatus === 'invalid'}
+							placeholder="channel name"
+							bind:value={settings.twitchChannel}
+							on:input={onTwitchChannelInput}
+						/>
+						{#if twitchChannelStatus === 'checking'}
+							<span class="twitch-verify-icon twitch-verify--spin">⟳</span>
+						{:else if twitchChannelStatus === 'valid'}
+							<span class="twitch-verify-icon twitch-verify--ok">✓</span>
+						{:else if twitchChannelStatus === 'invalid'}
+							<span class="twitch-verify-icon twitch-verify--err">✗</span>
+						{/if}
+					{/if}
+				</div>
+				{/if}
 			</div>
 		{/if}
 
 		<!-- Bingo: lobby status -->
 		{#if selectedGame === 'bingo' && inLobby}
-			<div class="settings-row border-secondary items-center gap-3">
-				{#if $bingoLobby?.opponentConnected}
-					<span class="text-green-400 text-sm font-semibold">● {$bingoLobby.opponentName ?? 'Opponent'} connected</span>
-					{#if mode === 'host'}
-						<span class="text-sm opacity-50">— ready to start</span>
+			<div class="settings-row border-secondary flex-col gap-2">
+				<div class="flex items-center gap-3">
+					{#if $bingoLobby?.opponentConnected}
+						<span class="text-green-400 text-sm font-semibold">● {$bingoLobby.opponentName ?? 'Opponent'} connected</span>
+						{#if mode === 'host'}
+							<span class="text-sm opacity-50">— ready to start</span>
+						{:else}
+							<span class="text-sm opacity-50">— waiting for host to start…</span>
+						{/if}
 					{:else}
-						<span class="text-sm opacity-50">— waiting for host to start…</span>
+						<span class="text-sm opacity-50">○ Waiting for opponent to join…</span>
 					{/if}
-				{:else}
-					<span class="text-sm opacity-50">○ Waiting for opponent to join…</span>
+				</div>
+				{#if settings.twitchEnabled && $bingoLobby?.opponentConnected}
+					<div class="twitch-status-row">
+						<span class="settings-label">Twitch</span>
+						<span class="twitch-status-pill" class:twitch-status-pill--ok={!!$bingoLobby.localTwitchUsername}>
+							{mode === 'host' ? 'You' : 'Guest'}: {$bingoLobby.localTwitchUsername ? `@${$bingoLobby.localTwitchUsername}` : '—'}
+						</span>
+						<span class="twitch-status-pill" class:twitch-status-pill--ok={!!$bingoLobby.opponentTwitchUsername}>
+							{mode === 'host' ? 'Guest' : 'Host'}: {$bingoLobby.opponentTwitchUsername ? `@${$bingoLobby.opponentTwitchUsername}` : '—'}
+						</span>
+						{#if !$bingoLobby.localTwitchUsername || !$bingoLobby.opponentTwitchUsername}
+							<span class="text-xs" style="opacity:0.45">Polls require both players to set a username</span>
+						{:else}
+							<span class="text-xs" style="color:#4ade80;opacity:0.8">✓ Twitch polls ready</span>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		{/if}
@@ -913,6 +985,34 @@
 							{/each}
 						</div>
 					</div>
+					<div class="settings-group">
+						<span class="settings-label">Characters</span>
+						<div class="pill-group">
+							{#each imCharSelections as { value, label, tip }}
+								<button
+									class="pill"
+									class:pill--active={imSettings.charSelection === value}
+									on:click={() => imSettings = { ...imSettings, charSelection: value }}
+									use:tooltip={{ content: tip, placement: 'bottom', delay: [400, 0] }}
+								>{label}</button>
+							{/each}
+						</div>
+					</div>
+					{#if imSettings.charSelection === 'random' && imMode !== 'solo'}
+						<div class="settings-group">
+							<span class="settings-label">Sync</span>
+							<div class="pill-group">
+								{#each imRandomSyncOptions as { value, label, tip }}
+									<button
+										class="pill"
+										class:pill--active={imSettings.randomSync === value}
+										on:click={() => imSettings = { ...imSettings, randomSync: value }}
+										use:tooltip={{ content: tip, placement: 'bottom', delay: [400, 0] }}
+									>{label}</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
 					{#if imMode !== 'solo'}
 						<div class="settings-group">
 							<span class="settings-label">Hide characters</span>
@@ -956,11 +1056,14 @@
 		{#if selectedGame === 'ironman' && !imIsActive && !imInLobby && imMode !== 'guest'}
 			<!-- Solo/Host: char picker setup -->
 			<div class="dash-card border-secondary flex flex-col gap-4">
-				{#if imSettings.rosterSize < 26}
+				{#if imSettings.charSelection === 'random'}
+					<p class="dash-label">Characters selected randomly at start — {imSettings.rosterSize === 26 ? 'all 26' : imSettings.rosterSize + ' random'}</p>
+				{:else if imSettings.rosterSize < 26}
 					<p class="dash-label">Select {imSettings.rosterSize} characters ({imSelectedChars.length}/{imSettings.rosterSize})</p>
 				{:else}
 					<p class="dash-label">All 26 characters — full roster</p>
 				{/if}
+				{#if imSettings.charSelection !== 'random'}
 				<div class="char-picker">
 					{#each imCharRows as [start, end]}
 						<div class="char-row">
@@ -979,7 +1082,8 @@
 						</div>
 					{/each}
 				</div>
-				{#if imSelectedChars.length > 0 && imSettings.charOrder !== 'free' && imSettings.rosterSize < 26}
+				{/if}
+				{#if imSettings.charSelection !== 'random' && imSelectedChars.length > 0 && imSettings.charOrder !== 'free' && imSettings.rosterSize < 26}
 					<div class="order-strip-wrap">
 						<span class="order-strip-label">Play order — drag to rearrange</span>
 						<div class="order-strip">
@@ -1007,9 +1111,12 @@
 		{:else if selectedGame === 'ironman' && imInLobby}
 			<!-- Lobby: waiting or char picker after opponent connects -->
 			<div class="dash-card border-secondary flex flex-col gap-4">
-				{#if $ironManLobby?.opponentConnected}
+				{#if imMode === 'guest' && imIsSharedRandom}
+					<p class="text-sm opacity-50">Waiting for host to start — your roster will be selected automatically…</p>
+					<SlippiAd compact />
+				{:else if $ironManLobby?.opponentConnected}
 					<span class="text-green-400 text-sm font-semibold" in:fly={{ y: -8, duration: 150 }}>● {$ironManLobby.opponentName ?? 'Guest'} connected</span>
-					{#if imSettings.rosterSize < 26}
+					{#if imSettings.charSelection !== 'random' && imSettings.rosterSize < 26}
 						<p class="dash-label">Select your {imSettings.rosterSize} characters ({imSelectedChars.length}/{imSettings.rosterSize})</p>
 						<div class="char-picker">
 							{#each imCharRows as [start, end]}
@@ -1025,6 +1132,8 @@
 								</div>
 							{/each}
 						</div>
+					{:else if imSettings.charSelection === 'random'}
+						<p class="text-sm opacity-50">Characters will be selected randomly at start{imIsSharedRandom ? ' — same roster for both players' : ' — each player gets their own'}</p>
 					{/if}
 				{:else}
 					<p class="text-sm opacity-50">Waiting for opponent to connect…</p>
@@ -1221,6 +1330,54 @@
 		line-height: 1.5;
 	}
 	.back-btn:hover { opacity: 0.85; }
+
+	.selector-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+		padding: 1rem;
+	}
+
+	.twitch-input {
+		padding: 0.2rem 0.55rem;
+		border-radius: 0.375rem;
+		font-size: 0.78rem;
+		outline: none;
+		width: 9rem;
+		transition: border-color 0.15s;
+	}
+	.twitch-input--valid { border-color: rgba(74, 222, 128, 0.7) !important; }
+	.twitch-input--invalid { border-color: rgba(248, 113, 113, 0.7) !important; }
+
+	.twitch-verify-icon {
+		font-size: 0.85rem;
+		line-height: 1;
+	}
+	.twitch-verify--spin { opacity: 0.5; animation: spin 1s linear infinite; }
+	.twitch-verify--ok { color: #4ade80; }
+	.twitch-verify--err { color: #f87171; }
+	@keyframes spin { from { display: inline-block; transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+	.twitch-group { flex-wrap: wrap; }
+
+	.twitch-status-row {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+	.twitch-status-pill {
+		font-size: 0.75rem;
+		padding: 0.15rem 0.5rem;
+		border-radius: 1rem;
+		border: 1px solid var(--secondary-color);
+		opacity: 0.4;
+	}
+	.twitch-status-pill--ok { opacity: 0.85; }
 
 	.leaderboard-modal {
 		width: 100%;

@@ -27,6 +27,8 @@
 		hideOpponent: false,
 		stocksPerChar: 4,
 		charOrder: 'fixed',
+		charSelection: 'pick',
+		randomSync: 'shared',
 	};
 	let settings = { ...defaultSettings };
 

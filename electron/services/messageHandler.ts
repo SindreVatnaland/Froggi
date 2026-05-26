@@ -332,6 +332,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'WebhooksEnabled', this.storeWebhook.getEnabled());
 		this.sendInitMessage(socketId, 'BingoLobbyState', this.bingoService.getLobby());
 		this.sendInitMessage(socketId, 'BingoState', { session: this.bingoService.getSession() });
+		this.sendInitMessage(socketId, 'TwitchUsername', this.storeSettings.getTwitchUsername());
 	}
 
 	private sendAuthorizedMessage(socketId: string, clientKey: string, clientMatchId: string = '') {
@@ -536,5 +537,13 @@ export class MessageHandler {
 			await this.detectRemoteAccess();
 			await this.detectTailscaleStatus();
 		}, 10000);
+
+		this.clientEmitter.on('GetTwitchUsername', () => {
+			this.sendMessage('TwitchUsername', this.storeSettings.getTwitchUsername());
+		});
+
+		this.clientEmitter.on('SaveTwitchUsername', (username: string) => {
+			this.storeSettings.setTwitchUsername(username);
+		});
 	}
 }

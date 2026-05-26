@@ -476,6 +476,85 @@ export const CHALLENGE_DEFINITIONS: ChallengeDefinition[] = [
 			hard:   { target: 1, percent: 80 },
 		},
 	},
+	{
+		id: 'win_high_apm',
+		label: ({ percent }) => `Win with >${percent} APM`,
+		description: ({ percent }) => `Win a game with more than ${percent} actions per minute`,
+		hasProgress: false,
+		availableDifficulties: ['hard'],
+		difficulties: {
+			easy:   { target: 1, percent: 350 },
+			medium: { target: 1, percent: 350 },
+			hard:   { target: 1, percent: 350 },
+		},
+	},
+	{
+		id: 'win_low_damage_dealt',
+		label: ({ percent }) => `Win dealing <${percent}% total damage`,
+		description: ({ percent }) => `Win a game while dealing less than ${percent}% total damage to your opponent`,
+		hasProgress: false,
+		availableDifficulties: ['hard'],
+		difficulties: {
+			easy:   { target: 1, percent: 150 },
+			medium: { target: 1, percent: 150 },
+			hard:   { target: 1, percent: 150 },
+		},
+	},
+	{
+		id: 'rest_kill',
+		label: () => 'Rest kill with Puff',
+		description: () => 'Take a stock using Rest (Down-B) while playing as Jigglypuff',
+		hasProgress: false,
+		difficulties: {
+			easy:   { target: 1 },
+			medium: { target: 1 },
+			hard:   { target: 1 },
+		},
+	},
+	{
+		id: 'falcon_punch_kill',
+		label: () => 'Falcon Punch kill',
+		description: () => 'Take a stock using Falcon Punch (Neutral-B) as Captain Falcon',
+		hasProgress: false,
+		difficulties: {
+			easy:   { target: 1 },
+			medium: { target: 1 },
+			hard:   { target: 1 },
+		},
+	},
+	{
+		id: 'gwm_judge_kill',
+		label: () => 'Judge kill as G&W',
+		description: () => 'Take a stock using Judge (Side-B) as Mr. Game & Watch. Make it a 9!',
+		hasProgress: false,
+		difficulties: {
+			easy:   { target: 1 },
+			medium: { target: 1 },
+			hard:   { target: 1 },
+		},
+	},
+	{
+		id: 'peach_turnip_hold',
+		label: () => 'Hold a turnip for 20s',
+		description: () => 'Hold a turnip for 20 consecutive seconds as Peach',
+		hasProgress: false,
+		difficulties: {
+			easy:   { target: 1 },
+			medium: { target: 1 },
+			hard:   { target: 1 },
+		},
+	},
+	{
+		id: 'yoshi_egg_lay',
+		label: ({ target }) => `Egg Lay ${target}x as Yoshi`,
+		description: ({ target }) => `Connect with Egg Lay (Neutral-B) as Yoshi ${target} time${Number(target) > 1 ? 's' : ''} in a session`,
+		hasProgress: true,
+		difficulties: {
+			easy:   { target: 5 },
+			medium: { target: 7 },
+			hard:   { target: 10 },
+		},
+	},
 ];
 
 export const CHALLENGE_MAP = new Map(CHALLENGE_DEFINITIONS.map((c) => [c.id, c]));

@@ -42,6 +42,8 @@
 		bingoLobby,
 		bingoRevertMessage,
 		bingoLeaderboard,
+		bingoVoteState,
+		twitchUsername,
 		ironManSession,
 		ironManLobby,
 		ironManLeaderboard,
@@ -384,7 +386,7 @@
 						const boxes = session.board.boxes.map(box => {
 							const u = map.get(box.instanceId);
 							if (!u) return box;
-							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy };
+							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy, frozen: u.frozen ?? box.frozen };
 						});
 						return { ...session, board: { ...session.board, boxes } };
 					});
@@ -401,6 +403,29 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['BingoLeaderboard']>[0];
 					if (value) bingoLeaderboard.set(value);
+				})();
+				break;
+			case 'BingoVoteState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoVoteState']>[0];
+					bingoVoteState.set(value ?? null);
+				})();
+				break;
+			case 'BingoTileReplaced':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoTileReplaced']>[0];
+					if (!value) return;
+					bingoSession.update(session => {
+						if (!session) return session;
+						const boxes = session.board.boxes.map(b => b.instanceId === value.instanceId ? value.box : b);
+						return { ...session, board: { ...session.board, boxes } };
+					});
+				})();
+				break;
+			case 'TwitchUsername':
+				(() => {
+					const value = payload[0] as string;
+					twitchUsername.set(value ?? '');
 				})();
 				break;
 			case 'IronManLobbyState':

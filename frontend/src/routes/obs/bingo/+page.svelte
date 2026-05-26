@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoVoteState } from '$lib/utils/store.svelte';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
@@ -39,7 +39,27 @@
 		lines: { rows: true, columns: true, diagonals: true },
 		requireQueueAfterGame: false,
 		timer: { enabled: false, durationMinutes: 60 },
+		twitchEnabled: false,
+		twitchChannel: '',
 	};
+
+	$: vote = $bingoVoteState;
+	$: voteActive = vote?.active ?? false;
+	$: voteResult = !vote?.active && !!vote?.result;
+
+	function voteTimeLeft(vote: typeof $bingoVoteState): number {
+		if (!vote?.active) return 0;
+		const elapsed = Date.now() - vote.startedAt;
+		return Math.max(0, Math.ceil((vote.durationMs - elapsed) / 1000));
+	}
+
+	let voteTick = 0;
+	$: if (voteActive) {
+		const iv = setInterval(() => voteTick++, 1000);
+		setTimeout(() => clearInterval(iv), (vote?.durationMs ?? 30000) + 1000);
+	}
+	$: voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
+	$: if (voteTick) voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
 
 	let showInfoModal = false;
 
@@ -461,6 +481,37 @@
 			</div>
 		{/if}
 
+		<!-- Twitch vote banner (only shown in overlay) -->
+		{#if vote && (voteActive || voteResult)}
+			<div class="vote-banner border-secondary" class:vote-banner--result={voteResult} in:fly={{ y: -24, duration: 320 }} out:fly={{ y: -20, duration: 220 }}>
+				{#if voteActive}
+					<div class="vote-header">
+						<span class="vote-title">Chat Vote</span>
+						<span class="vote-timer">{voteSecondsLeft}s</span>
+					</div>
+					<div class="vote-options">
+						{#each vote.options as opt, i}
+							{@const totalVotes = vote.options.reduce((s, o) => s + o.votes, 0)}
+							{@const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0}
+							<div class="vote-option">
+								<span class="vote-key">{i + 1}</span>
+								<span class="vote-label">{opt.label}</span>
+								<div class="vote-bar-wrap">
+									<div class="vote-bar" style="width:{pct}%"></div>
+								</div>
+								<span class="vote-pct">{opt.votes}</span>
+							</div>
+						{/each}
+					</div>
+				{:else if voteResult && vote.result}
+					<div class="vote-result">
+						<span class="vote-result-label">{vote.result.winner.replace(/_/g, ' ')}</span>
+						<span class="vote-result-desc">{vote.result.description}</span>
+					</div>
+				{/if}
+			</div>
+		{/if}
+
 		<!-- Board (hidden during lobby — no peeking before both are ready) -->
 		{#if !inLobby}
 		<div style="aspect-ratio:1/1; width:100%;">
@@ -557,6 +608,99 @@
 	main {
 		min-height: 100vh;
 		padding: 2rem 1.5rem;
+	}
+
+	/* ── Vote banner ── */
+	.vote-banner {
+		border-radius: 0.375rem;
+		padding: 0.65rem 0.9rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		animation: vote-slide-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+	@keyframes vote-slide-in {
+		from { opacity: 0; transform: translateY(-18px) scaleY(0.85); }
+		to   { opacity: 1; transform: translateY(0) scaleY(1); }
+	}
+	.vote-banner--result {
+		animation: vote-pulse 0.8s ease-in-out 2;
+	}
+	@keyframes vote-pulse {
+		0%, 100% { opacity: 1; }
+		50%       { opacity: 0.6; }
+	}
+	.vote-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.vote-title {
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.6;
+	}
+	.vote-timer {
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		opacity: 0.7;
+	}
+	.vote-options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+	.vote-option {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.78rem;
+	}
+	.vote-key {
+		font-weight: 700;
+		font-size: 0.7rem;
+		opacity: 0.55;
+		width: 0.9rem;
+		text-align: center;
+	}
+	.vote-label { flex: 0 0 5.5rem; }
+	.vote-bar-wrap {
+		flex: 1;
+		height: 4px;
+		background: rgba(255,255,255,0.1);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+	.vote-bar {
+		height: 100%;
+		background: rgba(147, 210, 255, 0.75);
+		border-radius: 2px;
+		transition: width 0.35s ease;
+	}
+	.vote-pct {
+		font-size: 0.7rem;
+		opacity: 0.6;
+		width: 1.5rem;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+	.vote-result {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		text-align: center;
+	}
+	.vote-result-label {
+		font-size: 1rem;
+		font-weight: 700;
+		text-transform: capitalize;
+		letter-spacing: 0.05em;
+	}
+	.vote-result-desc {
+		font-size: 0.75rem;
+		opacity: 0.65;
 	}
 
 	.revert-banner {

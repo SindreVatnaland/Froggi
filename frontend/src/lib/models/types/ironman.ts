@@ -42,6 +42,8 @@ export interface IronManRoster {
 }
 
 export type IronManCharOrder = 'free' | 'fixed' | 'random';
+export type IronManCharSelection = 'pick' | 'random';
+export type IronManRandomSync = 'shared' | 'independent';
 
 export interface IronManSettings {
 	variant: IronManVariant;
@@ -49,6 +51,8 @@ export interface IronManSettings {
 	hideOpponent: boolean;
 	stocksPerChar: number;   // 4 for Melee standard
 	charOrder: IronManCharOrder;
+	charSelection: IronManCharSelection;
+	randomSync: IronManRandomSync;
 }
 
 export interface IronManSession {

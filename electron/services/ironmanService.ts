@@ -179,12 +179,34 @@ export class IronManService {
 						this.messageHandler.sendMessage('IronManLobbyState', { ...this.lobby });
 					}
 				} else if (msg.type === 'IronManStart' && msg.roster) {
-					// Host sent us the confirmed start; we already have our session set up
-					this.applyOpponentRosterUpdate(msg.roster);
-					if (this.session) {
+					if (!this.session &&
+						this.pendingSettings?.charSelection === 'random' &&
+						this.pendingSettings?.randomSync === 'shared') {
+						// Shared-random: auto-start guest with host's roster
+						const guestSession: IronManSession = {
+							settings: this.pendingSettings,
+							localRoster: { slots: msg.roster.slots.map(s => ({ ...s, depleted: false, completed: false, stocksRemaining: this.pendingSettings!.stocksPerChar })), currentIndex: 0 },
+							opponentRoster: null,
+							role: 'guest',
+							localName: this.localPlayerName,
+							opponentName: this.lobby?.opponentName ?? null,
+							localPlayerIndex: this.localPlayerIndex,
+							opponentConnected: true,
+							startedAt: Date.now(),
+							winner: null,
+							pendingCarryStocks: null,
+						};
+						this.startSession(guestSession);
 						this.lobby = null;
 						this.messageHandler.sendMessage('IronManLobbyState', null);
-						this.emitState();
+					} else {
+						// Normal: guest already started their own session; receive opponent roster
+						this.applyOpponentRosterUpdate(msg.roster);
+						if (this.session) {
+							this.lobby = null;
+							this.messageHandler.sendMessage('IronManLobbyState', null);
+							this.emitState();
+						}
 					}
 				} else if (msg.type === 'IronManRosterUpdate' && msg.roster) {
 					this.applyOpponentRosterUpdate(msg.roster);
@@ -218,6 +240,10 @@ export class IronManService {
 	// ── Event listeners ──────────────────────────────────────────────────────
 
 	private initEventListeners() {
+		this.localEmitter.on('CurrentPlayer', (player: any) => {
+			if (!this.session) this.localPlayerIndex = player?.playerIndex ?? null;
+		});
+
 		this.clientEmitter.on('IronManStartLobby', (settings: IronManSettings) => {
 			this.closePeerConnection();
 			this.session = null;
@@ -265,7 +291,17 @@ export class IronManService {
 
 		this.localEmitter.on('GameSettings', (settings: any) => {
 			if (!this.session) return;
-			const myIdx = this.effectiveLocalIndex;
+			let myIdx = this.effectiveLocalIndex;
+			if (myIdx == null) {
+				const connectCode = this.settingsStore.getCurrentPlayerConnectCode() ?? '';
+				const players = settings?.players ?? [];
+				const found = connectCode ? players.find((p: any) => p.connectCode === connectCode) : null;
+				myIdx = found?.playerIndex ?? players[0]?.playerIndex ?? null;
+				if (myIdx != null) {
+					this.localPlayerIndex = myIdx;
+					if (this.session) this.session.localPlayerIndex = myIdx;
+				}
+			}
 			if (myIdx == null) return;
 
 			const players = settings?.players ?? [];

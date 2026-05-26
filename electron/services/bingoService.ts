@@ -16,9 +16,21 @@ import type {
 	BingoSettings,
 	BingoSoloWinPayload,
 	BingoLeaderboardEntry,
+	BingoBox,
+	BingoDifficulty,
+	BingoChallengeId,
+	BingoVoteState,
+	BingoVoteActionType,
 } from '../../frontend/src/lib/models/types/bingo';
 import type { CurrentPlayer, GameStats } from '../../frontend/src/lib/models/types/slippiData';
 import { getMoveCategory } from '../../frontend/src/lib/models/constants/moveCategories';
+import {
+	CHALLENGE_DEFINITIONS,
+	resolveTarget,
+	PLAYABLE_CHARACTER_IDS,
+	CHARACTER_NAMES,
+} from '../../frontend/src/lib/models/constants/bingoChallenges';
+import { TwitchChatService } from './twitchChatService';
 
 interface SessionSnapshot {
 	sessionKillsByMove: Map<string, number>;
@@ -38,6 +50,11 @@ interface SessionSnapshot {
 	characterWins: Map<number, number>;
 	sessionEdgeguardAttempts: number;
 	sessionEdgeguardSuccesses: number;
+	sessionRestKills: number;
+	sessionFalconPunchKills: number;
+	sessionGwmJudgeKills: number;
+	sessionTurnipHeld: boolean;
+	sessionEggLays: number;
 	boxStates: Map<string, { progress: number; completed: boolean; completedBy: 'local' | 'opponent' | 'both' | null }>;
 }
 
@@ -55,6 +72,7 @@ interface BingoPeerMessage {
 	instanceId?: string;
 	timestamp?: number;
 	playerName?: string;
+	twitchUsername?: string;
 }
 
 @singleton()
@@ -65,12 +83,14 @@ export class BingoService {
 	private opponentPlayerIndex: number | null = null;
 	private localPlayerName: string = 'Player 1';
 	private pendingOpponentName: string | null = null;
+	private opponentTwitchUsername: string | null = null;
 
 	// Peer connection state
 	private peerSocket: WebSocket | null = null; // active peer WS (either as host or guest)
 
 	// Per-game state (reset on GameSettings)
 	private effectiveLocalIndex: number | null = null;
+	private currentGameLocalCharId: number = -1;
 	private peakOpponentPercent: number = 0;
 	private zerodeathAttempt: ZeroDeathAttempt | null = null;
 	private gameSpikesThisGame: number = 0;
@@ -103,12 +123,25 @@ export class BingoService {
 	private sessionBestSpikeGame: number = 0;
 	private sessionEdgeguardAttempts: number = 0;
 	private sessionEdgeguardSuccesses: number = 0;
+	private sessionRestKills: number = 0;
+	private sessionFalconPunchKills: number = 0;
+	private sessionGwmJudgeKills: number = 0;
+	private sessionTurnipHeld: boolean = false;
+	private currentTurnipHeldFrames: number = 0;
+	private sessionEggLays: number = 0;
 	private winStreak: number = 0;
 	private characterWins: Map<number, number> = new Map();
 	private lastGameWasWin: boolean = false;
 	private sessionSnapshot: SessionSnapshot | null = null;
 	private opponentCompletedBoxes: Set<string> = new Set();
 	private readonly revertEnabled: boolean = true;
+
+	// Vote state
+	private voteState: BingoVoteState | null = null;
+	private voteTimer: ReturnType<typeof setTimeout> | null = null;
+	private voteScheduleTimer: ReturnType<typeof setTimeout> | null = null;
+	private chatVotes: Map<string, BingoVoteActionType> = new Map();
+	private frozenTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -117,6 +150,7 @@ export class BingoService {
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore,
+		@inject(delay(() => TwitchChatService)) private twitchChatService: TwitchChatService,
 	) {
 		this.log.info('Initializing Bingo Service');
 		this.initEventListeners();
@@ -148,16 +182,21 @@ export class BingoService {
 							return;
 						}
 						this.peerSocket = ws;
+						const myTwitch = this.settingsStore.getTwitchUsername();
 						if (this.lobby) {
 							// Lobby mode: exchange names, no board yet
 							this.lobby.opponentConnected = true;
 							this.lobby.opponentName = msg.playerName ?? null;
-							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, playerName: this.localPlayerName, settings: this.lobby.settings }));
+							this.opponentTwitchUsername = msg.twitchUsername ?? null;
+							this.lobby.localTwitchUsername = myTwitch || undefined;
+							this.lobby.opponentTwitchUsername = this.opponentTwitchUsername ?? undefined;
+							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, playerName: this.localPlayerName, settings: this.lobby.settings, twitchUsername: myTwitch }));
 							this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
 						} else {
 							// Active session host (reconnect scenario)
 							this.pendingOpponentName = msg.playerName ?? null;
-							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, board: this.session!.board, settings: this.session!.settings, playerName: this.localPlayerName }));
+							this.opponentTwitchUsername = msg.twitchUsername ?? null;
+							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, board: this.session!.board, settings: this.session!.settings, playerName: this.localPlayerName, twitchUsername: myTwitch }));
 							if (this.session) this.session.opponentName = this.pendingOpponentName;
 							this.updatePeerConnected(true);
 						}
@@ -202,6 +241,8 @@ export class BingoService {
 			this.effectiveLocalIndex = this.localPlayerIndex ?? settings.players[0].playerIndex;
 			const otherPlayer = settings.players.find(p => p.playerIndex !== this.effectiveLocalIndex);
 			this.opponentPlayerIndex = otherPlayer?.playerIndex ?? null;
+			const rawCharId = settings.players.find(p => p.playerIndex === this.effectiveLocalIndex)?.characterId ?? -1;
+			this.currentGameLocalCharId = rawCharId === 19 ? 18 : rawCharId;
 		});
 
 		this.localEmitter.on('GameFrame', (frame: FrameEntryType | undefined | null) => {
@@ -217,15 +258,19 @@ export class BingoService {
 		// User-initiated events come via clientEmitter
 		this.clientEmitter.on('BingoStartLobby', () => {
 			this.closePeerConnection();
+			this.opponentTwitchUsername = null;
 			this.session = null;
-			this.lobby = { opponentConnected: false, opponentName: null, localName: this.localPlayerName };
+			const myTwitch = this.settingsStore.getTwitchUsername();
+			this.lobby = { opponentConnected: false, opponentName: null, localName: this.localPlayerName, localTwitchUsername: myTwitch || undefined };
 			this.messageHandler.lobbyGame = 'bingo';
 			this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
 		});
 
 		this.clientEmitter.on('BingoUpdateLobbySettings', (settings: BingoSettings) => {
 			if (!this.lobby) return;
+			const myTwitch = this.settingsStore.getTwitchUsername();
 			this.lobby.settings = settings;
+			this.lobby.localTwitchUsername = myTwitch || undefined;
 			this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
 			if (this.peerSocket?.readyState === WebSocket.OPEN) {
 				this.peerSocket.send(JSON.stringify({ type: 'BingoSettingsUpdate', settings }));
@@ -275,6 +320,10 @@ export class BingoService {
 
 		this.clientEmitter.on('GetBingoLeaderboard', () => {
 			this.emitLeaderboard();
+		});
+
+		this.localEmitter.on('TwitchChatMessage', (data: { username: string; text: string }) => {
+			this.handleChatVote(data);
 		});
 	}
 
@@ -355,7 +404,8 @@ export class BingoService {
 		this.peerSocket = ws;
 
 		ws.on('open', () => {
-			ws.send(JSON.stringify({ type: 'BingoJoin', version: this.app.getVersion(), playerName: this.localPlayerName }));
+			const myTwitch = this.settingsStore.getTwitchUsername();
+			ws.send(JSON.stringify({ type: 'BingoJoin', version: this.app.getVersion(), playerName: this.localPlayerName, twitchUsername: myTwitch }));
 		});
 
 		ws.on('message', (raw) => {
@@ -363,7 +413,16 @@ export class BingoService {
 				const msg: BingoPeerMessage = JSON.parse(raw.toString());
 				if (msg.type === 'BingoWelcome' && !msg.board) {
 					// Lobby: host acknowledged connection, no board yet — wait for BingoStart
-					this.lobby = { opponentConnected: true, opponentName: msg.playerName ?? null, localName: this.localPlayerName, settings: msg.settings };
+					const myTwitch = this.settingsStore.getTwitchUsername();
+					this.opponentTwitchUsername = msg.twitchUsername ?? null;
+					this.lobby = {
+						opponentConnected: true,
+						opponentName: msg.playerName ?? null,
+						localName: this.localPlayerName,
+						settings: msg.settings,
+						localTwitchUsername: myTwitch || undefined,
+						opponentTwitchUsername: this.opponentTwitchUsername ?? undefined,
+					};
 					this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
 				} else if (msg.type === 'BingoSettingsUpdate' && msg.settings) {
 					if (this.lobby) {
@@ -374,7 +433,7 @@ export class BingoService {
 					// Host started the game
 					const session: BingoSession = {
 						board: msg.board,
-						settings: msg.settings ?? { mode: 'lockout', boardSize: msg.board.size as 3 | 4 | 5, difficulty: msg.board.difficulty, winCondition: 3, lines: { rows: true, columns: true, diagonals: true }, requireQueueAfterGame: false, timer: { enabled: false, durationMinutes: 60 } },
+						settings: msg.settings ?? { mode: 'lockout', boardSize: msg.board.size as 3 | 4 | 5, difficulty: msg.board.difficulty, winCondition: 3, lines: { rows: true, columns: true, diagonals: true }, requireQueueAfterGame: false, timer: { enabled: false, durationMinutes: 60 }, twitchEnabled: false, twitchChannel: '' },
 						startedAt: Date.now(),
 						localPlayerIndex: this.localPlayerIndex,
 						role: 'guest',
@@ -481,6 +540,7 @@ export class BingoService {
 
 	private resetGameState() {
 		this.effectiveLocalIndex = null;
+		this.currentGameLocalCharId = -1;
 		this.peakOpponentPercent = 0;
 		this.zerodeathAttempt = null;
 		this.gameSpikesThisGame = 0;
@@ -495,6 +555,7 @@ export class BingoService {
 		this.usedSmashThisGame = false;
 		this.prevMyLastAttack = 0;
 		this.gameKillsPerMove = new Map();
+		this.currentTurnipHeldFrames = 0;
 	}
 
 	private static readonly DEATH_DIRECTION_MAP: Record<number, string> = {
@@ -542,6 +603,18 @@ export class BingoService {
 				if (direction === 'down') {
 					this.sessionSpikeMoveCategories.add(cat);
 				}
+				// Jigglypuff (15) rest kill: down_b while playing as Puff
+				if (cat === 'down_b' && this.currentGameLocalCharId === 15) {
+					this.sessionRestKills++;
+				}
+				// Captain Falcon (0) Falcon Punch kill: neutral_b
+				if (cat === 'neutral_b' && this.currentGameLocalCharId === 0) {
+					this.sessionFalconPunchKills++;
+				}
+				// G&W (3) Judge kill: side_b (any Judge outcome including 9)
+				if (cat === 'side_b' && this.currentGameLocalCharId === 3) {
+					this.sessionGwmJudgeKills++;
+				}
 			}
 
 			this.handleOpponentStockLost(direction);
@@ -562,6 +635,11 @@ export class BingoService {
 			if (myLastAttack !== this.prevMyLastAttack && (myLastAttack === 10 || myLastAttack === 11 || myLastAttack === 12)) {
 				this.usedSmashThisGame = true; // fsmash (10), usmash (11), or dsmash (12) landed
 			}
+			// Yoshi (17) egg lay: neutral_b (18) connection
+			if (this.currentGameLocalCharId === 17 && myLastAttack !== this.prevMyLastAttack && myLastAttack === 18) {
+				this.sessionEggLays++;
+				this.checkChallenges();
+			}
 			this.prevMyLastAttack = myLastAttack;
 		}
 
@@ -578,6 +656,19 @@ export class BingoService {
 		this.prevFramePercents.set(myIdx, myPercent);
 		this.prevFramePercents.set(oppIdx, oppPercent);
 		this.prevFrameStocks.set(oppIdx, oppStocks);
+
+		// Peach (12) turnip hold: track consecutive frames holding a turnip
+		if (this.currentGameLocalCharId === 12 && !this.sessionTurnipHeld && (frame as any).items?.length) {
+			const holding = (frame as any).items.some(
+				(item: any) => item.turnipFace !== null && item.owner === myIdx
+			);
+			if (holding) {
+				this.currentTurnipHeldFrames++;
+				if (this.currentTurnipHeldFrames >= 1200) this.sessionTurnipHeld = true;
+			} else {
+				this.currentTurnipHeldFrames = 0;
+			}
+		}
 	}
 
 	private handleOpponentStockLost(direction: string | null) {
@@ -799,6 +890,7 @@ export class BingoService {
 		for (const box of this.session.board.boxes) {
 			if (box.completedBy === 'local' || box.completedBy === 'both') continue;
 			if (isLockout && box.completedBy === 'opponent') continue;
+			if (box.frozen) continue;
 			const prev = box.progress;
 			let next = prev;
 
@@ -921,6 +1013,27 @@ export class BingoService {
 					if (attempts >= 3 && this.sessionEdgeguardSuccesses / attempts >= required) next = 1;
 					break;
 				}
+				case 'win_high_apm':
+					if (ctx.didWin && ctx.myApm != null && ctx.myApm > (box.params.percent ?? 350)) next = 1;
+					break;
+				case 'win_low_damage_dealt':
+					if (ctx.didWin && ctx.totalDamage < (box.params.percent ?? 150)) next = 1;
+					break;
+				case 'rest_kill':
+					if (this.sessionRestKills >= 1) next = 1;
+					break;
+				case 'falcon_punch_kill':
+					if (this.sessionFalconPunchKills >= 1) next = 1;
+					break;
+				case 'gwm_judge_kill':
+					if (this.sessionGwmJudgeKills >= 1) next = 1;
+					break;
+				case 'peach_turnip_hold':
+					if (this.sessionTurnipHeld) next = 1;
+					break;
+				case 'yoshi_egg_lay':
+					next = this.sessionEggLays;
+					break;
 			}
 
 			if (next !== prev || next >= box.target) {
@@ -971,6 +1084,19 @@ export class BingoService {
 		this.localPlayerIndex = session.localPlayerIndex;
 		this.log.info(`Bingo session started: ${session.board.id}, role: ${session.role}`);
 		this.messageHandler.sendMessage('BingoState', { session: this.session });
+
+		if (session.settings.twitchEnabled && session.settings.twitchChannel) {
+			const isMultiplayer = session.role === 'host' || session.role === 'guest';
+			const localHasTwitch = !!this.settingsStore.getTwitchUsername();
+			const opponentHasTwitch = !isMultiplayer || !!this.opponentTwitchUsername;
+			if (localHasTwitch && opponentHasTwitch) {
+				this.twitchChatService.connect(session.settings.twitchChannel);
+				this.scheduleNextVote();
+			} else {
+				this.log.info('Bingo: Twitch skipped — both players need a Twitch username set');
+				this.messageHandler.sendMessage('Notification', 'Twitch polls disabled — both players must have a Twitch username configured', NotificationType.Warning, 5000);
+			}
+		}
 	}
 
 	private resetSessionAccumulators() {
@@ -989,6 +1115,11 @@ export class BingoService {
 		this.sessionBestSpikeGame = 0;
 		this.sessionEdgeguardAttempts = 0;
 		this.sessionEdgeguardSuccesses = 0;
+		this.sessionRestKills = 0;
+		this.sessionFalconPunchKills = 0;
+		this.sessionGwmJudgeKills = 0;
+		this.sessionTurnipHeld = false;
+		this.sessionEggLays = 0;
 		this.winStreak = 0;
 		this.characterWins.clear();
 	}
@@ -1010,6 +1141,11 @@ export class BingoService {
 			sessionBestSpikeGame: this.sessionBestSpikeGame,
 			sessionEdgeguardAttempts: this.sessionEdgeguardAttempts,
 			sessionEdgeguardSuccesses: this.sessionEdgeguardSuccesses,
+			sessionRestKills: this.sessionRestKills,
+			sessionFalconPunchKills: this.sessionFalconPunchKills,
+			sessionGwmJudgeKills: this.sessionGwmJudgeKills,
+			sessionTurnipHeld: this.sessionTurnipHeld,
+			sessionEggLays: this.sessionEggLays,
 			winStreak: this.winStreak,
 			characterWins: new Map(this.characterWins),
 			boxStates: new Map(
@@ -1037,6 +1173,11 @@ export class BingoService {
 		this.sessionBestSpikeGame = s.sessionBestSpikeGame;
 		this.sessionEdgeguardAttempts = s.sessionEdgeguardAttempts;
 		this.sessionEdgeguardSuccesses = s.sessionEdgeguardSuccesses;
+		this.sessionRestKills = s.sessionRestKills;
+		this.sessionFalconPunchKills = s.sessionFalconPunchKills;
+		this.sessionGwmJudgeKills = s.sessionGwmJudgeKills;
+		this.sessionTurnipHeld = s.sessionTurnipHeld;
+		this.sessionEggLays = s.sessionEggLays;
 		this.winStreak = s.winStreak;
 		this.characterWins = new Map(s.characterWins);
 		if (this.session) {
@@ -1060,11 +1201,16 @@ export class BingoService {
 
 	private stopSession() {
 		this.closePeerConnection();
+		this.stopVote();
+		this.clearFrozenTimers();
+		this.twitchChatService.disconnect();
+		this.opponentTwitchUsername = null;
 		this.lobby = null;
 		this.session = null;
 		if (this.messageHandler.lobbyGame === 'bingo') this.messageHandler.lobbyGame = null;
 		this.messageHandler.sendMessage('BingoLobbyState', null);
 		this.messageHandler.sendMessage('BingoState', { session: null });
+		this.messageHandler.sendMessage('BingoVoteState', null);
 	}
 
 	private closePeerConnection() {
@@ -1072,5 +1218,235 @@ export class BingoService {
 			this.peerSocket.close();
 		}
 		this.peerSocket = null;
+	}
+
+	// ── Twitch vote system ────────────────────────────────────────────────────
+
+	private getWinBoxIndices(filter: (b: BingoBox) => boolean): Set<number> {
+		if (!this.session) return new Set();
+		const boxes = this.session.board.boxes;
+		const size = this.session.board.size;
+		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
+		const win = new Set<number>();
+		for (let r = 0; r < size; r++) {
+			const row = Array.from({ length: size }, (_, c) => r * size + c);
+			if (row.every(i => done.has(i))) row.forEach(i => win.add(i));
+		}
+		for (let c = 0; c < size; c++) {
+			const col = Array.from({ length: size }, (_, r) => r * size + c);
+			if (col.every(i => done.has(i))) col.forEach(i => win.add(i));
+		}
+		const d1 = Array.from({ length: size }, (_, i) => i * size + i);
+		if (d1.every(i => done.has(i))) d1.forEach(i => win.add(i));
+		const d2 = Array.from({ length: size }, (_, i) => i * size + (size - 1 - i));
+		if (d2.every(i => done.has(i))) d2.forEach(i => win.add(i));
+		return win;
+	}
+
+	private getLockedBoxIndices(): Set<number> {
+		const localWin = this.getWinBoxIndices(b => b.completedBy === 'local' || b.completedBy === 'both');
+		const oppWin = this.getWinBoxIndices(b => b.completedBy === 'opponent' || b.completedBy === 'both');
+		return new Set([...localWin, ...oppWin]);
+	}
+
+	private scheduleNextVote() {
+		if (this.voteScheduleTimer) clearTimeout(this.voteScheduleTimer);
+		// 3–8 minute random interval
+		const delayMs = (Math.floor(Math.random() * 300) + 180) * 1000;
+		this.voteScheduleTimer = setTimeout(() => this.tryStartVote(), delayMs);
+	}
+
+	private tryStartVote() {
+		this.voteScheduleTimer = null;
+		if (!this.session?.settings.twitchEnabled) return;
+		const localCompleted = this.session.board.boxes.filter(
+			b => b.completedBy === 'local' || b.completedBy === 'both'
+		).length;
+		if (localCompleted < 3) {
+			// Not enough tiles yet, retry in 2 min
+			this.voteScheduleTimer = setTimeout(() => this.tryStartVote(), 120000);
+			return;
+		}
+		this.startVote();
+	}
+
+	private startVote() {
+		const state: BingoVoteState = {
+			active: true,
+			options: [
+				{ id: 'randomize_opponent_tile', label: 'Randomize', description: "Replace a random opponent tile with a new challenge", votes: 0 },
+				{ id: 'freeze_tile', label: 'Freeze',    description: 'Freeze a random tile for 2 minutes', votes: 0 },
+				{ id: 'swap_tiles',  label: 'Swap',      description: 'Swap two random unprotected tiles', votes: 0 },
+			],
+			startedAt: Date.now(),
+			durationMs: 30000,
+		};
+		this.voteState = state;
+		this.chatVotes.clear();
+		this.messageHandler.sendMessage('BingoVoteState', { ...state });
+		this.voteTimer = setTimeout(() => this.resolveVote(), 30000);
+	}
+
+	private handleChatVote(data: { username: string; text: string }) {
+		if (!this.voteState?.active) return;
+		const t = data.text.trim();
+		let choice: BingoVoteActionType | null = null;
+		if (t === '1') choice = 'randomize_opponent_tile';
+		else if (t === '2') choice = 'freeze_tile';
+		else if (t === '3') choice = 'swap_tiles';
+		if (!choice) return;
+		this.chatVotes.set(data.username, choice);
+		const counts = new Map<BingoVoteActionType, number>();
+		for (const v of this.chatVotes.values()) counts.set(v, (counts.get(v) ?? 0) + 1);
+		this.voteState = {
+			...this.voteState,
+			options: this.voteState.options.map(o => ({ ...o, votes: counts.get(o.id) ?? 0 })),
+		};
+		this.messageHandler.sendMessage('BingoVoteState', { ...this.voteState });
+	}
+
+	private resolveVote() {
+		if (!this.voteState || !this.session) return;
+		this.voteTimer = null;
+		// Winner = highest votes; tie broken randomly
+		const maxVotes = Math.max(...this.voteState.options.map(o => o.votes));
+		const tied = this.voteState.options.filter(o => o.votes === maxVotes);
+		const winner = tied[Math.floor(Math.random() * tied.length)];
+		let description = '';
+		if (winner.id === 'randomize_opponent_tile') description = this.executeRandomize();
+		else if (winner.id === 'freeze_tile') description = this.executeFreeze();
+		else if (winner.id === 'swap_tiles') description = this.executeSwap();
+		const resolved: BingoVoteState = { ...this.voteState, active: false, result: { winner: winner.id, description } };
+		this.voteState = null;
+		this.chatVotes.clear();
+		this.messageHandler.sendMessage('BingoVoteState', resolved);
+		// Clear result after 5s then schedule next vote
+		setTimeout(() => {
+			this.messageHandler.sendMessage('BingoVoteState', null);
+			if (this.session?.settings.twitchEnabled) this.scheduleNextVote();
+		}, 5000);
+	}
+
+	private executeRandomize(): string {
+		if (!this.session) return 'No active session';
+		const boxes = this.session.board.boxes;
+		const locked = this.getLockedBoxIndices();
+		const eligible = boxes
+			.map((b, i) => ({ b, i }))
+			.filter(({ b, i }) => (b.completedBy === 'opponent' || b.completedBy === 'both') && !b.frozen && !locked.has(i));
+		if (!eligible.length) {
+			this.messageHandler.sendMessage('Notification', 'Randomize: no eligible opponent tiles', NotificationType.Warning, 3000);
+			return 'No eligible tiles to randomize';
+		}
+		const { b: target, i: targetIdx } = eligible[Math.floor(Math.random() * eligible.length)];
+		const usedIds = new Set(boxes.map(b => b.challengeId));
+		usedIds.delete(target.challengeId);
+		const replacement = this.generateReplacementBox(usedIds, this.session.board.difficulty);
+		if (!replacement) return 'Could not generate replacement tile';
+		const newBox: BingoBox = { ...replacement, instanceId: target.instanceId };
+		boxes[targetIdx] = newBox;
+		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: newBox.instanceId, box: newBox });
+		this.sendBoardToPeer(this.session.board);
+		return `Randomized tile: "${newBox.label}"`;
+	}
+
+	private executeFreeze(): string {
+		if (!this.session) return 'No active session';
+		const boxes = this.session.board.boxes;
+		const locked = this.getLockedBoxIndices();
+		const eligible = boxes
+			.map((b, i) => ({ b, i }))
+			.filter(({ b, i }) => !b.frozen && !b.completed && !locked.has(i));
+		if (!eligible.length) {
+			this.messageHandler.sendMessage('Notification', 'Freeze: no eligible tiles', NotificationType.Warning, 3000);
+			return 'No eligible tiles to freeze';
+		}
+		const { b: target } = eligible[Math.floor(Math.random() * eligible.length)];
+		target.frozen = true;
+		this.messageHandler.sendMessage('BingoChallengeUpdates', {
+			updates: [{ instanceId: target.instanceId, progress: target.progress, completed: false, frozen: true }],
+		});
+		// Unfreeze after 2 minutes
+		const timer = setTimeout(() => {
+			if (!this.session) return;
+			const box = this.session.board.boxes.find(b => b.instanceId === target.instanceId);
+			if (!box) return;
+			box.frozen = false;
+			this.frozenTimers.delete(target.instanceId);
+			this.messageHandler.sendMessage('BingoChallengeUpdates', {
+				updates: [{ instanceId: box.instanceId, progress: box.progress, completed: box.completed, frozen: false }],
+			});
+		}, 120000);
+		this.frozenTimers.set(target.instanceId, timer);
+		return `Froze tile: "${target.label}" for 2 minutes`;
+	}
+
+	private executeSwap(): string {
+		if (!this.session) return 'No active session';
+		const boxes = this.session.board.boxes;
+		const locked = this.getLockedBoxIndices();
+		const eligible = boxes
+			.map((b, i) => ({ b, i }))
+			.filter(({ b, i }) => !b.frozen && !locked.has(i));
+		if (eligible.length < 2) {
+			const msg = eligible.length === 1 && locked.has(boxes.indexOf(eligible[0]?.b))
+				? 'That tile is protected by a completed line'
+				: 'Not enough unprotected tiles to swap';
+			this.messageHandler.sendMessage('Notification', msg, NotificationType.Warning, 3000);
+			return msg;
+		}
+		// Pick 2 random distinct tiles
+		const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+		const [{ b: a, i: ai }, { b: b2, i: bi }] = shuffled;
+		// Swap content, preserve instanceIds and frozen state
+		const savedA = { ...a };
+		const savedB = { ...b2 };
+		boxes[ai] = { ...savedB, instanceId: savedA.instanceId, frozen: savedA.frozen, completedBy: null, completed: false, progress: 0 };
+		boxes[bi] = { ...savedA, instanceId: savedB.instanceId, frozen: savedB.frozen, completedBy: null, completed: false, progress: 0 };
+		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: boxes[ai].instanceId, box: boxes[ai] });
+		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: boxes[bi].instanceId, box: boxes[bi] });
+		this.sendBoardToPeer(this.session.board);
+		return `Swapped "${savedA.label}" ↔ "${savedB.label}"`;
+	}
+
+	private generateReplacementBox(excludeIds: Set<BingoChallengeId>, difficulty: BingoDifficulty): BingoBox | null {
+		const pool = CHALLENGE_DEFINITIONS.filter(d => {
+			if (d.availableDifficulties && !d.availableDifficulties.includes(difficulty)) return false;
+			return !excludeIds.has(d.id);
+		});
+		if (!pool.length) return null;
+		const def = pool[Math.floor(Math.random() * pool.length)];
+		const { target, percent } = resolveTarget(def, difficulty);
+		const params: BingoBox['params'] = { difficulty, target, ...(percent !== undefined ? { percent } : {}) };
+		if (def.id === 'win_with_character') {
+			const charId = PLAYABLE_CHARACTER_IDS[Math.floor(Math.random() * PLAYABLE_CHARACTER_IDS.length)];
+			params.characterId = charId;
+			params.characterName = CHARACTER_NAMES[charId] ?? `Character ${charId}`;
+		}
+		const labelParams = { target, percent, direction: params.direction, characterName: params.characterName };
+		return {
+			instanceId: `b${Math.random().toString(36).slice(-8)}`,
+			challengeId: def.id,
+			label: def.label(labelParams),
+			description: def.description(labelParams),
+			params,
+			progress: 0,
+			target,
+			completed: false,
+			completedBy: null,
+			hasProgress: def.hasProgress,
+		};
+	}
+
+	private stopVote() {
+		if (this.voteTimer) { clearTimeout(this.voteTimer); this.voteTimer = null; }
+		if (this.voteScheduleTimer) { clearTimeout(this.voteScheduleTimer); this.voteScheduleTimer = null; }
+		this.voteState = null;
+		this.chatVotes.clear();
+	}
+
+	private clearFrozenTimers() {
+		for (const timer of this.frozenTimers.values()) clearTimeout(timer);
+		this.frozenTimers.clear();
 	}
 }

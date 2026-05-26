@@ -73,6 +73,7 @@ describe('BingoService', () => {
 			clientEmitter,
 			{ sendMessage, bingoPeerWss: { on: jest.fn() } } as any,
 			{ getBingoLeaderboard: jest.fn().mockReturnValue({}), setBingoLeaderboard: jest.fn() } as any,
+			{ connect: jest.fn(), disconnect: jest.fn() } as any,
 		);
 	});
 
@@ -101,6 +102,7 @@ describe('BingoService', () => {
 				mode: 'solo', boardSize: 3, difficulty: 'medium', winCondition: 1,
 				lines: { rows: true, columns: true, diagonals: true },
 				requireQueueAfterGame: false, timer: { enabled: false, durationMinutes: 60 },
+				twitchEnabled: false, twitchChannel: '',
 			},
 			startedAt: Date.now(),
 			localPlayerIndex: MY_IDX,

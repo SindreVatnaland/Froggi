@@ -69,6 +69,7 @@
 		{@const isMine = box.completedBy === 'local'}
 		{@const isBoth = box.completedBy === 'both'}
 		{@const isExiting = exitingBoxIndices.has(i)}
+		{@const isFrozen = !!box.frozen}
 		{@const sp = showProg(box)}
 		{@const progPct = sp ? pct(box) : 0}
 		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
@@ -82,6 +83,7 @@
 			class:box--win-both={isLocalW && isOppW}
 			class:box--exit-fall={isExiting && !isLocalWinner}
 			class:box--exit-rise={isExiting && isLocalWinner}
+			class:box--frozen={isFrozen}
 			class:box--dev={devMode}
 			use:tooltip={{ content: box.description, placement: 'top', delay: [400, 0] }}
 			on:click={(e) => handleClick(e, box.instanceId)}
@@ -122,6 +124,9 @@
 			{/if}
 			{#if isOpp}
 				<span class="opp-badge">✓</span>
+			{/if}
+			{#if isFrozen}
+				<span class="frozen-badge">❄</span>
 			{/if}
 			{#if devMode}
 				<div class="dev-half dev-half--left"></div>
@@ -261,6 +266,24 @@
 		right: 4px;
 		font-size: var(--bingo-badge-size, 0.65rem);
 		color: rgba(52, 211, 153, 0.9);
+	}
+
+	/* ── Frozen ── */
+	.box--frozen {
+		border-color: rgba(147, 210, 255, 0.7) !important;
+		background: rgba(147, 210, 255, 0.12) !important;
+		animation: frozen-pulse 2s ease-in-out infinite;
+	}
+	@keyframes frozen-pulse {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(147, 210, 255, 0); }
+		50%       { box-shadow: 0 0 8px 2px rgba(147, 210, 255, 0.35); }
+	}
+	.frozen-badge {
+		position: absolute;
+		top: 3px;
+		left: 4px;
+		font-size: var(--bingo-badge-size, 0.65rem);
+		opacity: 0.85;
 	}
 
 	/* ── Dev mode click hints ── */

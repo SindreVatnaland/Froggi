@@ -36,6 +36,7 @@ import { WebhookService } from './services/webhookService';
 import { ActionStateService } from './services/actionStateService';
 import { BingoService } from './services/bingoService';
 import { IronManService } from './services/ironmanService';
+import { TwitchChatService } from './services/twitchChatService';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -305,6 +306,7 @@ try {
 			container.resolve(ElectronWebhookStore);
 			container.resolve(WebhookService);
 			container.resolve(ActionStateService);
+			container.resolve(TwitchChatService);
 			container.resolve(BingoService);
 			container.resolve(IronManService);
 
