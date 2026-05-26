@@ -27,14 +27,14 @@
 
 	function labelFontSize(label: string): string {
 		const n = label.length;
-		if (n <= 8)  return '1.15em';
-		if (n <= 13) return '1.06em';
-		if (n <= 18) return '0.97em';
-		if (n <= 24) return '0.89em';
-		if (n <= 30) return '0.82em';
-		if (n <= 38) return '0.76em';
-		if (n <= 46) return '0.70em';
-		return '0.64em';
+		if (n <= 8)  return '1.35em';
+		if (n <= 13) return '1.22em';
+		if (n <= 18) return '1.1em';
+		if (n <= 24) return '1.0em';
+		if (n <= 30) return '0.93em';
+		if (n <= 38) return '0.86em';
+		if (n <= 46) return '0.78em';
+		return '0.70em';
 	}
 
 	function charLabelPrefix(label: string): string {
@@ -97,18 +97,27 @@
 			{/if}
 			<div class="box-inner">
 				{#if box.challengeId === 'win_with_character' && box.params.characterId != null}
-					{@const prefix = charLabelPrefix(box.label)}
-					<span class="label" style="font-size:{labelFontSize(prefix)}">{prefix}</span>
-					<img
-						src="/image/characters/css/{charIconId(box.params.characterId)}.png"
-						alt=""
-						class="char-icon"
-					/>
+					{#if box.target <= 1}
+						<span class="label label--winicas">Win as</span>
+						<img
+							src="/image/characters/css/{charIconId(box.params.characterId)}.png"
+							alt=""
+							class="char-icon char-icon--large"
+						/>
+					{:else}
+						{@const prefix = charLabelPrefix(box.label)}
+						<span class="label" style="font-size:{labelFontSize(prefix)}">{prefix}</span>
+						<img
+							src="/image/characters/css/{charIconId(box.params.characterId)}.png"
+							alt=""
+							class="char-icon"
+						/>
+					{/if}
 				{:else}
 					<span class="label" style="font-size:{labelFontSize(box.label)}">{box.label}</span>
 				{/if}
 			</div>
-			{#if sp && box.hasProgress && !box.completed}
+			{#if sp && box.hasProgress && !box.completed && !(box.challengeId === 'win_with_character' && box.target <= 1)}
 				<span class="sub">{box.progress}/{box.target}</span>
 			{/if}
 			{#if isOpp}
@@ -226,14 +235,24 @@
 
 	.sub {
 		position: absolute;
-		bottom: 3px;
+		bottom: 4px;
 		left: 0;
 		right: 0;
 		text-align: center;
-		font-size: var(--bingo-sub-size, 0.6rem);
-		font-weight: 600;
-		color: rgba(255, 255, 255, 0.75);
+		font-size: var(--bingo-sub-size, 0.78rem);
+		font-weight: 700;
+		color: rgba(255, 255, 255, 0.82);
 		font-family: sans-serif;
+	}
+
+	.label--winicas {
+		font-size: 0.78em;
+		opacity: 0.7;
+	}
+
+	.char-icon--large {
+		width: var(--bingo-char-size-lg, 48px);
+		height: var(--bingo-char-size-lg, 48px);
 	}
 
 	.opp-badge {

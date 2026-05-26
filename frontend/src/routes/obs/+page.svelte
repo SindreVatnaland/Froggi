@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthorized } from '$lib/utils/store.svelte';
-	import { Layers, Trophy, Settings, BookOpen, Send, Grid3x3 } from 'lucide-svelte';
+	import { Layers, Trophy, Settings, BookOpen, Send } from 'lucide-svelte';
 
 	const navItems = [
 		{
@@ -31,13 +31,6 @@
 			path: '/obs/webhook',
 			icon: Send,
 			requiresAuth: true,
-		},
-		{
-			label: 'Bingo',
-			description: 'Challenge-based bingo across a session. Solo or vs a friend.',
-			path: '/obs/bingo',
-			icon: Grid3x3,
-			requiresAuth: false,
 		},
 		{
 			label: 'Tutorial',

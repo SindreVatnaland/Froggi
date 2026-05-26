@@ -37,7 +37,8 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
-import type { BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard } from '../models/types/bingo';
+import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard } from '../models/types/bingo';
+import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -182,6 +183,7 @@ export interface MessageEvents {
 	ActionStateHistory: (data: ActionStateHistoryPayload) => void;
 
 	BingoStartLobby: () => void;
+	BingoUpdateLobbySettings: (settings: BingoSettings) => void;
 	StartBingo: (session: BingoSession) => void;
 	StopBingo: () => void;
 	BingoLobbyState: (data: BingoLobbyPayload | null) => void;
@@ -193,6 +195,21 @@ export interface MessageEvents {
 	BingoSoloWin: (data: BingoSoloWinPayload) => void;
 	GetBingoLeaderboard: () => void;
 	BingoLeaderboard: (data: BingoLeaderboard) => void;
+
+	StartIronMan: (session: IronManSession) => void;
+	IronManStartLobby: (settings: IronManSettings) => void;
+	IronManUpdateLobbySettings: (settings: IronManSettings) => void;
+	StopIronMan: () => void;
+	IronManState: (data: IronManStatePayload) => void;
+	IronManLobbyState: (data: IronManLobbyPayload | null) => void;
+	IronManGameResult: (data: IronManGameResultPayload) => void;
+	IronManPeerConnect: (hostUrl: string) => void;
+	IronManGuestRoster: (slots: IronManSession['localRoster']['slots']) => void;
+	GetIronManLeaderboard: () => void;
+	IronManLeaderboard: (data: IronManLeaderboard) => void;
+	IronManChallengeWin: (data: { timeSeconds: number; rosterSize: number }) => void;
+	/** Fires when a new game starts — carries the char the local player queued with */
+	IronManCurrentChar: (data: { localCharId: number | null; oppCharId: number | null }) => void;
 }
 
 export class TypedEmitter extends localEmitter {

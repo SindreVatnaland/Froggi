@@ -390,12 +390,12 @@ export const CHALLENGE_DEFINITIONS: ChallengeDefinition[] = [
 		id: 'all_blast_zones_game',
 		label: () => 'All 4 blast zones in 1 game',
 		description: () => 'Take a stock off every blast zone (left, right, top, bottom) in a single game',
-		hasProgress: false,
+		hasProgress: true,
 		availableDifficulties: ['medium', 'hard'],
 		difficulties: {
-			easy:   { target: 1 },
-			medium: { target: 1 },
-			hard:   { target: 1 },
+			easy:   { target: 4 },
+			medium: { target: 4 },
+			hard:   { target: 4 },
 		},
 	},
 	{
@@ -433,8 +433,8 @@ export const CHALLENGE_DEFINITIONS: ChallengeDefinition[] = [
 	},
 	{
 		id: 'same_move_kills',
-		label: () => 'Win: take all 3 stocks w/ same move',
-		description: () => 'Win a game where all 3 of the opponent\'s stocks are taken using the same move category (e.g., all fair kills)',
+		label: () => 'Win: take all stocks w/ same move',
+		description: () => 'Win a game where all of the opponent\'s stocks are taken using the same move category (e.g., all fair kills)',
 		hasProgress: true,
 		availableDifficulties: ['hard'],
 		difficulties: {

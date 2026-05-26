@@ -1,27 +1,74 @@
 <script lang="ts">
 	import {
 		bingoSession, bingoLobby, electronEmitter, currentPlayer,
-		urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoLeaderboard
+		urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoLeaderboard,
+		ironManSession, ironManLobby, ironManLeaderboard, ironManCurrentChar,
+		froggiSettings,
 	} from '$lib/utils/store.svelte';
+	import { encryptUrl, decryptUrl, isEncryptedHash } from '$lib/utils/urlCrypto';
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
 	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
+	import type { IronManSettings, IronManRoster } from '$lib/models/types/ironman';
+	import { IRONMAN_CHARS, IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 	import { tooltip } from 'svooltip';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
-	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
-	// @ts-ignore
-	import QrCode from 'svelte-qrcode';
+	import IronManRosterGrid from '$lib/components/ironman/IronManRosterGrid.svelte';
+	import ScoreProgressBar from '$lib/components/ScoreProgressBar.svelte';
+	import SlippiAd from '$lib/components/SlippiAd.svelte';
+	import OverlayRow from '$lib/components/OverlayRow.svelte';
+	import NgrokShareRow from '$lib/components/NgrokShareRow.svelte';
 
-	type Game = 'bingo';
+	type Game = 'bingo' | 'ironman';
 	type Mode = 'solo' | 'host' | 'guest';
 
 	let selectedGame: Game | null = null;
-	let showSelector = true;
 
 	function selectGame(game: Game) {
 		selectedGame = game;
-		showSelector = false;
+	}
+
+	// Unified join flow
+	let joinHash = '';
+	let joinConnecting = false;
+	let joinError = '';
+
+	async function joinGame() {
+		if (!joinHash.trim()) return;
+		joinConnecting = true;
+		joinError = '';
+		const raw = joinHash.trim();
+		const version = $froggiSettings?.version ?? 'froggi';
+		let baseUrl: string;
+		try {
+			baseUrl = isEncryptedHash(raw) ? decryptUrl(raw, version) : raw;
+			baseUrl = baseUrl.replace(/\/$/, '');
+			console.log('[Froggi] Join decrypt — input:', raw, '→ url:', baseUrl);
+			const res = await fetch(baseUrl + '/lobby-info', {
+				headers: { 'ngrok-skip-browser-warning': 'true' },
+			});
+			if (!res.ok) throw new Error(`lobby-info ${res.status}`);
+			const { game } = await res.json() as { game: 'bingo' | 'ironman' | null };
+			console.log('[Froggi] Join lobby-info response:', { game });
+			if (game === 'bingo') {
+				selectGame('bingo');
+				mode = 'guest';
+				guestUrl = baseUrl;
+				joinAsGuest();
+			} else if (game === 'ironman') {
+				selectGame('ironman');
+				imMode = 'guest';
+				imGuestUrl = baseUrl;
+				imJoinGuest();
+			} else {
+				joinError = 'No active lobby found. Make sure the host has opened a lobby.';
+			}
+		} catch (err) {
+			console.warn('[Froggi] Join failed:', err, '— decoded url:', baseUrl!);
+			joinError = 'Could not connect — check the share code. If the host is on a different Froggi version, both players may need to update.';
+		}
+		joinConnecting = false;
 	}
 
 	// Bingo
@@ -101,7 +148,7 @@
 		connecting = false;
 		$electronEmitter.emit('StopBingo');
 		selectedGame = null;
-		showSelector = true;
+		
 	}
 
 	$: if ($bingoLobby) connecting = false;
@@ -121,7 +168,7 @@
 	// If session already active when page loads, jump into it
 	$: if (isActive && !selectedGame) {
 		selectedGame = 'bingo';
-		showSelector = false;
+		
 	}
 
 	function winConditionLabel(wc: BingoWinCondition): string {
@@ -156,10 +203,10 @@
 		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 	}
 
-	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/bingo/overlay` : '';
+	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
-	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/bingo/overlay` : localOverlayUrl;
+	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : localOverlayUrl;
 
 	// Solo win recording
 	let recordedWin = false;
@@ -176,6 +223,7 @@
 
 	// Leaderboard popup
 	let showLeaderboard = false;
+	let showImLeaderboard = false;
 
 	function rulesetKey(boardSize: number, winCondition: unknown, difficulty: string): string {
 		return `${boardSize}_${winCondition}_${difficulty}`;
@@ -219,10 +267,9 @@
 			$electronEmitter.emit('NgrokStart');
 		}
 		$electronEmitter.emit('GetBingoLeaderboard');
+		$electronEmitter.emit('GetIronManLeaderboard');
 	});
 
-	let showQr = false;
-	let copiedShare = false;
 
 	function getRowControlBoxes(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): Set<number> {
 		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
@@ -329,6 +376,200 @@
 
 	$: localPlayerName = session?.localName ?? 'You';
 	$: opponentPlayerName = session?.opponentName ?? 'Opponent';
+
+	// ── Iron Man ──────────────────────────────────────────────────────────────
+
+	const defaultIronManSettings: IronManSettings = {
+		variant: 'standard',
+		rosterSize: 7,
+		hideOpponent: false,
+		stocksPerChar: 4,
+		charOrder: 'fixed',
+	};
+	let imSettings = { ...defaultIronManSettings };
+	const imVariants: { value: IronManSettings['variant']; label: string; tip: string }[] = [
+		{ value: 'standard', label: 'Standard', tip: 'Lose a game → that character is depleted.\nLast player with characters remaining wins.' },
+		{ value: 'full_roster', label: 'Full Roster', tip: 'Win with each character to complete it.\nFirst to finish your entire roster wins.' },
+		{ value: 'challenge', label: 'Challenge', tip: 'Solo: beat every character without a single loss.\nAny loss resets all progress. Fastest time recorded.' },
+	];
+	const imOrderOptions: { value: IronManSettings['charOrder']; label: string; tip: string }[] = [
+		{ value: 'free', label: 'Free', tip: 'Play any remaining character each game.\nThe active character updates when a game starts.' },
+		{ value: 'fixed', label: 'Fixed', tip: 'Play in the exact order you set.\nThe next character is shown before each game.' },
+		{ value: 'random', label: 'Random', tip: 'Order is randomised when you start.\nThe next character is shown before each game.' },
+	];
+	const imRosterSizes = [5, 7, 11, 15, 25, 26] as const;
+	// Melee CSS rows: row1=9, row2=10, row3=7
+	const imCharRows: [number, number][] = [[0, 9], [9, 19], [19, 26]];
+	let imMode: Mode = 'solo';
+	const imModes: { value: Mode; label: string }[] = [
+		{ value: 'solo', label: 'Solo' },
+		{ value: 'host', label: 'Host' },
+	];
+	let imSelectedChars: number[] = [];
+	let imGuestUrl = '';
+	let imConnecting = false;
+
+	// Auto-select all when size 26
+	$: if (imSettings.rosterSize === 26 && imSelectedChars.length !== IRONMAN_CHARS.length) {
+		imSelectedChars = [...IRONMAN_CHARS];
+	}
+
+	// Drag-to-reorder
+	let imDragFrom: number | null = null;
+	function imDragStart(i: number) { imDragFrom = i; }
+	function imDragOver(e: DragEvent) { e.preventDefault(); }
+	function imDrop(i: number) {
+		if (imDragFrom === null || imDragFrom === i) return;
+		const arr = [...imSelectedChars];
+		const [moved] = arr.splice(imDragFrom, 1);
+		arr.splice(i, 0, moved);
+		imSelectedChars = arr;
+		imDragFrom = null;
+	}
+	function imDragEnd() { imDragFrom = null; }
+
+	$: imPreviewNextCharId = (imSettings.charOrder === 'fixed' || imSettings.charOrder === 'random') && imSelectedChars.length > 0
+		? imSelectedChars[0]
+		: null;
+
+	$: imSession = $ironManSession;
+	$: imIsActive = !!imSession;
+	$: imInLobby = !!$ironManLobby && !imSession;
+	$: imLocalRoster = imSession?.localRoster ?? null;
+	$: imOpponentRoster = imSession?.opponentRoster ?? null;
+	$: imWinner = imSession?.winner ?? null;
+	$: imRole = imSession?.role ?? 'solo';
+	$: imLocalName = imSession?.localName ?? 'You';
+	$: imOpponentName = imSession?.opponentName ?? 'Opponent';
+	$: imPendingCarry = imSession?.pendingCarryStocks ?? null;
+	$: imCanStart = imSettings.rosterSize === 26 || imSelectedChars.length === imSettings.rosterSize;
+
+	$: imLocalProgress = (() => {
+		if (!imLocalRoster) return { score: 0, target: 0 };
+		const slots = imLocalRoster.slots;
+		if (imSettings.variant === 'standard') {
+			return { score: slots.filter(s => !s.depleted).length, target: slots.length };
+		}
+		return { score: slots.filter(s => s.completed).length, target: slots.length };
+	})();
+
+	$: imOppProgress = (() => {
+		if (!imOpponentRoster || imRole === 'solo') return null;
+		const slots = imOpponentRoster.slots;
+		if (imSettings.variant === 'standard') {
+			return { score: slots.filter(s => !s.depleted).length, target: slots.length };
+		}
+		return { score: slots.filter(s => s.completed).length, target: slots.length };
+	})();
+
+	$: imProgressUnit = imSettings.variant === 'standard' ? 'alive' : 'completed';
+
+	$: if ($ironManLobby) imConnecting = false;
+	$: if ($ironManSession?.role === 'guest') imConnecting = false;
+	$: if (!$ironManSession && !$ironManLobby) imConnecting = false;
+
+	$: if (imIsActive && !selectedGame) { selectedGame = 'ironman'; }
+	$: if (imInLobby && !selectedGame) { selectedGame = 'ironman'; }
+
+	let imTimerSeconds = 0;
+	let imTimerInterval: ReturnType<typeof setInterval> | null = null;
+	$: if (imIsActive && !imTimerInterval) {
+		imTimerSeconds = 0;
+		imTimerInterval = setInterval(() => imTimerSeconds++, 1000);
+	}
+	$: if (!imIsActive && imTimerInterval) {
+		clearInterval(imTimerInterval);
+		imTimerInterval = null;
+		imTimerSeconds = 0;
+	}
+
+	function imBuildRoster(charIds: number[]): IronManRoster {
+		let slots = charIds.map(id => ({
+			characterId: id,
+			depleted: false,
+			completed: false,
+			stocksRemaining: imSettings.stocksPerChar,
+		}));
+		if (imSettings.charOrder === 'random') {
+			for (let i = slots.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[slots[i], slots[j]] = [slots[j], slots[i]];
+			}
+		}
+		return { slots, currentIndex: 0 };
+	}
+
+	function imToggleChar(id: number) {
+		if (imSettings.rosterSize === 26) return;
+		if (imSelectedChars.includes(id)) {
+			imSelectedChars = imSelectedChars.filter(c => c !== id);
+		} else if (imSelectedChars.length < imSettings.rosterSize) {
+			imSelectedChars = [...imSelectedChars, id];
+		}
+	}
+
+	function imStart(role: 'solo' | 'host' | 'guest') {
+		const chars = imSettings.rosterSize === 26 ? [...IRONMAN_CHARS] : imSelectedChars.slice(0, imSettings.rosterSize);
+		if (chars.length < 1 && imSettings.rosterSize < 26) return;
+		const localRoster = imBuildRoster(chars);
+		$electronEmitter.emit('StartIronMan', {
+			settings: imSettings,
+			localRoster,
+			opponentRoster: null,
+			role,
+			localName: $currentPlayer?.displayName || 'Player',
+			opponentName: role === 'host' ? ($ironManLobby?.opponentName ?? null) : ($ironManLobby?.opponentName ?? null),
+			localPlayerIndex: $currentPlayer?.playerIndex ?? null,
+			opponentConnected: role === 'host' ? ($ironManLobby?.opponentConnected ?? false) : (role === 'guest'),
+			startedAt: Date.now(),
+			winner: null,
+			pendingCarryStocks: null,
+		});
+	}
+
+	function imHostLobby() {
+		$electronEmitter.emit('IronManStartLobby', imSettings);
+	}
+
+	function imJoinGuest() {
+		if (!imGuestUrl.trim()) return;
+		imConnecting = true;
+		$electronEmitter.emit('IronManPeerConnect', imGuestUrl.trim());
+	}
+
+	function imStop() {
+		imConnecting = false;
+		$electronEmitter.emit('StopIronMan');
+		selectedGame = null;
+		
+	}
+
+	function imVariantLabel(v: IronManSettings['variant']): string {
+		if (v === 'standard') return 'Standard';
+		if (v === 'full_roster') return 'Full Roster';
+		return 'Challenge';
+	}
+
+	// Bingo lobby: host syncs settings to guest; guest mirrors host's settings
+	$: if (inLobby && mode === 'host') $electronEmitter.emit('BingoUpdateLobbySettings', settings);
+	$: if (mode === 'guest' && $bingoLobby?.settings) settings = $bingoLobby.settings;
+
+	// Iron Man lobby: host syncs settings to guest; guest mirrors host's settings
+	$: if (imInLobby && imMode === 'host') $electronEmitter.emit('IronManUpdateLobbySettings', imSettings);
+	$: if (imMode === 'guest' && $ironManLobby?.settings) imSettings = $ironManLobby.settings;
+
+	$: imLocalOverlayUrl = $urls?.local
+		? $urls.local.replace(/\/$/, '') + '/obs/game-preview'
+		: '';
+	$: imQrOverlayUrl = tailscaleBase
+		? tailscaleBase.replace(/\/$/, '') + '/obs/game-preview'
+		: imLocalOverlayUrl;
+	$: shareCode = (() => {
+		if (!shareUrl) return '';
+		const version = $froggiSettings?.version ?? 'froggi';
+		return encryptUrl(shareUrl, version);
+	})();
+	$: localUrlForCopy = $urls?.local?.replace(/\/$/, '') ?? '';
 </script>
 
 <main class="background-primary-color text-secondary-color flex justify-center">
@@ -338,11 +579,11 @@
 		<div class="flex items-start justify-between gap-4 flex-wrap">
 			<div>
 				<div class="flex items-center gap-2">
-					{#if selectedGame && !isActive}
-						<button class="back-btn" on:click={() => { selectedGame = null; showSelector = true; }}>←</button>
+					{#if selectedGame && !isActive && !imIsActive}
+						<button class="back-btn" on:click={() => { selectedGame = null;  }}>Change Game</button>
 					{/if}
 					<h1 class="font-bold text-3xl">
-						{#if selectedGame === 'bingo'}Bingo{:else}Minigames{/if}
+						{#if selectedGame === 'bingo'}Bingo{:else if selectedGame === 'ironman'}Iron Man{:else}Minigames{/if}
 					</h1>
 				</div>
 				{#if selectedGame === 'bingo' && isActive}
@@ -377,13 +618,6 @@
 					</div>
 				{:else if inLobby && mode === 'guest'}
 					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Leave</button>
-				{:else if mode === 'guest'}
-					<div class="flex gap-2">
-						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (mode = 'solo')}>← Back</button>
-						{#if !connecting}
-							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={joinAsGuest} disabled={!guestUrl.trim()}>Join</button>
-						{/if}
-					</div>
 				{:else}
 					<div class="flex gap-2">
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
@@ -394,21 +628,77 @@
 						{/if}
 					</div>
 				{/if}
+			{:else if selectedGame === 'ironman'}
+				<div class="flex gap-2">
+					{#if imIsActive}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={imStop}>End</button>
+					{:else if imInLobby}
+						{#if $ironManLobby?.opponentConnected && imMode !== 'guest'}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('host')}>Start Iron Man</button>
+						{:else if imMode === 'guest'}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('guest')}>Start Guest</button>
+						{/if}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={imStop}>Cancel</button>
+					{:else if imMode === 'solo'}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('solo')}>Start Solo</button>
+					{:else if imMode === 'host'}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={imHostLobby}>Open Lobby</button>
+					{/if}
+					{#if imMode === 'solo'}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showImLeaderboard = true)}>Best Times</button>
+					{/if}
+				</div>
 			{/if}
 		</div>
 
-		<!-- Bingo: settings (idle only) -->
-		{#if selectedGame === 'bingo' && !isActive && !inLobby && mode !== 'guest'}
-			<div class="settings-row border-secondary">
+		<!-- Game selector (inline, no modal) -->
+		{#if !selectedGame}
+			<div class="game-grid">
+				<button class="game-card border-secondary" on:click={() => selectGame('bingo')}>
+					<span class="game-card-title">Bingo</span>
+					<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
+				</button>
+				<div class="game-card game-card--soon border-secondary">
+					<span class="game-card-title">Races</span>
+					<span class="game-card-badge">Coming soon</span>
+				</div>
+				<button class="game-card border-secondary" on:click={() => selectGame('ironman')}>
+					<span class="game-card-title">Iron Man</span>
+					<span class="game-card-desc">Play through a roster of characters — standard crew battle or race to complete all.</span>
+				</button>
+			</div>
+			<div class="join-section border-secondary">
+				<p class="selector-subtitle">Join a game</p>
+				<div class="join-row">
+					<input
+						class="url-input border-secondary background-primary-color text-secondary-color join-input"
+						placeholder="Paste share code or URL…"
+						bind:value={joinHash}
+						on:keydown={(e) => e.key === 'Enter' && joinGame()}
+					/>
+					<button class="btn text-sm h-9 px-4 border-secondary rounded" disabled={joinConnecting || !joinHash.trim()} on:click={joinGame}>
+						{joinConnecting ? 'Joining…' : 'Join'}
+					</button>
+				</div>
+				{#if joinError}
+					<p class="join-error">{joinError}</p>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Bingo: settings (idle + lobby for both host and guest) -->
+		{#if selectedGame === 'bingo' && !isActive && (mode !== 'guest' || inLobby)}
+			<div class="settings-row border-secondary" class:settings-row--readonly={mode === 'guest' && inLobby}>
+				{#if !(mode === 'guest' && inLobby)}
 				<div class="settings-group">
 					<span class="settings-label">Mode</span>
 					<div class="pill-group">
 						{#each modes as { value: m, label }}
 							<button class="pill" class:pill--active={mode === m} on:click={() => (mode = m)}>{label}</button>
 						{/each}
-						<button class="pill" on:click={() => (mode = 'guest')}>Join</button>
 					</div>
 				</div>
+				{/if}
 				<div class="settings-group">
 					<span class="settings-label">Size</span>
 					<div class="pill-group">
@@ -426,7 +716,7 @@
 								class="pill"
 								class:pill--active={settings.winCondition === wc.value}
 								on:click={() => (settings = { ...settings, winCondition: wc.value })}
-								use:tooltip={{ content: wc.tip, placement: 'top', delay: [400, 0] }}
+								use:tooltip={{ content: wc.tip, placement: 'bottom', delay: [400, 0] }}
 							>{wc.label}</button>
 						{/each}
 					</div>
@@ -440,6 +730,7 @@
 						{/each}
 					</div>
 				</div>
+				{#if !(mode === 'guest' && inLobby)}
 				<div class="settings-group">
 					<span class="settings-label">Timer</span>
 					<div class="pill-group">
@@ -459,6 +750,7 @@
 						</div>
 					{/if}
 				</div>
+				{/if}
 			</div>
 		{/if}
 
@@ -478,68 +770,24 @@
 			</div>
 		{/if}
 
-		<!-- Bingo: guest join input -->
-		{#if selectedGame === 'bingo' && !isActive && mode === 'guest'}
-			<div class="settings-row border-secondary flex-col gap-3">
-				<p class="text-sm opacity-60">Enter your opponent's share URL to join their bingo session.</p>
-				<input
-					class="url-input border-secondary background-primary-color text-secondary-color"
-					placeholder="https://abc123.ngrok-free.app"
-					bind:value={guestUrl}
-				/>
-				{#if connecting}
-					<p class="text-sm opacity-50">Connecting…</p>
-				{/if}
-			</div>
-		{/if}
-
-		<!-- Bingo: host share URL -->
+		<!-- Bingo: host share code -->
 		{#if selectedGame === 'bingo' && ((isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host'))}
-			<div class="settings-row border-secondary items-center justify-between gap-3">
-				<div class="flex flex-col gap-0.5 min-w-0">
-					<span class="settings-label">Share with opponent</span>
-					{#if shareUrl}
-						<span class="text-xs opacity-60 truncate">{shareUrl}</span>
-					{:else}
-						<span class="text-xs opacity-40">No ngrok URL — start ngrok in Settings → Remote Access</span>
-					{/if}
-				</div>
-				<div class="flex gap-2 shrink-0">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => $electronEmitter.emit('NgrokRestart')}>↻</button>
-					{#if shareUrl}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={async () => { await navigator.clipboard.writeText(shareUrl); copiedShare = true; setTimeout(() => (copiedShare = false), 1500); }}>
-							{copiedShare ? 'Copied!' : 'Copy URL'}
-						</button>
-					{/if}
-				</div>
-			</div>
+			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
 		{/if}
 
-		<!-- Bingo: OBS overlay row -->
+		<!-- Bingo: OBS / device overlay row -->
 		{#if selectedGame === 'bingo' && localOverlayUrl}
-			<div class="settings-row border-secondary items-center justify-between gap-3">
-				<div class="flex flex-col gap-0.5 min-w-0">
-					<span class="settings-label">Display on device / OBS</span>
-					<span class="text-xs opacity-60 truncate">{localOverlayUrl}</span>
-				</div>
-				<div class="flex gap-2 shrink-0">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => window.open(localOverlayUrl, '_blank', 'width=600,height=600')}>
-						Popup
-					</button>
-					<ObsIntegration url={localOverlayUrl} title="Bingo" width={500} height={500} />
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => (showQr = !showQr)}>
-						{showQr ? 'Hide QR' : 'QR'}
-					</button>
-				</div>
-			</div>
-			{#if showQr}
-				<div class="qr-row border-secondary">
-					<QrCode value={qrOverlayUrl} size="180" color="#ffffff" background="#1a1a1a" />
-					<div class="flex flex-col gap-1">
-						<p class="text-sm opacity-60">Scan to open on your phone or second screen</p>
-						<p class="text-xs opacity-40 break-all">{qrOverlayUrl}</p>
-						<p class="text-xs opacity-40 mt-1">⚠ Do not share this URL — use the ngrok link for opponents</p>
-					</div>
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+		{/if}
+
+		<!-- Bingo: guest waiting — OBS options + localhost URL -->
+		{#if selectedGame === 'bingo' && inLobby && mode === 'guest' && localOverlayUrl}
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+			{#if localUrlForCopy}
+				<div class="local-url-row border-secondary">
+					<span class="settings-label">Localhost URL</span>
+					<span class="local-url-text">{localUrlForCopy}</span>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => navigator.clipboard.writeText(localUrlForCopy)}>Copy</button>
 				</div>
 			{/if}
 		{/if}
@@ -590,28 +838,269 @@
 				/>
 			</div>
 			{#if isActive}
-				<div class="score-row">
-					{#if role !== 'solo'}
-						<div class="score-player" class:score-player--winner={hasWon && localScore >= scoreTarget}>
-							<span class="score-name">{localPlayerName}</span>
-							<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-							<span class="score-unit">{scoreUnit}</span>
+				<ScoreProgressBar
+					{localScore}
+					localName={localPlayerName}
+					oppScore={role !== 'solo' ? oppScore : null}
+					oppName={opponentPlayerName}
+					target={scoreTarget}
+					unit={scoreUnit}
+					localWinner={hasWon && localScore >= scoreTarget}
+					oppWinner={hasWon && oppScore >= scoreTarget}
+				/>
+			{/if}
+		{/if}
+
+		<!-- ── Iron Man sections ──────────────────────────────────────────── -->
+
+		<!-- Iron Man: header extras -->
+		{#if selectedGame === 'ironman' && imIsActive}
+			<p class="text-sm opacity-50 -mt-4">
+				{imVariantLabel(imSettings.variant)} · {imLocalRoster?.slots.length ?? 0} chars · ⏱ {formatTimer(imTimerSeconds)}
+			</p>
+		{/if}
+
+		<!-- Iron Man: settings strip (always visible when not active) -->
+		{#if selectedGame === 'ironman' && !imIsActive}
+			<div class="settings-row border-secondary" class:settings-row--readonly={imMode === 'guest' && imInLobby}>
+				<div class="settings-group">
+					<span class="settings-label">Mode</span>
+					<div class="pill-group">
+						{#each imModes as m}
+							<button class="pill" class:pill--active={imMode === m.value} on:click={() => imMode = m.value}>{m.label}</button>
+						{/each}
+					</div>
+				</div>
+				{#if imMode !== 'guest' || imInLobby}
+					<div class="settings-group">
+						<span class="settings-label">Variant</span>
+						<div class="pill-group">
+							{#each imVariants as { value, label, tip }}
+								<button
+									class="pill"
+									class:pill--active={imSettings.variant === value}
+									on:click={() => imSettings = { ...imSettings, variant: value }}
+									use:tooltip={{ content: tip, placement: 'bottom', delay: [400, 0], allowHTML: false }}
+								>{label}</button>
+							{/each}
 						</div>
-						<div class="score-divider">–</div>
-						<div class="score-player score-player--right" class:score-player--winner={hasWon && oppScore >= scoreTarget}>
-							<span class="score-unit">{scoreUnit}</span>
-							<span class="score-val">{oppScore}<span class="score-target">/{scoreTarget}</span></span>
-							<span class="score-name">{opponentPlayerName}</span>
+					</div>
+					<div class="settings-group">
+						<span class="settings-label">Size</span>
+						<div class="pill-group">
+							{#each imRosterSizes as size}
+								<button
+									class="pill"
+									class:pill--active={imSettings.rosterSize === size}
+									on:click={() => {
+										imSettings = { ...imSettings, rosterSize: size };
+										if (size < 26) imSelectedChars = imSelectedChars.slice(0, size);
+									}}
+								>{size === 26 ? 'All' : size}</button>
+							{/each}
 						</div>
-					{:else}
-						<div class="score-solo">
-							<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-							<span class="score-unit">{scoreUnit}</span>
+					</div>
+					<div class="settings-group">
+						<span class="settings-label">Order</span>
+						<div class="pill-group">
+							{#each imOrderOptions as { value, label, tip }}
+								<button
+									class="pill"
+									class:pill--active={imSettings.charOrder === value}
+									on:click={() => imSettings = { ...imSettings, charOrder: value }}
+									use:tooltip={{ content: tip, placement: 'bottom', delay: [400, 0], allowHTML: false }}
+								>{label}</button>
+							{/each}
+						</div>
+					</div>
+					{#if imMode !== 'solo'}
+						<div class="settings-group">
+							<span class="settings-label">Hide characters</span>
+							<div class="pill-group">
+								<button class="pill" class:pill--active={!imSettings.hideOpponent}
+									on:click={() => imSettings = { ...imSettings, hideOpponent: false }}
+									use:tooltip={{ content: "Opponent's characters are always visible", placement: 'bottom', delay: [400, 0] }}>Off</button>
+								<button class="pill" class:pill--active={imSettings.hideOpponent}
+									on:click={() => imSettings = { ...imSettings, hideOpponent: true }}
+									use:tooltip={{ content: "Opponent's characters are hidden until a game starts", placement: 'bottom', delay: [400, 0] }}>On</button>
+							</div>
 						</div>
 					{/if}
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Iron Man: host share code (before char picker) -->
+		{#if selectedGame === 'ironman' && (imMode === 'host' || imInLobby) && !imIsActive}
+			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
+		{/if}
+
+		<!-- Iron Man: OBS / device overlay — under rules -->
+		{#if selectedGame === 'ironman' && imLocalOverlayUrl && imMode !== 'guest'}
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" />
+		{/if}
+
+		<!-- Iron Man: guest waiting — OBS options + localhost URL -->
+		{#if selectedGame === 'ironman' && imInLobby && imMode === 'guest' && imLocalOverlayUrl}
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" />
+			{#if localUrlForCopy}
+				<div class="local-url-row border-secondary">
+					<span class="settings-label">Localhost URL</span>
+					<span class="local-url-text">{localUrlForCopy}</span>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => navigator.clipboard.writeText(localUrlForCopy)}>Copy</button>
 				</div>
 			{/if}
 		{/if}
+
+		<!-- Iron Man: main content -->
+		{#if selectedGame === 'ironman' && !imIsActive && !imInLobby && imMode !== 'guest'}
+			<!-- Solo/Host: char picker setup -->
+			<div class="dash-card border-secondary flex flex-col gap-4">
+				{#if imSettings.rosterSize < 26}
+					<p class="dash-label">Select {imSettings.rosterSize} characters ({imSelectedChars.length}/{imSettings.rosterSize})</p>
+				{:else}
+					<p class="dash-label">All 26 characters — full roster</p>
+				{/if}
+				<div class="char-picker">
+					{#each imCharRows as [start, end]}
+						<div class="char-row">
+							{#each IRONMAN_CHARS.slice(start, end) as charId}
+								<button
+									class="char-btn"
+									class:char-btn--selected={imSelectedChars.includes(charId)}
+									class:char-btn--full={imSettings.rosterSize < 26 && !imSelectedChars.includes(charId) && imSelectedChars.length >= imSettings.rosterSize}
+									class:char-btn--next={imPreviewNextCharId === charId}
+									on:click={() => imToggleChar(charId)}
+									title={IRONMAN_CHAR_NAMES[charId]}
+								>
+									<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="char-btn-img" />
+								</button>
+							{/each}
+						</div>
+					{/each}
+				</div>
+				{#if imSelectedChars.length > 0 && imSettings.charOrder !== 'free' && imSettings.rosterSize < 26}
+					<div class="order-strip-wrap">
+						<span class="order-strip-label">Play order — drag to rearrange</span>
+						<div class="order-strip">
+							{#each imSelectedChars as charId, i}
+								<!-- svelte-ignore a11y-no-static-element-interactions -->
+								<div
+									class="order-slot"
+									class:order-slot--first={i === 0}
+									draggable="true"
+									on:dragstart={() => imDragStart(i)}
+									on:dragover={imDragOver}
+									on:drop={() => imDrop(i)}
+									on:dragend={imDragEnd}
+									title={IRONMAN_CHAR_NAMES[charId]}
+								>
+									<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="order-icon" />
+									{#if i === 0}<span class="order-badge">1st</span>{/if}
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
+
+		{:else if selectedGame === 'ironman' && imInLobby}
+			<!-- Lobby: waiting or char picker after opponent connects -->
+			<div class="dash-card border-secondary flex flex-col gap-4">
+				{#if $ironManLobby?.opponentConnected}
+					<span class="text-green-400 text-sm font-semibold" in:fly={{ y: -8, duration: 150 }}>● {$ironManLobby.opponentName ?? 'Guest'} connected</span>
+					{#if imSettings.rosterSize < 26}
+						<p class="dash-label">Select your {imSettings.rosterSize} characters ({imSelectedChars.length}/{imSettings.rosterSize})</p>
+						<div class="char-picker">
+							{#each imCharRows as [start, end]}
+								<div class="char-row">
+									{#each IRONMAN_CHARS.slice(start, end) as charId}
+										<button class="char-btn"
+											class:char-btn--selected={imSelectedChars.includes(charId)}
+											class:char-btn--full={!imSelectedChars.includes(charId) && imSelectedChars.length >= imSettings.rosterSize}
+											on:click={() => imToggleChar(charId)} title={IRONMAN_CHAR_NAMES[charId]}>
+											<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="char-btn-img" />
+										</button>
+									{/each}
+								</div>
+							{/each}
+						</div>
+					{/if}
+				{:else}
+					<p class="text-sm opacity-50">Waiting for opponent to connect…</p>
+					<SlippiAd compact />
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Iron Man: active game -->
+		{#if selectedGame === 'ironman' && imIsActive && imLocalRoster}
+			{#if imPendingCarry && imPendingCarry > 0}
+				<div class="carry-banner border-secondary" in:fly={{ y: -8, duration: 200 }}>
+					⚡ Carry: opponent must SD {imPendingCarry} time{imPendingCarry > 1 ? 's' : ''} before next game starts
+				</div>
+			{/if}
+
+			{#if imWinner}
+				<div class="win-banner border-secondary" in:fly={{ y: -16, duration: 300 }}>
+					{imWinner === 'local' ? '🏆 You win!' : `${imOpponentName} wins!`}
+				</div>
+			{/if}
+
+			<div class="rosters-row">
+				<div class="roster-col">
+					<IronManRosterGrid
+						roster={imLocalRoster}
+						settings={imSettings}
+						isLocal={true}
+						label={imLocalName}
+						variant={imSettings.variant}
+						activeGameCharId={$ironManCurrentChar.localCharId}
+					/>
+				</div>
+				{#if imOpponentRoster && imRole !== 'solo'}
+					<div class="roster-divider">VS</div>
+					<div class="roster-col">
+						<IronManRosterGrid
+							roster={imOpponentRoster}
+							settings={imSettings}
+							isLocal={false}
+							label={imOpponentName}
+							obscured={imSettings.hideOpponent}
+							variant={imSettings.variant}
+							activeGameCharId={$ironManCurrentChar.oppCharId}
+						/>
+					</div>
+				{/if}
+			</div>
+
+			{#if (imSettings.variant === 'full_roster' || imSettings.variant === 'challenge') && imSettings.charOrder !== 'free' && imLocalRoster.currentIndex < imLocalRoster.slots.length}
+				{@const activeSlot = imLocalRoster.slots[imLocalRoster.currentIndex]}
+				<div class="active-char border-secondary" in:fly={{ y: 8, duration: 200 }}>
+					<img
+						src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[activeSlot.characterId] ?? activeSlot.characterId}.png"
+						alt={IRONMAN_CHAR_NAMES[activeSlot.characterId]}
+						class="active-char-icon"
+					/>
+					<div>
+						<p class="active-char-label">Play next</p>
+						<p class="active-char-name">{IRONMAN_CHAR_NAMES[activeSlot.characterId]}</p>
+					</div>
+				</div>
+			{/if}
+
+			<ScoreProgressBar
+				localScore={imLocalProgress.score}
+				localName={imLocalName}
+				oppScore={imOppProgress ? imOppProgress.score : null}
+				oppName={imOpponentName}
+				target={imLocalProgress.target}
+				unit={imProgressUnit}
+				localWinner={imWinner === 'local'}
+				oppWinner={imWinner === 'opponent'}
+			/>
+		{/if}
+
 
 	</div>
 </main>
@@ -664,29 +1153,54 @@
 	</div>
 {/if}
 
-<!-- Game selector popup -->
-{#if showSelector}
+<!-- Iron Man leaderboard popup -->
+{#if showImLeaderboard}
+	{@const imLbVariant = imSettings.variant}
+	{@const imLbRecords = imLbVariant === 'full_roster' ? $ironManLeaderboard.fullRosterRecords : imLbVariant === 'standard' ? $ironManLeaderboard.standardRecords : $ironManLeaderboard.records}
+	{@const imLbTitle = imLbVariant === 'full_roster' ? 'Best Times — Full Roster' : imLbVariant === 'standard' ? 'Best Runs — Standard' : 'Best Times — Challenge'}
+	{@const imLbEmpty = imLbVariant === 'full_roster' ? 'No records yet. Complete a Full Roster solo run.' : imLbVariant === 'standard' ? 'No records yet. Play through all characters in Standard solo.' : 'No records yet. Complete a Challenge run to set a time.'}
 	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-	<div class="selector-backdrop">
-		<div class="selector-modal background-primary-color border-secondary" in:fly={{ y: 20, duration: 180 }}>
-			<p class="selector-title">Choose a Minigame</p>
-			<div class="game-grid">
-				<button class="game-card border-secondary" on:click={() => selectGame('bingo')}>
-					<span class="game-card-title">Bingo</span>
-					<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
-				</button>
-				<div class="game-card game-card--soon border-secondary">
-					<span class="game-card-title">Races</span>
-					<span class="game-card-badge">Coming soon</span>
-				</div>
-				<div class="game-card game-card--soon border-secondary">
-					<span class="game-card-title">Iron Man</span>
-					<span class="game-card-badge">Coming soon</span>
-				</div>
+	<div class="selector-backdrop" on:click={() => (showImLeaderboard = false)}>
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="leaderboard-modal background-primary-color border-secondary" on:click|stopPropagation in:fly={{ y: 20, duration: 180 }}>
+			<div class="leaderboard-header">
+				<p class="selector-title">{imLbTitle}</p>
+				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showImLeaderboard = false)}>✕</button>
 			</div>
+			{#if imLbRecords.length === 0}
+				<p class="text-sm opacity-40 text-center py-6">{imLbEmpty}</p>
+			{:else}
+				<div class="leaderboard-body">
+					<table class="lb-table" style="width:100%">
+						<thead>
+							{#if imLbVariant === 'standard'}
+								<tr><th>#</th><th>Wins</th><th>Time</th><th>Chars</th><th>Date</th><th>Ver</th></tr>
+							{:else}
+								<tr><th>#</th><th>Time</th><th>Chars</th><th>Date</th><th>Ver</th></tr>
+							{/if}
+						</thead>
+						<tbody>
+							{#each imLbRecords as entry, i}
+								{@const isOld = entry.version !== $ironManLeaderboard.currentVersion}
+								<tr class:lb-row--old={isOld}>
+									<td class="lb-rank">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}</td>
+									{#if imLbVariant === 'standard'}
+										<td class="lb-time">{entry.wins ?? 0}/{entry.rosterSize}</td>
+									{/if}
+									<td class="lb-time">{formatTime(entry.timeSeconds)}</td>
+									<td class="lb-date">{entry.rosterSize}</td>
+									<td class="lb-date">{formatDate(entry.completedAt)}</td>
+									<td class="lb-ver" title={isOld ? `Set on v${entry.version}` : ''}>{entry.version}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}
+
 
 <style>
 	main {
@@ -696,26 +1210,17 @@
 
 	.back-btn {
 		background: transparent;
-		border: none;
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.375rem;
 		color: var(--secondary-color);
-		opacity: 0.5;
+		opacity: 0.45;
 		cursor: pointer;
-		font-size: 1rem;
-		padding: 0;
+		font-size: 0.78rem;
+		padding: 0.2rem 0.7rem;
 		transition: opacity 0.1s;
-		line-height: 1;
+		line-height: 1.5;
 	}
-	.back-btn:hover { opacity: 1; }
-
-	.selector-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.6);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
+	.back-btn:hover { opacity: 0.85; }
 
 	.leaderboard-modal {
 		width: 100%;
@@ -806,16 +1311,6 @@
 		opacity: 0.45;
 	}
 
-	.selector-modal {
-		width: 100%;
-		max-width: 520px;
-		border-radius: 0.6rem;
-		padding: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.2rem;
-	}
-
 	.selector-title {
 		font-size: 0.7rem;
 		font-weight: 600;
@@ -870,6 +1365,60 @@
 		opacity: 0.7;
 	}
 
+	.join-section {
+		padding: 0.9rem 1.1rem;
+		border-radius: 0.375rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.selector-subtitle {
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		opacity: 0.45;
+		font-weight: 600;
+		margin: 0;
+	}
+
+	.join-row {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	.join-input {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.join-error {
+		font-size: 0.75rem;
+		opacity: 0.7;
+		color: #f87171;
+		margin: 0;
+	}
+
+	.local-url-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.6rem 0.9rem;
+		border-radius: 0.375rem;
+		flex-wrap: wrap;
+	}
+
+	.local-url-text {
+		flex: 1;
+		font-size: 0.72rem;
+		opacity: 0.55;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+	}
+
 	.revert-banner {
 		background: rgba(220, 120, 0, 0.92);
 		color: #fff;
@@ -887,6 +1436,16 @@
 		padding: 0.9rem 1.1rem;
 		border-radius: 0.375rem;
 		align-items: center;
+	}
+
+	.settings-row--readonly {
+		pointer-events: none;
+		opacity: 0.6;
+	}
+
+	.dash-card {
+		padding: 1.25rem 1.5rem;
+		border-radius: 0.5rem;
 	}
 
 	.settings-group {
@@ -980,85 +1539,172 @@
 		opacity: 0.75;
 	}
 
-	.score-row {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1.2rem;
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.375rem;
-		margin-top: 0.25rem;
-	}
-
-	.score-player {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.05rem;
-		min-width: 6rem;
-	}
-
-	.score-player--right {
-		align-items: flex-end;
-	}
-
-	.score-player--winner .score-val {
-		color: #4ade80;
-	}
-
-	.score-name {
-		font-size: 0.7rem;
-		opacity: 0.5;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 9rem;
-	}
-
-	.score-val {
-		font-size: 1.3rem;
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-		line-height: 1;
-	}
-
-	.score-target {
-		font-size: 0.75rem;
-		opacity: 0.4;
-		font-weight: 400;
-	}
-
-	.score-unit {
-		font-size: 0.65rem;
-		opacity: 0.4;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.score-divider {
-		font-size: 1.1rem;
-		opacity: 0.3;
-		font-weight: 300;
-	}
-
-	.score-solo {
-		display: flex;
-		align-items: baseline;
-		gap: 0.4rem;
-	}
-
 	@keyframes pulse {
 		0%, 100% { opacity: 1; }
 		50% { opacity: 0.55; }
 	}
 
-	.qr-row {
+	/* Iron Man */
+	.char-picker {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 1rem 0.75rem;
+	}
+
+	.char-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		justify-content: center;
+	}
+
+	.char-btn {
+		border-radius: 6px;
+		padding: 2px;
+		opacity: 0.4;
+		transition: opacity 0.15s, box-shadow 0.15s, background 0.15s;
+		background: transparent;
+		border: none;
+	}
+
+	.char-btn:hover:not(.char-btn--full) {
+		opacity: 0.75;
+	}
+
+	.char-btn--selected {
+		opacity: 1;
+		box-shadow: 0 0 0 2px var(--secondary-color);
+		background: color-mix(in srgb, var(--secondary-color) 10%, transparent);
+	}
+
+	.char-btn--full {
+		opacity: 0.15;
+		cursor: not-allowed;
+	}
+
+	.char-btn--next {
+		box-shadow: 0 0 0 2px #fbbf24, 0 0 8px 2px rgba(251,191,36,0.3);
+	}
+
+	/* ── Iron Man order strip ── */
+	.order-strip-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.order-strip-label {
+		font-size: 0.65rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.4;
+	}
+
+	.order-strip {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		padding: 0.4rem 0.25rem;
+		border-radius: 0.375rem;
+		background: color-mix(in srgb, var(--secondary-color) 4%, transparent);
+		border: 1px solid color-mix(in srgb, var(--secondary-color) 15%, transparent);
+	}
+
+	.order-slot {
+		position: relative;
+		border-radius: 6px;
+		padding: 3px;
+		cursor: grab;
+		transition: opacity 0.12s, box-shadow 0.12s;
+		user-select: none;
+	}
+
+	.order-slot:hover {
+		background: color-mix(in srgb, var(--secondary-color) 10%, transparent);
+	}
+
+	.order-slot--first {
+		box-shadow: 0 0 0 2px #fbbf24;
+	}
+
+	.order-icon {
+		width: 32px;
+		height: 32px;
+		object-fit: contain;
+		display: block;
+	}
+
+	.order-badge {
+		position: absolute;
+		bottom: 1px;
+		right: 2px;
+		font-size: 0.5rem;
+		font-weight: 700;
+		color: #fbbf24;
+		text-shadow: 0 0 3px #000;
+		line-height: 1;
+	}
+
+	.char-btn-img {
+		width: 40px;
+		height: 40px;
+		object-fit: contain;
+		display: block;
+	}
+
+	.rosters-row {
 		display: flex;
 		gap: 1.5rem;
+		align-items: flex-start;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.roster-col {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.roster-divider {
+		font-size: 0.8rem;
+		opacity: 0.3;
+		padding-top: 1.5rem;
+		font-weight: 600;
+	}
+
+	.carry-banner {
+		text-align: center;
+		font-size: 0.88rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		animation: pulse 1.4s ease-in-out infinite;
+	}
+
+	.active-char {
+		display: flex;
 		align-items: center;
-		padding: 1rem 1.1rem;
+		gap: 1rem;
+		padding: 0.75rem 1rem;
 		border-radius: 0.375rem;
 	}
+
+	.active-char-icon {
+		width: 56px;
+		height: 56px;
+		object-fit: contain;
+	}
+
+	.active-char-label {
+		font-size: 0.65rem;
+		opacity: 0.4;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+	}
+
+	.active-char-name {
+		font-size: 1.1rem;
+		font-weight: 600;
+	}
+
 </style>

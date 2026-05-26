@@ -29,6 +29,7 @@
 	import type { WebhookProfile } from '$lib/models/types/webhook';
 	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
 	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard } from '$lib/models/types/bingo';
+	import type { IronManSession, IronManLobbyPayload, IronManLeaderboard } from '$lib/models/types/ironman';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -116,4 +117,9 @@
 	export const bingoLobby = writable<BingoLobbyPayload | null>(null);
 	export const bingoRevertMessage = writable<string | null>(null);
 	export const bingoLeaderboard = writable<BingoLeaderboard>({ currentVersion: '', records: {} });
+
+	export const ironManSession = writable<IronManSession | null>(null);
+	export const ironManLobby = writable<IronManLobbyPayload | null>(null);
+	export const ironManLeaderboard = writable<IronManLeaderboard>({ currentVersion: '', records: [], fullRosterRecords: [], standardRecords: [] });
+	export const ironManCurrentChar = writable<{ localCharId: number | null; oppCharId: number | null }>({ localCharId: null, oppCharId: null });
 </script>

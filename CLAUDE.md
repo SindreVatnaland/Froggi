@@ -140,6 +140,83 @@ Modals follow the ConfirmModal pattern: `.confirm-box.background-primary-color.b
 
 Do not use `h1`/`h2` for section labels inside cards — use `.dash-label` or a small `<p>` with `font-size: 0.7rem; opacity: 0.4`.
 
+#### Minigame pages (Bingo / Iron Man)
+
+Minigame pages (`minigames/+page.svelte`, `obs/bingo/+page.svelte`, `obs/ironman/+page.svelte`) share a consistent visual language. Follow it exactly when modifying or extending them.
+
+**Settings strip** — idle state, above the board/content:
+```html
+<div class="settings-row border-secondary">
+  <div class="settings-group">
+    <span class="settings-label">Label</span>
+    <div class="pill-group">
+      <button class="pill" class:pill--active={...} on:click={...}>Option</button>
+    </div>
+  </div>
+</div>
+```
+- `.settings-row`: flex, flex-wrap, gap 1.5rem, padding 0.9rem 1.1rem, border-radius 0.375rem
+- `.settings-group`: flex row, align-items center, gap 0.6rem
+- `.settings-label`: 0.7rem, uppercase, opacity 0.45
+- `.pill`: 0.78rem, border 1px secondary-color, opacity 0.4, border-radius 1rem
+- `.pill--active` / `.pill:hover`: opacity 1, color-mix 12% secondary bg
+- Order of groups: **Mode first**, then variant/size/other options
+
+**Pill arrays must be typed** — never use TypeScript `as` casts inside Svelte template attribute expressions (causes parse errors). Declare typed arrays in `<script>` instead:
+```typescript
+const variants: { value: MyType; label: string; tip?: string }[] = [...];
+```
+
+**Win/progress display** — `ScoreProgressBar.svelte` (`frontend/src/lib/components/`):
+```html
+<ScoreProgressBar
+  localScore={n} localName="Player"
+  oppScore={n|null}  oppName="Opponent"
+  target={n} unit="lines"
+  localWinner={bool} oppWinner={bool}
+/>
+```
+- Local bar: `rgba(96, 165, 250, 0.85)` (blue), opponent: `rgba(52, 211, 153, 0.85)` (green)
+- Winner bar + count turns `#4ade80`
+- Pass `oppScore={null}` for solo mode (renders single bar)
+- Use this for **both** bingo and Iron Man progress — do not write inline score display
+
+**Character picker grid** (Iron Man setup):
+- `.char-btn`: opacity 0.4, no border, border-radius 6px
+- `.char-btn--selected`: `box-shadow: 0 0 0 2px var(--secondary-color)`, tinted bg via color-mix
+- `.char-btn--full`: opacity 0.15, cursor not-allowed
+- Images: 36×36px CSS sprite from `/image/characters/css/{id}.png`
+
+**Win banner**:
+```html
+<div class="win-banner border-secondary">
+  <span>Bingo!</span>
+  <span class="win-score">...</span>
+</div>
+```
+- `.win-banner`: 1.6rem bold, pulsing animation, flex-col centered
+- `.win-score`: 0.85rem, opacity 0.75
+
+**Tooltip on hover** — use `svooltip` for rule/hint text on pills:
+```html
+<button use:tooltip={{ content: 'Rule description', placement: 'top', delay: [400, 0] }}>
+```
+
+**Guest join flow** — separate section with `← Back` button (not mixed into the same settings card):
+```html
+{#if mode === 'guest'}
+  <div class="settings-row border-secondary items-center gap-3">
+    <button ... on:click={() => mode = 'solo'}>← Back</button>
+  </div>
+  <div class="dash-card border-secondary flex flex-col gap-4">
+    <input class="url-input border-secondary" ... />
+    <button class="btn ...">Join</button>
+  </div>
+{/if}
+```
+
+**Lobby waiting state** — inside `dash-card`, use `SlippiAd compact` while waiting, QR code row for share URL.
+
 #### Third-party components
 
 `svelte-qrcode`: renders as JPEG via qrious. Props: `value`, `size` (string px), `color` (hex), `background` (hex). No CSS variable support — use hex values. Import with `// @ts-ignore`.

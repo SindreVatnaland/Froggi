@@ -13,6 +13,7 @@ import type {
 	BingoSession,
 	BingoChallengeUpdate,
 	BingoLobbyPayload,
+	BingoSettings,
 	BingoSoloWinPayload,
 	BingoLeaderboardEntry,
 } from '../../frontend/src/lib/models/types/bingo';
@@ -47,7 +48,7 @@ interface ZeroDeathAttempt {
 }
 
 interface BingoPeerMessage {
-	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoComplete' | 'BingoPing' | 'BingoSync';
+	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoComplete' | 'BingoPing' | 'BingoSync' | 'BingoSettingsUpdate';
 	version?: string;
 	board?: BingoSession['board'];
 	settings?: BingoSession['settings'];
@@ -151,7 +152,7 @@ export class BingoService {
 							// Lobby mode: exchange names, no board yet
 							this.lobby.opponentConnected = true;
 							this.lobby.opponentName = msg.playerName ?? null;
-							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, playerName: this.localPlayerName }));
+							ws.send(JSON.stringify({ type: 'BingoWelcome', version: myVersion, playerName: this.localPlayerName, settings: this.lobby.settings }));
 							this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
 						} else {
 							// Active session host (reconnect scenario)
@@ -218,7 +219,17 @@ export class BingoService {
 			this.closePeerConnection();
 			this.session = null;
 			this.lobby = { opponentConnected: false, opponentName: null, localName: this.localPlayerName };
+			this.messageHandler.lobbyGame = 'bingo';
 			this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
+		});
+
+		this.clientEmitter.on('BingoUpdateLobbySettings', (settings: BingoSettings) => {
+			if (!this.lobby) return;
+			this.lobby.settings = settings;
+			this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
+			if (this.peerSocket?.readyState === WebSocket.OPEN) {
+				this.peerSocket.send(JSON.stringify({ type: 'BingoSettingsUpdate', settings }));
+			}
 		});
 
 		this.clientEmitter.on('StartBingo', (session: BingoSession) => {
@@ -352,8 +363,13 @@ export class BingoService {
 				const msg: BingoPeerMessage = JSON.parse(raw.toString());
 				if (msg.type === 'BingoWelcome' && !msg.board) {
 					// Lobby: host acknowledged connection, no board yet — wait for BingoStart
-					this.lobby = { opponentConnected: true, opponentName: msg.playerName ?? null, localName: this.localPlayerName };
+					this.lobby = { opponentConnected: true, opponentName: msg.playerName ?? null, localName: this.localPlayerName, settings: msg.settings };
 					this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
+				} else if (msg.type === 'BingoSettingsUpdate' && msg.settings) {
+					if (this.lobby) {
+						this.lobby.settings = msg.settings;
+						this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
+					}
 				} else if (msg.type === 'BingoStart' && msg.board) {
 					// Host started the game
 					const session: BingoSession = {
@@ -779,8 +795,10 @@ export class BingoService {
 		if (!this.session) return;
 		const updates: BingoChallengeUpdate[] = [];
 
+		const isLockout = this.session.settings.winCondition === 'lockout';
 		for (const box of this.session.board.boxes) {
-			if (box.completed && box.completedBy !== null) continue;
+			if (box.completedBy === 'local' || box.completedBy === 'both') continue;
+			if (isLockout && box.completedBy === 'opponent') continue;
 			const prev = box.progress;
 			let next = prev;
 
@@ -863,7 +881,7 @@ export class BingoService {
 					const hasDown  = (this.gameBlastZoneKills.get('down')  ?? 0) > 0;
 					const hasUp    = (this.gameBlastZoneKills.get('star')  ?? 0) > 0
 						|| (this.gameBlastZoneKills.get('screen_ko') ?? 0) > 0;
-					if (hasLeft && hasRight && hasDown && hasUp) next = 1;
+					next = [hasLeft, hasRight, hasDown, hasUp].filter(Boolean).length;
 					break;
 				}
 				case 'lcancel_rate':
@@ -908,12 +926,16 @@ export class BingoService {
 			if (next !== prev || next >= box.target) {
 				box.progress = Math.min(next, box.target);
 				const wasCompleted = box.completed;
+				const prevCompletedBy = box.completedBy;
 				box.completed = box.progress >= box.target;
 				if (box.completed && !wasCompleted) {
 					box.completedBy = 'local';
 					this.sendCompletionToPeer(box.instanceId);
+				} else if (box.completed && wasCompleted && prevCompletedBy === 'opponent') {
+					box.completedBy = 'both';
+					this.sendCompletionToPeer(box.instanceId);
 				}
-				if (box.completed !== wasCompleted || next !== prev) {
+				if (box.completed !== wasCompleted || next !== prev || box.completedBy !== prevCompletedBy) {
 					updates.push({ instanceId: box.instanceId, progress: box.progress, completed: box.completed, completedBy: box.completedBy ?? undefined });
 				}
 			}
@@ -1040,6 +1062,7 @@ export class BingoService {
 		this.closePeerConnection();
 		this.lobby = null;
 		this.session = null;
+		if (this.messageHandler.lobbyGame === 'bingo') this.messageHandler.lobbyGame = null;
 		this.messageHandler.sendMessage('BingoLobbyState', null);
 		this.messageHandler.sendMessage('BingoState', { session: null });
 	}

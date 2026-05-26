@@ -42,6 +42,10 @@
 		bingoLobby,
 		bingoRevertMessage,
 		bingoLeaderboard,
+		ironManSession,
+		ironManLobby,
+		ironManLeaderboard,
+		ironManCurrentChar,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -397,6 +401,30 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['BingoLeaderboard']>[0];
 					if (value) bingoLeaderboard.set(value);
+				})();
+				break;
+			case 'IronManLobbyState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['IronManLobbyState']>[0];
+					ironManLobby.set(value ?? null);
+				})();
+				break;
+			case 'IronManState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['IronManState']>[0];
+					ironManSession.set(value.session);
+				})();
+				break;
+			case 'IronManLeaderboard':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['IronManLeaderboard']>[0];
+					if (value) ironManLeaderboard.set(value);
+				})();
+				break;
+			case 'IronManCurrentChar':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['IronManCurrentChar']>[0];
+					ironManCurrentChar.set(value);
 				})();
 				break;
 		}

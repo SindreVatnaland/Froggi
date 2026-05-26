@@ -5,10 +5,10 @@
 	import { generateBoard } from '$lib/utils/bingoGenerator';
 	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
 	import { tooltip } from 'svooltip';
-	// @ts-ignore
-	import QrCode from 'svelte-qrcode';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
-	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
+	import ScoreProgressBar from '$lib/components/ScoreProgressBar.svelte';
+	import OverlayRow from '$lib/components/OverlayRow.svelte';
+	import NgrokShareRow from '$lib/components/NgrokShareRow.svelte';
 
 	type Mode = 'solo' | 'host' | 'guest';
 
@@ -141,13 +141,13 @@
 		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 	}
 
-	// Local URL for OBS browser source (Add to OBS button)
-	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/bingo/overlay` : '';
+	// Shared game-preview overlay (covers both bingo + iron man)
+	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
 	// Peer share URL must be ngrok (unique + private per session)
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
 	// QR code: Tailscale (own device, permanent) — never ngrok (temporary/shared)
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
-	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/bingo/overlay` : localOverlayUrl;
+	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : localOverlayUrl;
 
 
 
@@ -158,8 +158,6 @@
 		}
 	});
 
-	let showQr = false;
-	let copiedShare = false;
 
 
 	// Win detection
@@ -421,55 +419,14 @@
 			</div>
 		{/if}
 
-		<!-- Host: share URL row — shown in host mode always -->
+		<!-- Host: share URL row -->
 		{#if (isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host')}
-			<div class="settings-row border-secondary items-center justify-between gap-3">
-				<div class="flex flex-col gap-0.5 min-w-0">
-					<span class="settings-label">Share with opponent</span>
-					{#if shareUrl}
-						<span class="text-xs opacity-60 truncate">{shareUrl}</span>
-					{:else}
-						<span class="text-xs opacity-40">No ngrok URL — start ngrok in Settings → Remote Access</span>
-					{/if}
-				</div>
-				<div class="flex gap-2 shrink-0">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => $electronEmitter.emit('NgrokRestart')}>↻</button>
-					{#if shareUrl}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={async () => { await navigator.clipboard.writeText(shareUrl); copiedShare = true; setTimeout(() => (copiedShare = false), 1500); }}>
-							{copiedShare ? 'Copied!' : 'Copy URL'}
-						</button>
-					{/if}
-				</div>
-			</div>
+			<NgrokShareRow {shareUrl} />
 		{/if}
 
-		<!-- OBS overlay row -->
+		<!-- OBS / device overlay row -->
 		{#if localOverlayUrl}
-			<div class="settings-row border-secondary items-center justify-between gap-3">
-				<div class="flex flex-col gap-0.5 min-w-0">
-					<span class="settings-label">Display on device / OBS</span>
-					<span class="text-xs opacity-60 truncate">{localOverlayUrl}</span>
-				</div>
-				<div class="flex gap-2 shrink-0">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => window.open(localOverlayUrl, '_blank', 'width=600,height=600')}>
-						Popup
-					</button>
-					<ObsIntegration url={localOverlayUrl} title="Bingo" width={500} height={500} />
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={() => (showQr = !showQr)}>
-						{showQr ? 'Hide QR' : 'QR'}
-					</button>
-				</div>
-			</div>
-			{#if showQr}
-				<div class="qr-row border-secondary">
-					<QrCode value={qrOverlayUrl} size="180" color="#ffffff" background="#1a1a1a" />
-					<div class="flex flex-col gap-1">
-						<p class="text-sm opacity-60">Scan to open on your phone or second screen</p>
-						<p class="text-xs opacity-40 break-all">{qrOverlayUrl}</p>
-						<p class="text-xs opacity-40 mt-1">⚠ Do not share this URL — use the ngrok link for opponents</p>
-					</div>
-				</div>
-			{/if}
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
 		{/if}
 
 		<!-- Timer -->
@@ -518,26 +475,16 @@
 			/>
 		</div>
 		{#if isActive}
-			<div class="score-row">
-				{#if role !== 'solo'}
-					<div class="score-player" class:score-player--winner={hasWon && localScore >= scoreTarget}>
-						<span class="score-name">{localPlayerName}</span>
-						<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-unit">{scoreUnit}</span>
-					</div>
-					<div class="score-divider">–</div>
-					<div class="score-player score-player--right" class:score-player--winner={hasWon && oppScore >= scoreTarget}>
-						<span class="score-unit">{scoreUnit}</span>
-						<span class="score-val">{oppScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-name">{opponentPlayerName}</span>
-					</div>
-				{:else}
-					<div class="score-solo">
-						<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-unit">{scoreUnit}</span>
-					</div>
-				{/if}
-			</div>
+			<ScoreProgressBar
+				{localScore}
+				localName={localPlayerName}
+				oppScore={role !== 'solo' ? oppScore : null}
+				oppName={opponentPlayerName}
+				target={scoreTarget}
+				unit={scoreUnit}
+				localWinner={hasWon && localScore >= scoreTarget}
+				oppWinner={hasWon && oppScore >= scoreTarget}
+			/>
 		{/if}
 		{/if}
 
@@ -676,13 +623,6 @@
 		outline: none;
 	}
 
-	.qr-row {
-		display: flex;
-		gap: 1.5rem;
-		align-items: center;
-		padding: 1rem 1.1rem;
-		border-radius: 0.375rem;
-	}
 
 	.win-banner {
 		text-align: center;
@@ -703,75 +643,6 @@
 		font-weight: 500;
 		letter-spacing: 0.04em;
 		opacity: 0.75;
-	}
-
-	.score-row {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1.2rem;
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.375rem;
-		margin-top: 0.25rem;
-	}
-
-	.score-player {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.05rem;
-		min-width: 6rem;
-	}
-
-	.score-player--right {
-		align-items: flex-end;
-	}
-
-	.score-player--winner .score-val {
-		color: #4ade80;
-	}
-
-	.score-name {
-		font-size: 0.7rem;
-		opacity: 0.5;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 9rem;
-	}
-
-	.score-val {
-		font-size: 1.3rem;
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-		line-height: 1;
-	}
-
-	.score-target {
-		font-size: 0.75rem;
-		opacity: 0.4;
-		font-weight: 400;
-	}
-
-	.score-unit {
-		font-size: 0.65rem;
-		opacity: 0.4;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.score-divider {
-		font-size: 1.1rem;
-		opacity: 0.3;
-		font-weight: 300;
-	}
-
-	.score-solo {
-		display: flex;
-		align-items: baseline;
-		gap: 0.4rem;
 	}
 
 	@keyframes pulse {

@@ -122,6 +122,7 @@ export interface BingoLobbyPayload {
 	opponentConnected: boolean;
 	opponentName: string | null;
 	localName: string;
+	settings?: BingoSettings;
 }
 
 export interface BingoStatePayload {

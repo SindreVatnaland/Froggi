@@ -202,6 +202,32 @@
 		return `${wc} line${(wc as number) > 1 ? 's' : ''} to win`;
 	}
 
+	$: localLines = displayBoard
+		? countLines(displayBoard.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both')
+		: 0;
+	$: oppLines = displayBoard
+		? countLines(displayBoard.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both')
+		: 0;
+
+	$: progressData = (() => {
+		if (!displayBoard) return null;
+		const boxes = displayBoard.boxes;
+		const total = boxes.length;
+		if (winCondition === 'lockout') {
+			const target = Math.ceil(total / 2) + 1;
+			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+			return { localScore: ls, oppScore: role === 'solo' ? (null as number | null) : os, target, unit: 'boxes', localWinner: ls >= target, oppWinner: os >= target };
+		}
+		if (winCondition === 'full') {
+			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+			return { localScore: ls, oppScore: role === 'solo' ? (null as number | null) : os, target: total, unit: 'boxes', localWinner: ls >= total, oppWinner: os >= total };
+		}
+		const n = winCondition as number;
+		return { localScore: localLines, oppScore: role === 'solo' ? (null as number | null) : oppLines, target: n, unit: 'lines', localWinner: localLines >= n, oppWinner: oppLines >= n };
+	})();
+
 	$: opponentName = session?.opponentName ?? null;
 
 	function checkIsLocalWinner(): boolean {
@@ -310,17 +336,25 @@
 					animateEntry={true}
 				/>
 			</div>
-			{#if animPhase !== 'exit'}
-				<div class="condition-bar">
-					{#if role !== 'solo'}
-						<span class="player-name"><span class="color-dot color-dot--local"></span>{session?.localName || localName}</span>
-						<span class="cond-label">{winConditionLabel(winCondition)}</span>
-						{#if opponentName}
-							<span class="player-name"><span class="color-dot color-dot--opp"></span>{opponentName}</span>
-						{/if}
-					{:else}
-						<span class="cond-label">{winConditionLabel(winCondition)}</span>
+			{#if animPhase !== 'exit' && progressData}
+				<div class="pb-wrap">
+					<div class="pb-row" class:pb-row--winner={progressData.localWinner}>
+						<span class="pb-name">{session?.localName || localName}</span>
+						<div class="pb-track">
+							<div class="pb-fill pb-fill--local" style="width:{Math.min(100, (progressData.localScore / progressData.target) * 100)}%"></div>
+						</div>
+						<span class="pb-score">{progressData.localScore}<span class="pb-of">/{progressData.target}</span></span>
+					</div>
+					{#if progressData.oppScore !== null}
+						<div class="pb-row" class:pb-row--winner={progressData.oppWinner}>
+							<span class="pb-name">{opponentName ?? 'Opponent'}</span>
+							<div class="pb-track">
+								<div class="pb-fill pb-fill--opp" style="width:{Math.min(100, (progressData.oppScore / progressData.target) * 100)}%"></div>
+							</div>
+							<span class="pb-score">{progressData.oppScore}<span class="pb-of">/{progressData.target}</span></span>
+						</div>
 					{/if}
+					<span class="pb-unit">{progressData.unit}</span>
 				</div>
 			{/if}
 		</div>
@@ -599,40 +633,82 @@
 		animation: flash 0.8s ease-in-out infinite;
 	}
 
-	.condition-bar {
+	.pb-wrap {
 		width: 100%;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1.2vmin;
-		font-family: sans-serif;
-		flex-shrink: 0;
+		flex-direction: column;
+		gap: 1vmin;
 		padding: 1vmin 0 0.5vmin;
+		flex-shrink: 0;
 	}
 
-	.player-name {
+	.pb-row {
 		display: flex;
 		align-items: center;
-		gap: 0.5vmin;
-		font-size: 1.8vmin;
-		font-weight: 600;
-		color: rgba(255,255,255,0.6);
-		letter-spacing: 0.02em;
+		gap: 1.5vmin;
 	}
 
-	.color-dot {
-		width: 1.4vmin;
-		height: 1.4vmin;
-		border-radius: 2px;
-		flex-shrink: 0;
-	}
-
-	.color-dot--local { background: #3b82f6; }
-	.color-dot--opp   { background: #22c55e; }
-
-	.cond-label {
+	.pb-name {
 		font-size: 1.6vmin;
-		color: rgba(255,255,255,0.28);
+		font-weight: 700;
+		color: rgba(255,255,255,0.55);
 		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		width: 12vmin;
+		flex-shrink: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-family: sans-serif;
+	}
+
+	.pb-track {
+		flex: 1;
+		height: 1.2vmin;
+		border-radius: 999px;
+		background: rgba(255,255,255,0.08);
+		overflow: hidden;
+	}
+
+	.pb-fill {
+		height: 100%;
+		border-radius: 999px;
+		transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+	}
+
+	.pb-fill--local { background: rgba(96, 165, 250, 0.85); }
+	.pb-fill--opp   { background: rgba(52, 211, 153, 0.85); }
+
+	.pb-row--winner .pb-fill--local,
+	.pb-row--winner .pb-fill--opp {
+		background: rgba(74, 222, 128, 0.95);
+	}
+
+	.pb-score {
+		font-size: 2vmin;
+		font-weight: 700;
+		font-family: sans-serif;
+		color: rgba(255,255,255,0.9);
+		width: 5vmin;
+		text-align: right;
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.pb-row--winner .pb-score { color: #4ade80; }
+
+	.pb-of {
+		font-size: 1.4vmin;
+		opacity: 0.4;
+		font-weight: 400;
+	}
+
+	.pb-unit {
+		font-size: 1.3vmin;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		opacity: 0.3;
+		font-family: sans-serif;
+		padding-left: calc(12vmin + 1.5vmin);
 	}
 </style>

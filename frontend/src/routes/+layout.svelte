@@ -54,11 +54,8 @@
 	};
 
 	const updateBackgroundColor = () => {
-		if ($isOverlayPage && !$isElectron) {
-			document.body.style.backgroundColor = 'transparent';
-		} else {
-			document.body.style.backgroundColor = 'var(--primary-color)';
-		}
+		const transparentPage = $isOverlayPage && !$isElectron;
+		document.body.style.backgroundColor = transparentPage ? 'transparent' : 'var(--primary-color)';
 	};
 
 	$: $isOverlayPage, updateBackgroundColor();
@@ -67,6 +64,7 @@
 		isOverlayPage.set(
 			pathname.startsWith('/obs/overlay/') ||
 			pathname.startsWith('/obs/bingo/overlay') ||
+			pathname.startsWith('/obs/game-preview') ||
 			pathname.startsWith('/set/p/') ||
 			pathname.startsWith('/client/')
 		);

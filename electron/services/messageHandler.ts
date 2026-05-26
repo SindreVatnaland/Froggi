@@ -46,6 +46,8 @@ export class MessageHandler {
 	private expressWss: WebSocketServer = new WebSocketServer({ noServer: true });
 	private expressWsConnections: Map<string, WebSocket> = new Map();
 	readonly bingoPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
+	readonly ironManPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
+	lobbyGame: 'bingo' | 'ironman' | null = null;
 
 	constructor(
 		@inject('AppDir') private appDir: string,
@@ -96,6 +98,11 @@ export class MessageHandler {
 		try {
 			this.app.use('/public', staticFileServe);
 
+			this.app.get('/lobby-info', (_req: express.Request, res: express.Response) => {
+				res.setHeader('Access-Control-Allow-Origin', '*');
+				res.json({ game: this.lobbyGame });
+			});
+
 			if (!this.dev) {
 				this.app.use('/', staticFrontendServe);
 				this.app.use('*', staticFrontendServe);
@@ -119,6 +126,10 @@ export class MessageHandler {
 				if (req.url?.startsWith('/bingo-peer')) {
 					this.bingoPeerWss.handleUpgrade(req, socket, head, (ws) => {
 						this.bingoPeerWss.emit('connection', ws);
+					});
+				} else if (req.url?.startsWith('/ironman-peer')) {
+					this.ironManPeerWss.handleUpgrade(req, socket, head, (ws) => {
+						this.ironManPeerWss.emit('connection', ws);
 					});
 				} else {
 					this.expressWss.handleUpgrade(req, socket, head, (ws) => {

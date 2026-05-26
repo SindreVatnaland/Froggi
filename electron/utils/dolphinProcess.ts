@@ -16,6 +16,16 @@ export const getProcessPid = async (): Promise<number | undefined> => {
 	return undefined;
 };
 
+let _lastDolphinState: string | null | undefined = undefined;
+
+function logDolphinState(state: string | null): void {
+	if (state !== _lastDolphinState) {
+		_lastDolphinState = state;
+		if (state) console.log(`Dolphin is running: ${state}`);
+		else console.log('Dolphin is not running');
+	}
+}
+
 export const isDolphinRunning = async (): Promise<string | null> => {
 	const isWindows = os.platform() === 'win32';
 	const validProcesses = getValidProcesses();
@@ -23,9 +33,9 @@ export const isDolphinRunning = async (): Promise<string | null> => {
 	const shell = isWindows ? 'powershell.exe' : '/bin/bash';
 
 	const windowsCommand = `
-		try { 
+		try {
 			Get-CimInstance Win32_Process | Select-Object -ExpandProperty Name
-		} catch { 
+		} catch {
 			tasklist /FO CSV | ForEach-Object { $_ -split ',' } | ForEach-Object { $_ -replace '"', '' }
 		}
 	`;
@@ -36,8 +46,7 @@ export const isDolphinRunning = async (): Promise<string | null> => {
 	return new Promise((resolve) => {
 		exec(command, { shell }, (_: ExecException | null, stdout: string) => {
 			if (!stdout.trim()) {
-				console.log("stdout:", stdout);
-				console.log("Dolphin is not running");
+				logDolphinState(null);
 				return resolve(null);
 			}
 
@@ -48,12 +57,12 @@ export const isDolphinRunning = async (): Promise<string | null> => {
 
 			for (const process of validProcesses) {
 				if (runningProcesses.some(p => p.includes(process.toLowerCase()))) {
-					console.log(`Dolphin is running: ${process}`);
+					logDolphinState(process);
 					return resolve(process);
 				}
 			}
 
-			console.log("Dolphin is not running");
+			logDolphinState(null);
 			resolve(null);
 		});
 	});

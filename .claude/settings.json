@@ -113,7 +113,10 @@
       "Bash(cat > *)",
       "Bash(node -e \"const {ConversionType} = require\\('./node_modules/@slippi/slippi-js'\\); console.log\\(ConversionType\\)\")",
       "Bash(awk -F: '$2 > 860 && $2 < 900')",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(grep -v \"^--$\")",
+      "Bash(grep -n 'Join Iron Man\\\\|imGuestUrl\\\\|imMode === '\\\\''guest'\\\\'' && !$ironManLobby' /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/minigames/+page.svelte)",
+      "Bash(npx vite *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

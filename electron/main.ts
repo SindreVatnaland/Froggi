@@ -35,6 +35,7 @@ import { ElectronWebhookStore } from './services/store/storeWebhook';
 import { WebhookService } from './services/webhookService';
 import { ActionStateService } from './services/actionStateService';
 import { BingoService } from './services/bingoService';
+import { IronManService } from './services/ironmanService';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
@@ -157,6 +158,18 @@ try {
 	}
 
 	function createMenu(): Electron.MenuItemConstructorOptions[] {
+		const editMenu: Electron.MenuItemConstructorOptions = {
+			label: 'Edit',
+			submenu: [
+				{ role: 'undo' },
+				{ role: 'redo' },
+				{ type: 'separator' },
+				{ role: 'cut' },
+				{ role: 'copy' },
+				{ role: 'paste' },
+				{ role: 'selectAll' },
+			],
+		};
 		if (isMac) return [
 			{
 				label: 'Froggi',
@@ -164,14 +177,13 @@ try {
 					{
 						label: 'Quit',
 						accelerator: 'CmdOrCtrl+Q',
-						click: () => {
-							app.quit();
-						},
+						click: () => { app.quit(); },
 					},
 				],
 			},
+			editMenu,
 		];
-		return []
+		return [editMenu];
 	}
 
 	function handleMultipleInstances() {
@@ -294,6 +306,7 @@ try {
 			container.resolve(WebhookService);
 			container.resolve(ActionStateService);
 			container.resolve(BingoService);
+			container.resolve(IronManService);
 
 			// Notify the frontend of any missing spectate configuration now that
 			// MessageHandler is ready and listening for Notification events.

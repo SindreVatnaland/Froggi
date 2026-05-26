@@ -3,6 +3,7 @@ import ip from 'ip';
 import Store from 'electron-store';
 import type { Url } from '../../../frontend/src/lib/models/types/overlay';
 import type { BingoLeaderboardEntry } from '../../../frontend/src/lib/models/types/bingo';
+import type { IronManLeaderboardEntry } from '../../../frontend/src/lib/models/types/ironman';
 import type { SlippiLauncherSettings } from '../../../frontend/src/lib/models/types/slippiData';
 import { inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
@@ -151,6 +152,30 @@ export class ElectronSettingsStore {
 
 	setBingoLeaderboard(records: Record<string, BingoLeaderboardEntry[]>) {
 		this.store.set('bingo.leaderboard', records);
+	}
+
+	getIronManLeaderboard(): IronManLeaderboardEntry[] {
+		return (this.store.get('ironman.leaderboard') as IronManLeaderboardEntry[]) ?? [];
+	}
+
+	setIronManLeaderboard(records: IronManLeaderboardEntry[]) {
+		this.store.set('ironman.leaderboard', records);
+	}
+
+	getIronManFullRosterLeaderboard(): IronManLeaderboardEntry[] {
+		return (this.store.get('ironman.fullRosterLeaderboard') as IronManLeaderboardEntry[]) ?? [];
+	}
+
+	setIronManFullRosterLeaderboard(records: IronManLeaderboardEntry[]) {
+		this.store.set('ironman.fullRosterLeaderboard', records);
+	}
+
+	getIronManStandardLeaderboard(): IronManLeaderboardEntry[] {
+		return (this.store.get('ironman.standardLeaderboard') as IronManLeaderboardEntry[]) ?? [];
+	}
+
+	setIronManStandardLeaderboard(records: IronManLeaderboardEntry[]) {
+		this.store.set('ironman.standardLeaderboard', records);
 	}
 
 	private initEventListeners() {
