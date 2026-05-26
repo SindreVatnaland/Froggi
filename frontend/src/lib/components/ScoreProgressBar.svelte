@@ -67,7 +67,7 @@
 		flex: 1;
 		height: 6px;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.08);
+		background: color-mix(in srgb, var(--secondary-color) 12%, transparent);
 		overflow: hidden;
 	}
 
