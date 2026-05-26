@@ -41,6 +41,7 @@
 		bingoSession,
 		bingoLobby,
 		bingoRevertMessage,
+		bingoLeaderboard,
 	} from '$lib/utils/store.svelte';
 	import {
 		getAuthorizationKey,
@@ -390,6 +391,12 @@
 					const msg = payload[0] as string;
 					bingoRevertMessage.set(msg);
 					setTimeout(() => bingoRevertMessage.set(null), 5000);
+				})();
+				break;
+			case 'BingoLeaderboard':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoLeaderboard']>[0];
+					if (value) bingoLeaderboard.set(value);
 				})();
 				break;
 		}

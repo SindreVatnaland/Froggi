@@ -87,7 +87,7 @@ export interface BingoBoard {
 export type BingoMode = 'solo' | 'lockout' | 'free';
 export type BingoRole = 'solo' | 'host' | 'guest';
 /** Number of lines needed to win, full board, or lockout (majority, no stealing) */
-export type BingoWinCondition = 1 | 2 | 3 | 4 | 5 | 'full' | 'lockout';
+export type BingoWinCondition = 1 | 2 | 3 | 4 | 5 | 'full' | 'lockout' | 'rowcontrol';
 
 export interface BingoSettings {
 	mode: BingoMode;
@@ -128,6 +128,35 @@ export interface BingoStatePayload {
 	session: BingoSession | null;
 }
 
+export interface BingoSoloWinPayload {
+	timeSeconds: number;
+	boardSize: 3 | 4 | 5;
+	winCondition: BingoWinCondition;
+	difficulty: BingoDifficulty;
+}
+
+export interface BingoLeaderboardEntry {
+	timeSeconds: number;
+	completedAt: number;
+	version: string;
+}
+
+export interface BingoLeaderboard {
+	currentVersion: string;
+	records: Record<string, BingoLeaderboardEntry[]>;
+}
+
 export interface BingoChallengeUpdatePayload {
 	updates: BingoChallengeUpdate[];
+	reverted?: boolean;
+	webhookData?: {
+		totalCheckedLocal: number;
+		totalCheckedOpponent: number;
+		latestUpdate: {
+			instanceId: string;
+			label: string;
+			completedBy: 'local' | 'opponent' | 'both' | null;
+			reverted: boolean;
+		} | null;
+	};
 }

@@ -2,6 +2,7 @@
 import ip from 'ip';
 import Store from 'electron-store';
 import type { Url } from '../../../frontend/src/lib/models/types/overlay';
+import type { BingoLeaderboardEntry } from '../../../frontend/src/lib/models/types/bingo';
 import type { SlippiLauncherSettings } from '../../../frontend/src/lib/models/types/slippiData';
 import { inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
@@ -142,6 +143,14 @@ export class ElectronSettingsStore {
 			local: `http://localhost:${this.port}`,
 			localResource: `http://localhost:${BACKEND_PORT}`,
 		};
+	}
+
+	getBingoLeaderboard(): Record<string, BingoLeaderboardEntry[]> {
+		return (this.store.get('bingo.leaderboard') as Record<string, BingoLeaderboardEntry[]>) ?? {};
+	}
+
+	setBingoLeaderboard(records: Record<string, BingoLeaderboardEntry[]>) {
+		this.store.set('bingo.leaderboard', records);
 	}
 
 	private initEventListeners() {

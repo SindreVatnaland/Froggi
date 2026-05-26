@@ -9,6 +9,7 @@ export enum WebhookEvent {
 	PercentChange = 'PercentChange',
 	StockChange = 'StockChange',
 	PlayerInfo = 'PlayerInfo',
+	BingoUpdate = 'BingoUpdate',
 }
 
 export type WebhookAuthType = 'none' | 'bearer' | 'oauth2';
@@ -161,6 +162,17 @@ export interface PlayerInfoPayload {
 	p1: PlayerInfoEntry | null;
 	p2: PlayerInfoEntry | null;
 	currentPlayer: PlayerInfoEntry | null;
+}
+
+export interface BingoUpdatePayload {
+	totalCheckedLocal: number;
+	totalCheckedOpponent: number;
+	latestUpdate: {
+		instanceId: string;
+		label: string;
+		completedBy: 'local' | 'opponent' | 'both' | null;
+		reverted: boolean;
+	} | null;
 }
 
 // ── Internal type used by storeCurrentPlayer ─────────────────────────────────

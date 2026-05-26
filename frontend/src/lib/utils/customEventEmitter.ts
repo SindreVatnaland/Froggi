@@ -37,7 +37,7 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
-import type { BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession } from '../models/types/bingo';
+import type { BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard } from '../models/types/bingo';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -190,6 +190,9 @@ export interface MessageEvents {
 	BingoRevert: (message: string) => void;
 	BingoPeerConnect: (hostUrl: string) => void;
 	BingoDevSimulate: (instanceId: string, player: 'local' | 'opponent') => void;
+	BingoSoloWin: (data: BingoSoloWinPayload) => void;
+	GetBingoLeaderboard: () => void;
+	BingoLeaderboard: (data: BingoLeaderboard) => void;
 }
 
 export class TypedEmitter extends localEmitter {

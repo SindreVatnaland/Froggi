@@ -1,4 +1,5 @@
 import { delay, inject, singleton } from 'tsyringe';
+import { ElectronSettingsStore } from './store/storeSettings';
 import type { ElectronLog } from 'electron-log';
 import type { App } from 'electron';
 import { GameEndMethod } from '@slippi/slippi-js';
@@ -12,6 +13,8 @@ import type {
 	BingoSession,
 	BingoChallengeUpdate,
 	BingoLobbyPayload,
+	BingoSoloWinPayload,
+	BingoLeaderboardEntry,
 } from '../../frontend/src/lib/models/types/bingo';
 import type { CurrentPlayer, GameStats } from '../../frontend/src/lib/models/types/slippiData';
 import { getMoveCategory } from '../../frontend/src/lib/models/constants/moveCategories';
@@ -103,6 +106,8 @@ export class BingoService {
 	private characterWins: Map<number, number> = new Map();
 	private lastGameWasWin: boolean = false;
 	private sessionSnapshot: SessionSnapshot | null = null;
+	private opponentCompletedBoxes: Set<string> = new Set();
+	private readonly revertEnabled: boolean = true;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -110,6 +115,7 @@ export class BingoService {
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore,
 	) {
 		this.log.info('Initializing Bingo Service');
 		this.initEventListeners();
@@ -251,6 +257,58 @@ export class BingoService {
 				this.devCompleteLocal(instanceId);
 			}
 		});
+
+		this.clientEmitter.on('BingoSoloWin', (data: BingoSoloWinPayload) => {
+			this.saveSoloRecord(data);
+		});
+
+		this.clientEmitter.on('GetBingoLeaderboard', () => {
+			this.emitLeaderboard();
+		});
+	}
+
+	private saveSoloRecord(data: BingoSoloWinPayload) {
+		const key = `${data.boardSize}_${data.winCondition}_${data.difficulty}`;
+		const entry: BingoLeaderboardEntry = {
+			timeSeconds: data.timeSeconds,
+			completedAt: Date.now(),
+			version: this.app.getVersion(),
+		};
+		const all = this.settingsStore.getBingoLeaderboard();
+		const existing = all[key] ?? [];
+		const updated = [...existing, entry]
+			.sort((a, b) => a.timeSeconds - b.timeSeconds)
+			.slice(0, 10);
+		all[key] = updated;
+		this.settingsStore.setBingoLeaderboard(all);
+		this.emitLeaderboard();
+	}
+
+	private emitLeaderboard() {
+		this.messageHandler.sendMessage('BingoLeaderboard', {
+			currentVersion: this.app.getVersion(),
+			records: this.settingsStore.getBingoLeaderboard(),
+		});
+	}
+
+	private sendChallengeUpdates(updates: BingoChallengeUpdate[], reverted: boolean = false): void {
+		if (!this.session) return;
+		const boxes = this.session.board.boxes;
+		const totalCheckedLocal = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+		const totalCheckedOpponent = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+		const completedUpdate = updates.find(u => u.completed) ?? updates[updates.length - 1] ?? null;
+		const latestBox = completedUpdate ? boxes.find(b => b.instanceId === completedUpdate.instanceId) : null;
+		const latestUpdate = completedUpdate && latestBox ? {
+			instanceId: completedUpdate.instanceId,
+			label: latestBox.label,
+			completedBy: completedUpdate.completedBy ?? null,
+			reverted,
+		} : null;
+		this.messageHandler.sendMessage('BingoChallengeUpdates', {
+			updates,
+			reverted,
+			webhookData: { totalCheckedLocal, totalCheckedOpponent, latestUpdate },
+		});
 	}
 
 	private devCompleteLocal(instanceId: string) {
@@ -267,9 +325,7 @@ export class BingoService {
 			box.progress = box.target;
 			this.sendCompletionToPeer(instanceId);
 		}
-		this.messageHandler.sendMessage('BingoChallengeUpdates', {
-			updates: [{ instanceId, progress: box.target, completed: true, completedBy: box.completedBy ?? undefined }],
-		});
+		this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: box.completedBy ?? undefined }]);
 		this.sendBoardToPeer(this.session.board);
 	}
 
@@ -353,15 +409,13 @@ export class BingoService {
 				box.completed = true;
 				box.completedBy = 'opponent';
 				box.progress = box.target;
-				this.messageHandler.sendMessage('BingoChallengeUpdates', {
-					updates: [{ instanceId, progress: box.target, completed: true, completedBy: 'opponent' }],
-				});
+				this.opponentCompletedBoxes.add(instanceId);
+				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'opponent' }]);
 			} else if (!isLockout && box.completedBy === 'local') {
 				// Non-lockout: both players completed the same box
 				box.completedBy = 'both';
-				this.messageHandler.sendMessage('BingoChallengeUpdates', {
-					updates: [{ instanceId, progress: box.target, completed: true, completedBy: 'both' }],
-				});
+				this.opponentCompletedBoxes.add(instanceId);
+				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'both' }]);
 			}
 		}
 		this.sendBoardToPeer(this.session.board);
@@ -532,26 +586,51 @@ export class BingoService {
 		this.checkChallenges();
 	}
 
+	private reapplyOpponentCompletions(): void {
+		if (!this.session) return;
+		for (const instanceId of this.opponentCompletedBoxes) {
+			const box = this.session.board.boxes.find(b => b.instanceId === instanceId);
+			if (!box) continue;
+			if (!box.completedBy) {
+				box.completed = true;
+				box.completedBy = 'opponent';
+				box.progress = box.target;
+			} else if (box.completedBy === 'local') {
+				box.completedBy = 'both';
+			}
+		}
+	}
+
 	private applyProgressRevert(message: string): void {
+		if (!this.revertEnabled) {
+			this.resetGameState();
+			this.messageHandler.sendMessage('Notification', message, NotificationType.Warning, 5000);
+			this.messageHandler.sendMessage('BingoRevert', message);
+			return;
+		}
 		if (this.sessionSnapshot && this.session) {
+			const preRevert = new Map(
+				this.session.board.boxes.map(b => [b.instanceId, { progress: b.progress, completed: b.completed, completedBy: b.completedBy }])
+			);
+			this.restoreSessionSnapshot(this.sessionSnapshot);
+			this.reapplyOpponentCompletions();
+			this.winStreak = 0;
+			this.resetGameState();
 			const revertUpdates: BingoChallengeUpdate[] = [];
 			for (const box of this.session.board.boxes) {
-				const saved = this.sessionSnapshot.boxStates.get(box.instanceId);
-				if (!saved) continue;
-				if (box.progress !== saved.progress || box.completed !== saved.completed || box.completedBy !== saved.completedBy) {
+				const pre = preRevert.get(box.instanceId);
+				if (!pre) continue;
+				if (box.progress !== pre.progress || box.completed !== pre.completed || box.completedBy !== pre.completedBy) {
 					revertUpdates.push({
 						instanceId: box.instanceId,
-						progress: saved.progress,
-						completed: saved.completed,
-						completedBy: saved.completedBy ?? undefined,
+						progress: box.progress,
+						completed: box.completed,
+						completedBy: box.completedBy ?? undefined,
 					});
 				}
 			}
-			this.restoreSessionSnapshot(this.sessionSnapshot);
-			this.winStreak = 0;
-			this.resetGameState();
 			if (revertUpdates.length) {
-				this.messageHandler.sendMessage('BingoChallengeUpdates', { updates: revertUpdates });
+				this.sendChallengeUpdates(revertUpdates, true);
 			}
 		} else {
 			this.resetGameState();
@@ -841,7 +920,7 @@ export class BingoService {
 		}
 
 		if (updates.length > 0) {
-			this.messageHandler.sendMessage('BingoChallengeUpdates', { updates });
+			this.sendChallengeUpdates(updates);
 		}
 	}
 
@@ -866,6 +945,7 @@ export class BingoService {
 		this.session = session;
 		this.resetGameState();
 		this.resetSessionAccumulators();
+		this.opponentCompletedBoxes.clear();
 		this.localPlayerIndex = session.localPlayerIndex;
 		this.log.info(`Bingo session started: ${session.board.id}, role: ${session.role}`);
 		this.messageHandler.sendMessage('BingoState', { session: this.session });

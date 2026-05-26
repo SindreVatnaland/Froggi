@@ -2,13 +2,13 @@
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { electronEmitter, isElectron, obsConnection, obsProcessStatus, remoteAccess, urls } from '$lib/utils/store.svelte';
+	import { remoteAccess, urls } from '$lib/utils/store.svelte';
+	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
 	// @ts-ignore
 	import Clipboard from 'svelte-clipboard';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
 	import { getOverlayById } from './OverlayHandler.svelte';
-	import { ConnectionState } from '$lib/models/enum';
 
 	export let overlayId: string = $page.params.overlay;
 	$: localUrl = `${$urls?.local}/obs/overlay/${overlayId}`;
@@ -18,14 +18,13 @@
 	let externalTab: 'local' | 'remote' = 'local';
 	$: activeExternalUrl = externalTab === 'remote' && tsUrl ? `${tsUrl}/obs/overlay/${overlayId}` : externalUrl;
 
-	$: isObsConnected = $obsConnection?.state === ConnectionState.Connected;
-	$: obsWebsocketDisabled = $obsProcessStatus?.running && $obsProcessStatus?.websocketEnabled === false;
-
-	const addToObs = async () => {
-		const overlay = await getOverlayById(overlayId);
-		if (!overlay) return;
-		$electronEmitter.emit('ObsCreateBrowserSource', localUrl, overlay.title, overlay.aspectRatio);
-	};
+	let overlayTitle = '';
+	let overlayAspectRatio: { width: number; height: number } = { width: 1920, height: 1080 };
+	$: getOverlayById(overlayId).then(o => {
+		if (!o) return;
+		overlayTitle = o.title;
+		overlayAspectRatio = o.aspectRatio;
+	});
 
 	export let open: boolean;
 </script>
@@ -72,22 +71,7 @@
 					</Clipboard>
 				</div>
 
-				{#if $isElectron && !isObsConnected}
-				<button
-					on:click={() => $electronEmitter.emit('ObsWebsocketEnable')}
-					class="btn text-sm h-9 px-5 border-secondary rounded"
-				>
-					{obsWebsocketDisabled ? 'Enable OBS WebSocket' : 'Connect OBS'}
-				</button>
-				{:else}
-				<button
-					on:click={addToObs}
-					disabled={!isObsConnected}
-					class="btn text-sm h-9 px-5 border-secondary rounded disabled:opacity-40"
-				>
-					Add to OBS automatically
-				</button>
-				{/if}
+				<ObsIntegration url={localUrl} title={overlayTitle} width={overlayAspectRatio.width} height={overlayAspectRatio.height} cls="btn text-sm h-9 px-5 border-secondary rounded" />
 
 				<p class="text-xs opacity-35">This URL only works on this device.</p>
 			</div>

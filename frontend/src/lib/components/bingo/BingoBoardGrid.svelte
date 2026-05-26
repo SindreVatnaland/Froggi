@@ -28,12 +28,19 @@
 	function labelFontSize(label: string): string {
 		const n = label.length;
 		if (n <= 8)  return '1.15em';
-		if (n <= 12) return '1.05em';
-		if (n <= 16) return '0.95em';
-		if (n <= 20) return '0.88em';
-		if (n <= 26) return '0.80em';
-		if (n <= 32) return '0.72em';
-		return '0.65em';
+		if (n <= 13) return '1.06em';
+		if (n <= 18) return '0.97em';
+		if (n <= 24) return '0.89em';
+		if (n <= 30) return '0.82em';
+		if (n <= 38) return '0.76em';
+		if (n <= 46) return '0.70em';
+		return '0.64em';
+	}
+
+	function charLabelPrefix(label: string): string {
+		const idx = label.lastIndexOf(' as ');
+		if (idx >= 0) return label.slice(0, idx) + ' as';
+		return label;
 	}
 
 	function showProg(box: BingoBox): boolean {
@@ -90,15 +97,15 @@
 			{/if}
 			<div class="box-inner">
 				{#if box.challengeId === 'win_with_character' && box.params.characterId != null}
+					{@const prefix = charLabelPrefix(box.label)}
+					<span class="label" style="font-size:{labelFontSize(prefix)}">{prefix}</span>
 					<img
 						src="/image/characters/css/{charIconId(box.params.characterId)}.png"
 						alt=""
 						class="char-icon"
 					/>
-				{/if}
-				<span class="label" style="font-size:{labelFontSize(box.label)}">{box.label}</span>
-				{#if box.description && box.description !== box.label}
-					<span class="desc">{box.description}</span>
+				{:else}
+					<span class="label" style="font-size:{labelFontSize(box.label)}">{box.label}</span>
 				{/if}
 			</div>
 			{#if sp && box.hasProgress && !box.completed}
@@ -201,8 +208,8 @@
 	}
 
 	.char-icon {
-		width: var(--bingo-char-size, 28px);
-		height: var(--bingo-char-size, 28px);
+		width: var(--bingo-char-size, 36px);
+		height: var(--bingo-char-size, 36px);
 		object-fit: contain;
 		image-rendering: pixelated;
 	}
@@ -215,18 +222,6 @@
 		overflow-wrap: break-word;
 		hyphens: none;
 		font-family: sans-serif;
-	}
-
-	.desc {
-		color: rgba(255, 255, 255, 0.55);
-		font-size: var(--bingo-desc-size, 0.7em);
-		font-weight: 500;
-		text-align: center;
-		line-height: 1.25;
-		overflow-wrap: break-word;
-		hyphens: none;
-		font-family: sans-serif;
-		margin-top: 0.1em;
 	}
 
 	.sub {

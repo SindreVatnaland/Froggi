@@ -72,6 +72,7 @@ describe('BingoService', () => {
 			localEmitter,
 			clientEmitter,
 			{ sendMessage, bingoPeerWss: { on: jest.fn() } } as any,
+			{ getBingoLeaderboard: jest.fn().mockReturnValue({}), setBingoLeaderboard: jest.fn() } as any,
 		);
 	});
 

@@ -28,7 +28,7 @@
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import type { WebhookProfile } from '$lib/models/types/webhook';
 	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
-	import type { BingoSession, BingoLobbyPayload } from '$lib/models/types/bingo';
+	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard } from '$lib/models/types/bingo';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -115,4 +115,5 @@
 	export const bingoSession = writable<BingoSession | null>(null);
 	export const bingoLobby = writable<BingoLobbyPayload | null>(null);
 	export const bingoRevertMessage = writable<string | null>(null);
+	export const bingoLeaderboard = writable<BingoLeaderboard>({ currentVersion: '', records: {} });
 </script>

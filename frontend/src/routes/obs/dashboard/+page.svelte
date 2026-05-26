@@ -8,6 +8,7 @@
 	import SliderInput from '$lib/components/input/SliderInput.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { goto } from '$app/navigation';
+	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
 	import {
 		controller,
 		currentPlayers,
@@ -147,7 +148,7 @@
 	$: ngrokRunning = $ngrokStatus?.running ?? false;
 	$: ngrokConfigured = ngrokInstalled && ngrokAuthenticated;
 
-	const connectObs = () => $electronEmitter.emit('ObsWebsocketEnable');
+
 
 	const toggleTailscaleFunnel = () => $electronEmitter.emit('TailscaleFunnel', !tsFunnelActive);
 	const toggleNgrok = () => ngrokRunning
@@ -402,10 +403,10 @@
 				<span class="text-xs opacity-40 flex-1">Connecting…</span>
 			{:else if obsWebsocketDisabled}
 				<span class="text-xs opacity-40 flex-1">WebSocket disabled</span>
-				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={connectObs}>Enable</button>
+				<ObsIntegration cls="btn text-xs h-6 px-3 border-secondary rounded shrink-0" />
 			{:else}
 				<span class="text-xs opacity-40 flex-1">Disconnected</span>
-				<button class="btn text-xs h-6 px-3 border-secondary rounded shrink-0" on:click={connectObs}>Connect</button>
+				<ObsIntegration cls="btn text-xs h-6 px-3 border-secondary rounded shrink-0" />
 			{/if}
 		</div>
 		<div class="conn-row">

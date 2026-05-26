@@ -34,7 +34,9 @@ import {
 	type WebhookPayload,
 	type WebhookProfile,
 	type RankChangeDiff,
+	type BingoUpdatePayload,
 } from '../../frontend/src/lib/models/types/webhook';
+import type { BingoChallengeUpdatePayload } from '../../frontend/src/lib/models/types/bingo';
 import type { StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 import type {
 	CurrentPlayer,
@@ -128,6 +130,11 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'TEST#002', displayName: 'Player 2', rank: null },
 		currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'TEST#001', displayName: 'Player 1', rank: DUMMY_RANK_PROFILE },
 	},
+	[WebhookEvent.BingoUpdate]: {
+		totalCheckedLocal: 3,
+		totalCheckedOpponent: 2,
+		latestUpdate: { instanceId: 'box-0', label: 'Win a game', completedBy: 'local', reverted: false },
+	} satisfies BingoUpdatePayload,
 };
 
 const GAME_END_METHODS: Record<number, string> = {
@@ -258,6 +265,11 @@ export class WebhookService {
 				};
 				this.dispatch(WebhookEvent.StockChange, payload);
 			}
+		});
+
+		this.localEmitter.on('BingoChallengeUpdates', (data: BingoChallengeUpdatePayload) => {
+			if (!data.webhookData) return;
+			this.dispatch(WebhookEvent.BingoUpdate, data.webhookData);
 		});
 
 		this.clientEmitter.on('TestWebhookProfile', (profileId: string) => {

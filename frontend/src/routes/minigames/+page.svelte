@@ -1,30 +1,45 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage } from '$lib/utils/store.svelte';
-	import { onMount } from 'svelte';
+	import {
+		bingoSession, bingoLobby, electronEmitter, currentPlayer,
+		urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoLeaderboard
+	} from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
+	import { onMount } from 'svelte';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
 	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
 	import { tooltip } from 'svooltip';
-	// @ts-ignore
-	import QrCode from 'svelte-qrcode';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
 	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
+	// @ts-ignore
+	import QrCode from 'svelte-qrcode';
 
+	type Game = 'bingo';
 	type Mode = 'solo' | 'host' | 'guest';
 
+	let selectedGame: Game | null = null;
+	let showSelector = true;
+
+	function selectGame(game: Game) {
+		selectedGame = game;
+		showSelector = false;
+	}
+
+	// Bingo
 	const difficulties: BingoDifficulty[] = ['easy', 'medium', 'hard'];
 	const boardSizes: (3 | 4 | 5)[] = [3, 4, 5];
-	const modes: { value: Mode; label: string }[] = [{ value: 'solo', label: 'Solo' }, { value: 'host', label: 'Host' }];
-
+	const modes: { value: Mode; label: string }[] = [
+		{ value: 'solo', label: 'Solo' },
+		{ value: 'host', label: 'Host' },
+	];
 	const winConditions: { value: BingoWinCondition; label: string; tip: string }[] = [
-		{ value: 1, label: '1',         tip: 'First to complete 1 line (row, column, or diagonal)' },
-		{ value: 2, label: '2',         tip: 'First to complete 2 lines' },
-		{ value: 3, label: '3',         tip: 'First to complete 3 lines' },
-		{ value: 4, label: '4',         tip: 'First to complete 4 lines' },
-		{ value: 5, label: '5',         tip: 'First to complete 5 lines' },
-		{ value: 'full',       label: 'Full Board',   tip: 'Complete every tile on the board to win' },
-		{ value: 'lockout',    label: 'Lockout',      tip: 'Each tile can only be claimed by one player. First to the majority wins. Neither player can complete a tile the opponent has already taken.' },
-		{ value: 'rowcontrol', label: 'Row Control',  tip: 'Control a row or column by holding the majority of its tiles (2 of 3, or 3 of 4–5). First to control 3 lines wins. Block opponents by contesting the same rows.' },
+		{ value: 1, label: '1', tip: 'First to complete 1 line (row, column, or diagonal)' },
+		{ value: 2, label: '2', tip: 'First to complete 2 lines' },
+		{ value: 3, label: '3', tip: 'First to complete 3 lines' },
+		{ value: 4, label: '4', tip: 'First to complete 4 lines' },
+		{ value: 5, label: '5', tip: 'First to complete 5 lines' },
+		{ value: 'full',       label: 'Full Board',  tip: 'Complete every tile on the board to win' },
+		{ value: 'lockout',    label: 'Lockout',     tip: 'Each tile can only be claimed by one player. First to the majority wins.' },
+		{ value: 'rowcontrol', label: 'Row Control', tip: 'Control a row or column by holding the majority of its tiles (2 of 3, or 3 of 4–5). First to control 3 lines wins. Block opponents by contesting the same rows.' },
 	];
 
 	let mode: Mode = 'solo';
@@ -41,8 +56,6 @@
 		timer: { enabled: false, durationMinutes: 60 },
 	};
 
-	let showInfoModal = false;
-
 	let previewBoard = generateBoard(settings);
 	$: if (settings) previewBoard = generateBoard(settings);
 
@@ -52,7 +65,7 @@
 
 	function start() {
 		const board = generateBoard(settings);
-		const session = {
+		$electronEmitter.emit('StartBingo', {
 			board,
 			settings,
 			startedAt: Date.now(),
@@ -61,13 +74,12 @@
 			opponentConnected: $bingoLobby?.opponentConnected ?? false,
 			localName: $currentPlayer?.displayName || 'Player 1',
 			opponentName: $bingoLobby?.opponentName ?? null,
-		};
-		$electronEmitter.emit('StartBingo', session);
+		});
 	}
 
 	function startSolo() {
 		const board = generateBoard(settings);
-		const session = {
+		$electronEmitter.emit('StartBingo', {
 			board,
 			settings: { ...settings, mode: 'solo' as const },
 			startedAt: Date.now(),
@@ -76,8 +88,7 @@
 			opponentConnected: false,
 			localName: $currentPlayer?.displayName || 'Player 1',
 			opponentName: null as string | null,
-		};
-		$electronEmitter.emit('StartBingo', session);
+		});
 	}
 
 	function joinAsGuest() {
@@ -89,15 +100,15 @@
 	function stop() {
 		connecting = false;
 		$electronEmitter.emit('StopBingo');
+		selectedGame = null;
+		showSelector = true;
 	}
 
-	// Stop the connecting spinner when lobby or session is established
 	$: if ($bingoLobby) connecting = false;
 	$: if ($bingoSession?.role === 'guest') connecting = false;
 	$: if (!$bingoSession && !$bingoLobby) connecting = false;
 
 	$: inLobby = !!$bingoLobby && !$bingoSession;
-
 	$: session = $bingoSession;
 	$: board = session?.board ?? previewBoard;
 	$: isActive = !!session;
@@ -107,6 +118,12 @@
 	$: completedCount = board.boxes.filter((b) => b.completed).length;
 	$: activeWinCondition = session?.settings?.winCondition ?? settings.winCondition;
 
+	// If session already active when page loads, jump into it
+	$: if (isActive && !selectedGame) {
+		selectedGame = 'bingo';
+		showSelector = false;
+	}
+
 	function winConditionLabel(wc: BingoWinCondition): string {
 		if (wc === 'lockout') return 'Lockout';
 		if (wc === 'full') return 'Full Board';
@@ -114,12 +131,10 @@
 		return `${wc} line${wc > 1 ? 's' : ''}`;
 	}
 
-	// Timer
 	let now = Date.now();
 	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 	$: if (session?.startedAt) now = Date.now();
-
 	$: if (isActive) {
 		if (!timerInterval) timerInterval = setInterval(() => (now = Date.now()), 1000);
 	} else {
@@ -141,28 +156,74 @@
 		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 	}
 
-	// Local URL for OBS browser source (Add to OBS button)
 	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/bingo/overlay` : '';
-	// Peer share URL must be ngrok (unique + private per session)
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
-	// QR code: Tailscale (own device, permanent) — never ngrok (temporary/shared)
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
 	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/bingo/overlay` : localOverlayUrl;
 
+	// Solo win recording
+	let recordedWin = false;
+	$: if (hasWon && !recordedWin && role === 'solo' && session) {
+		recordedWin = true;
+		$electronEmitter.emit('BingoSoloWin', {
+			timeSeconds: timerSecondsElapsed,
+			boardSize: session.board.size as 3 | 4 | 5,
+			winCondition: session.settings.winCondition,
+			difficulty: session.settings.difficulty,
+		});
+	}
+	$: if (!isActive) recordedWin = false;
 
+	// Leaderboard popup
+	let showLeaderboard = false;
+
+	function rulesetKey(boardSize: number, winCondition: unknown, difficulty: string): string {
+		return `${boardSize}_${winCondition}_${difficulty}`;
+	}
+
+	function rulesetLabel(key: string): string {
+		const parts = key.split('_');
+		const size = parts[0];
+		const diff = parts[parts.length - 1];
+		const winParts = parts.slice(1, -1);
+		const wc = winParts.join('_');
+		const winLabel = wc === 'full' ? 'Full Board' : wc === 'lockout' ? 'Lockout' : wc === 'rowcontrol' ? 'Row Control' : `${wc} line${Number(wc) > 1 ? 's' : ''}`;
+		return `${size}×${size} · ${winLabel} · ${diff}`;
+	}
+
+	function formatTime(s: number): string {
+		const h = Math.floor(s / 3600);
+		const m = Math.floor((s % 3600) / 60);
+		const sec = s % 60;
+		if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+	}
+
+	function formatDate(ts: number): string {
+		return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+	}
+
+	$: currentKey = rulesetKey(settings.boardSize, settings.winCondition, settings.difficulty);
+
+	$: sortedRulesets = (() => {
+		const keys = Object.keys($bingoLeaderboard.records);
+		return [
+			...(keys.includes(currentKey) ? [currentKey] : []),
+			...keys.filter(k => k !== currentKey),
+		];
+	})();
 
 	onMount(() => {
 		const s = $ngrokStatus;
 		if (s?.installed && s?.authenticated && !s?.running) {
 			$electronEmitter.emit('NgrokStart');
 		}
+		$electronEmitter.emit('GetBingoLeaderboard');
 	});
 
 	let showQr = false;
 	let copiedShare = false;
 
-
-	// Win detection
 	function getRowControlBoxes(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): Set<number> {
 		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
 		const required = Math.floor(sz / 2) + 1;
@@ -268,7 +329,6 @@
 
 	$: localPlayerName = session?.localName ?? 'You';
 	$: opponentPlayerName = session?.opponentName ?? 'Opponent';
-
 </script>
 
 <main class="background-primary-color text-secondary-color flex justify-center">
@@ -278,10 +338,14 @@
 		<div class="flex items-start justify-between gap-4 flex-wrap">
 			<div>
 				<div class="flex items-center gap-2">
-					<h1 class="font-bold text-3xl">Bingo</h1>
-					<button class="info-btn border-secondary" on:click={() => (showInfoModal = true)}>?</button>
+					{#if selectedGame && !isActive}
+						<button class="back-btn" on:click={() => { selectedGame = null; showSelector = true; }}>←</button>
+					{/if}
+					<h1 class="font-bold text-3xl">
+						{#if selectedGame === 'bingo'}Bingo{:else}Minigames{/if}
+					</h1>
 				</div>
-				{#if isActive}
+				{#if selectedGame === 'bingo' && isActive}
 					<p class="text-sm opacity-50 mt-1">
 						{completedCount}/{board.boxes.length} · {board.difficulty} · {winConditionLabel(activeWinCondition)}
 						{#if role !== 'solo'}
@@ -293,40 +357,48 @@
 							{/if}
 						{/if}
 					</p>
-				{:else}
+				{:else if selectedGame === 'bingo'}
 					<p class="text-sm opacity-50 mt-1">Challenge yourself across a session</p>
+				{:else}
+					<p class="text-sm opacity-50 mt-1">Choose a minigame to play</p>
 				{/if}
 			</div>
 
-			{#if isActive}
-				<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={stop}>End</button>
-			{:else if inLobby && mode === 'host'}
-				<div class="flex gap-2">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Cancel</button>
-					<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={start} disabled={!$bingoLobby?.opponentConnected}>Start</button>
-				</div>
-			{:else if inLobby && mode === 'guest'}
-				<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Leave</button>
-			{:else if mode === 'guest'}
-				<div class="flex gap-2">
-					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (mode = 'solo')}>← Back</button>
-					{#if !connecting}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={joinAsGuest} disabled={!guestUrl.trim()}>Join</button>
-					{/if}
-				</div>
-			{:else}
-				<div class="flex gap-2">
-					{#if mode === 'host'}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={enterLobby}>Host</button>
-					{:else}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={startSolo}>Start</button>
-					{/if}
-				</div>
+			{#if selectedGame === 'bingo'}
+				{#if isActive}
+					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
+						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={stop}>End</button>
+					</div>
+				{:else if inLobby && mode === 'host'}
+					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Cancel</button>
+						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={start} disabled={!$bingoLobby?.opponentConnected}>Start</button>
+					</div>
+				{:else if inLobby && mode === 'guest'}
+					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Leave</button>
+				{:else if mode === 'guest'}
+					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (mode = 'solo')}>← Back</button>
+						{#if !connecting}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={joinAsGuest} disabled={!guestUrl.trim()}>Join</button>
+						{/if}
+					</div>
+				{:else}
+					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
+						{#if mode === 'host'}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={enterLobby}>Host</button>
+						{:else}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={startSolo}>Start</button>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 		</div>
 
-		<!-- Mode selector + settings (idle only, not while in lobby) -->
-		{#if !isActive && !inLobby && mode !== 'guest'}
+		<!-- Bingo: settings (idle only) -->
+		{#if selectedGame === 'bingo' && !isActive && !inLobby && mode !== 'guest'}
 			<div class="settings-row border-secondary">
 				<div class="settings-group">
 					<span class="settings-label">Mode</span>
@@ -338,20 +410,33 @@
 					</div>
 				</div>
 				<div class="settings-group">
-					<span class="settings-label">Difficulty</span>
-					<div class="pill-group">
-						{#each difficulties as d}
-							<button class="pill" class:pill--active={settings.difficulty === d}
-								on:click={() => (settings = { ...settings, difficulty: d })}>{d}</button>
-						{/each}
-					</div>
-				</div>
-				<div class="settings-group">
 					<span class="settings-label">Size</span>
 					<div class="pill-group">
 						{#each boardSizes as s}
 							<button class="pill" class:pill--active={settings.boardSize === s}
 								on:click={() => (settings = { ...settings, boardSize: s })}>{s}×{s}</button>
+						{/each}
+					</div>
+				</div>
+				<div class="settings-group">
+					<span class="settings-label">Win</span>
+					<div class="pill-group">
+						{#each winConditions as wc}
+							<button
+								class="pill"
+								class:pill--active={settings.winCondition === wc.value}
+								on:click={() => (settings = { ...settings, winCondition: wc.value })}
+								use:tooltip={{ content: wc.tip, placement: 'top', delay: [400, 0] }}
+							>{wc.label}</button>
+						{/each}
+					</div>
+				</div>
+				<div class="settings-group">
+					<span class="settings-label">Difficulty</span>
+					<div class="pill-group">
+						{#each difficulties as d}
+							<button class="pill" class:pill--active={settings.difficulty === d}
+								on:click={() => (settings = { ...settings, difficulty: d })}>{d}</button>
 						{/each}
 					</div>
 				</div>
@@ -374,24 +459,11 @@
 						</div>
 					{/if}
 				</div>
-				<div class="settings-group">
-					<span class="settings-label">Win</span>
-					<div class="pill-group">
-						{#each winConditions as wc}
-							<button
-								class="pill"
-								class:pill--active={settings.winCondition === wc.value}
-								on:click={() => (settings = { ...settings, winCondition: wc.value })}
-								use:tooltip={{ content: wc.tip, placement: 'top', delay: [400, 0] }}
-							>{wc.label}</button>
-						{/each}
-					</div>
-				</div>
 			</div>
 		{/if}
 
-		<!-- Lobby status -->
-		{#if inLobby}
+		<!-- Bingo: lobby status -->
+		{#if selectedGame === 'bingo' && inLobby}
 			<div class="settings-row border-secondary items-center gap-3">
 				{#if $bingoLobby?.opponentConnected}
 					<span class="text-green-400 text-sm font-semibold">● {$bingoLobby.opponentName ?? 'Opponent'} connected</span>
@@ -406,8 +478,8 @@
 			</div>
 		{/if}
 
-		<!-- Guest: join URL input -->
-		{#if !isActive && mode === 'guest'}
+		<!-- Bingo: guest join input -->
+		{#if selectedGame === 'bingo' && !isActive && mode === 'guest'}
 			<div class="settings-row border-secondary flex-col gap-3">
 				<p class="text-sm opacity-60">Enter your opponent's share URL to join their bingo session.</p>
 				<input
@@ -421,8 +493,8 @@
 			</div>
 		{/if}
 
-		<!-- Host: share URL row — shown in host mode always -->
-		{#if (isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host')}
+		<!-- Bingo: host share URL -->
+		{#if selectedGame === 'bingo' && ((isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host'))}
 			<div class="settings-row border-secondary items-center justify-between gap-3">
 				<div class="flex flex-col gap-0.5 min-w-0">
 					<span class="settings-label">Share with opponent</span>
@@ -443,8 +515,8 @@
 			</div>
 		{/if}
 
-		<!-- OBS overlay row -->
-		{#if localOverlayUrl}
+		<!-- Bingo: OBS overlay row -->
+		{#if selectedGame === 'bingo' && localOverlayUrl}
 			<div class="settings-row border-secondary items-center justify-between gap-3">
 				<div class="flex flex-col gap-0.5 min-w-0">
 					<span class="settings-label">Display on device / OBS</span>
@@ -472,8 +544,8 @@
 			{/if}
 		{/if}
 
-		<!-- Timer -->
-		{#if isActive}
+		<!-- Bingo: timer -->
+		{#if selectedGame === 'bingo' && isActive}
 			<div class="timer-bar border-secondary" class:timer-bar--urgent={timerSecondsLeft !== null && timerSecondsLeft <= 300}>
 				{#if timerSecondsLeft === 0}
 					<span>⏱ Time's up!</span>
@@ -485,8 +557,8 @@
 			</div>
 		{/if}
 
-		<!-- Win banner -->
-		{#if hasWon}
+		<!-- Bingo: win banner -->
+		{#if selectedGame === 'bingo' && hasWon}
 			<div class="win-banner border-secondary">
 				<span>Bingo!</span>
 				{#if role !== 'solo'}
@@ -497,110 +569,120 @@
 			</div>
 		{/if}
 
-		<!-- Revert notification -->
-		{#if $bingoRevertMessage}
+		<!-- Bingo: revert notification -->
+		{#if selectedGame === 'bingo' && $bingoRevertMessage}
 			<div class="revert-banner" in:fly={{ y: -20, duration: 250 }} out:fly={{ y: -20, duration: 200 }}>
 				⚠ {$bingoRevertMessage}
 			</div>
 		{/if}
 
-		<!-- Board (hidden during lobby — no peeking before both are ready) -->
-		{#if !inLobby}
-		<div style="aspect-ratio:1/1; width:100%;">
-			<BingoBoardGrid
-				boxes={board.boxes}
-				{size}
-				{role}
-				{localWinBoxes}
-				{oppWinBoxes}
-				devMode={isActive}
-				on:devsimulate={(e) => $electronEmitter.emit('BingoDevSimulate', e.detail.instanceId, e.detail.player)}
-			/>
-		</div>
-		{#if isActive}
-			<div class="score-row">
-				{#if role !== 'solo'}
-					<div class="score-player" class:score-player--winner={hasWon && localScore >= scoreTarget}>
-						<span class="score-name">{localPlayerName}</span>
-						<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-unit">{scoreUnit}</span>
-					</div>
-					<div class="score-divider">–</div>
-					<div class="score-player score-player--right" class:score-player--winner={hasWon && oppScore >= scoreTarget}>
-						<span class="score-unit">{scoreUnit}</span>
-						<span class="score-val">{oppScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-name">{opponentPlayerName}</span>
-					</div>
-				{:else}
-					<div class="score-solo">
-						<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
-						<span class="score-unit">{scoreUnit}</span>
-					</div>
-				{/if}
+		<!-- Bingo: board -->
+		{#if selectedGame === 'bingo' && !inLobby}
+			<div style="aspect-ratio:1/1; width:100%;">
+				<BingoBoardGrid
+					boxes={board.boxes}
+					{size}
+					{role}
+					{localWinBoxes}
+					{oppWinBoxes}
+					devMode={isActive}
+					on:devsimulate={(e) => $electronEmitter.emit('BingoDevSimulate', e.detail.instanceId, e.detail.player)}
+				/>
 			</div>
-		{/if}
+			{#if isActive}
+				<div class="score-row">
+					{#if role !== 'solo'}
+						<div class="score-player" class:score-player--winner={hasWon && localScore >= scoreTarget}>
+							<span class="score-name">{localPlayerName}</span>
+							<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
+							<span class="score-unit">{scoreUnit}</span>
+						</div>
+						<div class="score-divider">–</div>
+						<div class="score-player score-player--right" class:score-player--winner={hasWon && oppScore >= scoreTarget}>
+							<span class="score-unit">{scoreUnit}</span>
+							<span class="score-val">{oppScore}<span class="score-target">/{scoreTarget}</span></span>
+							<span class="score-name">{opponentPlayerName}</span>
+						</div>
+					{:else}
+						<div class="score-solo">
+							<span class="score-val">{localScore}<span class="score-target">/{scoreTarget}</span></span>
+							<span class="score-unit">{scoreUnit}</span>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
 
 	</div>
 </main>
 
-{#if showInfoModal}
+<!-- Leaderboard popup -->
+{#if showLeaderboard}
 	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-	<div class="modal-backdrop" on:click={() => (showInfoModal = false)}>
+	<div class="selector-backdrop" on:click={() => (showLeaderboard = false)}>
 		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-		<div class="info-modal background-primary-color border-secondary" on:click|stopPropagation>
-			<div class="info-modal-header">
-				<span class="font-semibold text-sm">How Bingo works</span>
-				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showInfoModal = false)}>✕</button>
+		<div class="leaderboard-modal background-primary-color border-secondary" on:click|stopPropagation in:fly={{ y: 20, duration: 180 }}>
+			<div class="leaderboard-header">
+				<p class="selector-title">Best Times — Solo Bingo</p>
+				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showLeaderboard = false)}>✕</button>
 			</div>
-			<div class="info-modal-body">
-
-				<div class="info-section">
-					<p class="info-label">Win conditions</p>
-					<ul class="info-list">
-						<li><strong>1–5 lines</strong> — First player to complete that many lines (rows, columns, or diagonals) wins.</li>
-						<li><strong>Full Board</strong> — Complete every tile on the board to win.</li>
-						<li><strong>Lockout</strong> — Each tile can only be claimed by one player. First to the majority of tiles wins. You cannot complete a tile your opponent has already taken.</li>
-						<li><strong>Row Control</strong> — Control a row or column by holding the majority of its tiles (2 of 3, or 3 of 4–5). First to control 3 lines wins. Block opponents by contesting the same rows.</li>
-					</ul>
+			{#if sortedRulesets.length === 0}
+				<p class="text-sm opacity-40 text-center py-6">No records yet. Complete a solo game to set a time.</p>
+			{:else}
+				<div class="leaderboard-body">
+					{#each sortedRulesets as key}
+						{@const entries = $bingoLeaderboard.records[key] ?? []}
+						{@const isCurrent = key === currentKey}
+						<div class="lb-section" class:lb-section--current={isCurrent}>
+							<p class="lb-ruleset">{rulesetLabel(key)}{#if isCurrent} <span class="lb-current-badge">current</span>{/if}</p>
+							<table class="lb-table">
+								<thead>
+									<tr>
+										<th>#</th>
+										<th>Time</th>
+										<th>Date</th>
+										<th>Ver</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each entries as entry, i}
+										{@const isOldVersion = entry.version !== $bingoLeaderboard.currentVersion}
+										<tr class:lb-row--old={isOldVersion}>
+											<td class="lb-rank">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}</td>
+											<td class="lb-time">{formatTime(entry.timeSeconds)}</td>
+											<td class="lb-date">{formatDate(entry.completedAt)}</td>
+											<td class="lb-ver" title={isOldVersion ? `Set on v${entry.version}` : ''}>{entry.version}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/each}
 				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
 
-				<div class="info-section">
-					<p class="info-label">Quitting a game (LRAS)</p>
-					<ul class="info-list">
-						<li>If you quit a game intentionally using <strong>LRAS</strong> (L + R + A + Start), your progress for that game is <strong>reverted</strong> — any tiles you advanced or completed during that game are rolled back to where they were at the start of the game.</li>
-						<li>This prevents gaming the system by rage-quitting to avoid completing a challenge for your opponent.</li>
-						<li>Self-destructs and losing stocks normally do <strong>not</strong> trigger a revert — only an intentional LRAS quit does.</li>
-					</ul>
+<!-- Game selector popup -->
+{#if showSelector}
+	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+	<div class="selector-backdrop">
+		<div class="selector-modal background-primary-color border-secondary" in:fly={{ y: 20, duration: 180 }}>
+			<p class="selector-title">Choose a Minigame</p>
+			<div class="game-grid">
+				<button class="game-card border-secondary" on:click={() => selectGame('bingo')}>
+					<span class="game-card-title">Bingo</span>
+					<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
+				</button>
+				<div class="game-card game-card--soon border-secondary">
+					<span class="game-card-title">Races</span>
+					<span class="game-card-badge">Coming soon</span>
 				</div>
-
-				<div class="info-section">
-					<p class="info-label">Playing vs an opponent</p>
-					<ul class="info-list">
-						<li>Select <strong>Host</strong> and start the session. Share your <strong>ngrok URL</strong> with your opponent.</li>
-						<li>Your opponent selects <strong>Join</strong> and enters the URL. Both boards sync automatically.</li>
-						<li>The ngrok URL is temporary and private — do not share it publicly.</li>
-					</ul>
-					{#if !$remoteAccess?.ngrok}
-						<p class="info-warning">⚠ No ngrok URL detected. Set up ngrok in Settings → Remote Access to play online.</p>
-					{:else}
-						<p class="info-ok">● ngrok active: {$remoteAccess.ngrok}</p>
-					{/if}
+				<div class="game-card game-card--soon border-secondary">
+					<span class="game-card-title">Iron Man</span>
+					<span class="game-card-badge">Coming soon</span>
 				</div>
-
-				<div class="info-section">
-					<p class="info-label">Watching on phone / second screen</p>
-					<ul class="info-list">
-						<li>Use the <strong>QR code</strong> (requires Tailscale) or <strong>Popup</strong> button to open the overlay on another device.</li>
-						<li>Add the OBS Browser Source URL to OBS to display it on stream.</li>
-					</ul>
-					{#if !$remoteAccess?.tailscale}
-						<p class="info-warning">⚠ No Tailscale URL — set up Tailscale in Settings → Remote Access for stable mobile access.</p>
-					{:else}
-						<p class="info-ok">● Tailscale active</p>
-					{/if}
-				</div>
-
 			</div>
 		</div>
 	</div>
@@ -610,6 +692,182 @@
 	main {
 		min-height: 100vh;
 		padding: 2rem 1.5rem;
+	}
+
+	.back-btn {
+		background: transparent;
+		border: none;
+		color: var(--secondary-color);
+		opacity: 0.5;
+		cursor: pointer;
+		font-size: 1rem;
+		padding: 0;
+		transition: opacity 0.1s;
+		line-height: 1;
+	}
+	.back-btn:hover { opacity: 1; }
+
+	.selector-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}
+
+	.leaderboard-modal {
+		width: 100%;
+		max-width: 560px;
+		border-radius: 0.6rem;
+		display: flex;
+		flex-direction: column;
+		max-height: 80vh;
+		overflow: hidden;
+	}
+
+	.leaderboard-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.9rem 1.1rem 0.7rem;
+		border-bottom: 1px solid var(--secondary-color);
+		flex-shrink: 0;
+	}
+
+	.leaderboard-body {
+		overflow-y: auto;
+		padding: 0.8rem 1.1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.2rem;
+	}
+
+	.lb-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.lb-section--current .lb-ruleset {
+		opacity: 1;
+	}
+
+	.lb-ruleset {
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		opacity: 0.5;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+	}
+
+	.lb-current-badge {
+		font-size: 0.6rem;
+		background: color-mix(in srgb, var(--secondary-color) 15%, transparent);
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.25rem;
+		padding: 0 0.35em;
+		text-transform: lowercase;
+		opacity: 0.8;
+		letter-spacing: 0;
+	}
+
+	.lb-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.8rem;
+	}
+
+	.lb-table th {
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.35;
+		font-weight: 600;
+		text-align: left;
+		padding: 0 0.5rem 0.3rem 0;
+	}
+
+	.lb-table td {
+		padding: 0.25rem 0.5rem 0.25rem 0;
+		border-top: 1px solid rgba(128, 128, 128, 0.1);
+	}
+
+	.lb-rank { width: 2rem; }
+	.lb-time { font-variant-numeric: tabular-nums; font-weight: 600; }
+	.lb-date { opacity: 0.5; }
+	.lb-ver { opacity: 0.4; font-size: 0.72em; }
+
+	.lb-row--old td {
+		opacity: 0.45;
+	}
+
+	.selector-modal {
+		width: 100%;
+		max-width: 520px;
+		border-radius: 0.6rem;
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.2rem;
+	}
+
+	.selector-title {
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		opacity: 0.45;
+	}
+
+	.game-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+	}
+
+	.game-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 1rem 0.9rem;
+		border-radius: 0.4rem;
+		cursor: pointer;
+		background: transparent;
+		color: var(--secondary-color);
+		text-align: left;
+		transition: background 0.12s;
+	}
+
+	.game-card:not(.game-card--soon):hover {
+		background: color-mix(in srgb, var(--secondary-color) 8%, transparent);
+	}
+
+	.game-card--soon {
+		cursor: default;
+		opacity: 0.35;
+	}
+
+	.game-card-title {
+		font-size: 0.95rem;
+		font-weight: 700;
+	}
+
+	.game-card-desc {
+		font-size: 0.75rem;
+		opacity: 0.6;
+		line-height: 1.4;
+	}
+
+	.game-card-badge {
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		opacity: 0.7;
 	}
 
 	.revert-banner {
@@ -648,6 +906,7 @@
 	.pill-group {
 		display: flex;
 		gap: 0.3rem;
+		flex-wrap: wrap;
 	}
 
 	.pill {
@@ -676,12 +935,28 @@
 		outline: none;
 	}
 
-	.qr-row {
-		display: flex;
-		gap: 1.5rem;
-		align-items: center;
-		padding: 1rem 1.1rem;
+	.timer-input {
+		width: 4rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: 0.25rem;
+		font-size: 0.82rem;
+		text-align: center;
+		outline: none;
+	}
+
+	.timer-bar {
+		text-align: center;
+		font-size: 1.4rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		padding: 0.4rem;
 		border-radius: 0.375rem;
+		letter-spacing: 0.05em;
+	}
+
+	.timer-bar--urgent {
+		color: #f87171;
+		animation: pulse 1.2s ease-in-out infinite;
 	}
 
 	.win-banner {
@@ -779,117 +1054,11 @@
 		50% { opacity: 0.55; }
 	}
 
-	.timer-input {
-		width: 4rem;
-		padding: 0.2rem 0.4rem;
-		border-radius: 0.25rem;
-		font-size: 0.82rem;
-		text-align: center;
-		outline: none;
-	}
-
-	.timer-bar {
-		text-align: center;
-		font-size: 1.4rem;
-		font-weight: 700;
-		font-variant-numeric: tabular-nums;
-		padding: 0.4rem;
+	.qr-row {
+		display: flex;
+		gap: 1.5rem;
+		align-items: center;
+		padding: 1rem 1.1rem;
 		border-radius: 0.375rem;
-		letter-spacing: 0.05em;
-	}
-
-	.timer-bar--urgent {
-		color: #f87171;
-		animation: pulse 1.2s ease-in-out infinite;
-	}
-
-	.info-btn {
-		font-size: 0.7rem;
-		font-weight: 700;
-		width: 1.4rem;
-		height: 1.4rem;
-		border-radius: 50%;
-		background: transparent;
-		color: var(--secondary-color);
-		opacity: 0.5;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: opacity 0.1s;
-	}
-	.info-btn:hover { opacity: 1; }
-
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0,0,0,0.55);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
-
-	.info-modal {
-		width: 100%;
-		max-width: 480px;
-		border-radius: 0.5rem;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.info-modal-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.75rem 1rem;
-		border-bottom: 1px solid var(--secondary-color);
-		opacity: 0.8;
-	}
-
-	.info-modal-body {
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		max-height: 70vh;
-		overflow-y: auto;
-	}
-
-	.info-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-
-	.info-label {
-		font-size: 0.7rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		opacity: 0.45;
-	}
-
-	.info-list {
-		font-size: 0.8rem;
-		opacity: 0.75;
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		padding-left: 1rem;
-		list-style: disc;
-		line-height: 1.5;
-	}
-
-	.info-warning {
-		font-size: 0.75rem;
-		color: #f59e0b;
-		margin-top: 0.25rem;
-	}
-
-	.info-ok {
-		font-size: 0.75rem;
-		color: #4ade80;
-		margin-top: 0.25rem;
 	}
 </style>
