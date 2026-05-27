@@ -28,7 +28,7 @@
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import type { WebhookProfile } from '$lib/models/types/webhook';
 	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
-	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState } from '$lib/models/types/bingo';
+	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSession, IronManLobbyPayload, IronManLeaderboard } from '$lib/models/types/ironman';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -118,6 +118,7 @@
 	export const bingoRevertMessage = writable<string | null>(null);
 	export const bingoLeaderboard = writable<BingoLeaderboard>({ currentVersion: '', records: {} });
 	export const bingoVoteState = writable<BingoVoteState | null>(null);
+	export const bingoVoteActionNotice = writable<{ action: BingoVoteActionType; channel: string } | null>(null);
 	export const twitchUsername = writable<string>('');
 
 	export const ironManSession = writable<IronManSession | null>(null);

@@ -1316,6 +1316,7 @@ export class BingoService {
 		if (winner.id === 'randomize_opponent_tile') description = this.executeRandomize();
 		else if (winner.id === 'freeze_tile') description = this.executeFreeze();
 		else if (winner.id === 'swap_tiles') description = this.executeSwap();
+		this.messageHandler.sendMessage('BingoVoteActionExecuted', { action: winner.id, channel: this.session.settings.twitchChannel });
 		const resolved: BingoVoteState = { ...this.voteState, active: false, result: { winner: winner.id, description } };
 		this.voteState = null;
 		this.chatVotes.clear();

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoVoteState } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoVoteState, bingoVoteActionNotice } from '$lib/utils/store.svelte';
+	import type { BingoVoteActionType } from '$lib/models/types/bingo';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
@@ -42,6 +43,12 @@
 		twitchEnabled: false,
 		twitchChannel: '',
 	};
+
+	function voteActionLabel(action: BingoVoteActionType): string {
+		if (action === 'freeze_tile') return 'freeze a tile ❄';
+		if (action === 'swap_tiles') return 'swap two tiles ↔';
+		return 'randomize a tile ✦';
+	}
 
 	$: vote = $bingoVoteState;
 	$: voteActive = vote?.active ?? false;
@@ -481,6 +488,17 @@
 			</div>
 		{/if}
 
+		<!-- Vote action notification -->
+		{#if $bingoVoteActionNotice}
+			<div
+				class="vote-action-banner vote-action-banner--{$bingoVoteActionNotice.action}"
+				in:fly={{ y: -20, duration: 250 }}
+				out:fly={{ y: -20, duration: 200 }}
+			>
+				{$bingoVoteActionNotice.channel} chat voted to {voteActionLabel($bingoVoteActionNotice.action)}
+			</div>
+		{/if}
+
 		<!-- Twitch vote banner (only shown in overlay) -->
 		{#if vote && (voteActive || voteResult)}
 			<div class="vote-banner border-secondary" class:vote-banner--result={voteResult} in:fly={{ y: -24, duration: 320 }} out:fly={{ y: -20, duration: 220 }}>
@@ -711,6 +729,44 @@
 		padding: 0.6rem 1rem;
 		border-radius: 0.375rem;
 		text-align: center;
+	}
+
+	.vote-action-banner {
+		color: #fff;
+		font-weight: 700;
+		font-size: 0.9rem;
+		padding: 0.6rem 1rem;
+		border-radius: 0.375rem;
+		text-align: center;
+	}
+	.vote-action-banner--freeze_tile {
+		background: rgba(56, 150, 220, 0.92);
+		animation: vote-action-freeze 0.6s ease-out both;
+	}
+	.vote-action-banner--swap_tiles {
+		background: rgba(120, 70, 200, 0.92);
+		animation: vote-action-swap 0.7s ease-in-out both;
+	}
+	.vote-action-banner--randomize_opponent_tile {
+		background: rgba(200, 130, 20, 0.92);
+		animation: vote-action-randomize 0.5s ease-out both;
+	}
+
+	@keyframes vote-action-freeze {
+		0%   { opacity: 0; transform: translateY(-10px) scaleX(0.92); filter: brightness(1.6); }
+		60%  { filter: brightness(1); }
+		100% { opacity: 1; transform: translateY(0) scaleX(1); filter: brightness(1); }
+	}
+	@keyframes vote-action-swap {
+		0%   { opacity: 0; transform: translateX(-8px); }
+		35%  { transform: translateX(8px); }
+		65%  { transform: translateX(-4px); }
+		100% { opacity: 1; transform: translateX(0); }
+	}
+	@keyframes vote-action-randomize {
+		0%   { opacity: 0; transform: scale(0.9); }
+		60%  { transform: scale(1.04); }
+		100% { opacity: 1; transform: scale(1); }
 	}
 
 	.settings-row {

@@ -43,6 +43,7 @@
 		bingoRevertMessage,
 		bingoLeaderboard,
 		bingoVoteState,
+		bingoVoteActionNotice,
 		twitchUsername,
 		ironManSession,
 		ironManLobby,
@@ -409,6 +410,13 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['BingoVoteState']>[0];
 					bingoVoteState.set(value ?? null);
+				})();
+				break;
+			case 'BingoVoteActionExecuted':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoVoteActionExecuted']>[0];
+					bingoVoteActionNotice.set(value);
+					setTimeout(() => bingoVoteActionNotice.set(null), 4000);
 				})();
 				break;
 			case 'BingoTileReplaced':

@@ -37,7 +37,7 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
-import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteState, BingoTileReplacedPayload } from '../models/types/bingo';
+import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteState, BingoVoteActionType, BingoTileReplacedPayload } from '../models/types/bingo';
 import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
 
 export interface MessageEvents {
@@ -196,6 +196,7 @@ export interface MessageEvents {
 	GetBingoLeaderboard: () => void;
 	BingoLeaderboard: (data: BingoLeaderboard) => void;
 	BingoVoteState: (state: BingoVoteState | null) => void;
+	BingoVoteActionExecuted: (data: { action: BingoVoteActionType; channel: string }) => void;
 	BingoTileReplaced: (data: BingoTileReplacedPayload) => void;
 	GetTwitchUsername: () => void;
 	TwitchUsername: (username: string) => void;
