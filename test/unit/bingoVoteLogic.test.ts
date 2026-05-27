@@ -182,14 +182,12 @@ describe('BingoService vote logic', () => {
 			const result = service.executeSwap();
 			// Should succeed and return a description
 			expect(result).toContain('↔');
-			// Exactly 2 BingoTileReplaced events
-			const replaced = sendMessage.mock.calls.filter(([t]) => t === 'BingoTileReplaced');
-			expect(replaced.length).toBe(2);
-			// Both swapped tiles are not in the locked set (indices 0-2)
-			for (const [, data] of replaced) {
-				const boxIdx = parseInt(data.instanceId.replace('b', ''));
-				expect(boxIdx).toBeGreaterThanOrEqual(3);
-			}
+			// Exactly 1 BingoTilesSwapped event with both indices outside the locked set (0-2)
+			const swapped = sendMessage.mock.calls.filter(([t]) => t === 'BingoTilesSwapped');
+			expect(swapped.length).toBe(1);
+			const { indexA, indexB } = swapped[0][1];
+			expect(indexA).toBeGreaterThanOrEqual(3);
+			expect(indexB).toBeGreaterThanOrEqual(3);
 		});
 
 		it('swapped tiles are reset to progress 0 and completedBy null', () => {
@@ -367,7 +365,7 @@ describe('BingoService vote logic', () => {
 			expect(lastState.options[2].votes).toBe(0);
 		});
 
-		it('last vote per user counts (overwrite)', () => {
+		it('first vote per user counts, repeated vote ignored', () => {
 			service.voteState = {
 				active: true,
 				options: [
@@ -381,11 +379,11 @@ describe('BingoService vote logic', () => {
 			service.chatVotes = new Map();
 
 			service.handleChatVote({ username: 'alice', text: '1' });
-			service.handleChatVote({ username: 'alice', text: '3' }); // change vote
+			service.handleChatVote({ username: 'alice', text: '3' }); // second vote ignored
 			const calls = sendMessage.mock.calls.filter(([t]) => t === 'BingoVoteState');
 			const lastState = calls[calls.length - 1][1];
-			expect(lastState.options[0].votes).toBe(0); // option 1 no longer voted
-			expect(lastState.options[2].votes).toBe(1); // option 3 has alice's vote
+			expect(lastState.options[0].votes).toBe(1); // option 1 still has alice's first vote
+			expect(lastState.options[2].votes).toBe(0); // option 3 not voted
 		});
 
 		it('ignores non-numeric messages', () => {

@@ -9,8 +9,8 @@
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
-	import { countLines, countControlledLines, hasWon as bingoHasWon, scoreTarget as bingoScoreTarget } from '$lib/utils/bingoWinCondition';
-	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
+	import { countLines, countControlledLines, getControlledLines, hasWon as bingoHasWon, scoreTarget as bingoScoreTarget } from '$lib/utils/bingoWinCondition';
+	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSettings, IronManRoster, IronManCharSelection, IronManRandomSync } from '$lib/models/types/ironman';
 	import { IRONMAN_CHARS, IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 	import { tooltip } from 'svooltip';
@@ -90,6 +90,13 @@
 		{ value: 'rowcontrol', label: 'Row Control', tip: 'Control a row or column by holding the majority of its tiles (2 of 3, or 3 of 4–5). First to control 3 lines wins. Block opponents by contesting the same rows.' },
 	];
 
+	const devVoteActions: { id: BingoVoteActionType; label: string }[] = [
+		{ id: 'randomize_opponent_tile', label: 'Randomize' },
+		{ id: 'freeze_tile', label: 'Freeze' },
+		{ id: 'swap_tiles', label: 'Swap' },
+		{ id: 'shuffle_untouched', label: 'Shuffle' },
+	];
+
 	let mode: Mode = 'solo';
 	let guestUrl = '';
 	let connecting = false;
@@ -153,14 +160,32 @@
 
 	function stop() {
 		connecting = false;
+		showingRestartSettings = false;
 		$electronEmitter.emit('StopBingo');
 		selectedGame = null;
-		
+	}
+
+	let showingRestartSettings = false;
+
+	function restart() {
+		if (!$bingoSession) { stop(); return; }
+		showingRestartSettings = false;
+		const board = generateBoard(settings);
+		$electronEmitter.emit('BingoRestart', {
+			board,
+			settings,
+			startedAt: Date.now(),
+			localPlayerIndex: $currentPlayer?.playerIndex ?? null,
+			role: $bingoSession.role,
+			opponentConnected: $bingoSession.opponentConnected,
+			localName: $currentPlayer?.displayName || 'Player 1',
+			opponentName: $bingoSession.opponentName,
+		});
 	}
 
 	$: if ($bingoLobby) connecting = false;
 	$: if ($bingoSession?.role === 'guest') connecting = false;
-	$: if (!$bingoSession && !$bingoLobby) connecting = false;
+	$: if (!$bingoSession && !$bingoLobby) { connecting = false; showingRestartSettings = false; }
 
 	$: inLobby = !!$bingoLobby && !$bingoSession;
 	$: session = $bingoSession;
@@ -214,6 +239,16 @@
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
 	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : localOverlayUrl;
+
+	// Win ad (SlippiAd after 10s)
+	let showWinAd = false;
+	let winAdTimer: ReturnType<typeof setTimeout> | null = null;
+	$: if (selectedGame === 'bingo' && hasWon && isActive && !showWinAd && !winAdTimer) {
+		winAdTimer = setTimeout(() => { showWinAd = true; winAdTimer = null; }, 10000);
+	} else if (!hasWon || !isActive) {
+		if (winAdTimer) { clearTimeout(winAdTimer); winAdTimer = null; }
+		showWinAd = false;
+	}
 
 	// Solo win recording
 	let recordedWin = false;
@@ -277,6 +312,58 @@
 		$electronEmitter.emit('GetIronManLeaderboard');
 		$electronEmitter.emit('GetTwitchUsername');
 	});
+
+	// ── Vote banner ──────────────────────────────────────────────────────────
+	$: vote = $bingoVoteState;
+	$: voteActive = vote?.active ?? false;
+	$: voteResult = !vote?.active && !!vote?.result;
+	$: isMyVote = !vote || vote.forRole === 'all' || vote.forRole === role;
+
+	function voteTimeLeft(v: typeof $bingoVoteState): number {
+		if (!v?.active) return 0;
+		return Math.max(0, Math.ceil((v.durationMs - (Date.now() - v.startedAt)) / 1000));
+	}
+	let voteTick = 0;
+	$: if (voteActive) {
+		const iv = setInterval(() => voteTick++, 1000);
+		setTimeout(() => clearInterval(iv), (vote?.durationMs ?? 30000) + 1000);
+	}
+	$: voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
+	$: if (voteTick) voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
+
+	// Teaser: typewriter for opponent watching a vote
+	const teaserWords = ['cooking', 'scheming', 'plotting', 'brewing', 'thinking', 'buzzing', 'at it', 'deciding'];
+	let teaserWordIdx = 0;
+	let teaserDisplayed = '';
+	let teaserTyping = true;
+	let teaserTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function teaserStep() {
+		const target = teaserWords[teaserWordIdx];
+		if (teaserTyping) {
+			if (teaserDisplayed.length < target.length) {
+				teaserDisplayed += target[teaserDisplayed.length];
+				teaserTimer = setTimeout(teaserStep, 75);
+			} else {
+				teaserTimer = setTimeout(() => { teaserTyping = false; teaserStep(); }, 900);
+			}
+		} else {
+			if (teaserDisplayed.length > 0) {
+				teaserDisplayed = teaserDisplayed.slice(0, -1);
+				teaserTimer = setTimeout(teaserStep, 45);
+			} else {
+				teaserWordIdx = (teaserWordIdx + 1) % teaserWords.length;
+				teaserTyping = true;
+				teaserTimer = setTimeout(teaserStep, 180);
+			}
+		}
+	}
+
+	$: if (voteActive && !isMyVote) {
+		if (!teaserTimer) { teaserDisplayed = ''; teaserTyping = true; teaserStep(); }
+	} else if (!voteActive || isMyVote) {
+		if (teaserTimer) { clearTimeout(teaserTimer); teaserTimer = null; teaserDisplayed = ''; }
+	}
 
 	// Keep settings in sync with saved Twitch username (only pre-fill, don't re-verify here)
 	$: if ($twitchUsername && !settings.twitchChannel) {
@@ -354,6 +441,8 @@
 	$: oppWinBoxes = activeWinCondition === 'rowcontrol'
 		? getRowControlBoxes(board.boxes, size, 'opponent')
 		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
+	$: localControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'local') : [];
+	$: oppControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'opponent') : [];
 
 	$: hasWon = bingoHasWon(board.boxes, size, activeWinCondition);
 
@@ -635,7 +724,13 @@
 				{#if isActive}
 					<div class="flex gap-2">
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={stop}>End</button>
+						{#if showingRestartSettings}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (showingRestartSettings = false)}>Cancel</button>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={restart}>Restart</button>
+						{:else}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showingRestartSettings = true)}>New Game</button>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={stop}>End</button>
+						{/if}
 					</div>
 				{:else if inLobby && mode === 'host'}
 					<div class="flex gap-2">
@@ -712,10 +807,10 @@
 			</div>
 		{/if}
 
-		<!-- Bingo: settings (idle + lobby for both host and guest) -->
-		{#if selectedGame === 'bingo' && !isActive && (mode !== 'guest' || inLobby)}
-			<div class="settings-row border-secondary" class:settings-row--readonly={mode === 'guest' && inLobby}>
-				{#if !(mode === 'guest' && inLobby)}
+		<!-- Bingo: settings (idle + lobby + restart) -->
+		{#if selectedGame === 'bingo' && (!isActive && (mode !== 'guest' || inLobby) || showingRestartSettings)}
+			<div class="settings-row border-secondary" class:settings-row--readonly={mode === 'guest' && inLobby && !showingRestartSettings}>
+				{#if !(mode === 'guest' && inLobby) || showingRestartSettings}
 				<div class="settings-group">
 					<span class="settings-label">Mode</span>
 					<div class="pill-group">
@@ -822,6 +917,12 @@
 						{/if}
 					{:else}
 						<span class="text-sm opacity-50">○ Waiting for opponent to join…</span>
+						{#if mode === 'host'}
+							<button class="btn text-xs h-6 px-2 border-secondary rounded opacity-40"
+								on:click={() => $electronEmitter.emit('BingoDevSimulateOpponent')}>
+								Simulate opponent
+							</button>
+						{/if}
 					{/if}
 				</div>
 				{#if settings.twitchEnabled && $bingoLobby?.opponentConnected}
@@ -850,12 +951,12 @@
 
 		<!-- Bingo: OBS / device overlay row -->
 		{#if selectedGame === 'bingo' && localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 		{/if}
 
 		<!-- Bingo: guest waiting — OBS options + localhost URL -->
 		{#if selectedGame === 'bingo' && inLobby && mode === 'guest' && localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 			{#if localUrlForCopy}
 				<div class="local-url-row border-secondary">
 					<span class="settings-label">Localhost URL</span>
@@ -888,6 +989,11 @@
 					<span class="win-score">{localScore}/{scoreTarget} {scoreUnit}</span>
 				{/if}
 			</div>
+			{#if showWinAd}
+				<div class="dash-card border-secondary" in:fly={{ y: 16, duration: 400 }}>
+					<SlippiAd compact />
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Bingo: revert notification -->
@@ -895,6 +1001,37 @@
 			<div class="revert-banner" in:fly={{ y: -20, duration: 250 }} out:fly={{ y: -20, duration: 200 }}>
 				⚠ {$bingoRevertMessage}
 			</div>
+		{/if}
+
+		<!-- Bingo: vote banner -->
+		{#if selectedGame === 'bingo' && isActive}
+			{#if vote && voteActive && isMyVote}
+				<div class="vote-banner border-secondary" class:vote-banner--special={vote.special} in:fly={{ y: -20, duration: 280 }} out:fly={{ y: -16, duration: 200 }}>
+					<div class="vote-header">
+						<span class="vote-title">{vote.question ?? 'Chat Vote'}</span>
+						<span class="vote-timer">{voteSecondsLeft}s</span>
+					</div>
+					<div class="vote-options">
+						{#each vote.options as opt, i}
+							{@const total = vote.options.reduce((s, o) => s + o.votes, 0)}
+							{@const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0}
+							<div class="vote-option">
+								<span class="vote-key">{i + 1}</span>
+								<span class="vote-label">{opt.label}</span>
+								<div class="vote-bar-wrap">
+									<div class="vote-bar" style="width:{pct}%"></div>
+								</div>
+								<span class="vote-pct">{opt.votes}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{:else if vote && voteActive && !isMyVote}
+				<div class="vote-teaser border-secondary" in:fly={{ y: -20, duration: 280 }} out:fly={{ y: -16, duration: 200 }}>
+					<span class="vote-teaser-channel">{session?.settings.twitchChannel ?? 'Opponent'}</span>
+					<span class="vote-teaser-text"> chat is <span class="vote-teaser-word">{teaserDisplayed}</span><span class="vote-teaser-cursor">|</span></span>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Bingo: board -->
@@ -906,6 +1043,8 @@
 					{role}
 					{localWinBoxes}
 					{oppWinBoxes}
+					{localControlledLines}
+					{oppControlledLines}
 					devMode={isActive}
 					on:devsimulate={(e) => $electronEmitter.emit('BingoDevSimulate', e.detail.instanceId, e.detail.player)}
 				/>
@@ -921,6 +1060,25 @@
 					localWinner={hasWon && localScore >= scoreTarget}
 					oppWinner={hasWon && oppScore >= scoreTarget}
 				/>
+				<div class="dev-vote-row">
+					<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
+						on:click={() => {
+							window.open('/obs/bingo?devRole=host', 'bingo-host-view', 'width=480,height=680');
+							window.open('/obs/bingo?devRole=guest', 'bingo-guest-view', 'width=480,height=680');
+						}}>
+						⚙ Open Simulation
+					</button>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
+						on:click={() => $electronEmitter.emit('BingoDevStartVote')}>
+						Start Vote
+					</button>
+					{#each devVoteActions as action}
+						<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
+							on:click={() => $electronEmitter.emit('BingoDevResolveVote', action.id)}>
+							{action.label}
+						</button>
+					{/each}
+				</div>
 			{/if}
 		{/if}
 
@@ -1038,12 +1196,12 @@
 
 		<!-- Iron Man: OBS / device overlay — under rules -->
 		{#if selectedGame === 'ironman' && imLocalOverlayUrl && imMode !== 'guest'}
-			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 		{/if}
 
 		<!-- Iron Man: guest waiting — OBS options + localhost URL -->
 		{#if selectedGame === 'ironman' && imInLobby && imMode === 'guest' && imLocalOverlayUrl}
-			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 			{#if localUrlForCopy}
 				<div class="local-url-row border-secondary">
 					<span class="settings-label">Localhost URL</span>
@@ -1332,6 +1490,14 @@
 	}
 	.back-btn:hover { opacity: 0.85; }
 
+	.dev-vote-row {
+		display: flex;
+		justify-content: center;
+		padding-top: 0.4rem;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
 	.selector-backdrop {
 		position: fixed;
 		inset: 0;
@@ -1585,6 +1751,92 @@
 		padding: 0.6rem 1rem;
 		border-radius: 0.375rem;
 		text-align: center;
+	}
+
+	/* ── Vote banner (local player — my chat) ── */
+	.vote-banner {
+		border-radius: 0.375rem;
+		padding: 0.65rem 0.9rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+	}
+	.vote-banner--special {
+		border-color: var(--secondary-color) !important;
+		box-shadow: 0 0 8px 1px color-mix(in srgb, var(--secondary-color) 30%, transparent);
+	}
+	.vote-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.vote-title {
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.6;
+	}
+	.vote-banner--special .vote-title { opacity: 1; color: var(--secondary-color); font-weight: 700; }
+	.vote-timer {
+		font-size: 0.78rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		opacity: 0.7;
+	}
+	.vote-options { display: flex; flex-direction: column; gap: 0.3rem; }
+	.vote-option {
+		display: grid;
+		grid-template-columns: 1.2rem 1fr auto auto;
+		align-items: center;
+		gap: 0.45rem;
+	}
+	.vote-key {
+		font-size: 0.7rem;
+		font-weight: 700;
+		opacity: 0.5;
+	}
+	.vote-label { font-size: 0.8rem; }
+	.vote-bar-wrap {
+		height: 4px;
+		background: rgba(255,255,255,0.12);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+	.vote-bar {
+		height: 100%;
+		background: var(--secondary-color);
+		border-radius: 2px;
+		transition: width 0.4s ease;
+	}
+	.vote-banner--special .vote-bar { background: var(--secondary-color); }
+	.vote-pct {
+		font-size: 0.7rem;
+		opacity: 0.55;
+		font-variant-numeric: tabular-nums;
+		min-width: 1.8rem;
+		text-align: right;
+	}
+
+	/* ── Vote teaser (opponent watching) ── */
+	.vote-teaser {
+		border-radius: 0.375rem;
+		padding: 0.55rem 0.9rem;
+		font-size: 0.88rem;
+		display: flex;
+		align-items: center;
+		gap: 0.2em;
+	}
+	.vote-teaser-channel { font-weight: 700; }
+	.vote-teaser-text { opacity: 0.7; }
+	.vote-teaser-word { font-style: italic; }
+	.vote-teaser-cursor {
+		display: inline-block;
+		animation: blink-cursor 0.7s step-end infinite;
+		opacity: 0.6;
+	}
+	@keyframes blink-cursor {
+		0%, 100% { opacity: 0.6; }
+		50%       { opacity: 0; }
 	}
 
 	.settings-row {

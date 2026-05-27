@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, ironManSession, ironManLobby, ironManCurrentChar, currentPlayer, bingoRevertMessage } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, ironManSession, ironManLobby, ironManCurrentChar, currentPlayer, bingoRevertMessage, bingoVoteState } from '$lib/utils/store.svelte';
 	import { scale, fly, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
-	import type { BingoWinCondition, BingoBox } from '$lib/models/types/bingo';
 	import { IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
 	import IronManRosterGrid from '$lib/components/ironman/IronManRosterGrid.svelte';
+	import SlippiAd from '$lib/components/SlippiAd.svelte';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
 
 	// ── Active game detection ──────────────────────────────────────────────────
-	$: activeGame = $ironManSession ? 'ironman' : $bingoSession ? 'bingo' : null;
+	// displayBingoBoard persists after session clears so the overlay stays visible
+	$: activeGame = $ironManSession ? 'ironman' : ($bingoSession || displayBingoBoard) ? 'bingo' : null;
 
 	// ── Bingo state ───────────────────────────────────────────────────────────
 	$: bingoBoard = $bingoSession?.board;
@@ -18,64 +19,49 @@
 	$: if (bingoBoard) displayBingoBoard = bingoBoard;
 	$: bingoSize = displayBingoBoard?.size ?? 5;
 	$: bingoRole = $bingoSession?.role ?? 'solo';
-	$: winCondition = ($bingoSession?.settings?.winCondition ?? 3) as BingoWinCondition;
 	$: localName = $currentPlayer?.displayName || 'You';
 	$: opponentName = $bingoSession?.opponentName ?? null;
 
-	function countLines(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): number {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		let n = 0;
-		for (let r = 0; r < sz; r++) {
-			if (Array.from({ length: sz }, (_, c) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		for (let c = 0; c < sz; c++) {
-			if (Array.from({ length: sz }, (_, r) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		if (Array.from({ length: sz }, (_, i) => i * sz + i).every(i => done.has(i))) n++;
-		if (Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)).every(i => done.has(i))) n++;
-		return n;
-	}
+	$: winState = $bingoSession?.winState ?? null;
+	$: localWinBoxes = new Set<number>(winState?.localWinBoxIndices ?? []);
+	$: oppWinBoxes = new Set<number>(winState?.oppWinBoxIndices ?? []);
+	$: localControlledLines = winState?.localControlledLines ?? [];
+	$: oppControlledLines = winState?.oppControlledLines ?? [];
+	$: bingoHasWon = winState?.hasWon ?? false;
+	$: localScore = winState?.localScore ?? 0;
+	$: oppScore = winState?.oppScore ?? null;
+	$: scoreTarget = winState?.scoreTarget ?? 3;
+	$: localWinner = winState?.localWinner ?? false;
+	$: oppWinner = winState?.oppWinner ?? false;
 
-	function getWinBoxes(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		const win = new Set<number>();
-		for (let r = 0; r < sz; r++) {
-			const row = Array.from({ length: sz }, (_, c) => r * sz + c);
-			if (row.every(i => done.has(i))) row.forEach(i => win.add(i));
-		}
-		for (let c = 0; c < sz; c++) {
-			const col = Array.from({ length: sz }, (_, r) => r * sz + c);
-			if (col.every(i => done.has(i))) col.forEach(i => win.add(i));
-		}
-		const d1 = Array.from({ length: sz }, (_, i) => i * sz + i);
-		if (d1.every(i => done.has(i))) d1.forEach(i => win.add(i));
-		const d2 = Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i));
-		if (d2.every(i => done.has(i))) d2.forEach(i => win.add(i));
-		return win;
-	}
-
-	$: localWinBoxes = displayBingoBoard
-		? getWinBoxes(displayBingoBoard.boxes, bingoSize, b => b.completedBy === 'local' || b.completedBy === 'both')
-		: new Set<number>();
-	$: oppWinBoxes = displayBingoBoard
-		? getWinBoxes(displayBingoBoard.boxes, bingoSize, b => b.completedBy === 'opponent' || b.completedBy === 'both')
-		: new Set<number>();
-
-	$: bingoHasWon = (() => {
-		if (!bingoBoard) return false;
-		const wc = winCondition;
-		const boxes = bingoBoard.boxes;
-		if (wc === 'full') return boxes.every(b => b.completed);
-		if (wc === 'lockout') {
-			const total = boxes.length;
-			const lc = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const oc = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return lc > total / 2 || oc > total / 2;
-		}
-		const n = wc as number;
-		return countLines(boxes, bingoSize, b => b.completedBy === 'local' || b.completedBy === 'both') >= n ||
-		       countLines(boxes, bingoSize, b => b.completedBy === 'opponent' || b.completedBy === 'both') >= n;
+	$: vote = $bingoVoteState;
+	$: voteActive = vote?.active ?? false;
+	$: localVoteActive = voteActive && (vote?.forRole === bingoRole || vote?.forRole === 'all');
+	$: oppVoteActive = voteActive && vote?.forRole !== bingoRole;
+	$: voteTimeLeft = (() => {
+		if (!vote?.active) return null;
+		return Math.max(0, Math.floor((vote.startedAt + vote.durationMs - now) / 1000));
 	})();
+	$: voteTotalVotes = vote?.options.reduce((s, o) => s + o.votes, 0) ?? 0;
+
+	const cookingWords = ['cooking', 'vibing', 'plotting', 'scheming', 'rolling', 'heating up', 'stirring', 'brewing', 'deciding', 'gaming', 'locked in', 'calculating', 'big braining', 'in the lab', 'going ham', 'menacing', 'cooked', 'going wild', 'touched', 'activated', 'theory crafting', 'in shambles', 'speedrunning', 'doomscrolling', 'enlightened'];
+	let cookingWordIdx = 0;
+	let cookingText = '';
+	function startCookingTyper() {
+		const word = cookingWords[cookingWordIdx];
+		let i = 0;
+		function type() {
+			cookingText = word.slice(0, i);
+			if (i < word.length) { i++; setTimeout(type, 65); }
+			else setTimeout(eraseWord, 3000);
+		}
+		function eraseWord() {
+			if (i > 0) { cookingText = word.slice(0, --i); setTimeout(eraseWord, 40); }
+			else { cookingWordIdx = (cookingWordIdx + 1) % cookingWords.length; setTimeout(startCookingTyper, 150); }
+		}
+		type();
+	}
+	startCookingTyper();
 
 	// ── Bingo timer ────────────────────────────────────────────────────────────
 	let now = Date.now();
@@ -94,12 +80,6 @@
 		const sec = s % 60;
 		if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-	}
-
-	function winConditionLabel(wc: BingoWinCondition): string {
-		if (wc === 'lockout') return 'Lockout';
-		if (wc === 'full') return 'Full board';
-		return `${wc} line${(wc as number) > 1 ? 's' : ''} to win`;
 	}
 
 	// ── Bingo win animation ────────────────────────────────────────────────────
@@ -131,7 +111,7 @@
 	$: if (animPhase === 'playing' && bingoBoard && !winTriggered && bingoHasWon) {
 		winTriggered = true;
 		winElapsedSeconds = $bingoSession ? Math.floor((now - $bingoSession.startedAt) / 1000) : 0;
-		isLocalWinner = checkIsLocalWinner();
+		isLocalWinner = winState?.localWinner ?? false;
 		triggerWinExit(bingoBoard.boxes.length);
 	}
 
@@ -144,7 +124,7 @@
 			}, Math.floor((step / count) * 900)));
 		});
 		exitTimers.push(setTimeout(() => { animPhase = 'winner'; }, 1300));
-		exitTimers.push(setTimeout(() => { animPhase = 'winner-ad'; }, 3300));
+		exitTimers.push(setTimeout(() => { animPhase = 'winner-ad'; }, 11300));
 		exitTimers.push(setTimeout(() => { animPhase = 'playing'; }, 181300));
 	}
 
@@ -157,42 +137,6 @@
 		return arr;
 	}
 
-	function checkIsLocalWinner(): boolean {
-		if (!bingoBoard) return true;
-		const boxes = bingoBoard.boxes;
-		const ll = countLines(boxes, bingoSize, b => b.completedBy === 'local' || b.completedBy === 'both');
-		const ol = countLines(boxes, bingoSize, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-		if (ll !== ol) return ll > ol;
-		const lb = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		const ob = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-		return lb >= ob;
-	}
-
-	$: bingoLocalLines = displayBingoBoard
-		? countLines(displayBingoBoard.boxes, bingoSize, b => b.completedBy === 'local' || b.completedBy === 'both')
-		: 0;
-	$: bingoOppLines = displayBingoBoard
-		? countLines(displayBingoBoard.boxes, bingoSize, b => b.completedBy === 'opponent' || b.completedBy === 'both')
-		: 0;
-
-	$: bingoProgressData = (() => {
-		if (!displayBingoBoard) return null;
-		const boxes = displayBingoBoard.boxes;
-		const total = boxes.length;
-		if (winCondition === 'lockout') {
-			const target = Math.ceil(total / 2) + 1;
-			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return { localScore: ls, oppScore: bingoRole === 'solo' ? (null as number | null) : os, target, unit: 'boxes', localWinner: ls >= target, oppWinner: os >= target };
-		}
-		if (winCondition === 'full') {
-			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return { localScore: ls, oppScore: bingoRole === 'solo' ? (null as number | null) : os, target: total, unit: 'boxes', localWinner: ls >= total, oppWinner: os >= total };
-		}
-		const n = winCondition as number;
-		return { localScore: bingoLocalLines, oppScore: bingoRole === 'solo' ? (null as number | null) : bingoOppLines, target: n, unit: 'lines', localWinner: bingoLocalLines >= n, oppWinner: bingoOppLines >= n };
-	})();
 
 	// ── Iron Man state ─────────────────────────────────────────────────────────
 	$: imSession = $ironManSession;
@@ -242,7 +186,7 @@
 
 	{:else if activeGame === 'ironman' && imSession && imLocalRoster}
 		<!-- Iron Man overlay -->
-		<div class="overlay-page im-page" out:fade={{ duration: 200 }}>
+		<div class="overlay-page overlay-page--game im-page" out:fade={{ duration: 200 }}>
 			{#if imWinner}
 				<div class="win-screen" class:win-screen--winner={imWinner === 'local'} in:scale={{ duration: 450, start: 0.75, easing: backOut }}>
 					<div class="win-crown">{imWinner === 'local' ? '🏆' : '💀'}</div>
@@ -296,7 +240,7 @@
 
 	{:else if activeGame === 'bingo'}
 		<!-- Bingo overlay -->
-		{#if animPhase === 'winner' || animPhase === 'winner-ad'}
+		{#if animPhase === 'winner'}
 			<div class="overlay-page" out:fade={{ duration: 220 }}>
 				<div class="win-screen" class:win-screen--winner={isLocalWinner} in:scale={{ duration: 400, start: 0.75, easing: backOut }}>
 					<div class="win-crown">{isLocalWinner ? '🏆' : '💀'}</div>
@@ -305,8 +249,22 @@
 					<div class="win-time">Completed in {formatTime(winElapsedSeconds)}</div>
 				</div>
 			</div>
-		{:else}
+		{:else if animPhase === 'winner-ad'}
 			<div class="overlay-page" out:fade={{ duration: 220 }}>
+				<div class="froggi-ad" in:scale={{ duration: 500, start: 0.82, easing: backOut }}>
+					<div class="froggi-ad-header">
+						<img src="/icon.png" alt="Froggi" class="froggi-ad-icon" />
+						<span class="froggi-ad-name">Froggi</span>
+					</div>
+					<SlippiAd />
+					<div class="froggi-ad-qr">
+						<QrCode value="https://sindrevatnaland.github.io/Froggi/" size="90" color="#ffffff" background="#111111" />
+						<span class="froggi-ad-url">sindrevatnaland.github.io/Froggi</span>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<div class="overlay-page overlay-page--game" out:fade={{ duration: 220 }}>
 				{#if $bingoRevertMessage}
 					<div class="revert-backdrop" in:fade={{ duration: 180 }} out:fade={{ duration: 200 }}>
 						<div class="revert-popup" in:scale={{ start: 0.9, duration: 300, easing: backOut }} out:scale={{ start: 0.9, duration: 180 }}>
@@ -322,12 +280,20 @@
 							BINGO!
 						</div>
 					{/if}
+					{#if vote && !vote.active && vote.result && animPhase !== 'exit'}
+						<div class="vote-result-overlay" in:fade={{ duration: 300, delay: 400 }} out:fade={{ duration: 200 }}>
+							<div class="vote-result-card" in:fly={{ y: -16, duration: 380, delay: 400, easing: backOut }}>
+								<div class="vote-result-label">Chat voted</div>
+								<div class="vote-result-action">{vote.result.description}</div>
+							</div>
+						</div>
+					{/if}
 					{#if timerSecondsLeft !== null && animPhase !== 'exit'}
 						<div class="timer" class:timer--urgent={timerSecondsLeft <= 300}>
 							{timerSecondsLeft === 0 ? "⏱ Time's up!" : `⏱ ${formatTime(timerSecondsLeft)}`}
 						</div>
 					{/if}
-					<div style="flex:1; min-height:0; --bingo-font-size:2.8vmin; --bingo-char-size:4vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-desc-size:1.9vmin; --bingo-gap:3px; --bingo-radius:4px;">
+					<div style="width:100%; aspect-ratio:1/1; flex-shrink:0; overflow:visible; --bingo-font-size:2.8vmin; --bingo-char-size:6vmin; --bingo-char-size-lg:8vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-desc-size:1.9vmin; --bingo-gap:3px; --bingo-radius:4px; --bingo-frozen-icon-lg:3.5em; --bingo-frozen-cd-lg:2.2em;">
 						<BingoBoardGrid
 							boxes={displayBingoBoard?.boxes ?? []}
 							size={bingoSize}
@@ -336,30 +302,63 @@
 							{oppWinBoxes}
 							{exitingBoxIndices}
 							{isLocalWinner}
+							{localControlledLines}
+							{oppControlledLines}
 							animateEntry={true}
 						/>
 					</div>
-					{#if animPhase !== 'exit' && bingoProgressData}
+					{#if animPhase !== 'exit' && winState}
 						<div class="pb-wrap">
-							<div class="pb-row" class:pb-row--winner={bingoProgressData.localWinner}>
-								<span class="pb-name">{$bingoSession?.localName || localName}</span>
-								<div class="pb-track">
-									<div class="pb-fill pb-fill--local" style="width:{Math.min(100, (bingoProgressData.localScore / bingoProgressData.target) * 100)}%"></div>
+							<div class="pb-player">
+								<div class="pb-header">
+									<span class="pb-name">{$bingoSession?.localName || localName}</span>
+									{#if localVoteActive}
+										<span class="pb-cooking">chat is {cookingText}…</span>
+									{/if}
+									<span class="pb-score" class:pb-score--winner={localWinner}>{localScore}<span class="pb-of">/{scoreTarget}</span></span>
 								</div>
-								<span class="pb-score">{bingoProgressData.localScore}<span class="pb-of">/{bingoProgressData.target}</span></span>
+								<div class="pb-track">
+									<div class="pb-fill pb-fill--local" class:pb-fill--winner={localWinner} style="width:{Math.min(100, (localScore / scoreTarget) * 100)}%"></div>
+								</div>
 							</div>
-							{#if bingoProgressData.oppScore !== null}
-								<div class="pb-row" class:pb-row--winner={bingoProgressData.oppWinner}>
-									<span class="pb-name">{opponentName ?? 'Opponent'}</span>
-									<div class="pb-track">
-										<div class="pb-fill pb-fill--opp" style="width:{Math.min(100, (bingoProgressData.oppScore / bingoProgressData.target) * 100)}%"></div>
+							{#if oppScore !== null}
+								<div class="pb-player">
+									<div class="pb-header">
+										<span class="pb-name">{opponentName ?? 'Opponent'}</span>
+										{#if oppVoteActive}
+											<span class="pb-cooking">chat is {cookingText}…</span>
+										{/if}
+										<span class="pb-score" class:pb-score--winner={oppWinner}>{oppScore}<span class="pb-of">/{scoreTarget}</span></span>
 									</div>
-									<span class="pb-score">{bingoProgressData.oppScore}<span class="pb-of">/{bingoProgressData.target}</span></span>
+									<div class="pb-track">
+										<div class="pb-fill pb-fill--opp" class:pb-fill--winner={oppWinner} style="width:{Math.min(100, (oppScore / scoreTarget) * 100)}%"></div>
+									</div>
 								</div>
 							{/if}
-							<span class="pb-unit">{bingoProgressData.unit}</span>
 						</div>
 					{/if}
+				{#if localVoteActive && vote && animPhase !== 'exit'}
+					<div class="vote-banner" class:vote-banner--special={vote.special} in:fly={{ y: 8, duration: 300 }} out:fade={{ duration: 180 }}>
+						<div class="vote-title">{vote.question ?? 'Chat Vote'}</div>
+						<div class="vote-options">
+							{#each vote.options as opt, i}
+								<div class="vote-opt">
+									<div class="vote-opt-top">
+										<span class="vote-key">{i + 1}</span>
+										<span class="vote-label">{opt.label}</span>
+										<span class="vote-pct">{voteTotalVotes > 0 ? Math.round(opt.votes / voteTotalVotes * 100) : 0}%</span>
+									</div>
+									<div class="vote-bar-track">
+										<div class="vote-bar-fill" style="width:{voteTotalVotes > 0 ? Math.round(opt.votes / voteTotalVotes * 100) : 0}%"></div>
+									</div>
+								</div>
+							{/each}
+						</div>
+						{#if voteTimeLeft !== null}
+							<div class="vote-timer">{voteTimeLeft}s</div>
+						{/if}
+					</div>
+				{/if}
 				</div>
 			</div>
 		{/if}
@@ -389,6 +388,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.overlay-page--game {
+		justify-content: flex-start;
+		padding-top: 6px;
 	}
 
 	/* ── Waiting ── */
@@ -482,6 +488,26 @@
 		color: rgba(255,255,255,0.8);
 	}
 
+	/* ── Froggi ad ── */
+	.froggi-ad {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2.5vmin;
+		background: rgba(0,0,0,0.9);
+		padding: 4vmin 5vmin;
+		border-radius: 14px;
+		font-family: sans-serif;
+		border: 2px solid rgba(255,255,255,0.08);
+	}
+
+	.froggi-ad-header { display: flex; align-items: center; gap: 1.5vmin; }
+	.froggi-ad-icon { width: 8vmin; height: 8vmin; object-fit: contain; image-rendering: pixelated; }
+	.froggi-ad-name { font-size: 5.5vmin; font-weight: 800; color: rgba(255,255,255,0.9); letter-spacing: 0.05em; }
+
+	.froggi-ad-qr { display: flex; flex-direction: column; align-items: center; gap: 0.8vmin; opacity: 0.55; }
+	.froggi-ad-url { font-size: 1.8vmin; color: rgba(255,255,255,0.85); }
+
 	/* ── Bingo win screen ── */
 	.win-screen {
 		display: flex;
@@ -509,7 +535,6 @@
 		flex-direction: column;
 		gap: 4px;
 		width: min(100vw, 100vh);
-		height: min(100vw, 100vh);
 		z-index: 1;
 	}
 
@@ -551,36 +576,76 @@
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 1vmin;
-		padding: 1vmin 0 0.5vmin;
+		gap: 0.8vmin;
+		padding: 1.2vmin 0.5vmin 0.4vmin;
 		flex-shrink: 0;
 	}
 
-	.pb-row {
+	.pb-player {
 		display: flex;
-		align-items: center;
-		gap: 1.5vmin;
+		flex-direction: column;
+		gap: 0.3vmin;
+	}
+
+	.pb-header {
+		display: flex;
+		align-items: baseline;
+		gap: 0.8vmin;
 	}
 
 	.pb-name {
-		font-size: 1.6vmin;
+		font-size: 2.4vmin;
 		font-weight: 700;
-		color: rgba(255,255,255,0.55);
-		letter-spacing: 0.04em;
+		color: rgba(255,255,255,0.7);
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		width: 12vmin;
-		flex-shrink: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-family: sans-serif;
+		flex-shrink: 0;
+	}
+
+	.pb-cooking {
+		font-size: 2.4vmin;
+		font-style: italic;
+		color: rgba(255,255,255,0.5);
+		font-family: sans-serif;
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		animation: cooking-pulse 2.2s ease-in-out infinite;
+	}
+
+	@keyframes cooking-pulse {
+		0%, 100% { opacity: 0.45; }
+		50% { opacity: 1; color: rgba(250, 204, 21, 0.85); }
+	}
+
+	.pb-score {
+		font-size: 2.2vmin;
+		font-weight: 700;
+		font-family: sans-serif;
+		color: rgba(255,255,255,0.75);
+		margin-left: auto;
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.pb-score--winner { color: #4ade80; }
+
+	.pb-of {
+		font-size: 1.2vmin;
+		opacity: 0.45;
+		font-weight: 400;
 	}
 
 	.pb-track {
-		flex: 1;
-		height: 1.2vmin;
+		width: 100%;
+		height: 0.35vmin;
 		border-radius: 999px;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255,255,255,0.1);
 		overflow: hidden;
 	}
 
@@ -590,40 +655,155 @@
 		transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 	}
 
-	.pb-fill--local { background: rgba(96, 165, 250, 0.85); }
-	.pb-fill--opp   { background: rgba(52, 211, 153, 0.85); }
+	.pb-fill--local { background: rgba(74, 222, 128, 0.85); }
+	.pb-fill--opp   { background: rgba(248, 113, 113, 0.85); }
+	.pb-fill--winner { background: rgba(74, 222, 128, 0.95); }
 
-	.pb-row--winner .pb-fill--local,
-	.pb-row--winner .pb-fill--opp {
-		background: rgba(74, 222, 128, 0.95);
-	}
-
-	.pb-score {
-		font-size: 2vmin;
-		font-weight: 700;
-		font-family: sans-serif;
-		color: rgba(255,255,255,0.9);
-		width: 5vmin;
-		text-align: right;
+	/* ── Vote banner ── */
+	.vote-banner {
+		position: relative;
+		width: 100%;
+		background: rgba(0,0,0,0.88);
+		border: 1.5px solid rgba(255,255,255,0.12);
+		border-radius: 8px;
+		padding: 2vmin 7vmin 2vmin 2.5vmin;
+		display: flex;
+		flex-direction: column;
+		gap: 1.2vmin;
 		flex-shrink: 0;
-		line-height: 1;
-	}
-
-	.pb-row--winner .pb-score { color: #4ade80; }
-
-	.pb-of {
-		font-size: 1.4vmin;
-		opacity: 0.4;
-		font-weight: 400;
-	}
-
-	.pb-unit {
-		font-size: 1.3vmin;
-		text-transform: uppercase;
-		letter-spacing: 0.07em;
-		opacity: 0.3;
 		font-family: sans-serif;
-		padding-left: calc(12vmin + 1.5vmin);
+		animation: vote-flash-in 1s ease-out both;
+	}
+
+	@keyframes vote-flash-in {
+		0%   { border-color: rgba(250,204,21,0.9); background: rgba(250,204,21,0.22); box-shadow: 0 0 24px rgba(250,204,21,0.4); }
+		40%  { border-color: rgba(250,204,21,0.6); background: rgba(250,204,21,0.1);  box-shadow: 0 0 12px rgba(250,204,21,0.2); }
+		100% { border-color: rgba(255,255,255,0.12); background: rgba(0,0,0,0.88); box-shadow: none; }
+	}
+
+	.vote-banner--special { border-color: rgba(255,215,0,0.45); }
+
+	.vote-title {
+		font-size: 4.5vmin;
+		font-weight: 800;
+		color: rgba(255,255,255,0.95);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.vote-options {
+		display: flex;
+		flex-direction: column;
+		gap: 1vmin;
+	}
+
+	.vote-opt {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4vmin;
+	}
+
+	.vote-opt-top {
+		display: flex;
+		align-items: center;
+		gap: 1.2vmin;
+	}
+
+	.vote-key {
+		font-size: 2.8vmin;
+		font-weight: 800;
+		color: rgba(255,255,255,0.9);
+		background: rgba(255,255,255,0.1);
+		border-radius: 4px;
+		width: 4.5vmin;
+		height: 4.5vmin;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.vote-label {
+		font-size: 3vmin;
+		font-weight: 700;
+		color: rgba(255,255,255,0.85);
+		flex: 1;
+	}
+
+	.vote-pct {
+		font-size: 2.5vmin;
+		font-weight: 700;
+		color: rgba(255,255,255,0.6);
+		flex-shrink: 0;
+	}
+
+	.vote-bar-track {
+		width: 100%;
+		height: 0.6vmin;
+		border-radius: 999px;
+		background: rgba(255,255,255,0.1);
+		overflow: hidden;
+	}
+
+	.vote-bar-fill {
+		height: 100%;
+		border-radius: 999px;
+		background: rgba(250,204,21,0.8);
+		transition: width 0.4s ease;
+	}
+
+	.vote-timer {
+		position: absolute;
+		top: 1.5vmin;
+		right: 2vmin;
+		font-size: 3.5vmin;
+		font-weight: 800;
+		color: rgba(250, 204, 21, 0.9);
+		font-family: sans-serif;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* ── Vote result popup ── */
+	.vote-result-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0,0,0,0.65);
+		z-index: 10;
+		pointer-events: none;
+		padding: 4vmin;
+	}
+
+	.vote-result-card {
+		background: rgba(10,10,10,0.97);
+		border: 2px solid rgba(250,204,21,0.55);
+		border-radius: 14px;
+		padding: 3.5vmin 6vmin;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1vmin;
+		text-align: center;
+		font-family: sans-serif;
+		box-shadow: 0 0 40px rgba(250,204,21,0.2);
+	}
+
+	.vote-result-label {
+		font-size: 2.2vmin;
+		font-weight: 600;
+		color: rgba(250, 204, 21, 0.75);
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+	}
+
+	.vote-result-action {
+		font-size: 5vmin;
+		font-weight: 900;
+		color: #fff;
+		letter-spacing: 0.02em;
+		line-height: 1.1;
 	}
 
 	/* ── Revert popup ── */

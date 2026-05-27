@@ -21,6 +21,7 @@ import type {
 	BingoChallengeId,
 	BingoVoteState,
 	BingoVoteActionType,
+	BingoWinState,
 } from '../../frontend/src/lib/models/types/bingo';
 import type { CurrentPlayer, GameStats } from '../../frontend/src/lib/models/types/slippiData';
 import { getMoveCategory } from '../../frontend/src/lib/models/constants/moveCategories';
@@ -65,7 +66,7 @@ interface ZeroDeathAttempt {
 }
 
 interface BingoPeerMessage {
-	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoComplete' | 'BingoPing' | 'BingoSync' | 'BingoSettingsUpdate';
+	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoRestart' | 'BingoComplete' | 'BingoPing' | 'BingoSync' | 'BingoSettingsUpdate';
 	version?: string;
 	board?: BingoSession['board'];
 	settings?: BingoSession['settings'];
@@ -142,6 +143,7 @@ export class BingoService {
 	private voteScheduleTimer: ReturnType<typeof setTimeout> | null = null;
 	private chatVotes: Map<string, BingoVoteActionType> = new Map();
 	private frozenTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+	private voteForRole: 'host' | 'guest' = 'host';
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -301,6 +303,43 @@ export class BingoService {
 			this.stopSession();
 		});
 
+		this.clientEmitter.on('BingoRestart', (session: BingoSession) => {
+			if (!this.session) return;
+			const prevOpponentName = this.session.opponentName;
+			const savedPeer = this.peerSocket;
+
+			// Soft stop — preserve savedPeer by nulling this.peerSocket before startSession
+			this.stopVote();
+			this.clearFrozenTimers();
+
+			this.voteForRole = 'host';
+			this.session = null;
+			this.peerSocket = null; // prevents startSession's closePeerConnection from closing savedPeer
+
+			if (savedPeer?.readyState === WebSocket.OPEN) {
+				session.opponentName = prevOpponentName;
+				session.opponentConnected = true;
+			}
+
+			this.startSession(session);
+
+			if (savedPeer?.readyState === WebSocket.OPEN) {
+				this.peerSocket = savedPeer;
+				const guestBoard = {
+					...session.board,
+					boxes: session.board.boxes.map(box => ({
+						...box,
+						completedBy: box.completedBy === 'local' ? 'opponent' as const
+						           : box.completedBy === 'opponent' ? 'local' as const
+						           : box.completedBy,
+					})),
+				};
+				savedPeer.send(JSON.stringify({ type: 'BingoRestart', board: guestBoard, settings: session.settings, playerName: this.localPlayerName }));
+				// Re-send state so frontend knows opponent is still connected
+				this.sendBingoState();
+			}
+		});
+
 		this.clientEmitter.on('BingoPeerConnect', (hostUrl: string) => {
 			this.connectToHost(hostUrl);
 		});
@@ -311,6 +350,44 @@ export class BingoService {
 				this.applyOpponentCompletion(instanceId);
 			} else {
 				this.devCompleteLocal(instanceId);
+			}
+		});
+
+		this.clientEmitter.on('BingoDevSimulateOpponent', () => {
+			if (!this.lobby) return;
+			this.lobby.opponentConnected = true;
+			this.lobby.opponentName = 'Dev Opponent';
+			this.opponentTwitchUsername = 'devopponent';
+			this.lobby.opponentTwitchUsername = 'devopponent';
+			this.messageHandler.sendMessage('BingoLobbyState', { ...this.lobby });
+		});
+
+		this.clientEmitter.on('BingoDevStartVote', () => {
+			if (!this.session) return;
+			if (this.voteState) {
+				if (this.voteTimer) { clearTimeout(this.voteTimer); this.voteTimer = null; }
+			}
+			this.startVote();
+		});
+
+		this.clientEmitter.on('BingoDevResolveVote', (action: BingoVoteActionType) => {
+			if (!this.session) return;
+			if (this.voteTimer) { clearTimeout(this.voteTimer); this.voteTimer = null; }
+			const optionDesc = this.voteState?.options.find(o => o.id === action)?.description ?? action;
+			if (this.voteState) {
+				const resolved: BingoVoteState = { ...this.voteState, active: false, result: { winner: action, description: optionDesc } };
+				this.voteState = null;
+				this.chatVotes.clear();
+				this.messageHandler.sendMessage('BingoVoteState', resolved);
+				setTimeout(() => this.messageHandler.sendMessage('BingoVoteState', null), 5000);
+				setTimeout(() => {
+					if (!this.session) return;
+					if (action === 'randomize_opponent_tile') this.executeRandomize();
+					else if (action === 'freeze_tile') this.executeFreeze();
+					else if (action === 'swap_tiles') this.executeSwap();
+					else if (action === 'shuffle_untouched') this.executeShuffle();
+					this.messageHandler.sendMessage('BingoVoteActionExecuted', { action, channel: this.session.settings.twitchChannel || 'Dev' });
+				}, 7000);
 			}
 		});
 
@@ -369,15 +446,19 @@ export class BingoService {
 			reverted,
 			webhookData: { totalCheckedLocal, totalCheckedOpponent, latestUpdate },
 		});
+		this.sendBingoState();
 	}
 
 	private devCompleteLocal(instanceId: string) {
 		if (!this.session) return;
 		const box = this.session.board.boxes.find((b) => b.instanceId === instanceId);
-		if (!box || box.completedBy === 'local') return;
-		const isLockout = this.session.settings.winCondition === 'lockout';
-		if (isLockout && box.completedBy) return;
-		if (!isLockout && box.completedBy === 'opponent') {
+		if (!box) return;
+		if (box.frozen && !box.frozenForOpponent) return;
+		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
+		// Already fully claimed by local (or shared) — no stealing back
+		if (box.completedBy === 'local' || box.completedBy === 'both') return;
+		if (isExclusive && box.completedBy) return;
+		if (!isExclusive && box.completedBy === 'opponent') {
 			box.completedBy = 'both';
 		} else {
 			box.completed = true;
@@ -444,6 +525,29 @@ export class BingoService {
 					this.lobby = null;
 					this.messageHandler.sendMessage('BingoLobbyState', null);
 					this.startSession(session);
+				} else if (msg.type === 'BingoRestart' && msg.board) {
+					// Host soft-restarted — reset session without closing socket
+					const session: BingoSession = {
+						board: msg.board,
+						settings: msg.settings ?? { mode: 'lockout', boardSize: msg.board.size as 3 | 4 | 5, difficulty: msg.board.difficulty, winCondition: 3, lines: { rows: true, columns: true, diagonals: true }, requireQueueAfterGame: false, timer: { enabled: false, durationMinutes: 60 }, twitchEnabled: false, twitchChannel: '' },
+						startedAt: Date.now(),
+						localPlayerIndex: this.localPlayerIndex,
+						role: 'guest',
+						opponentConnected: true,
+						localName: this.localPlayerName,
+						opponentName: msg.playerName ?? null,
+					};
+					this.stopVote();
+					this.clearFrozenTimers();
+		
+					this.voteForRole = 'host';
+					this.opponentCompletedBoxes.clear();
+					this.resetSessionAccumulators();
+					this.resetGameState();
+					this.session = session;
+					this.lobby = null;
+					this.messageHandler.sendMessage('BingoLobbyState', null);
+					this.sendBingoState();
 				} else if (msg.type === 'BingoComplete' && msg.instanceId) {
 					this.applyOpponentCompletion(msg.instanceId);
 				} else if (msg.type === 'BingoSync' && msg.board) {
@@ -475,19 +579,19 @@ export class BingoService {
 	private applyOpponentCompletion(instanceId: string) {
 		if (!this.session) return;
 		const box = this.session.board.boxes.find((b) => b.instanceId === instanceId);
-		const isLockout = this.session.settings.winCondition === 'lockout';
+		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
 
 		if (box) {
-			if (isLockout && box.completedBy) {
-				// Lockout: box already taken — reject silently, send authoritative board back
+			if (isExclusive && box.completedBy) {
+				// Exclusive mode: box already taken — reject silently, send authoritative board back
 			} else if (!box.completedBy) {
 				box.completed = true;
 				box.completedBy = 'opponent';
 				box.progress = box.target;
 				this.opponentCompletedBoxes.add(instanceId);
 				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'opponent' }]);
-			} else if (!isLockout && box.completedBy === 'local') {
-				// Non-lockout: both players completed the same box
+			} else if (!isExclusive && box.completedBy === 'local') {
+				// Non-exclusive: both players completed the same box
 				box.completedBy = 'both';
 				this.opponentCompletedBoxes.add(instanceId);
 				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'both' }]);
@@ -499,13 +603,13 @@ export class BingoService {
 	private applyHostBoard(board: BingoSession['board']) {
 		if (!this.session) return;
 		this.session.board = board;
-		this.messageHandler.sendMessage('BingoState', { session: this.session });
+		this.sendBingoState();
 	}
 
 	private updatePeerConnected(connected: boolean) {
 		if (!this.session) return;
 		this.session.opponentConnected = connected;
-		this.messageHandler.sendMessage('BingoState', { session: this.session });
+		this.sendBingoState();
 	}
 
 	private sendCompletionToPeer(instanceId: string) {
@@ -886,11 +990,11 @@ export class BingoService {
 		if (!this.session) return;
 		const updates: BingoChallengeUpdate[] = [];
 
-		const isLockout = this.session.settings.winCondition === 'lockout';
+		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
 		for (const box of this.session.board.boxes) {
 			if (box.completedBy === 'local' || box.completedBy === 'both') continue;
-			if (isLockout && box.completedBy === 'opponent') continue;
-			if (box.frozen) continue;
+			if (isExclusive && box.completedBy === 'opponent') continue;
+			if (box.frozen && !box.frozenForOpponent) continue;
 			const prev = box.progress;
 			let next = prev;
 
@@ -1083,7 +1187,7 @@ export class BingoService {
 		this.opponentCompletedBoxes.clear();
 		this.localPlayerIndex = session.localPlayerIndex;
 		this.log.info(`Bingo session started: ${session.board.id}, role: ${session.role}`);
-		this.messageHandler.sendMessage('BingoState', { session: this.session });
+		this.sendBingoState();
 
 		if (session.settings.twitchEnabled && session.settings.twitchChannel) {
 			const isMultiplayer = session.role === 'host' || session.role === 'guest';
@@ -1122,6 +1226,7 @@ export class BingoService {
 		this.sessionEggLays = 0;
 		this.winStreak = 0;
 		this.characterWins.clear();
+		this.voteForRole = 'host';
 	}
 
 	private takeSessionSnapshot(): SessionSnapshot {
@@ -1195,6 +1300,10 @@ export class BingoService {
 		return this.session;
 	}
 
+	getVoteState() {
+		return this.voteState;
+	}
+
 	getLobby() {
 		return this.lobby;
 	}
@@ -1243,7 +1352,173 @@ export class BingoService {
 		return win;
 	}
 
+	private computeWinState(): BingoWinState | null {
+		if (!this.session) return null;
+		const boxes = this.session.board.boxes;
+		const size = this.session.board.size;
+		const wc = this.session.settings.winCondition;
+		const isSolo = this.session.role === 'solo';
+
+		const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
+		const oppFilter   = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
+
+		const getLineWinIndices = (filter: (b: BingoBox) => boolean): number[] => {
+			const done = new Set(boxes.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
+			const win = new Set<number>();
+			for (let r = 0; r < size; r++) {
+				const row = Array.from({ length: size }, (_, c) => r * size + c);
+				if (row.every(i => done.has(i))) row.forEach(i => win.add(i));
+			}
+			for (let c = 0; c < size; c++) {
+				const col = Array.from({ length: size }, (_, r) => r * size + c);
+				if (col.every(i => done.has(i))) col.forEach(i => win.add(i));
+			}
+			const d1 = Array.from({ length: size }, (_, i) => i * size + i);
+			if (d1.every(i => done.has(i))) d1.forEach(i => win.add(i));
+			const d2 = Array.from({ length: size }, (_, i) => i * size + (size - 1 - i));
+			if (d2.every(i => done.has(i))) d2.forEach(i => win.add(i));
+			return [...win];
+		};
+
+		const getControlledLines = (filter: (b: BingoBox) => boolean): { type: 'row' | 'col'; index: number }[] => {
+			const required = Math.floor(size / 2) + 1;
+			const lines: { type: 'row' | 'col'; index: number }[] = [];
+			for (let r = 0; r < size; r++) {
+				const line = Array.from({ length: size }, (_, c) => r * size + c);
+				if (line.filter(i => filter(boxes[i])).length >= required) lines.push({ type: 'row', index: r });
+			}
+			for (let c = 0; c < size; c++) {
+				const line = Array.from({ length: size }, (_, r) => r * size + c);
+				if (line.filter(i => filter(boxes[i])).length >= required) lines.push({ type: 'col', index: c });
+			}
+			return lines;
+		};
+
+		const countLines = (filter: (b: BingoBox) => boolean): number => {
+			const done = new Set(boxes.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
+			let n = 0;
+			for (let r = 0; r < size; r++) {
+				if (Array.from({ length: size }, (_, c) => r * size + c).every(i => done.has(i))) n++;
+			}
+			for (let c = 0; c < size; c++) {
+				if (Array.from({ length: size }, (_, r) => r * size + c).every(i => done.has(i))) n++;
+			}
+			if (Array.from({ length: size }, (_, i) => i * size + i).every(i => done.has(i))) n++;
+			if (Array.from({ length: size }, (_, i) => i * size + (size - 1 - i)).every(i => done.has(i))) n++;
+			return n;
+		};
+
+		const countControlled = (filter: (b: BingoBox) => boolean): number => {
+			const required = Math.floor(size / 2) + 1;
+			let n = 0;
+			for (let r = 0; r < size; r++) {
+				const line = Array.from({ length: size }, (_, c) => r * size + c);
+				if (line.filter(i => filter(boxes[i])).length >= required) n++;
+			}
+			for (let c = 0; c < size; c++) {
+				const line = Array.from({ length: size }, (_, r) => r * size + c);
+				if (line.filter(i => filter(boxes[i])).length >= required) n++;
+			}
+			return n;
+		};
+
+		let localWinBoxIndices: number[];
+		let oppWinBoxIndices: number[];
+		let localScore: number;
+		let oppScore: number;
+		let scoreTarget: number;
+		let scoreUnit: BingoWinState['scoreUnit'];
+		let localWinner: boolean;
+		let oppWinner: boolean;
+
+		if (wc === 'lockout') {
+			const total = boxes.length;
+			scoreTarget = Math.floor(total / 2) + 1;
+			scoreUnit = 'tiles';
+			localScore = boxes.filter(localFilter).length;
+			oppScore   = boxes.filter(oppFilter).length;
+			localWinner = localScore >= scoreTarget;
+			oppWinner   = oppScore >= scoreTarget;
+			localWinBoxIndices = localWinner ? boxes.map((_, i) => i).filter(i => localFilter(boxes[i])) : [];
+			oppWinBoxIndices   = oppWinner   ? boxes.map((_, i) => i).filter(i => oppFilter(boxes[i]))   : [];
+		} else if (wc === 'full') {
+			const total = boxes.length;
+			scoreTarget = total;
+			scoreUnit = 'tiles';
+			localScore = boxes.filter(localFilter).length;
+			oppScore   = boxes.filter(oppFilter).length;
+			const allDone = boxes.every(b => b.completed);
+			localWinner = allDone && localScore >= oppScore;
+			oppWinner   = allDone && oppScore > localScore;
+			localWinBoxIndices = localWinner ? boxes.map((_, i) => i) : [];
+			oppWinBoxIndices   = oppWinner   ? boxes.map((_, i) => i) : [];
+		} else if (wc === 'rowcontrol') {
+			scoreTarget = 3;
+			scoreUnit = 'lines';
+			localScore = countControlled(localFilter);
+			oppScore   = countControlled(oppFilter);
+			localWinner = localScore >= 3;
+			oppWinner   = oppScore >= 3;
+			localWinBoxIndices = [];
+			oppWinBoxIndices   = [];
+		} else {
+			const n = wc as number;
+			scoreTarget = n;
+			scoreUnit = 'lines';
+			localScore = countLines(localFilter);
+			oppScore   = countLines(oppFilter);
+			localWinner = localScore >= n;
+			oppWinner   = oppScore >= n;
+			localWinBoxIndices = getLineWinIndices(localFilter);
+			oppWinBoxIndices   = getLineWinIndices(oppFilter);
+		}
+
+		return {
+			localWinBoxIndices,
+			oppWinBoxIndices,
+			...(wc === 'rowcontrol' ? {
+				localControlledLines: getControlledLines(localFilter),
+				oppControlledLines: getControlledLines(oppFilter),
+			} : {}),
+			localScore,
+			oppScore: isSolo ? null : oppScore,
+			scoreTarget,
+			scoreUnit,
+			hasWon: localWinner || oppWinner,
+			localWinner,
+			oppWinner,
+		};
+	}
+
+	private sendBingoState() {
+		if (!this.session) return;
+		this.session.winState = this.computeWinState() ?? undefined;
+		this.messageHandler.sendMessage('BingoState', { session: this.session });
+	}
+
 	private getLockedBoxIndices(): Set<number> {
+		if (!this.session) return new Set();
+		const wc = this.session.settings.winCondition;
+		if (wc === 'rowcontrol') {
+			const boxes = this.session.board.boxes;
+			const size = this.session.board.size;
+			const required = Math.floor(size / 2) + 1;
+			const locked = new Set<number>();
+			const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
+			const oppFilter   = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
+			const check = (line: number[], filter: (b: BingoBox) => boolean) => {
+				if (line.filter(i => filter(boxes[i])).length >= required) line.forEach(i => locked.add(i));
+			};
+			for (let r = 0; r < size; r++) {
+				const line = Array.from({ length: size }, (_, c) => r * size + c);
+				check(line, localFilter); check(line, oppFilter);
+			}
+			for (let c = 0; c < size; c++) {
+				const line = Array.from({ length: size }, (_, r) => r * size + c);
+				check(line, localFilter); check(line, oppFilter);
+			}
+			return locked;
+		}
 		const localWin = this.getWinBoxIndices(b => b.completedBy === 'local' || b.completedBy === 'both');
 		const oppWin = this.getWinBoxIndices(b => b.completedBy === 'opponent' || b.completedBy === 'both');
 		return new Set([...localWin, ...oppWin]);
@@ -1263,21 +1538,50 @@ export class BingoService {
 			b => b.completedBy === 'local' || b.completedBy === 'both'
 		).length;
 		if (localCompleted < 3) {
-			// Not enough tiles yet, retry in 2 min
 			this.voteScheduleTimer = setTimeout(() => this.tryStartVote(), 120000);
 			return;
 		}
 		this.startVote();
 	}
 
+	private canFreeze(): boolean {
+		if (!this.session) return false;
+		const locked = this.getLockedBoxIndices();
+		return this.session.board.boxes.some((b, i) => !b.frozen && !b.completed && !locked.has(i));
+	}
+
+	private canSwap(): boolean {
+		if (!this.session) return false;
+		const locked = this.getLockedBoxIndices();
+		return this.session.board.boxes.filter((b, i) => !b.frozen && !locked.has(i)).length >= 2;
+	}
+
 	private startVote() {
+		if (!this.session) return;
+		const options: BingoVoteState['options'] = [];
+		if (this.canRandomize()) options.push({ id: 'randomize_opponent_tile', label: 'Randomize', description: 'Replace some uncompleted tiles with new challenges', votes: 0 });
+		if (this.canFreeze())    options.push({ id: 'freeze_tile',             label: 'Freeze',    description: 'Freeze some uncompleted tiles so they cannot be completed', votes: 0 });
+		if (this.canSwap())      options.push({ id: 'swap_tiles',              label: 'Swap',      description: "Move an opponent tile to a new position on the board", votes: 0 });
+		if (this.canShuffle())   options.push({ id: 'shuffle_untouched',       label: 'Shuffle',   description: 'Shuffle some uncompleted tiles into new positions', votes: 0 });
+		// Pick 2 at random so the choice is meaningful
+		if (options.length > 2) {
+			for (let i = options.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[options[i], options[j]] = [options[j], options[i]];
+			}
+			options.splice(2);
+		}
+		if (options.length === 0) {
+			this.voteScheduleTimer = setTimeout(() => this.tryStartVote(), 120000);
+			return;
+		}
+		const isSolo = this.session.role === 'solo';
+		const forRole: BingoVoteState['forRole'] = isSolo ? 'all' : this.voteForRole;
+		if (!isSolo) this.voteForRole = this.voteForRole === 'host' ? 'guest' : 'host';
 		const state: BingoVoteState = {
 			active: true,
-			options: [
-				{ id: 'randomize_opponent_tile', label: 'Randomize', description: "Replace a random opponent tile with a new challenge", votes: 0 },
-				{ id: 'freeze_tile', label: 'Freeze',    description: 'Freeze a random tile for 2 minutes', votes: 0 },
-				{ id: 'swap_tiles',  label: 'Swap',      description: 'Swap two random unprotected tiles', votes: 0 },
-			],
+			forRole,
+			options,
 			startedAt: Date.now(),
 			durationMs: 30000,
 		};
@@ -1289,12 +1593,13 @@ export class BingoService {
 
 	private handleChatVote(data: { username: string; text: string }) {
 		if (!this.voteState?.active) return;
-		const t = data.text.trim();
-		let choice: BingoVoteActionType | null = null;
-		if (t === '1') choice = 'randomize_opponent_tile';
-		else if (t === '2') choice = 'freeze_tile';
-		else if (t === '3') choice = 'swap_tiles';
+		const text = data.text.trim();
+		if (text.length !== 1) return;
+		const n = parseInt(text);
+		if (isNaN(n) || n < 1 || n > this.voteState.options.length) return;
+		const choice = this.voteState.options[n - 1]?.id ?? null;
 		if (!choice) return;
+		if (this.chatVotes.has(data.username)) return;
 		this.chatVotes.set(data.username, choice);
 		const counts = new Map<BingoVoteActionType, number>();
 		for (const v of this.chatVotes.values()) counts.set(v, (counts.get(v) ?? 0) + 1);
@@ -1308,24 +1613,24 @@ export class BingoService {
 	private resolveVote() {
 		if (!this.voteState || !this.session) return;
 		this.voteTimer = null;
-		// Winner = highest votes; tie broken randomly
 		const maxVotes = Math.max(...this.voteState.options.map(o => o.votes));
 		const tied = this.voteState.options.filter(o => o.votes === maxVotes);
 		const winner = tied[Math.floor(Math.random() * tied.length)];
-		let description = '';
-		if (winner.id === 'randomize_opponent_tile') description = this.executeRandomize();
-		else if (winner.id === 'freeze_tile') description = this.executeFreeze();
-		else if (winner.id === 'swap_tiles') description = this.executeSwap();
-		this.messageHandler.sendMessage('BingoVoteActionExecuted', { action: winner.id, channel: this.session.settings.twitchChannel });
-		const resolved: BingoVoteState = { ...this.voteState, active: false, result: { winner: winner.id, description } };
+		// Show result popup for 3s before executing
+		const resolved: BingoVoteState = { ...this.voteState, active: false, result: { winner: winner.id, description: winner.description } };
 		this.voteState = null;
 		this.chatVotes.clear();
 		this.messageHandler.sendMessage('BingoVoteState', resolved);
-		// Clear result after 5s then schedule next vote
+		setTimeout(() => this.messageHandler.sendMessage('BingoVoteState', null), 5000);
 		setTimeout(() => {
-			this.messageHandler.sendMessage('BingoVoteState', null);
-			if (this.session?.settings.twitchEnabled) this.scheduleNextVote();
-		}, 5000);
+			if (!this.session) return;
+			if (winner.id === 'randomize_opponent_tile') this.executeRandomize();
+			else if (winner.id === 'freeze_tile') this.executeFreeze();
+			else if (winner.id === 'swap_tiles') this.executeSwap();
+			else if (winner.id === 'shuffle_untouched') this.executeShuffle();
+			this.messageHandler.sendMessage('BingoVoteActionExecuted', { action: winner.id, channel: this.session.settings.twitchChannel });
+			if (this.session.settings.twitchEnabled) this.scheduleNextVote();
+		}, 7000);
 	}
 
 	private executeRandomize(): string {
@@ -1334,21 +1639,26 @@ export class BingoService {
 		const locked = this.getLockedBoxIndices();
 		const eligible = boxes
 			.map((b, i) => ({ b, i }))
-			.filter(({ b, i }) => (b.completedBy === 'opponent' || b.completedBy === 'both') && !b.frozen && !locked.has(i));
+			.filter(({ b, i }) => !b.frozen && !b.completed && !locked.has(i));
 		if (!eligible.length) {
-			this.messageHandler.sendMessage('Notification', 'Randomize: no eligible opponent tiles', NotificationType.Warning, 3000);
-			return 'No eligible tiles to randomize';
+			this.messageHandler.sendMessage('Notification', 'Randomize: no eligible tiles', NotificationType.Warning, 3000);
+			return 'No eligible tiles';
 		}
-		const { b: target, i: targetIdx } = eligible[Math.floor(Math.random() * eligible.length)];
+		const count = Math.max(1, Math.min(5, Math.floor(eligible.length * 0.20)));
+		const targets = [...eligible].sort(() => Math.random() - 0.5).slice(0, count);
 		const usedIds = new Set(boxes.map(b => b.challengeId));
-		usedIds.delete(target.challengeId);
-		const replacement = this.generateReplacementBox(usedIds, this.session.board.difficulty);
-		if (!replacement) return 'Could not generate replacement tile';
-		const newBox: BingoBox = { ...replacement, instanceId: target.instanceId };
-		boxes[targetIdx] = newBox;
-		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: newBox.instanceId, box: newBox });
+		for (const { b: target, i: targetIdx } of targets) {
+			usedIds.delete(target.challengeId);
+			const replacement = this.generateReplacementBox(usedIds, this.session.board.difficulty);
+			if (!replacement) continue;
+			const newBox: BingoBox = { ...replacement, instanceId: target.instanceId };
+			boxes[targetIdx] = newBox;
+			usedIds.add(newBox.challengeId);
+			this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: newBox.instanceId, box: newBox });
+		}
 		this.sendBoardToPeer(this.session.board);
-		return `Randomized tile: "${newBox.label}"`;
+		this.sendBingoState();
+		return `Randomized ${count} tile(s)`;
 	}
 
 	private executeFreeze(): string {
@@ -1358,56 +1668,126 @@ export class BingoService {
 		const eligible = boxes
 			.map((b, i) => ({ b, i }))
 			.filter(({ b, i }) => !b.frozen && !b.completed && !locked.has(i));
-		if (!eligible.length) {
+		if (eligible.length === 0) {
 			this.messageHandler.sendMessage('Notification', 'Freeze: no eligible tiles', NotificationType.Warning, 3000);
 			return 'No eligible tiles to freeze';
 		}
-		const { b: target } = eligible[Math.floor(Math.random() * eligible.length)];
-		target.frozen = true;
-		this.messageHandler.sendMessage('BingoChallengeUpdates', {
-			updates: [{ instanceId: target.instanceId, progress: target.progress, completed: false, frozen: true }],
+		const count = Math.max(1, Math.min(5, Math.floor(eligible.length * 0.20)));
+		const targets = [...eligible].sort(() => Math.random() - 0.5).slice(0, count);
+		const frozenUntil = Date.now() + 120000;
+		// Local player (host/solo) initiated → freeze targets opponent, local can still complete
+		const frozenForOpponent = !this.voteState || this.voteState.forRole !== 'guest';
+		const updates = targets.map(({ b: target }) => {
+			target.frozen = true;
+			target.frozenUntil = frozenUntil;
+			target.frozenForOpponent = frozenForOpponent;
+			// Unfreeze after 2 minutes
+			const timer = setTimeout(() => {
+				if (!this.session) return;
+				const box = this.session.board.boxes.find(b => b.instanceId === target.instanceId);
+				if (!box) return;
+				box.frozen = false;
+				box.frozenUntil = undefined;
+				box.frozenForOpponent = undefined;
+				this.frozenTimers.delete(target.instanceId);
+				this.messageHandler.sendMessage('BingoChallengeUpdates', {
+					updates: [{ instanceId: box.instanceId, progress: box.progress, completed: box.completed, frozen: false, frozenUntil: undefined, frozenForOpponent: undefined }],
+				});
+				this.sendBoardToPeer(this.session.board);
+				this.sendBingoState();
+			}, 120000);
+			this.frozenTimers.set(target.instanceId, timer);
+			return { instanceId: target.instanceId, progress: target.progress, completed: false, frozen: true, frozenUntil, frozenForOpponent };
 		});
-		// Unfreeze after 2 minutes
-		const timer = setTimeout(() => {
-			if (!this.session) return;
-			const box = this.session.board.boxes.find(b => b.instanceId === target.instanceId);
-			if (!box) return;
-			box.frozen = false;
-			this.frozenTimers.delete(target.instanceId);
-			this.messageHandler.sendMessage('BingoChallengeUpdates', {
-				updates: [{ instanceId: box.instanceId, progress: box.progress, completed: box.completed, frozen: false }],
-			});
-		}, 120000);
-		this.frozenTimers.set(target.instanceId, timer);
-		return `Froze tile: "${target.label}" for 2 minutes`;
+		this.messageHandler.sendMessage('BingoChallengeUpdates', { updates });
+		this.sendBoardToPeer(this.session.board);
+		this.sendBingoState();
+		return `Froze ${count} tile(s) for 2 minutes`;
 	}
 
 	private executeSwap(): string {
 		if (!this.session) return 'No active session';
 		const boxes = this.session.board.boxes;
 		const locked = this.getLockedBoxIndices();
-		const eligible = boxes
+		// Pick one of the opponent's completed tiles and move it to a random uncompleted spot
+		const oppTiles = boxes
 			.map((b, i) => ({ b, i }))
-			.filter(({ b, i }) => !b.frozen && !locked.has(i));
-		if (eligible.length < 2) {
-			const msg = eligible.length === 1 && locked.has(boxes.indexOf(eligible[0]?.b))
-				? 'That tile is protected by a completed line'
-				: 'Not enough unprotected tiles to swap';
-			this.messageHandler.sendMessage('Notification', msg, NotificationType.Warning, 3000);
-			return msg;
+			.filter(({ b, i }) => b.completedBy === 'opponent' && !b.frozen && !locked.has(i));
+		const openTiles = boxes
+			.map((b, i) => ({ b, i }))
+			.filter(({ b, i }) => !b.completed && !b.frozen && !locked.has(i));
+		let ai: number, bi: number;
+		if (oppTiles.length && openTiles.length) {
+			ai = oppTiles[Math.floor(Math.random() * oppTiles.length)].i;
+			const pool = openTiles.filter(({ i }) => i !== ai);
+			if (!pool.length) {
+				// Edge case: the only open tile is the opponent tile itself (shouldn't happen)
+				const fallback = boxes.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i) && i !== ai);
+				if (!fallback.length) return 'No tiles to swap with';
+				bi = fallback[Math.floor(Math.random() * fallback.length)].i;
+			} else {
+				bi = pool[Math.floor(Math.random() * pool.length)].i;
+			}
+		} else {
+			// Fallback (solo or opponent hasn't completed anything): any 2 eligible tiles
+			const eligible = boxes.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i));
+			if (eligible.length < 2) {
+				const msg = 'Not enough unprotected tiles to swap';
+				this.messageHandler.sendMessage('Notification', msg, NotificationType.Warning, 3000);
+				return msg;
+			}
+			const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+			ai = shuffled[0].i;
+			bi = shuffled[1].i;
 		}
-		// Pick 2 random distinct tiles
-		const shuffled = [...eligible].sort(() => Math.random() - 0.5);
-		const [{ b: a, i: ai }, { b: b2, i: bi }] = shuffled;
-		// Swap content, preserve instanceIds and frozen state
-		const savedA = { ...a };
-		const savedB = { ...b2 };
-		boxes[ai] = { ...savedB, instanceId: savedA.instanceId, frozen: savedA.frozen, completedBy: null, completed: false, progress: 0 };
-		boxes[bi] = { ...savedA, instanceId: savedB.instanceId, frozen: savedB.frozen, completedBy: null, completed: false, progress: 0 };
-		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: boxes[ai].instanceId, box: boxes[ai] });
-		this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: boxes[bi].instanceId, box: boxes[bi] });
+		const temp = boxes[ai];
+		boxes[ai] = boxes[bi];
+		boxes[bi] = temp;
+		this.messageHandler.sendMessage('BingoTilesSwapped', { indexA: ai, indexB: bi });
 		this.sendBoardToPeer(this.session.board);
-		return `Swapped "${savedA.label}" ↔ "${savedB.label}"`;
+		this.sendBingoState();
+		return `Moved opponent's tile from position ${ai} to ${bi}`;
+	}
+
+	private canRandomize(): boolean {
+		if (!this.session) return false;
+		const locked = this.getLockedBoxIndices();
+		return this.session.board.boxes.some((b, i) => !b.frozen && !b.completed && !locked.has(i));
+	}
+
+	private canShuffle(): boolean {
+		if (!this.session) return false;
+		const locked = this.getLockedBoxIndices();
+		return this.session.board.boxes.filter((b, i) => !b.completed && !b.frozen && !locked.has(i)).length >= 2;
+	}
+
+	private executeShuffle(): string {
+		if (!this.session) return 'No active session';
+		const boxes = this.session.board.boxes;
+		const locked = this.getLockedBoxIndices();
+		const untouched = boxes
+			.map((_, i) => i)
+			.filter(i => !boxes[i].completed && !boxes[i].frozen && !locked.has(i));
+		if (untouched.length < 2) return 'Not enough untouched tiles';
+		// Pick 30% of untouched positions to shuffle (min 2, max 5)
+		const count = Math.max(2, Math.min(5, Math.floor(untouched.length * 0.30)));
+		const selected = [...untouched].sort(() => Math.random() - 0.5).slice(0, count);
+		// Fisher-Yates shuffle of the selected positions
+		const positions = [...selected];
+		for (let k = positions.length - 1; k > 0; k--) {
+			const j = Math.floor(Math.random() * (k + 1));
+			[positions[k], positions[j]] = [positions[j], positions[k]];
+		}
+		// newOrder[i] = original index of box now at position i
+		const newOrder = boxes.map((_, i) => i);
+		selected.forEach((pos, k) => { newOrder[pos] = positions[k]; });
+		// Apply to board
+		const snapshot = [...boxes];
+		selected.forEach((pos, k) => { boxes[pos] = snapshot[positions[k]]; });
+		this.messageHandler.sendMessage('BingoTilesShuffled', { newOrder });
+		this.sendBoardToPeer(this.session.board);
+		this.sendBingoState();
+		return `Shuffled ${selected.length} untouched tiles`;
 	}
 
 	private generateReplacementBox(excludeIds: Set<BingoChallengeId>, difficulty: BingoDifficulty): BingoBox | null {

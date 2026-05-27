@@ -406,6 +406,57 @@ describe('BingoService', () => {
 			.map(([, payload]) => (payload as any).updates[0]);
 	}
 
+	// ── Tile ownership ────────────────────────────────────────────────────────
+	describe('tile ownership', () => {
+		it('dev local→opponent→local: stays both, not stolen back', () => {
+			const box = makeBox('win_games_total', { instanceId: 'b1', target: 1, hasProgress: true });
+			startSession([box]);
+
+			// P1 completes via dev
+			clientEmitter.emit('BingoDevSimulate', 'b1', 'local');
+			const afterP1 = sendMessage.mock.calls
+				.filter(([t]) => t === 'BingoChallengeUpdates')
+				.map(([, p]) => (p as any).updates[0]);
+			expect(afterP1.at(-1)?.completedBy).toBe('local');
+			sendMessage.mockClear();
+
+			// P2 completes via dev
+			clientEmitter.emit('BingoDevSimulate', 'b1', 'opponent');
+			const afterP2 = sendMessage.mock.calls
+				.filter(([t]) => t === 'BingoChallengeUpdates')
+				.map(([, p]) => (p as any).updates[0]);
+			expect(afterP2.at(-1)?.completedBy).toBe('both');
+			sendMessage.mockClear();
+
+			// P1 tries to complete again — should be rejected (no sendMessage)
+			clientEmitter.emit('BingoDevSimulate', 'b1', 'local');
+			const afterSteal = sendMessage.mock.calls.filter(([t]) => t === 'BingoChallengeUpdates');
+			expect(afterSteal).toHaveLength(0);
+		});
+
+		it('dev simulate cannot complete a frozen tile', () => {
+			const box = makeBox('win_games_total', { instanceId: 'b2', target: 1, frozen: true });
+			startSession([box]);
+
+			clientEmitter.emit('BingoDevSimulate', 'b2', 'local');
+
+			const updates = sendMessage.mock.calls.filter(([t]) => t === 'BingoChallengeUpdates');
+			expect(updates).toHaveLength(0);
+		});
+
+		it('real game: progress skipped on frozen tile', () => {
+			const box = makeBox('win_games_total', {
+				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true, frozen: true,
+			});
+			startSession([box]);
+			setupGame();
+			emitGame(true);
+			// frozen → skipped
+			const updates = sendMessage.mock.calls.filter(([t]) => t === 'BingoChallengeUpdates');
+			expect(updates).toHaveLength(0);
+		});
+	});
+
 	// ── Win-based challenges ──────────────────────────────────────────────────
 	describe('win-based challenges', () => {
 		it('win_in_a_row: progress increments to 1 after first win', () => {
@@ -710,7 +761,7 @@ describe('BingoService', () => {
 
 	// ── all_blast_zones_game ─────────────────────────────────────────────────
 	describe('all_blast_zones_game', () => {
-		const box = () => makeBox('all_blast_zones_game');
+		const box = () => makeBox('all_blast_zones_game', { target: 4, hasProgress: true });
 
 		it('left + right + spike(down) + star(up) in one game completes', () => {
 			startSession([box()]);

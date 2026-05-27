@@ -41,6 +41,7 @@
 		bingoSession,
 		bingoLobby,
 		bingoRevertMessage,
+		bingoShuffleDelays,
 		bingoLeaderboard,
 		bingoVoteState,
 		bingoVoteActionNotice,
@@ -64,6 +65,7 @@
 		NotificationType,
 	} from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
+	import { get } from 'svelte/store';
 	import { debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
@@ -387,7 +389,7 @@
 						const boxes = session.board.boxes.map(box => {
 							const u = map.get(box.instanceId);
 							if (!u) return box;
-							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy, frozen: u.frozen ?? box.frozen };
+							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy, frozen: u.frozen ?? box.frozen, frozenUntil: u.frozenUntil !== undefined ? u.frozenUntil : box.frozenUntil, frozenForOpponent: u.frozenForOpponent !== undefined ? u.frozenForOpponent : box.frozenForOpponent };
 						});
 						return { ...session, board: { ...session.board, boxes } };
 					});
@@ -430,6 +432,44 @@
 					});
 				})();
 				break;
+			case 'BingoTilesSwapped':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoTilesSwapped']>[0];
+					if (!value) return;
+					bingoSession.update(session => {
+						if (!session) return session;
+						const boxes = [...session.board.boxes];
+						const temp = boxes[value.indexA];
+						boxes[value.indexA] = boxes[value.indexB];
+						boxes[value.indexB] = temp;
+						return { ...session, board: { ...session.board, boxes } };
+					});
+				})();
+				break;
+			case 'BingoTilesShuffled':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoTilesShuffled']>[0];
+					if (!value) return;
+					const session = get(bingoSession);
+					if (session) {
+						const delays: Record<string, number> = {};
+						let step = 0;
+						value.newOrder.forEach((srcIdx, dstIdx) => {
+							if (srcIdx !== dstIdx) {
+								const box = session.board.boxes[srcIdx];
+								if (box) delays[box.instanceId] = step++ * 50;
+							}
+						});
+						bingoShuffleDelays.set(delays);
+					}
+					bingoSession.update(s => {
+						if (!s) return s;
+						const old = s.board.boxes;
+						const boxes = value.newOrder.map(i => old[i]);
+						return { ...s, board: { ...s.board, boxes } };
+					});
+				})();
+				break;
 			case 'TwitchUsername':
 				(() => {
 					const value = payload[0] as string;
@@ -463,6 +503,9 @@
 		}
 	}
 
+	// When WebSocket is active in this window, suppress IPC forwarding to avoid duplicate sends
+	let wsActive = false;
+
 	export const initElectronEvents = async () => {
 		console.log('Initializing electron');
 
@@ -478,6 +521,7 @@
 		};
 
 		const electronOnAnyHandler = (event: any, ...data: any[]) => {
+			if (wsActive) return; // WebSocket handles forwarding when connected
 			window.electron.send('message', JSON.stringify({ [event as string]: data }));
 		};
 
@@ -532,12 +576,14 @@
 
 		socket.onopen = async () => {
 			console.log('Websocket connected');
+			wsActive = true;
 			_electronEmitter.offAny(emitElectronMessage);
 			_electronEmitter.onAny(emitElectronMessage);
 			_electronEmitter.emit('Ping');
 		};
 
 		socket.onclose = () => {
+			wsActive = false;
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
@@ -545,6 +591,7 @@
 		};
 
 		return () => {
+			wsActive = false;
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();

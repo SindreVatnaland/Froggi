@@ -116,6 +116,7 @@
 	export const bingoSession = writable<BingoSession | null>(null);
 	export const bingoLobby = writable<BingoLobbyPayload | null>(null);
 	export const bingoRevertMessage = writable<string | null>(null);
+	export const bingoShuffleDelays = writable<Record<string, number>>({});
 	export const bingoLeaderboard = writable<BingoLeaderboard>({ currentVersion: '', records: {} });
 	export const bingoVoteState = writable<BingoVoteState | null>(null);
 	export const bingoVoteActionNotice = writable<{ action: BingoVoteActionType; channel: string } | null>(null);

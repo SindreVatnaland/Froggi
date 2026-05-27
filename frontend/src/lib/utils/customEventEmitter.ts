@@ -185,6 +185,7 @@ export interface MessageEvents {
 	BingoStartLobby: () => void;
 	BingoUpdateLobbySettings: (settings: BingoSettings) => void;
 	StartBingo: (session: BingoSession) => void;
+	BingoRestart: (session: BingoSession) => void;
 	StopBingo: () => void;
 	BingoLobbyState: (data: BingoLobbyPayload | null) => void;
 	BingoState: (data: BingoStatePayload) => void;
@@ -197,7 +198,12 @@ export interface MessageEvents {
 	BingoLeaderboard: (data: BingoLeaderboard) => void;
 	BingoVoteState: (state: BingoVoteState | null) => void;
 	BingoVoteActionExecuted: (data: { action: BingoVoteActionType; channel: string }) => void;
+	BingoDevStartVote: () => void;
+	BingoDevResolveVote: (action: BingoVoteActionType) => void;
+	BingoDevSimulateOpponent: () => void;
 	BingoTileReplaced: (data: BingoTileReplacedPayload) => void;
+	BingoTilesSwapped: (data: { indexA: number; indexB: number }) => void;
+	BingoTilesShuffled: (data: { newOrder: number[] }) => void;
 	GetTwitchUsername: () => void;
 	TwitchUsername: (username: string) => void;
 	SaveTwitchUsername: (username: string) => void;

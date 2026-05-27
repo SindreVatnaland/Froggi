@@ -346,7 +346,7 @@
 
 		<!-- OBS / device overlay — under rules -->
 		{#if localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 		{/if}
 
 		<!-- Main content -->

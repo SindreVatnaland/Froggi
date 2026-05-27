@@ -82,6 +82,9 @@ export interface BingoBox {
 	completedBy: 'local' | 'opponent' | 'both' | null;
 	hasProgress: boolean;
 	frozen?: boolean;
+	frozenUntil?: number;
+	/** True when the local player (host) initiated the freeze — opponent is the target */
+	frozenForOpponent?: boolean;
 }
 
 export interface BingoBoard {
@@ -119,6 +122,7 @@ export interface BingoSession {
 	opponentConnected: boolean;
 	localName: string;
 	opponentName: string | null;
+	winState?: BingoWinState;
 }
 
 export type BingoChallengeUpdate = {
@@ -127,9 +131,11 @@ export type BingoChallengeUpdate = {
 	completed: boolean;
 	completedBy?: 'local' | 'opponent' | 'both';
 	frozen?: boolean;
+	frozenUntil?: number;
+	frozenForOpponent?: boolean;
 };
 
-export type BingoVoteActionType = 'randomize_opponent_tile' | 'freeze_tile' | 'swap_tiles';
+export type BingoVoteActionType = 'randomize_opponent_tile' | 'freeze_tile' | 'swap_tiles' | 'shuffle_untouched' | 'no_action';
 
 export interface BingoVoteOption {
 	id: BingoVoteActionType;
@@ -143,6 +149,12 @@ export interface BingoVoteState {
 	options: BingoVoteOption[];
 	startedAt: number;
 	durationMs: number;
+	/** Which role sees the full vote UI; opponent sees a teaser instead */
+	forRole: BingoRole | 'all';
+	/** Custom question shown instead of "Chat Vote" */
+	question?: string;
+	/** Gold styling for rare special events */
+	special?: boolean;
 	result?: {
 		winner: BingoVoteActionType;
 		description: string;
@@ -161,6 +173,28 @@ export interface BingoLobbyPayload {
 	settings?: BingoSettings;
 	localTwitchUsername?: string;
 	opponentTwitchUsername?: string;
+}
+
+export interface BingoControlledLine {
+	type: 'row' | 'col';
+	index: number;
+}
+
+export interface BingoWinState {
+	/** Indices of boxes that are part of a completed/controlled line for each player */
+	localWinBoxIndices: number[];
+	oppWinBoxIndices: number[];
+	/** Controlled rows/cols for rowcontrol mode (used for border rendering instead of per-tile highlight) */
+	localControlledLines?: BingoControlledLine[];
+	oppControlledLines?: BingoControlledLine[];
+	/** Score value based on win condition (lines, tiles, or controlled rows) */
+	localScore: number;
+	oppScore: number | null; // null for solo
+	scoreTarget: number;
+	scoreUnit: 'tiles' | 'lines';
+	hasWon: boolean;
+	localWinner: boolean;
+	oppWinner: boolean;
 }
 
 export interface BingoStatePayload {

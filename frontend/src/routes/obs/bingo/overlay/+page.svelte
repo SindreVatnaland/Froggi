@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, currentPlayer, bingoRevertMessage } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, currentPlayer, bingoRevertMessage, bingoVoteState } from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
-	import type { BingoWinCondition, BingoBox } from '$lib/models/types/bingo';
 	import { scale, fly, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
@@ -18,68 +17,14 @@
 	$: size = displayBoard?.size ?? 5;
 	$: role = session?.role ?? 'solo';
 
-	function getWinBoxesFiltered(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		const win = new Set<number>();
-		for (let r = 0; r < sz; r++) {
-			const row = Array.from({ length: sz }, (_, c) => r * sz + c);
-			if (row.every(i => done.has(i))) row.forEach(i => win.add(i));
-		}
-		for (let c = 0; c < sz; c++) {
-			const col = Array.from({ length: sz }, (_, r) => r * sz + c);
-			if (col.every(i => done.has(i))) col.forEach(i => win.add(i));
-		}
-		const d1 = Array.from({ length: sz }, (_, i) => i * sz + i);
-		if (d1.every(i => done.has(i))) d1.forEach(i => win.add(i));
-		const d2 = Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i));
-		if (d2.every(i => done.has(i))) d2.forEach(i => win.add(i));
-		return win;
-	}
-
-	$: localWinBoxes = displayBoard
-		? getWinBoxesFiltered(displayBoard.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both')
-		: new Set<number>();
-
-	$: oppWinBoxes = displayBoard
-		? getWinBoxesFiltered(displayBoard.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both')
-		: new Set<number>();
-
-	$: winCondition = (session?.settings?.winCondition ?? 3) as BingoWinCondition;
-
-	function countLines(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): number {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		let n = 0;
-		for (let r = 0; r < sz; r++) {
-			if (Array.from({ length: sz }, (_, c) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		for (let c = 0; c < sz; c++) {
-			if (Array.from({ length: sz }, (_, r) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		if (Array.from({ length: sz }, (_, i) => i * sz + i).every(i => done.has(i))) n++;
-		if (Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)).every(i => done.has(i))) n++;
-		return n;
-	}
-
-	$: hasWon = (() => {
-		if (!board) return false;
-		const wc = winCondition;
-		const boxes = board.boxes;
-		if (wc === 'full') return boxes.every(b => b.completed);
-		if (wc === 'lockout') {
-			const total = boxes.length;
-			const localCount = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const oppCount  = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return localCount > total / 2 || oppCount > total / 2;
-		}
-		const n = wc as number;
-		const localLines = countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-		const oppLines   = countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-		return localLines >= n || oppLines >= n;
-	})();
+	$: localWinBoxes = new Set<number>(session?.winState?.localWinBoxIndices ?? []);
+	$: oppWinBoxes = new Set<number>(session?.winState?.oppWinBoxIndices ?? []);
+	$: localControlledLines = session?.winState?.localControlledLines ?? [];
+	$: oppControlledLines = session?.winState?.oppControlledLines ?? [];
 
 	// ── Timer ────────────────────────────────────────────────────────────────
 	let now = Date.now();
-	setInterval(() => (now = Date.now()), 1000);
+	setInterval(() => { if (!winTriggered) now = Date.now(); }, 500);
 	$: if (session?.startedAt) now = Date.now();
 
 	$: timerEnabled = session?.settings?.timer?.enabled ?? false;
@@ -137,34 +82,32 @@
 	// Unified win detection: normal win, timer expiry, and sudden death resolution in one block
 	$: if (animPhase === 'playing' && board && !winTriggered) {
 		const boxes = board.boxes;
-		if (hasWon) {
+		if (session?.winState?.hasWon) {
 			winTriggered = true;
 			winElapsedSeconds = elapsedSeconds;
-			isLocalWinner = checkIsLocalWinner();
+			isLocalWinner = session.winState.localWinner;
 			triggerWinExit(boxes.length);
 		} else if (timerSecondsLeft === 0) {
 			if (timerSuddenDeath) {
 				// Sudden death: first new completion wins
 				const completed = boxes.filter(b => b.completed).length;
 				if (completed > suddenDeathBaseCount) {
-					const localBoxes = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-					const oppBoxes   = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
 					timerSuddenDeath = false;
 					winTriggered = true;
 					winElapsedSeconds = elapsedSeconds;
-					isLocalWinner = localBoxes > oppBoxes;
+					isLocalWinner = session?.winState?.localWinner ?? true;
 					triggerWinExit(boxes.length);
 				}
 			} else {
-				// Timer just expired: resolve by lines then boxes, or enter sudden death
-				const localLines = countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-				const oppLines   = countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
+				// Timer just expired: resolve by score then boxes, or enter sudden death
+				const localS = session?.winState?.localScore ?? 0;
+				const oppS = session?.winState?.oppScore ?? 0;
 				const localBoxes = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
 				const oppBoxes   = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-				if (localLines !== oppLines || localBoxes !== oppBoxes) {
+				if (localS !== oppS || localBoxes !== oppBoxes) {
 					winTriggered = true;
 					winElapsedSeconds = elapsedSeconds;
-					isLocalWinner = localLines !== oppLines ? localLines > oppLines : localBoxes > oppBoxes;
+					isLocalWinner = localS !== oppS ? localS > oppS : localBoxes > oppBoxes;
 					triggerWinExit(boxes.length);
 				} else {
 					timerSuddenDeath = true;
@@ -196,50 +139,31 @@
 		return arr;
 	}
 
-	function winConditionLabel(wc: BingoWinCondition): string {
-		if (wc === 'lockout') return 'Lockout';
-		if (wc === 'full') return 'Full board';
-		return `${wc} line${(wc as number) > 1 ? 's' : ''} to win`;
-	}
-
-	$: localLines = displayBoard
-		? countLines(displayBoard.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both')
-		: 0;
-	$: oppLines = displayBoard
-		? countLines(displayBoard.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both')
-		: 0;
-
-	$: progressData = (() => {
-		if (!displayBoard) return null;
-		const boxes = displayBoard.boxes;
-		const total = boxes.length;
-		if (winCondition === 'lockout') {
-			const target = Math.ceil(total / 2) + 1;
-			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return { localScore: ls, oppScore: role === 'solo' ? (null as number | null) : os, target, unit: 'boxes', localWinner: ls >= target, oppWinner: os >= target };
-		}
-		if (winCondition === 'full') {
-			const ls = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const os = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return { localScore: ls, oppScore: role === 'solo' ? (null as number | null) : os, target: total, unit: 'boxes', localWinner: ls >= total, oppWinner: os >= total };
-		}
-		const n = winCondition as number;
-		return { localScore: localLines, oppScore: role === 'solo' ? (null as number | null) : oppLines, target: n, unit: 'lines', localWinner: localLines >= n, oppWinner: oppLines >= n };
-	})();
+	$: progressData = session?.winState ? {
+		localScore: session.winState.localScore,
+		oppScore: session.winState.oppScore,
+		target: session.winState.scoreTarget,
+		unit: session.winState.scoreUnit,
+		localWinner: session.winState.localWinner,
+		oppWinner: session.winState.oppWinner,
+	} : null;
 
 	$: opponentName = session?.opponentName ?? null;
 
-	function checkIsLocalWinner(): boolean {
-		if (!board) return true;
-		const boxes = board.boxes;
-		const localLines = countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-		const oppLines   = countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-		if (localLines !== oppLines) return localLines > oppLines;
-		const localBoxes = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		const oppBoxes   = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-		return localBoxes >= oppBoxes;
+	// ── Vote banner ───────────────────────────────────────────────────────────
+	$: vote = $bingoVoteState;
+	$: voteActive = vote?.active ?? false;
+	let voteTick = 0;
+	$: if (voteActive) {
+		const iv = setInterval(() => voteTick++, 1000);
+		setTimeout(() => clearInterval(iv), (vote?.durationMs ?? 30000) + 1000);
 	}
+	function voteTimeLeft(v: typeof $bingoVoteState): number {
+		if (!v?.active) return 0;
+		return Math.max(0, Math.ceil((v.durationMs - (Date.now() - v.startedAt)) / 1000));
+	}
+	$: voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
+	$: if (voteTick) voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
 </script>
 
 <div class="overlay-root">
@@ -299,6 +223,26 @@
 	{:else}
 		<!-- Board (playing or exit animation) -->
 		<div class="overlay-page" out:fade={{ duration: 220 }}>
+		{#if vote && voteActive && animPhase === 'playing'}
+			<div class="vote-hud" in:fly={{ y: -14, duration: 280 }} out:fly={{ y: -14, duration: 200 }}>
+				<div class="vote-hud-header">
+					<span class="vote-hud-title">{vote.question ?? 'Chat Vote'}</span>
+					<span class="vote-hud-timer">{voteSecondsLeft}s</span>
+				</div>
+				{#each vote.options as opt, idx}
+					{@const total = vote.options.reduce((s, o) => s + o.votes, 0)}
+					{@const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0}
+					<div class="vote-hud-row">
+						<span class="vote-kbd">{idx + 1}</span>
+						<span class="vote-hud-label">{opt.label}</span>
+						<div class="vote-hud-track">
+							<div class="vote-hud-fill" style="width:{pct}%"></div>
+						</div>
+						<span class="vote-hud-pct">{pct}%</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
 		{#if $bingoRevertMessage}
 			<div class="revert-backdrop" in:fade={{ duration: 180 }} out:fade={{ duration: 200 }}>
 				<div class="revert-popup" in:scale={{ start: 0.9, duration: 300, easing: backOut }} out:scale={{ start: 0.9, duration: 180 }}>
@@ -331,6 +275,8 @@
 					{role}
 					{localWinBoxes}
 					{oppWinBoxes}
+					{localControlledLines}
+					{oppControlledLines}
 					{exitingBoxIndices}
 					{isLocalWinner}
 					animateEntry={true}
@@ -338,20 +284,29 @@
 			</div>
 			{#if animPhase !== 'exit' && progressData}
 				<div class="pb-wrap">
-					<div class="pb-row" class:pb-row--winner={progressData.localWinner}>
-						<span class="pb-name">{session?.localName || localName}</span>
+					<div class="pb-player" class:pb-player--winner={progressData.localWinner}>
+						<div class="pb-header">
+							<span class="pb-name">{session?.localName || localName}</span>
+							{#if voteActive}
+								<span class="pb-thinking">
+									<span class="pb-thinking-text">chat voting</span><span class="pb-dots"><span>.</span><span>.</span><span>.</span></span>
+								</span>
+							{/if}
+							<span class="pb-score">{progressData.localScore}<span class="pb-of">/{progressData.target}</span></span>
+						</div>
 						<div class="pb-track">
 							<div class="pb-fill pb-fill--local" style="width:{Math.min(100, (progressData.localScore / progressData.target) * 100)}%"></div>
 						</div>
-						<span class="pb-score">{progressData.localScore}<span class="pb-of">/{progressData.target}</span></span>
 					</div>
 					{#if progressData.oppScore !== null}
-						<div class="pb-row" class:pb-row--winner={progressData.oppWinner}>
-							<span class="pb-name">{opponentName ?? 'Opponent'}</span>
+						<div class="pb-player" class:pb-player--winner={progressData.oppWinner}>
+							<div class="pb-header">
+								<span class="pb-name">{opponentName ?? 'Opponent'}</span>
+								<span class="pb-score">{progressData.oppScore}<span class="pb-of">/{progressData.target}</span></span>
+							</div>
 							<div class="pb-track">
 								<div class="pb-fill pb-fill--opp" style="width:{Math.min(100, (progressData.oppScore / progressData.target) * 100)}%"></div>
 							</div>
-							<span class="pb-score">{progressData.oppScore}<span class="pb-of">/{progressData.target}</span></span>
 						</div>
 					{/if}
 					<span class="pb-unit">{progressData.unit}</span>
@@ -637,15 +592,22 @@
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 1vmin;
-		padding: 1vmin 0 0.5vmin;
+		gap: 0.8vmin;
+		padding: 0.8vmin 0 0.4vmin;
 		flex-shrink: 0;
 	}
 
-	.pb-row {
+	.pb-player {
 		display: flex;
-		align-items: center;
-		gap: 1.5vmin;
+		flex-direction: column;
+		gap: 0.3vmin;
+		padding: 0 1.2vmin;
+	}
+
+	.pb-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1vmin;
 	}
 
 	.pb-name {
@@ -654,19 +616,71 @@
 		color: rgba(255,255,255,0.55);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		width: 12vmin;
-		flex-shrink: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-family: sans-serif;
+		flex-shrink: 0;
+	}
+
+	.pb-thinking {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.2vmin;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.pb-thinking-text {
+		font-size: 1.2vmin;
+		color: rgba(147, 210, 255, 0.7);
+		font-style: italic;
+		font-family: sans-serif;
+		white-space: nowrap;
+	}
+
+	.pb-dots {
+		display: inline-flex;
+		gap: 0.1vmin;
+	}
+
+	.pb-dots span {
+		font-size: 1.4vmin;
+		color: rgba(147, 210, 255, 0.7);
+		animation: dot-bounce 1.2s ease-in-out infinite;
+		display: inline-block;
+	}
+	.pb-dots span:nth-child(2) { animation-delay: 0.2s; }
+	.pb-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+	@keyframes dot-bounce {
+		0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+		40%            { transform: translateY(-0.3vmin); opacity: 1; }
+	}
+
+	.pb-score {
+		font-size: 1.6vmin;
+		font-weight: 700;
+		font-family: sans-serif;
+		color: rgba(255,255,255,0.7);
+		margin-left: auto;
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.pb-player--winner .pb-score { color: #4ade80; }
+
+	.pb-of {
+		font-size: 1.1vmin;
+		opacity: 0.4;
+		font-weight: 400;
 	}
 
 	.pb-track {
-		flex: 1;
-		height: 1.2vmin;
+		width: 100%;
+		height: 0.4vmin;
 		border-radius: 999px;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255,255,255,0.1);
 		overflow: hidden;
 	}
 
@@ -676,39 +690,116 @@
 		transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 	}
 
-	.pb-fill--local { background: rgba(96, 165, 250, 0.85); }
-	.pb-fill--opp   { background: rgba(52, 211, 153, 0.85); }
+	.pb-fill--local { background: rgba(74, 222, 128, 0.85); }
+	.pb-fill--opp   { background: rgba(248, 113, 113, 0.85); }
 
-	.pb-row--winner .pb-fill--local,
-	.pb-row--winner .pb-fill--opp {
+	.pb-player--winner .pb-fill--local,
+	.pb-player--winner .pb-fill--opp {
 		background: rgba(74, 222, 128, 0.95);
 	}
 
-	.pb-score {
-		font-size: 2vmin;
-		font-weight: 700;
-		font-family: sans-serif;
-		color: rgba(255,255,255,0.9);
-		width: 5vmin;
-		text-align: right;
-		flex-shrink: 0;
-		line-height: 1;
-	}
-
-	.pb-row--winner .pb-score { color: #4ade80; }
-
-	.pb-of {
-		font-size: 1.4vmin;
-		opacity: 0.4;
-		font-weight: 400;
-	}
-
 	.pb-unit {
-		font-size: 1.3vmin;
+		font-size: 1.1vmin;
 		text-transform: uppercase;
 		letter-spacing: 0.07em;
-		opacity: 0.3;
+		opacity: 0.25;
 		font-family: sans-serif;
-		padding-left: calc(12vmin + 1.5vmin);
+		padding-left: 1.2vmin;
+	}
+
+	/* ── Vote HUD ── */
+	.vote-hud {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		background: rgba(0, 0, 0, 0.78);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+		padding: 1.2vmin 1.8vmin 1vmin;
+		display: flex;
+		flex-direction: column;
+		gap: 0.7vmin;
+		z-index: 10;
+		font-family: sans-serif;
+		backdrop-filter: blur(4px);
+	}
+
+	.vote-hud-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.2vmin;
+	}
+
+	.vote-hud-title {
+		font-size: 1.5vmin;
+		font-weight: 700;
+		color: rgba(255, 255, 255, 0.85);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.vote-hud-timer {
+		font-size: 1.4vmin;
+		font-weight: 700;
+		color: rgba(255, 255, 255, 0.6);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.vote-hud-row {
+		display: flex;
+		align-items: center;
+		gap: 1vmin;
+	}
+
+	.vote-kbd {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.4vmin;
+		height: 2.4vmin;
+		background: rgba(255, 255, 255, 0.14);
+		border: 1px solid rgba(255, 255, 255, 0.35);
+		border-bottom: 2px solid rgba(255, 255, 255, 0.22);
+		border-radius: 0.4vmin;
+		font-size: 1.3vmin;
+		font-weight: 800;
+		color: rgba(255, 255, 255, 0.95);
+		flex-shrink: 0;
+		font-family: sans-serif;
+	}
+
+	.vote-hud-label {
+		font-size: 1.5vmin;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.85);
+		width: 8vmin;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.vote-hud-track {
+		flex: 1;
+		height: 1vmin;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.vote-hud-fill {
+		height: 100%;
+		background: rgba(147, 210, 255, 0.85);
+		border-radius: 999px;
+		transition: width 0.4s ease;
+	}
+
+	.vote-hud-pct {
+		font-size: 1.4vmin;
+		font-weight: 700;
+		color: rgba(255, 255, 255, 0.75);
+		width: 5vmin;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		flex-shrink: 0;
 	}
 </style>

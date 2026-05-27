@@ -1,4 +1,4 @@
-import type { BingoBox, BingoWinCondition } from '../models/types/bingo';
+import type { BingoBox, BingoControlledLine, BingoWinCondition } from '../models/types/bingo';
 
 export function countLines(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): number {
 	const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
@@ -36,6 +36,24 @@ export function countControlledLines(boxes: BingoBox[], sz: number, player: 'loc
 	const d2 = Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i));
 	if (d2.filter(i => mine(boxes[i])).length >= required) n++;
 	return n;
+}
+
+export function getControlledLines(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): BingoControlledLine[] {
+	const mine = (b: BingoBox) =>
+		player === 'local'
+			? b.completedBy === 'local' || b.completedBy === 'both'
+			: b.completedBy === 'opponent' || b.completedBy === 'both';
+	const required = Math.floor(sz / 2) + 1;
+	const lines: BingoControlledLine[] = [];
+	for (let r = 0; r < sz; r++) {
+		const line = Array.from({ length: sz }, (_, c) => r * sz + c);
+		if (line.filter(i => mine(boxes[i])).length >= required) lines.push({ type: 'row', index: r });
+	}
+	for (let c = 0; c < sz; c++) {
+		const line = Array.from({ length: sz }, (_, r) => r * sz + c);
+		if (line.filter(i => mine(boxes[i])).length >= required) lines.push({ type: 'col', index: c });
+	}
+	return lines;
 }
 
 export function hasWon(boxes: BingoBox[], size: number, wc: BingoWinCondition): boolean {

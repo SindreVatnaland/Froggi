@@ -78,11 +78,11 @@
 	}
 
 	.spb-fill--local {
-		background: rgba(96, 165, 250, 0.85);
+		background: rgba(74, 222, 128, 0.85);
 	}
 
 	.spb-fill--opp {
-		background: rgba(52, 211, 153, 0.85);
+		background: rgba(248, 113, 113, 0.85);
 	}
 
 	.spb-row--winner .spb-fill--local,

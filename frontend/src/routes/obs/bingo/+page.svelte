@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoVoteState, bingoVoteActionNotice } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, electronEmitter, currentPlayer, urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoVoteState, bingoVoteActionNotice, froggiSettings } from '$lib/utils/store.svelte';
+	import { encryptUrl } from '$lib/utils/urlCrypto';
 	import type { BingoVoteActionType } from '$lib/models/types/bingo';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
-	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
+	import type { BingoSettings, BingoRole, BingoDifficulty, BingoWinCondition } from '$lib/models/types/bingo';
 	import { tooltip } from 'svooltip';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
 	import ScoreProgressBar from '$lib/components/ScoreProgressBar.svelte';
 	import OverlayRow from '$lib/components/OverlayRow.svelte';
 	import NgrokShareRow from '$lib/components/NgrokShareRow.svelte';
+	import SlippiAd from '$lib/components/SlippiAd.svelte';
 
 	type Mode = 'solo' | 'host' | 'guest';
 
@@ -49,6 +51,9 @@
 		if (action === 'swap_tiles') return 'swap two tiles ↔';
 		return 'randomize a tile ✦';
 	}
+
+	// Dev role override: ?devRole=host or ?devRole=guest
+	let devRole: BingoRole | null = null;
 
 	$: vote = $bingoVoteState;
 	$: voteActive = vote?.active ?? false;
@@ -118,6 +123,21 @@
 		$electronEmitter.emit('StopBingo');
 	}
 
+	function restart() {
+		if (!$bingoSession) { stop(); return; }
+		const board = generateBoard(settings);
+		$electronEmitter.emit('BingoRestart', {
+			board,
+			settings,
+			startedAt: Date.now(),
+			localPlayerIndex: $currentPlayer?.playerIndex ?? null,
+			role: $bingoSession.role,
+			opponentConnected: $bingoSession.opponentConnected,
+			localName: $currentPlayer?.displayName || 'Player 1',
+			opponentName: $bingoSession.opponentName,
+		});
+	}
+
 	// Stop the connecting spinner when lobby or session is established
 	$: if ($bingoLobby) connecting = false;
 	$: if ($bingoSession?.role === 'guest') connecting = false;
@@ -147,7 +167,7 @@
 
 	$: if (session?.startedAt) now = Date.now();
 
-	$: if (isActive) {
+	$: if (isActive && !hasWon) {
 		if (!timerInterval) timerInterval = setInterval(() => (now = Date.now()), 1000);
 	} else {
 		if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
@@ -172,13 +192,21 @@
 	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
 	// Peer share URL must be ngrok (unique + private per session)
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
+	$: shareCode = shareUrl ? encryptUrl(shareUrl, $froggiSettings?.version ?? 'froggi') : '';
 	// QR code: Tailscale (own device, permanent) — never ngrok (temporary/shared)
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
 	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : localOverlayUrl;
 
 
 
-	onMount(() => {
+	onMount(async () => {
+		const param = new URL(window.location.href).searchParams.get('devRole') as BingoRole | null;
+		if (param === 'host' || param === 'guest' || param === 'solo') {
+			devRole = param;
+			// Popup windows don't receive IPC from main process — use WebSocket instead
+			const { initWebSocket } = await import('$lib/utils/initEventListener.svelte');
+			await initWebSocket();
+		}
 		const s = $ngrokStatus;
 		if (s?.installed && s?.authenticated && !s?.running) {
 			$electronEmitter.emit('NgrokStart');
@@ -187,118 +215,60 @@
 
 
 
-	// Win detection
-	function getRowControlBoxes(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): Set<number> {
-		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
-		const required = Math.floor(sz / 2) + 1;
-		const controlled = new Set<number>();
-		const check = (line: number[]) => { if (line.filter(i => mine(boxes[i])).length >= required) line.forEach(i => controlled.add(i)); };
-		for (let r = 0; r < sz; r++) check(Array.from({ length: sz }, (_, c) => r * sz + c));
-		for (let c = 0; c < sz; c++) check(Array.from({ length: sz }, (_, r) => r * sz + c));
-		return controlled;
-	}
-
-	function countControlledLines(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): number {
-		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
-		const required = Math.floor(sz / 2) + 1;
-		let n = 0;
-		for (let r = 0; r < sz; r++) { const line = Array.from({ length: sz }, (_, c) => r * sz + c); if (line.filter(i => mine(boxes[i])).length >= required) n++; }
-		for (let c = 0; c < sz; c++) { const line = Array.from({ length: sz }, (_, r) => r * sz + c); if (line.filter(i => mine(boxes[i])).length >= required) n++; }
-		return n;
-	}
-
-	function getWinBoxesFiltered(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter((i) => i >= 0));
-		const win = new Set<number>();
-		for (let r = 0; r < sz; r++) {
-			const row = Array.from({ length: sz }, (_, c) => r * sz + c);
-			if (row.every((i) => done.has(i))) row.forEach((i) => win.add(i));
-		}
-		for (let c = 0; c < sz; c++) {
-			const col = Array.from({ length: sz }, (_, r) => r * sz + c);
-			if (col.every((i) => done.has(i))) col.forEach((i) => win.add(i));
-		}
-		const d1 = Array.from({ length: sz }, (_, i) => i * sz + i);
-		if (d1.every((i) => done.has(i))) d1.forEach((i) => win.add(i));
-		const d2 = Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i));
-		if (d2.every((i) => done.has(i))) d2.forEach((i) => win.add(i));
-		return win;
-	}
-
-	$: localWinBoxes = activeWinCondition === 'rowcontrol'
-		? getRowControlBoxes(board.boxes, size, 'local')
-		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-	$: oppWinBoxes = activeWinCondition === 'rowcontrol'
-		? getRowControlBoxes(board.boxes, size, 'opponent')
-		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-
-	function countLines(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): number {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
-		let n = 0;
-		for (let r = 0; r < sz; r++) {
-			if (Array.from({ length: sz }, (_, c) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		for (let c = 0; c < sz; c++) {
-			if (Array.from({ length: sz }, (_, r) => r * sz + c).every(i => done.has(i))) n++;
-		}
-		if (Array.from({ length: sz }, (_, i) => i * sz + i).every(i => done.has(i))) n++;
-		if (Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)).every(i => done.has(i))) n++;
-		return n;
-	}
-
-	$: hasWon = (() => {
-		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'full') return boxes.every(b => b.completed);
-		if (wc === 'lockout') {
-			const total = boxes.length;
-			const localCount = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-			const oppCount = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-			return localCount > total / 2 || oppCount > total / 2;
-		}
-		if (wc === 'rowcontrol') {
-			return countControlledLines(boxes, size, 'local') >= 3 || countControlledLines(boxes, size, 'opponent') >= 3;
-		}
-		const n = wc as number;
-		const localLines = countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-		const oppLines = countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-		return localLines >= n || oppLines >= n;
-	})();
-
-	$: localScore = (() => {
-		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'rowcontrol') return countControlledLines(boxes, size, 'local');
-		if (wc === 'lockout' || wc === 'full') return boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		return countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-	})();
-
-	$: oppScore = (() => {
-		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'rowcontrol') return countControlledLines(boxes, size, 'opponent');
-		if (wc === 'lockout' || wc === 'full') return boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-		return countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-	})();
-
-	$: scoreTarget = (() => {
-		const wc = activeWinCondition;
-		if (wc === 'rowcontrol') return 3;
-		if (wc === 'lockout') return Math.floor(board.boxes.length / 2) + 1;
-		if (wc === 'full') return board.boxes.length;
-		return wc as number;
-	})();
-
-	$: scoreUnit = activeWinCondition === 'lockout' || activeWinCondition === 'full' ? 'tiles' : 'lines';
+	// Win state computed by backend, sent with every BingoState
+	$: winState = session?.winState ?? null;
+	$: localWinBoxes = new Set<number>(winState?.localWinBoxIndices ?? []);
+	$: oppWinBoxes = new Set<number>(winState?.oppWinBoxIndices ?? []);
+	$: hasWon = winState?.hasWon ?? false;
+	$: localScore = winState?.localScore ?? 0;
+	$: oppScore = winState?.oppScore ?? null;
+	$: scoreTarget = winState?.scoreTarget ?? 1;
+	$: scoreUnit = winState?.scoreUnit ?? 'lines';
 
 	$: localPlayerName = session?.localName ?? 'You';
 	$: opponentPlayerName = session?.opponentName ?? 'Opponent';
 
+	// Dev popup perspective: when devRole=guest, flip everything to guest's POV
+	$: effectiveRole = devRole ?? role;
+	$: displayBoxes = devRole === 'guest'
+		? board.boxes.map(b => ({
+			...b,
+			completedBy: b.completedBy === 'local' ? 'opponent' as const
+			           : b.completedBy === 'opponent' ? 'local' as const
+			           : b.completedBy,
+		  }))
+		: board.boxes;
+	$: localControlledLines = winState?.localControlledLines ?? [];
+	$: oppControlledLines = winState?.oppControlledLines ?? [];
+
+	$: displayLocalWinBoxes = devRole === 'guest' ? oppWinBoxes : localWinBoxes;
+	$: displayOppWinBoxes = devRole === 'guest' ? localWinBoxes : oppWinBoxes;
+	$: displayLocalControlledLines = devRole === 'guest' ? oppControlledLines : localControlledLines;
+	$: displayOppControlledLines = devRole === 'guest' ? localControlledLines : oppControlledLines;
+	$: displayLocalScore = devRole === 'guest' ? (oppScore ?? 0) : localScore;
+	$: displayOppScore = devRole === 'guest' ? (role !== 'solo' ? localScore : null) : oppScore;
+	$: displayLocalName = devRole === 'guest' ? opponentPlayerName : localPlayerName;
+	$: displayOppName = devRole === 'guest' ? localPlayerName : opponentPlayerName;
+
+	// Vote: show full options only when it's this player's turn
+	$: voteIsForMe = !vote || vote.forRole === 'all' || vote.forRole === effectiveRole;
+
+	// Win ad
+	let showWinAd = false;
+	let winAdTimer: ReturnType<typeof setTimeout> | null = null;
+	$: if (hasWon && isActive && !showWinAd && !winAdTimer) {
+		winAdTimer = setTimeout(() => { showWinAd = true; winAdTimer = null; }, 10000);
+	} else if (!hasWon || !isActive) {
+		if (winAdTimer) { clearTimeout(winAdTimer); winAdTimer = null; }
+		showWinAd = false;
+	}
+
 </script>
 
 <main class="background-primary-color text-secondary-color flex justify-center">
-	<div class="w-full max-w-2xl flex flex-col gap-5">
+	<div class="w-full max-w-2xl flex flex-col gap-5" class:overlay-mode={!!devRole}>
 
+		{#if !devRole}
 		<!-- Header -->
 		<div class="flex items-start justify-between gap-4 flex-wrap">
 			<div>
@@ -324,7 +294,10 @@
 			</div>
 
 			{#if isActive}
-				<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={stop}>End</button>
+				<div class="flex gap-2">
+					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={restart}>New Game</button>
+					<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={stop}>End</button>
+				</div>
 			{:else if inLobby && mode === 'host'}
 				<div class="flex gap-2">
 					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Cancel</button>
@@ -434,10 +407,10 @@
 		<!-- Guest: join URL input -->
 		{#if !isActive && mode === 'guest'}
 			<div class="settings-row border-secondary flex-col gap-3">
-				<p class="text-sm opacity-60">Enter your opponent's share URL to join their bingo session.</p>
+				<p class="text-sm opacity-60">Enter your opponent's share code to join their bingo session.</p>
 				<input
 					class="url-input border-secondary background-primary-color text-secondary-color"
-					placeholder="https://abc123.ngrok-free.app"
+					placeholder="Paste share code or URL…"
 					bind:value={guestUrl}
 				/>
 				{#if connecting}
@@ -446,14 +419,14 @@
 			</div>
 		{/if}
 
-		<!-- Host: share URL row -->
+		<!-- Host: share code row -->
 		{#if (isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host')}
-			<NgrokShareRow {shareUrl} />
+			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
 		{/if}
 
 		<!-- OBS / device overlay row -->
 		{#if localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" />
+			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
 		{/if}
 
 		<!-- Timer -->
@@ -468,49 +441,62 @@
 				{/if}
 			</div>
 		{/if}
+		{/if}
 
-		<!-- Win banner -->
-		{#if hasWon}
-			<div class="win-banner border-secondary">
-				<span>Bingo!</span>
-				{#if role !== 'solo'}
-					<span class="win-score">{localPlayerName} {localScore} – {oppScore} {opponentPlayerName}</span>
-				{:else}
-					<span class="win-score">{localScore}/{scoreTarget} {scoreUnit}</span>
-				{/if}
+		<!-- Board (hidden during lobby — no peeking before both are ready) -->
+		{#if !inLobby}
+		<div style="aspect-ratio:1/1; width:100%;">
+			<BingoBoardGrid
+				boxes={displayBoxes}
+				{size}
+				role={effectiveRole}
+				localWinBoxes={displayLocalWinBoxes}
+				oppWinBoxes={displayOppWinBoxes}
+				localControlledLines={displayLocalControlledLines}
+				oppControlledLines={displayOppControlledLines}
+				devMode={isActive}
+				on:devsimulate={(e) => $electronEmitter.emit('BingoDevSimulate', e.detail.instanceId, e.detail.player)}
+			/>
+		</div>
+		{#if isActive}
+			<ScoreProgressBar
+				localScore={displayLocalScore}
+				localName={displayLocalName}
+				oppScore={displayOppScore}
+				oppName={displayOppName}
+				target={scoreTarget}
+				unit={scoreUnit}
+				localWinner={devRole === 'guest' ? (winState?.oppWinner ?? false) : (winState?.localWinner ?? false)}
+				oppWinner={devRole === 'guest' ? (winState?.localWinner ?? false) : (winState?.oppWinner ?? false)}
+			/>
+		{/if}
+		{/if}
+
+		<!-- ── Banners below board — no layout jump on board ── -->
+
+		<!-- Dev controls (only when ?devRole= param is set) -->
+		{#if devRole}
+			<div class="dev-vote-controls border-secondary">
+				<span class="settings-label">DEV · {devRole}</span>
+				<button class="pill" on:click={() => $electronEmitter.emit('BingoDevStartVote')}>Start Vote</button>
+				<button class="pill" on:click={() => $electronEmitter.emit('BingoDevResolveVote', 'randomize_opponent_tile')}>Randomize</button>
+				<button class="pill" on:click={() => $electronEmitter.emit('BingoDevResolveVote', 'freeze_tile')}>Freeze</button>
+				<button class="pill" on:click={() => $electronEmitter.emit('BingoDevResolveVote', 'swap_tiles')}>Swap</button>
 			</div>
 		{/if}
 
-		<!-- Revert notification -->
-		{#if $bingoRevertMessage}
-			<div class="revert-banner" in:fly={{ y: -20, duration: 250 }} out:fly={{ y: -20, duration: 200 }}>
-				⚠ {$bingoRevertMessage}
-			</div>
-		{/if}
-
-		<!-- Vote action notification -->
-		{#if $bingoVoteActionNotice}
-			<div
-				class="vote-action-banner vote-action-banner--{$bingoVoteActionNotice.action}"
-				in:fly={{ y: -20, duration: 250 }}
-				out:fly={{ y: -20, duration: 200 }}
-			>
-				{$bingoVoteActionNotice.channel} chat voted to {voteActionLabel($bingoVoteActionNotice.action)}
-			</div>
-		{/if}
-
-		<!-- Twitch vote banner (only shown in overlay) -->
-		{#if vote && (voteActive || voteResult)}
-			<div class="vote-banner border-secondary" class:vote-banner--result={voteResult} in:fly={{ y: -24, duration: 320 }} out:fly={{ y: -20, duration: 220 }}>
-				{#if voteActive}
+		<!-- Twitch vote banner -->
+		{#if vote && voteActive}
+			{#if voteIsForMe}
+				<div class="vote-banner border-secondary" class:vote-banner--special={vote.special} in:fly={{ y: 16, duration: 320 }} out:fly={{ y: 16, duration: 220 }}>
 					<div class="vote-header">
-						<span class="vote-title">Chat Vote</span>
+						<span class="vote-title">{vote.question ?? (vote.forRole === 'all' ? 'Chat Vote' : (vote.forRole === 'host' ? 'Host chat' : 'Guest chat'))}</span>
 						<span class="vote-timer">{voteSecondsLeft}s</span>
 					</div>
 					<div class="vote-options">
 						{#each vote.options as opt, i}
-							{@const totalVotes = vote.options.reduce((s, o) => s + o.votes, 0)}
-							{@const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0}
+							{@const total = vote.options.reduce((s, o) => s + o.votes, 0)}
+							{@const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0}
 							<div class="vote-option">
 								<span class="vote-key">{i + 1}</span>
 								<span class="vote-label">{opt.label}</span>
@@ -521,40 +507,58 @@
 							</div>
 						{/each}
 					</div>
-				{:else if voteResult && vote.result}
-					<div class="vote-result">
-						<span class="vote-result-label">{vote.result.winner.replace(/_/g, ' ')}</span>
-						<span class="vote-result-desc">{vote.result.description}</span>
+				</div>
+			{:else}
+				<div class="vote-thinking border-secondary" in:fly={{ y: 16, duration: 320 }} out:fly={{ y: 16, duration: 220 }}>
+					<span class="vote-thinking-label">{vote.forRole === 'host' ? 'Host' : 'Opponent'} chat is deciding</span>
+					<div class="thinking-dots">
+						<span class="dot"></span><span class="dot"></span><span class="dot"></span>
 					</div>
-				{/if}
+				</div>
+			{/if}
+		{/if}
+		{#if vote && voteResult && vote.result}
+			<div class="vote-banner vote-banner--result border-secondary" class:vote-banner--special={vote.special} in:fly={{ y: 16, duration: 320 }} out:fly={{ y: 16, duration: 220 }}>
+				<div class="vote-result">
+					<span class="vote-result-label">{vote.result.winner.replace(/_/g, ' ')}</span>
+					<span class="vote-result-desc">{vote.result.description}</span>
+				</div>
 			</div>
 		{/if}
 
-		<!-- Board (hidden during lobby — no peeking before both are ready) -->
-		{#if !inLobby}
-		<div style="aspect-ratio:1/1; width:100%;">
-			<BingoBoardGrid
-				boxes={board.boxes}
-				{size}
-				{role}
-				{localWinBoxes}
-				{oppWinBoxes}
-				devMode={isActive}
-				on:devsimulate={(e) => $electronEmitter.emit('BingoDevSimulate', e.detail.instanceId, e.detail.player)}
-			/>
-		</div>
-		{#if isActive}
-			<ScoreProgressBar
-				{localScore}
-				localName={localPlayerName}
-				oppScore={role !== 'solo' ? oppScore : null}
-				oppName={opponentPlayerName}
-				target={scoreTarget}
-				unit={scoreUnit}
-				localWinner={hasWon && localScore >= scoreTarget}
-				oppWinner={hasWon && oppScore >= scoreTarget}
-			/>
+		<!-- Vote action notification -->
+		{#if $bingoVoteActionNotice}
+			<div
+				class="vote-action-banner vote-action-banner--{$bingoVoteActionNotice.action}"
+				in:fly={{ y: 16, duration: 250 }}
+				out:fly={{ y: 16, duration: 200 }}
+			>
+				{$bingoVoteActionNotice.channel} chat voted to {voteActionLabel($bingoVoteActionNotice.action)}
+			</div>
 		{/if}
+
+		<!-- Revert notification -->
+		{#if $bingoRevertMessage}
+			<div class="revert-banner" in:fly={{ y: 16, duration: 250 }} out:fly={{ y: 16, duration: 200 }}>
+				⚠ {$bingoRevertMessage}
+			</div>
+		{/if}
+
+		<!-- Win banner -->
+		{#if hasWon}
+			<div class="win-banner border-secondary">
+				<span>Bingo!</span>
+				{#if effectiveRole !== 'solo'}
+					<span class="win-score">{displayLocalName} {displayLocalScore} – {displayOppScore} {displayOppName}</span>
+				{:else}
+					<span class="win-score">{displayLocalScore}/{scoreTarget} {scoreUnit}</span>
+				{/if}
+			</div>
+			{#if showWinAd}
+				<div class="dash-card border-secondary" in:fly={{ y: 16, duration: 400 }}>
+					<SlippiAd compact />
+				</div>
+			{/if}
 		{/if}
 
 	</div>
@@ -719,6 +723,91 @@
 	.vote-result-desc {
 		font-size: 0.75rem;
 		opacity: 0.65;
+	}
+
+	/* ── Overlay mode (dev popups) ── */
+	.overlay-mode {
+		padding-top: 0.75rem;
+	}
+
+	/* ── Vote thinking (opponent's turn) ── */
+	.vote-thinking {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.55rem 0.9rem;
+		border-radius: 0.375rem;
+	}
+	.vote-thinking-label {
+		font-size: 0.78rem;
+		opacity: 0.65;
+	}
+	.thinking-dots {
+		display: flex;
+		gap: 0.25rem;
+		align-items: center;
+	}
+	.dot {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--secondary-color);
+		opacity: 0.5;
+		animation: dot-pulse 1.2s ease-in-out infinite;
+	}
+	.dot:nth-child(2) { animation-delay: 0.2s; }
+	.dot:nth-child(3) { animation-delay: 0.4s; }
+	@keyframes dot-pulse {
+		0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+		40%            { opacity: 0.85; transform: scale(1.15); }
+	}
+
+	.vote-teaser {
+		border-radius: 0.375rem;
+		padding: 0.55rem 0.9rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.2em;
+	}
+	.vote-teaser-channel { opacity: 1; }
+	.vote-teaser-text {
+		opacity: 0.6;
+		font-weight: 400;
+	}
+	.vote-teaser-word {
+		font-style: italic;
+		opacity: 0.9;
+		font-weight: 600;
+	}
+	.vote-teaser-cursor {
+		opacity: 0.7;
+		animation: blink-cursor 0.9s step-end infinite;
+		font-weight: 300;
+	}
+	@keyframes blink-cursor {
+		0%, 100% { opacity: 0.7; }
+		50%       { opacity: 0; }
+	}
+
+	.vote-banner--special {
+		border-color: var(--secondary-color) !important;
+		box-shadow: 0 0 8px 1px color-mix(in srgb, var(--secondary-color) 30%, transparent);
+	}
+	.vote-banner--special .vote-title {
+		color: var(--secondary-color);
+		opacity: 0.85;
+	}
+
+	.dev-vote-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		padding: 0.5rem 0.8rem;
+		border-radius: 0.375rem;
+		background: rgba(255, 200, 0, 0.06);
 	}
 
 	.revert-banner {

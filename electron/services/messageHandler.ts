@@ -332,6 +332,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'WebhooksEnabled', this.storeWebhook.getEnabled());
 		this.sendInitMessage(socketId, 'BingoLobbyState', this.bingoService.getLobby());
 		this.sendInitMessage(socketId, 'BingoState', { session: this.bingoService.getSession() });
+		this.sendInitMessage(socketId, 'BingoVoteState', this.bingoService.getVoteState());
 		this.sendInitMessage(socketId, 'TwitchUsername', this.storeSettings.getTwitchUsername());
 	}
 
