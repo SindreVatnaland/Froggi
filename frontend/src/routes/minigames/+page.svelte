@@ -784,6 +784,7 @@
 						<button class="pill" class:pill--active={!settings.twitchEnabled}
 							on:click={() => { settings = { ...settings, twitchEnabled: false }; twitchChannelStatus = 'idle'; }}>Off</button>
 						<button class="pill" class:pill--active={settings.twitchEnabled}
+							use:tooltip={{ content: 'Let your Twitch chat participate in the bingo — viewers vote to randomize, freeze, or swap tiles during the session.', placement: 'bottom', delay: [400, 0] }}
 							on:click={() => { settings = { ...settings, twitchEnabled: true }; if (settings.twitchChannel) verifyTwitchChannel(settings.twitchChannel); }}>On</button>
 					</div>
 					{#if settings.twitchEnabled}
