@@ -1,5 +1,5 @@
 <script lang="ts" context="module">
-	import { writable } from 'svelte/store';
+	import { writable, derived } from 'svelte/store';
 	import { browser } from '$app/environment';
 	import {
 		AutoUpdaterStatus,
@@ -28,7 +28,7 @@
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import type { WebhookProfile } from '$lib/models/types/webhook';
 	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
-	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState, BingoVoteActionType } from '$lib/models/types/bingo';
+	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState, BingoVoteStates, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSession, IronManLobbyPayload, IronManLeaderboard } from '$lib/models/types/ironman';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -118,7 +118,9 @@
 	export const bingoRevertMessage = writable<string | null>(null);
 	export const bingoShuffleDelays = writable<Record<string, number>>({});
 	export const bingoLeaderboard = writable<BingoLeaderboard>({ currentVersion: '', records: {} });
-	export const bingoVoteState = writable<BingoVoteState | null>(null);
+	export const bingoVoteStates = writable<BingoVoteStates | null>(null);
+	/** Compat: host's vote state (for dashboard/control views where local player = host) */
+	export const bingoVoteState = derived(bingoVoteStates, ($s): BingoVoteState | null => $s?.host ?? null);
 	export const bingoVoteActionNotice = writable<{ action: BingoVoteActionType; channel: string } | null>(null);
 	export const twitchUsername = writable<string>('');
 

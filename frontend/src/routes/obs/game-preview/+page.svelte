@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { bingoSession, bingoLobby, ironManSession, ironManLobby, ironManCurrentChar, currentPlayer, bingoRevertMessage, bingoVoteState } from '$lib/utils/store.svelte';
+	import { bingoSession, bingoLobby, ironManSession, ironManLobby, ironManCurrentChar, currentPlayer, bingoRevertMessage, bingoVoteStates } from '$lib/utils/store.svelte';
 	import { scale, fly, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
@@ -43,18 +43,42 @@
 	$: localWinner = winState?.localWinner ?? false;
 	$: oppWinner = winState?.oppWinner ?? false;
 
-	$: vote = $bingoVoteState;
-	$: voteActive = vote?.active ?? false;
-	$: localVoteActive = voteActive && (vote?.forRole === bingoRole || vote?.forRole === 'all');
-	$: oppVoteActive = voteActive && vote?.forRole !== bingoRole;
-	$: voteTimeLeft = (() => {
-		if (!vote?.active) return null;
-		return Math.max(0, Math.floor((vote.startedAt + vote.durationMs - now) / 1000));
+	// Local vote = the vote whose forRole matches local player's role (or 'all')
+	$: localVote = (() => {
+		if (!$bingoVoteStates) return null;
+		const byRole = $bingoVoteStates[bingoRole as 'host' | 'guest'] ?? null;
+		if (byRole) return byRole;
+		// solo mode: host slot with forRole 'all'
+		const host = $bingoVoteStates.host;
+		if (host?.forRole === 'all') return host;
+		return null;
 	})();
-	$: voteTotalVotes = vote?.options.reduce((s, o) => s + o.votes, 0) ?? 0;
+	$: oppVote = (() => {
+		if (!$bingoVoteStates || bingoRole === 'solo') return null;
+		const oppRole = bingoRole === 'host' ? 'guest' : 'host';
+		return $bingoVoteStates[oppRole] ?? null;
+	})();
+	$: localVoteActive = localVote?.active ?? false;
+	$: oppVoteActive = oppVote?.active ?? false;
+	$: voteTimeLeft = (() => {
+		if (!localVote?.active) return null;
+		return Math.max(0, Math.floor((localVote.startedAt + localVote.durationMs - now) / 1000));
+	})();
+	$: voteTotalVotes = localVote?.options.reduce((s, o) => s + o.votes, 0) ?? 0;
+
+	// Backend serializes result popups — just reflect the current state
+	interface VoteResult { description: string; channelName: string }
+	$: currentVoteResult = (() => {
+		if (!$bingoVoteStates) return null as VoteResult | null;
+		const h = $bingoVoteStates.host;
+		const g = $bingoVoteStates.guest;
+		const r = (h && !h.active && h.result) ? h.result : (g && !g.active && g.result) ? g.result : null;
+		if (!r) return null as VoteResult | null;
+		return { description: r.description, channelName: r.channelName ?? 'Chat' };
+	})();
 
 	const cookingWords = ['cooking', 'vibing', 'plotting', 'scheming', 'rolling', 'heating up', 'stirring', 'brewing', 'deciding', 'gaming', 'locked in', 'calculating', 'big braining', 'in the lab', 'going ham', 'menacing', 'cooked', 'going wild', 'touched', 'activated', 'theory crafting', 'in shambles', 'speedrunning', 'doomscrolling', 'enlightened'];
-	let cookingWordIdx = 0;
+	let cookingWordIdx = Math.floor(Math.random() * cookingWords.length);
 	let cookingText = '';
 	function startCookingTyper() {
 		const word = cookingWords[cookingWordIdx];
@@ -71,6 +95,25 @@
 		type();
 	}
 	startCookingTyper();
+
+	// Independent typer for opponent vote row — starts at a different random word
+	let oppCookingWordIdx = (cookingWordIdx + Math.floor(cookingWords.length / 2) + Math.floor(Math.random() * 4)) % cookingWords.length;
+	let oppCookingText = '';
+	function startOppCookingTyper() {
+		const word = cookingWords[oppCookingWordIdx];
+		let i = 0;
+		function type() {
+			oppCookingText = word.slice(0, i);
+			if (i < word.length) { i++; setTimeout(type, 65); }
+			else setTimeout(eraseWord, 3000);
+		}
+		function eraseWord() {
+			if (i > 0) { oppCookingText = word.slice(0, --i); setTimeout(eraseWord, 40); }
+			else { oppCookingWordIdx = (oppCookingWordIdx + 1) % cookingWords.length; setTimeout(startOppCookingTyper, 150); }
+		}
+		type();
+	}
+	startOppCookingTyper();
 
 	// ── Bingo timer ────────────────────────────────────────────────────────────
 	let now = Date.now();
@@ -338,11 +381,11 @@
 							BINGO!
 						</div>
 					{/if}
-					{#if vote && !vote.active && vote.result && animPhase !== 'exit'}
+					{#if currentVoteResult && animPhase !== 'exit'}
 						<div class="vote-result-overlay" in:fade={{ duration: 300, delay: 400 }} out:fade={{ duration: 200 }}>
 							<div class="vote-result-card" in:fly={{ y: -16, duration: 380, delay: 400, easing: backOut }}>
-								<div class="vote-result-label">Chat voted</div>
-								<div class="vote-result-action">{vote.result.description}</div>
+								<div class="vote-result-label">{currentVoteResult.channelName}'s chat voted</div>
+								<div class="vote-result-action">{currentVoteResult.description}</div>
 							</div>
 						</div>
 					{/if}
@@ -384,7 +427,7 @@
 									<div class="pb-header">
 										<span class="pb-name">{opponentName ?? 'Opponent'}</span>
 										{#if oppVoteActive}
-											<span class="pb-cooking" in:fade={{ duration: 400 }} out:fade={{ duration: 250 }}>chat is {cookingText}…</span>
+											<span class="pb-cooking" in:fade={{ duration: 400 }} out:fade={{ duration: 250 }}>chat is {oppCookingText}…</span>
 										{/if}
 										<span class="pb-score" class:pb-score--winner={oppWinner}>{oppScore}<span class="pb-of">/{scoreTarget}</span></span>
 									</div>
@@ -395,11 +438,11 @@
 							{/if}
 						</div>
 					{/if}
-				{#if localVoteActive && vote && animPhase !== 'exit'}
-					<div class="vote-banner" class:vote-banner--special={vote.special} in:fly={{ y: 8, duration: 300 }} out:fade={{ duration: 180 }}>
-						<div class="vote-title">{vote.question ?? 'Chat Vote'}</div>
+				{#if localVoteActive && localVote && animPhase !== 'exit'}
+					<div class="vote-banner" class:vote-banner--special={localVote.special} in:fly={{ y: 8, duration: 300 }} out:fade={{ duration: 180 }}>
+						<div class="vote-title">{localVote.question ?? 'Chat Vote'}</div>
 						<div class="vote-options">
-							{#each vote.options as opt, i}
+							{#each localVote.options as opt, i}
 								<div class="vote-opt">
 									<div class="vote-opt-top">
 										<span class="vote-key">{i + 1}</span>

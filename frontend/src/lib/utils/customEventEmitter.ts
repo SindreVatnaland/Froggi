@@ -37,7 +37,7 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
-import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteState, BingoVoteActionType, BingoTileReplacedPayload } from '../models/types/bingo';
+import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteStates, BingoVoteActionType, BingoTileReplacedPayload } from '../models/types/bingo';
 import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
 
 export interface MessageEvents {
@@ -183,6 +183,7 @@ export interface MessageEvents {
 	ActionStateHistory: (data: ActionStateHistoryPayload) => void;
 
 	BingoStartLobby: () => void;
+	BingoEndToLobby: () => void;
 	BingoUpdateLobbySettings: (settings: BingoSettings) => void;
 	StartBingo: (session: BingoSession) => void;
 	BingoRestart: (session: BingoSession) => void;
@@ -196,7 +197,7 @@ export interface MessageEvents {
 	BingoSoloWin: (data: BingoSoloWinPayload) => void;
 	GetBingoLeaderboard: () => void;
 	BingoLeaderboard: (data: BingoLeaderboard) => void;
-	BingoVoteState: (state: BingoVoteState | null) => void;
+	BingoVoteState: (state: BingoVoteStates | null) => void;
 	BingoVoteActionExecuted: (data: { action: BingoVoteActionType; channel: string }) => void;
 	BingoDevStartVote: () => void;
 	BingoDevResolveVote: (action: BingoVoteActionType) => void;
@@ -207,7 +208,7 @@ export interface MessageEvents {
 	GetTwitchUsername: () => void;
 	TwitchUsername: (username: string) => void;
 	SaveTwitchUsername: (username: string) => void;
-	TwitchChatMessage: (data: { username: string; text: string }) => void;
+	TwitchChatMessage: (data: { username: string; text: string; channel: string }) => void;
 
 	StartIronMan: (session: IronManSession) => void;
 	IronManStartLobby: (settings: IronManSettings) => void;

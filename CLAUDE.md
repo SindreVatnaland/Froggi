@@ -226,11 +226,19 @@ const variants: { value: MyType; label: string; tip?: string }[] = [...];
 
 No page-level transitions (`in:fade`, `out:fade`, `in:fly`, `out:fly` on `<main>`). Step-navigation animations within a page (e.g. TutorialPages.svelte) are acceptable.
 
+### Discord RPC
+
+`electron/services/discord.ts` — active in all modes (dev included). `updateActivity()` is throttled to 1 call/2s via lodash `throttle`. Bingo presence shows 2 buttons (one per player) with their progress percentage; both link to `FROGGI_URL`. Iron Man presence follows the same pattern.
+
 ### Minigame standards
 
 These conventions apply to **all** minigames (Bingo, Iron Man, and any future additions). Deviating from them creates inconsistency that is hard to fix later.
 
 **All game logic lives in Electron.** Services (`bingoService.ts`, `ironmanService.ts`) own every state transition, timer, win condition, and side-effect. The frontend is display-only — it never drives game state. When a new client connects, the service sends the full current state via `MessageHandler.initData()` so the overlay is always in sync regardless of when it connected.
+
+**Twitch vote system (Bingo).** Both host and guest chats vote simultaneously on separate option sets (host gets options 0-1, guest gets 2-3 from a single shuffled pool). Guest vote starts with a 0–10s random offset. Resolved votes go into `pendingActions`; `processActionQueue()` drives the popup→action sequence: show result popup for 3s → execute action → 1s pause → clear popup → process next. The frontend reflects state directly from `bingoVoteStates` — no client-side queue.
+
+**Ending a Bingo session.** `StopBingo` (full teardown, closes peer) vs `BingoEndToLobby` (soft stop — preserves peer WebSocket, reopens lobby with `opponentConnected: true`). Use `BingoEndToLobby` when the host wants to return to the mini-game selector while keeping the opponent connected for a future game.
 
 **Overlay aspect ratio.** The OBS browser source is square (1:1). The overlay container uses `width: min(100vw, 100vh); height: min(100vw, 100vh)` to stay square across any viewport. All measurements inside use `vmin` units so they scale with the container. Do not use `px` for layout-critical sizes in the overlay.
 

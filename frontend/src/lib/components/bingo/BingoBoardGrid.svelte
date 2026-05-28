@@ -153,7 +153,7 @@
 			class:box--dev={devMode}
 			use:tooltip={{ content: box.description, placement: 'top', delay: [400, 0] }}
 			on:click={(e) => handleClick(e, box.instanceId)}
-			animate:flip={{ duration: 420, delay: $bingoShuffleDelays[box.instanceId] ?? 0, easing: quintOut }}
+			animate:flip={{ duration: 250, easing: quintOut }}
 			in:scale={animateEntry
 				? { delay: i * 35, duration: 220, start: 0.3, easing: backOut }
 				: { duration: 0 }}

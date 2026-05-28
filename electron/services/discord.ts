@@ -11,7 +11,7 @@ import { ElectronPlayersStore } from './store/storePlayers';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { debounce, startCase } from 'lodash';
+import { debounce, throttle, startCase } from 'lodash';
 
 const FROGGI_URL = 'https://sindrevatnaland.github.io/Froggi/';
 
@@ -25,14 +25,12 @@ export class DiscordRpc {
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
-		@inject('Dev') private dev: boolean,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => ElectronPlayersStore)) private storePlayers: ElectronPlayersStore,
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
 	) {
-		if (this.dev) return;
 		this.initDiscordJs();
 	}
 
@@ -149,25 +147,25 @@ export class DiscordRpc {
 	private setBingoActivity(session: BingoSession) {
 		const { board, settings, localName, opponentName, role, startedAt, winState } = session;
 		const wc = winConditionLabel(settings.winCondition);
-		const localCompleted = board.boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		const oppCompleted = board.boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-		const total = board.boxes.length;
+		const scoreTarget = winState?.scoreTarget ?? 1;
+		const localScore = winState?.localScore ?? 0;
+		const oppScore = winState?.oppScore ?? 0;
+		const localPct = Math.round((localScore / scoreTarget) * 100);
+		const oppPct = Math.round((oppScore / scoreTarget) * 100);
 
-		let state: string;
-		if (winState) {
-			state = winState.localWinner ? `${localName} wins!` : `${opponentName ?? 'Opponent'} wins!`;
-		} else if (role === 'solo') {
-			state = `${localCompleted}/${total} tiles · ${settings.difficulty}`;
-		} else {
-			state = `${localName} ${localCompleted} – ${oppCompleted} ${opponentName ?? 'Opponent'}`;
-		}
+		const state = role === 'solo'
+			? `${localPct}% · ${settings.difficulty}`
+			: `${localName}: ${localPct}% · ${opponentName ?? 'Opponent'}: ${oppPct}%`;
+
+		const hasCountdown = settings.timer?.enabled && settings.timer.durationMinutes > 0;
+		const endTs = hasCountdown ? startedAt + settings.timer.durationMinutes * 60 * 1000 : undefined;
 
 		this.activity = {
 			...this.activity,
 			details: `Bingo · ${board.size}×${board.size} · ${wc}`,
 			state: state.slice(0, 128),
-			startTimestamp: startedAt,
-			endTimestamp: undefined,
+			startTimestamp: hasCountdown ? undefined : startedAt,
+			endTimestamp: endTs,
 			largeImageKey: 'menu',
 			largeImageText: 'Bingo',
 			smallImageKey: undefined,
@@ -241,13 +239,34 @@ export class DiscordRpc {
 		this.updateActivity();
 	};
 
-	updateActivity() {
+	updateActivity = throttle(() => {
 		try {
-			this.rpc.setActivity(this.activity);
+			const a = this.activity;
+			// Use request() directly — setActivity() strips the buttons array before sending
+			const payload: Record<string, unknown> = {
+				state: a.state,
+				details: a.details,
+				instance: false,
+			};
+			if (a.startTimestamp || a.endTimestamp) {
+				payload.timestamps = {
+					start: a.startTimestamp ? Number(a.startTimestamp) : undefined,
+					end: a.endTimestamp ? Number(a.endTimestamp) : undefined,
+				};
+			}
+			if (a.largeImageKey || a.largeImageText || a.smallImageKey) {
+				payload.assets = {
+					large_image: a.largeImageKey,
+					large_text: a.largeImageText,
+					small_image: a.smallImageKey,
+				};
+			}
+			if (a.buttons?.length) payload.buttons = a.buttons;
+			(this.rpc as Client & { request: (cmd: string, args: unknown) => unknown }).request('SET_ACTIVITY', { pid: process.pid, activity: payload });
 		} catch (err) {
 			this.log.error(err);
 		}
-	}
+	}, 2000, { leading: true, trailing: true });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -267,6 +286,7 @@ const winConditionLabel = (wc: import('../../frontend/src/lib/models/types/bingo
 	if (wc === 'rowcontrol') return 'Row Control';
 	return `${wc} line${wc > 1 ? 's' : ''}`;
 };
+
 
 const buttonBuilder = (
 	connectCode: string | undefined,

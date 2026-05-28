@@ -246,7 +246,17 @@
 	function stop() {
 		connecting = false;
 		showingRestartSettings = false;
+		confirmingEnd = false;
 		$electronEmitter.emit('StopBingo');
+		selectedGame = null;
+	}
+
+	let confirmingEnd = false;
+
+	function endToLobby() {
+		confirmingEnd = false;
+		showingRestartSettings = false;
+		$electronEmitter.emit('BingoEndToLobby');
 		selectedGame = null;
 	}
 
@@ -510,17 +520,6 @@
 	}
 
 
-	function getRowControlBoxes(boxes: BingoBox[], sz: number, player: 'local' | 'opponent'): Set<number> {
-		const mine = (b: BingoBox) => player === 'local' ? (b.completedBy === 'local' || b.completedBy === 'both') : (b.completedBy === 'opponent' || b.completedBy === 'both');
-		const required = Math.floor(sz / 2) + 1;
-		const controlled = new Set<number>();
-		const check = (line: number[]) => { if (line.filter(i => mine(boxes[i])).length >= required) line.forEach(i => controlled.add(i)); };
-		for (let r = 0; r < sz; r++) check(Array.from({ length: sz }, (_, c) => r * sz + c));
-		for (let c = 0; c < sz; c++) check(Array.from({ length: sz }, (_, r) => r * sz + c));
-		check(Array.from({ length: sz }, (_, i) => i * sz + i));
-		check(Array.from({ length: sz }, (_, i) => i * sz + (sz - 1 - i)));
-		return controlled;
-	}
 
 	function getWinBoxesFiltered(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
 		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter((i) => i >= 0));
@@ -541,10 +540,10 @@
 	}
 
 	$: localWinBoxes = activeWinCondition === 'rowcontrol'
-		? getRowControlBoxes(board.boxes, size, 'local')
+		? new Set<number>()
 		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
 	$: oppWinBoxes = activeWinCondition === 'rowcontrol'
-		? getRowControlBoxes(board.boxes, size, 'opponent')
+		? new Set<number>()
 		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
 	$: localControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'local') : [];
 	$: oppControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'opponent') : [];
@@ -828,12 +827,16 @@
 					<div class="flex gap-2">
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showBingoRules = true)}>Rules</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
-						{#if showingRestartSettings}
+						{#if confirmingEnd}
+							<span class="text-sm opacity-60">End game?</span>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (confirmingEnd = false)}>Cancel</button>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={role === 'solo' ? stop : endToLobby}>Confirm</button>
+						{:else if showingRestartSettings}
 							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (showingRestartSettings = false)}>Cancel</button>
 							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={restart}>Restart</button>
 						{:else}
 							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showingRestartSettings = true)}>New Game</button>
-							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={stop}>End</button>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (confirmingEnd = true)}>End</button>
 						{/if}
 					</div>
 				{:else if inLobby && connMode === 'host'}
@@ -1205,16 +1208,18 @@
 						}}>
 						⚙ Open Simulation
 					</button>
-					<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
-						on:click={() => $electronEmitter.emit('BingoDevStartVote')}>
-						Start Vote
-					</button>
-					{#each devVoteActions as action}
+					{#if settings.twitchEnabled}
 						<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
-							on:click={() => $electronEmitter.emit('BingoDevResolveVote', action.id)}>
-							{action.label}
+							on:click={() => $electronEmitter.emit('BingoDevStartVote')}>
+							Start Vote
 						</button>
-					{/each}
+						{#each devVoteActions as action}
+							<button class="btn text-xs h-7 px-3 border-secondary rounded opacity-50"
+								on:click={() => $electronEmitter.emit('BingoDevResolveVote', action.id)}>
+								{action.label}
+							</button>
+						{/each}
+					{/if}
 				</div>
 			{/if}
 		{/if}

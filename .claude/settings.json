@@ -125,7 +125,11 @@
       "Bash(npm test *)",
       "Bash(grep -n \"shareUrl\\\\|let shareUrl\\\\|\\\\$:.*shareUrl\" /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/minigames/+page.svelte)",
       "Bash(grep -n \"^\\\\s*\\\\$: vote\\\\b\\\\|^\\\\s*let vote\\\\b\\\\|voteActive\\\\|voteSecondsLeft\" /Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/minigames/+page.svelte)",
-      "Bash(npx --prefix frontend svelte-check --tsconfig ./frontend/tsconfig.json)"
+      "Bash(npx --prefix frontend svelte-check --tsconfig ./frontend/tsconfig.json)",
+      "WebSearch",
+      "WebFetch(domain:docs.discord.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.answeroverflow.com)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

@@ -43,7 +43,7 @@
 		bingoRevertMessage,
 		bingoShuffleDelays,
 		bingoLeaderboard,
-		bingoVoteState,
+		bingoVoteStates,
 		bingoVoteActionNotice,
 		twitchUsername,
 		ironManSession,
@@ -411,7 +411,7 @@
 			case 'BingoVoteState':
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['BingoVoteState']>[0];
-					bingoVoteState.set(value ?? null);
+					bingoVoteStates.set(value ?? null);
 				})();
 				break;
 			case 'BingoVoteActionExecuted':
@@ -452,22 +452,32 @@
 					if (!value) return;
 					const session = get(bingoSession);
 					if (session) {
-						const delays: Record<string, number> = {};
-						let step = 0;
-						value.newOrder.forEach((srcIdx, dstIdx) => {
-							if (srcIdx !== dstIdx) {
-								const box = session.board.boxes[srcIdx];
-								if (box) delays[box.instanceId] = step++ * 50;
+						// Decompose permutation into sequential swaps (selection-sort order)
+						const original = session.board.boxes;
+						const working = [...original];
+						const target = value.newOrder.map(i => original[i]);
+						const swaps: [number, number][] = [];
+						for (let i = 0; i < target.length; i++) {
+							if (working[i].instanceId === target[i].instanceId) continue;
+							let j = i + 1;
+							while (j < target.length && working[j].instanceId !== target[i].instanceId) j++;
+							if (j < target.length) {
+								swaps.push([i, j]);
+								[working[i], working[j]] = [working[j], working[i]];
 							}
+						}
+						const STEP_MS = 280;
+						swaps.forEach(([a, b], idx) => {
+							setTimeout(() => {
+								bingoSession.update(s => {
+									if (!s) return s;
+									const boxes = [...s.board.boxes];
+									[boxes[a], boxes[b]] = [boxes[b], boxes[a]];
+									return { ...s, board: { ...s.board, boxes } };
+								});
+							}, idx * STEP_MS);
 						});
-						bingoShuffleDelays.set(delays);
 					}
-					bingoSession.update(s => {
-						if (!s) return s;
-						const old = s.board.boxes;
-						const boxes = value.newOrder.map(i => old[i]);
-						return { ...s, board: { ...s.board, boxes } };
-					});
 				})();
 				break;
 			case 'TwitchUsername':

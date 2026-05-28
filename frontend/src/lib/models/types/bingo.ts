@@ -151,6 +151,8 @@ export interface BingoVoteState {
 	durationMs: number;
 	/** Which role sees the full vote UI; opponent sees a teaser instead */
 	forRole: BingoRole | 'all';
+	/** Which role's Twitch channel this vote belongs to */
+	role?: 'host' | 'guest';
 	/** Custom question shown instead of "Chat Vote" */
 	question?: string;
 	/** Gold styling for rare special events */
@@ -158,7 +160,14 @@ export interface BingoVoteState {
 	result?: {
 		winner: BingoVoteActionType;
 		description: string;
+		/** Display name for "X's chat voted" in the result popup */
+		channelName?: string;
 	};
+}
+
+export interface BingoVoteStates {
+	host: BingoVoteState | null;
+	guest: BingoVoteState | null;
 }
 
 export interface BingoTileReplacedPayload {
