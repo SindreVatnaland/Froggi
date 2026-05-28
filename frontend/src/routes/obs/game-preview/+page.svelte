@@ -3,11 +3,20 @@
 	import { scale, fly, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
+	import { onMount } from 'svelte';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
 	import IronManRosterGrid from '$lib/components/ironman/IronManRosterGrid.svelte';
 	import SlippiAd from '$lib/components/SlippiAd.svelte';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
+
+	let isPopup = false;
+	onMount(() => {
+		isPopup = new URLSearchParams(location.search).get('popup') === '1';
+		if (isPopup) {
+			document.documentElement.style.setProperty('--overlay-bg', '#111');
+		}
+	});
 
 	// ── Active game detection ──────────────────────────────────────────────────
 	// displayBingoBoard persists after session clears so the overlay stays visible
@@ -149,18 +158,36 @@
 	$: imSettings = imSession?.settings;
 	$: imVariant = imSettings?.variant ?? 'standard';
 
-	$: imActiveSlot = (() => {
-		if (!imLocalRoster || (imVariant !== 'full_roster' && imVariant !== 'challenge')) return null;
-		if (imLocalRoster.currentIndex >= imLocalRoster.slots.length) return null;
-		return imLocalRoster.slots[imLocalRoster.currentIndex];
+	$: imCharOrder = imSettings?.charOrder ?? 'fixed';
+	$: imActiveCharId = $ironManCurrentChar.localCharId;
+	$: imDisplaySlot = (() => {
+		if (!imLocalRoster || imWinner) return null;
+		const active = imLocalRoster.slots.find(s => s.characterId === imActiveCharId);
+		if (active) return active;
+		if (imCharOrder === 'free') return null;
+		if (imVariant === 'full_roster' || imVariant === 'challenge') {
+			if (imLocalRoster.currentIndex >= imLocalRoster.slots.length) return null;
+			return imLocalRoster.slots[imLocalRoster.currentIndex];
+		}
+		return imLocalRoster.slots.find(s => !s.depleted) ?? null;
 	})();
+	$: imSelectingChar = !!imLocalRoster && !imWinner && imCharOrder === 'free' && imActiveCharId == null;
+	$: imDisplaySlotLabel = imActiveCharId != null ? 'Playing' : 'Next';
 
-	$: imIconSize = imLocalRoster
-		? `${Math.max(3.5, Math.min(9, 65 / imLocalRoster.slots.length))}vmin`
-		: null;
+	$: imLocalProgress = imLocalRoster
+		? (imVariant !== 'standard' ? imLocalRoster.slots.filter(s => s.completed).length : imLocalRoster.slots.filter(s => s.depleted).length)
+		: 0;
+	$: imLocalTotal = imLocalRoster?.slots.length ?? 0;
+	$: imLocalPct = imLocalTotal > 0 ? Math.min(100, (imLocalProgress / imLocalTotal) * 100) : 0;
+	$: imOppProgress = imOpponentRoster
+		? (imVariant !== 'standard' ? imOpponentRoster.slots.filter(s => s.completed).length : imOpponentRoster.slots.filter(s => s.depleted).length)
+		: 0;
+	$: imOppTotal = imOpponentRoster?.slots.length ?? 0;
+	$: imOppPct = imOppTotal > 0 ? Math.min(100, (imOppProgress / imOppTotal) * 100) : 0;
 </script>
 
-<div class="overlay-root">
+<div class="overlay-root" class:overlay-root--popup={isPopup}>
+<div class="popup-frame">
 
 	{#if !activeGame}
 		<!-- Waiting screen -->
@@ -186,7 +213,7 @@
 
 	{:else if activeGame === 'ironman' && imSession && imLocalRoster}
 		<!-- Iron Man overlay -->
-		<div class="overlay-page overlay-page--game im-page" out:fade={{ duration: 200 }}>
+		<div class="overlay-page im-page" out:fade={{ duration: 200 }}>
 			{#if imWinner}
 				<div class="win-screen" class:win-screen--winner={imWinner === 'local'} in:scale={{ duration: 450, start: 0.75, easing: backOut }}>
 					<div class="win-crown">{imWinner === 'local' ? '🏆' : '💀'}</div>
@@ -196,45 +223,76 @@
 					</div>
 				</div>
 			{:else}
-				<div class="im-rosters">
-					<div class="im-roster-col im-roster-col--local">
-						<p class="im-player-name">{imLocalName}</p>
-						<IronManRosterGrid
-							roster={imLocalRoster}
-							settings={imSession.settings}
-							isLocal={true}
-							variant={imVariant}
-							activeGameCharId={$ironManCurrentChar.localCharId}
-							iconSizeOverride={imIconSize}
-						/>
-					</div>
-					{#if imOpponentRoster && imRole !== 'solo'}
-						<div class="im-divider">VS</div>
-						<div class="im-roster-col im-roster-col--opp">
-							<p class="im-player-name">{imOpponentName}</p>
+				<div class="im-container">
+					<!-- P1 -->
+					<div class="im-player-section">
+						<div class="im-header-row">
+							<span class="im-name-pill">{imLocalName}</span>
+							<span class="im-progress-badge">{imLocalProgress}/{imLocalTotal}</span>
+						</div>
+						<div class="im-roster-clip">
 							<IronManRosterGrid
-								roster={imOpponentRoster}
+								roster={imLocalRoster}
 								settings={imSession.settings}
-								isLocal={false}
-								obscured={imSession.settings.hideOpponent}
+								isLocal={true}
 								variant={imVariant}
-								activeGameCharId={$ironManCurrentChar.oppCharId}
-								iconSizeOverride={imIconSize}
+								activeGameCharId={$ironManCurrentChar.localCharId}
+								iconSizeOverride="6cqmin"
+								cols={8}
+								showActiveMarker={imCharOrder !== 'free'}
 							/>
 						</div>
-					{/if}
-				</div>
-
-				{#if imActiveSlot}
-					<div class="im-next-char" in:fly={{ y: 8, duration: 200 }}>
-						<img
-							src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[imActiveSlot.characterId] ?? imActiveSlot.characterId}.png"
-							alt={IRONMAN_CHAR_NAMES[imActiveSlot.characterId]}
-							class="im-next-icon"
-						/>
-						<span class="im-next-label">Next: {IRONMAN_CHAR_NAMES[imActiveSlot.characterId]}</span>
+						<div class="im-pb">
+							<div class="im-pb-fill im-pb-fill--local" style="width:{imLocalPct}%"></div>
+						</div>
 					</div>
-				{/if}
+
+					{#if imRole !== 'solo' && imOpponentRoster}
+						<div class="im-section-divider"></div>
+						<!-- P2 -->
+						<div class="im-player-section">
+							<div class="im-header-row">
+								<span class="im-name-pill">{imOpponentName}</span>
+								<span class="im-progress-badge">{imOppProgress}/{imOppTotal}</span>
+							</div>
+							<div class="im-roster-clip">
+								<IronManRosterGrid
+									roster={imOpponentRoster}
+									settings={imSession.settings}
+									isLocal={false}
+									obscured={imSession.settings.hideOpponent}
+									variant={imVariant}
+									activeGameCharId={$ironManCurrentChar.oppCharId}
+									iconSizeOverride="6cqmin"
+									cols={8}
+									showActiveMarker={imCharOrder !== 'free'}
+								/>
+							</div>
+							<div class="im-pb">
+								<div class="im-pb-fill im-pb-fill--opp" style="width:{imOppPct}%"></div>
+							</div>
+						</div>
+					{/if}
+
+					<div class="im-bottom">
+						{#if imDisplaySlot}
+							<div class="im-next-char" in:fly={{ y: 8, duration: 200 }}>
+								<img
+									src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[imDisplaySlot.characterId] ?? imDisplaySlot.characterId}.png"
+									alt={IRONMAN_CHAR_NAMES[imDisplaySlot.characterId]}
+									class="im-next-icon"
+								/>
+								<span class="im-next-label">{imDisplaySlotLabel}: {IRONMAN_CHAR_NAMES[imDisplaySlot.characterId]}</span>
+							</div>
+						{:else if imSelectingChar}
+							<div class="im-next-char" in:fly={{ y: 8, duration: 200 }}>
+								<span class="im-next-label">Selecting character…</span>
+							</div>
+						{/if}
+						<!-- Reserved for future chat integration -->
+						<div class="im-chat-reserved"></div>
+					</div>
+				</div>
 			{/if}
 		</div>
 
@@ -293,7 +351,7 @@
 							{timerSecondsLeft === 0 ? "⏱ Time's up!" : `⏱ ${formatTime(timerSecondsLeft)}`}
 						</div>
 					{/if}
-					<div style="width:100%; aspect-ratio:1/1; flex-shrink:0; overflow:visible; --bingo-font-size:2.8vmin; --bingo-char-size:6vmin; --bingo-char-size-lg:8vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-desc-size:1.9vmin; --bingo-gap:3px; --bingo-radius:4px; --bingo-frozen-icon-lg:3.5em; --bingo-frozen-cd-lg:2.2em;">
+					<div style="width:100%; aspect-ratio:1/1; flex-shrink:0; overflow:visible; --bingo-font-size:2.8cqmin; --bingo-char-size:6cqmin; --bingo-char-size-lg:8cqmin; --bingo-sub-size:2.2cqmin; --bingo-badge-size:2cqmin; --bingo-desc-size:1.9cqmin; --bingo-gap:3px; --bingo-radius:4px; --bingo-frozen-icon-lg:3.5em; --bingo-frozen-cd-lg:2.2em;">
 						<BingoBoardGrid
 							boxes={displayBingoBoard?.boxes ?? []}
 							size={bingoSize}
@@ -313,7 +371,7 @@
 								<div class="pb-header">
 									<span class="pb-name">{$bingoSession?.localName || localName}</span>
 									{#if localVoteActive}
-										<span class="pb-cooking">chat is {cookingText}…</span>
+										<span class="pb-cooking" in:fade={{ duration: 400 }} out:fade={{ duration: 250 }}>chat is {cookingText}…</span>
 									{/if}
 									<span class="pb-score" class:pb-score--winner={localWinner}>{localScore}<span class="pb-of">/{scoreTarget}</span></span>
 								</div>
@@ -326,7 +384,7 @@
 									<div class="pb-header">
 										<span class="pb-name">{opponentName ?? 'Opponent'}</span>
 										{#if oppVoteActive}
-											<span class="pb-cooking">chat is {cookingText}…</span>
+											<span class="pb-cooking" in:fade={{ duration: 400 }} out:fade={{ duration: 250 }}>chat is {cookingText}…</span>
 										{/if}
 										<span class="pb-score" class:pb-score--winner={oppWinner}>{oppScore}<span class="pb-of">/{scoreTarget}</span></span>
 									</div>
@@ -364,11 +422,12 @@
 		{/if}
 	{/if}
 
-</div>
+</div><!-- end popup-frame -->
+</div><!-- end overlay-root -->
 
 <style>
 	:global(html), :global(body) {
-		background: transparent !important;
+		background: var(--overlay-bg, transparent) !important;
 		margin: 0 !important;
 		padding: 0 !important;
 		overflow: hidden !important;
@@ -380,6 +439,30 @@
 		position: fixed;
 		inset: 0;
 		overflow: hidden;
+	}
+
+	/* Popup mode: 8:11 aspect-ratio container, centered, fills portrait viewport */
+	.overlay-root--popup {
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		overflow: hidden;
+	}
+
+	.popup-frame {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		container-type: size;
+	}
+
+	.overlay-root--popup .popup-frame {
+		height: 100%;
+		width: auto;
+		aspect-ratio: 8 / 11;
+		max-width: 100%;
+		overflow: hidden;
+		flex-shrink: 0;
 	}
 
 	.overlay-page {
@@ -394,7 +477,7 @@
 
 	.overlay-page--game {
 		justify-content: flex-start;
-		padding-top: 6px;
+		padding-top: 3px;
 	}
 
 	/* ── Waiting ── */
@@ -402,90 +485,140 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1.5vmin;
+		gap: 1.5cqmin;
 		background: rgba(0,0,0,0.7);
-		padding: 3vmin 4vmin;
+		padding: 3cqmin 4cqmin;
 		border-radius: 8px;
 		font-family: sans-serif;
 	}
 
-	.no-session-header { display: flex; align-items: center; gap: 1.5vmin; }
-	.no-session-icon { width: 9vmin; height: 9vmin; object-fit: contain; image-rendering: pixelated; }
-	.no-session-name { font-size: 5vmin; font-weight: 800; color: rgba(255,255,255,0.95); letter-spacing: 0.05em; }
-	.no-session-text { font-size: 3.2vmin; font-weight: 600; color: rgba(255,255,255,0.6); letter-spacing: 0.02em; }
-	.no-session-qr { display: flex; flex-direction: column; align-items: center; gap: 0.6vmin; margin-top: 2vmin; opacity: 0.5; }
-	.no-session-url { font-size: 1.8vmin; color: rgba(255,255,255,0.8); font-family: sans-serif; }
+	.no-session-header { display: flex; align-items: center; gap: 1.5cqmin; }
+	.no-session-icon { width: 9cqmin; height: 9cqmin; object-fit: contain; image-rendering: pixelated; }
+	.no-session-name { font-size: 5cqmin; font-weight: 800; color: rgba(255,255,255,0.95); letter-spacing: 0.05em; }
+	.no-session-text { font-size: 3.2cqmin; font-weight: 600; color: rgba(255,255,255,0.6); letter-spacing: 0.02em; }
+	.no-session-qr { display: flex; flex-direction: column; align-items: center; gap: 0.6cqmin; margin-top: 2cqmin; opacity: 0.5; }
+	.no-session-url { font-size: 1.8cqmin; color: rgba(255,255,255,0.8); font-family: sans-serif; }
 
 	/* ── Iron Man ── */
 	.im-page {
-		flex-direction: column;
-		gap: 2vmin;
-		padding: 2vmin;
-	}
-
-
-	.im-rosters {
-		display: flex;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 3vmin;
-		flex: 1;
-		width: 100%;
-	}
-
-	.im-roster-col {
-		display: flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 1vmin;
-		min-width: 0;
+		justify-content: center;
 	}
 
-	.im-roster-col--local { flex: 55; }
-	.im-roster-col--opp   { flex: 45; }
+	.im-container {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		padding: 2.5cqmin;
+		box-sizing: border-box;
+		overflow: hidden;
+	}
 
-	.im-player-name {
-		font-size: 3vmin;
+	.im-player-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1cqmin;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.im-header-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1cqmin;
+		flex-shrink: 0;
+	}
+
+	.im-name-pill {
+		font-size: 2.8cqmin;
 		font-weight: 700;
 		font-family: sans-serif;
 		color: rgba(255,255,255,0.95);
 		letter-spacing: 0.04em;
-		text-shadow: 0 0 10px rgba(0,0,0,0.98), 0 1px 5px rgba(0,0,0,0.95), 0 0 25px rgba(0,0,0,0.8);
+		background: rgba(0,0,0,0.55);
+		padding: 0.6cqmin 1.8cqmin;
+		border-radius: 4px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		max-width: 100%;
 	}
 
-	.im-divider {
-		font-size: 2.4vmin;
-		color: rgba(255,255,255,0.25);
+	.im-progress-badge {
+		font-size: 2.4cqmin;
+		font-weight: 700;
 		font-family: sans-serif;
-		font-weight: 600;
-		padding-top: 4vmin;
+		font-variant-numeric: tabular-nums;
+		color: rgba(255,255,255,0.5);
 		flex-shrink: 0;
+	}
+
+	.im-roster-clip {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.im-pb {
+		width: 100%;
+		height: 1cqmin;
+		border-radius: 999px;
+		background: rgba(255,255,255,0.12);
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+
+	.im-pb-fill {
+		height: 100%;
+		border-radius: 999px;
+		transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+	}
+
+	.im-pb-fill--local { background: rgba(74, 222, 128, 0.85); }
+	.im-pb-fill--opp   { background: rgba(248, 113, 113, 0.85); }
+
+	.im-section-divider {
+		height: 1px;
+		background: rgba(255,255,255,0.08);
+		margin: 1.5cqmin 0;
+		flex-shrink: 0;
+	}
+
+	.im-bottom {
+		display: flex;
+		flex-direction: column;
+		gap: 1cqmin;
+		flex-shrink: 0;
+		margin-top: 1cqmin;
 	}
 
 	.im-next-char {
 		display: flex;
 		align-items: center;
-		gap: 1.5vmin;
+		gap: 1.5cqmin;
 		background: rgba(0,0,0,0.55);
-		padding: 1.2vmin 2.5vmin;
+		padding: 1.2cqmin 2.5cqmin;
 		border-radius: 6px;
+		align-self: flex-start;
 	}
 
 	.im-next-icon {
-		width: 6vmin;
-		height: 6vmin;
+		width: 6cqmin;
+		height: 6cqmin;
 		object-fit: contain;
 	}
 
 	.im-next-label {
-		font-size: 2.2vmin;
+		font-size: 2.2cqmin;
 		font-weight: 600;
 		font-family: sans-serif;
 		color: rgba(255,255,255,0.8);
+	}
+
+	.im-chat-reserved {
+		height: 6cqmin;
+		flex-shrink: 0;
 	}
 
 	/* ── Froggi ad ── */
@@ -493,48 +626,48 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 2.5vmin;
+		gap: 2.5cqmin;
 		background: rgba(0,0,0,0.9);
-		padding: 4vmin 5vmin;
+		padding: 4cqmin 5cqmin;
 		border-radius: 14px;
 		font-family: sans-serif;
 		border: 2px solid rgba(255,255,255,0.08);
 	}
 
-	.froggi-ad-header { display: flex; align-items: center; gap: 1.5vmin; }
-	.froggi-ad-icon { width: 8vmin; height: 8vmin; object-fit: contain; image-rendering: pixelated; }
-	.froggi-ad-name { font-size: 5.5vmin; font-weight: 800; color: rgba(255,255,255,0.9); letter-spacing: 0.05em; }
+	.froggi-ad-header { display: flex; align-items: center; gap: 1.5cqmin; }
+	.froggi-ad-icon { width: 8cqmin; height: 8cqmin; object-fit: contain; image-rendering: pixelated; }
+	.froggi-ad-name { font-size: 5.5cqmin; font-weight: 800; color: rgba(255,255,255,0.9); letter-spacing: 0.05em; }
 
-	.froggi-ad-qr { display: flex; flex-direction: column; align-items: center; gap: 0.8vmin; opacity: 0.55; }
-	.froggi-ad-url { font-size: 1.8vmin; color: rgba(255,255,255,0.85); }
+	.froggi-ad-qr { display: flex; flex-direction: column; align-items: center; gap: 0.8cqmin; opacity: 0.55; }
+	.froggi-ad-url { font-size: 1.8cqmin; color: rgba(255,255,255,0.85); }
 
 	/* ── Bingo win screen ── */
 	.win-screen {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1.5vmin;
+		gap: 1.5cqmin;
 		background: rgba(0,0,0,0.88);
-		padding: 4vmin 6vmin;
+		padding: 4cqmin 6cqmin;
 		border-radius: 12px;
 		font-family: sans-serif;
 		border: 2px solid rgba(255,255,255,0.12);
 	}
 
 	.win-screen--winner { border-color: rgba(255,215,0,0.4); box-shadow: 0 0 40px rgba(255,215,0,0.15); }
-	.win-crown { font-size: 6vmin; }
-	.win-title { font-size: 10vmin; font-weight: 900; color: #fff; letter-spacing: 0.2em; text-shadow: 0 0 30px rgba(255,255,255,0.6); animation: flash 1s ease-in-out infinite; }
+	.win-crown { font-size: 6cqmin; }
+	.win-title { font-size: 10cqmin; font-weight: 900; color: #fff; letter-spacing: 0.2em; text-shadow: 0 0 30px rgba(255,255,255,0.6); animation: flash 1s ease-in-out infinite; }
 	.win-title--loser { color: rgba(255,255,255,0.55); text-shadow: none; animation: none; }
-	.win-subtitle { font-size: 2.8vmin; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.08em; text-transform: uppercase; }
-	.win-time { font-size: 2vmin; color: rgba(255,255,255,0.5); }
+	.win-subtitle { font-size: 2.8cqmin; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.08em; text-transform: uppercase; }
+	.win-time { font-size: 2cqmin; color: rgba(255,255,255,0.5); }
 
 	/* ── Bingo board ── */
 	.board-wrap {
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		width: min(100vw, 100vh);
+		gap: 2px;
+		width: 100%;
 		z-index: 1;
 	}
 
@@ -544,7 +677,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 12vmin;
+		font-size: 12cqmin;
 		font-weight: 900;
 		font-family: sans-serif;
 		color: rgba(255,255,255,0.15);
@@ -558,13 +691,13 @@
 	.timer {
 		width: 100%;
 		text-align: center;
-		font-size: 3.5vmin;
+		font-size: 3.5cqmin;
 		font-weight: 700;
 		font-family: sans-serif;
 		color: rgba(255,255,255,0.9);
 		background: rgba(0,0,0,0.6);
 		border-radius: 4px;
-		padding: 1vmin 0;
+		padding: 1cqmin 0;
 		letter-spacing: 0.05em;
 		flex-shrink: 0;
 		z-index: 1;
@@ -576,25 +709,25 @@
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 0.8vmin;
-		padding: 1.2vmin 0.5vmin 0.4vmin;
+		gap: 0.8cqmin;
+		padding: 1.2cqmin 0.5cqmin 0.4cqmin;
 		flex-shrink: 0;
 	}
 
 	.pb-player {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3vmin;
+		gap: 0.3cqmin;
 	}
 
 	.pb-header {
 		display: flex;
 		align-items: baseline;
-		gap: 0.8vmin;
+		gap: 0.8cqmin;
 	}
 
 	.pb-name {
-		font-size: 2.4vmin;
+		font-size: 2.8cqmin;
 		font-weight: 700;
 		color: rgba(255,255,255,0.7);
 		letter-spacing: 0.05em;
@@ -607,7 +740,7 @@
 	}
 
 	.pb-cooking {
-		font-size: 2.4vmin;
+		font-size: 2.4cqmin;
 		font-style: italic;
 		color: rgba(255,255,255,0.5);
 		font-family: sans-serif;
@@ -624,7 +757,7 @@
 	}
 
 	.pb-score {
-		font-size: 2.2vmin;
+		font-size: 2.6cqmin;
 		font-weight: 700;
 		font-family: sans-serif;
 		color: rgba(255,255,255,0.75);
@@ -636,14 +769,13 @@
 	.pb-score--winner { color: #4ade80; }
 
 	.pb-of {
-		font-size: 1.2vmin;
-		opacity: 0.45;
-		font-weight: 400;
+		font-size: 2.2cqmin;
+		opacity: 0.55;
 	}
 
 	.pb-track {
 		width: 100%;
-		height: 0.35vmin;
+		height: 0.35cqmin;
 		border-radius: 999px;
 		background: rgba(255,255,255,0.1);
 		overflow: hidden;
@@ -666,10 +798,10 @@
 		background: rgba(0,0,0,0.88);
 		border: 1.5px solid rgba(255,255,255,0.12);
 		border-radius: 8px;
-		padding: 2vmin 7vmin 2vmin 2.5vmin;
+		padding: 1.5cqmin 7cqmin 1.5cqmin 2.5cqmin;
 		display: flex;
 		flex-direction: column;
-		gap: 1.2vmin;
+		gap: 0.8cqmin;
 		flex-shrink: 0;
 		font-family: sans-serif;
 		animation: vote-flash-in 1s ease-out both;
@@ -684,7 +816,7 @@
 	.vote-banner--special { border-color: rgba(255,215,0,0.45); }
 
 	.vote-title {
-		font-size: 4.5vmin;
+		font-size: 4cqmin;
 		font-weight: 800;
 		color: rgba(255,255,255,0.95);
 		letter-spacing: 0.04em;
@@ -694,29 +826,29 @@
 	.vote-options {
 		display: flex;
 		flex-direction: column;
-		gap: 1vmin;
+		gap: 0.7cqmin;
 	}
 
 	.vote-opt {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4vmin;
+		gap: 0.4cqmin;
 	}
 
 	.vote-opt-top {
 		display: flex;
 		align-items: center;
-		gap: 1.2vmin;
+		gap: 1.2cqmin;
 	}
 
 	.vote-key {
-		font-size: 2.8vmin;
+		font-size: 2.8cqmin;
 		font-weight: 800;
 		color: rgba(255,255,255,0.9);
 		background: rgba(255,255,255,0.1);
 		border-radius: 4px;
-		width: 4.5vmin;
-		height: 4.5vmin;
+		width: 4.5cqmin;
+		height: 4.5cqmin;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -724,14 +856,14 @@
 	}
 
 	.vote-label {
-		font-size: 3vmin;
+		font-size: 3cqmin;
 		font-weight: 700;
 		color: rgba(255,255,255,0.85);
 		flex: 1;
 	}
 
 	.vote-pct {
-		font-size: 2.5vmin;
+		font-size: 2.5cqmin;
 		font-weight: 700;
 		color: rgba(255,255,255,0.6);
 		flex-shrink: 0;
@@ -739,7 +871,7 @@
 
 	.vote-bar-track {
 		width: 100%;
-		height: 0.6vmin;
+		height: 0.6cqmin;
 		border-radius: 999px;
 		background: rgba(255,255,255,0.1);
 		overflow: hidden;
@@ -754,9 +886,9 @@
 
 	.vote-timer {
 		position: absolute;
-		top: 1.5vmin;
-		right: 2vmin;
-		font-size: 3.5vmin;
+		top: 1.5cqmin;
+		right: 2cqmin;
+		font-size: 3.5cqmin;
 		font-weight: 800;
 		color: rgba(250, 204, 21, 0.9);
 		font-family: sans-serif;
@@ -773,25 +905,25 @@
 		background: rgba(0,0,0,0.65);
 		z-index: 10;
 		pointer-events: none;
-		padding: 4vmin;
+		padding: 4cqmin;
 	}
 
 	.vote-result-card {
 		background: rgba(10,10,10,0.97);
 		border: 2px solid rgba(250,204,21,0.55);
 		border-radius: 14px;
-		padding: 3.5vmin 6vmin;
+		padding: 3.5cqmin 6cqmin;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1vmin;
+		gap: 1cqmin;
 		text-align: center;
 		font-family: sans-serif;
 		box-shadow: 0 0 40px rgba(250,204,21,0.2);
 	}
 
 	.vote-result-label {
-		font-size: 2.2vmin;
+		font-size: 2.2cqmin;
 		font-weight: 600;
 		color: rgba(250, 204, 21, 0.75);
 		text-transform: uppercase;
@@ -799,7 +931,7 @@
 	}
 
 	.vote-result-action {
-		font-size: 5vmin;
+		font-size: 5cqmin;
 		font-weight: 900;
 		color: #fff;
 		letter-spacing: 0.02em;
@@ -822,18 +954,18 @@
 		background: rgba(10,10,10,0.97);
 		border: 2px solid rgba(220,115,0,0.6);
 		border-radius: 14px;
-		padding: 3vmin 5.5vmin;
+		padding: 3cqmin 5.5cqmin;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.8vmin;
+		gap: 0.8cqmin;
 		font-family: sans-serif;
 		text-align: center;
 	}
 
-	.revert-icon { font-size: 5.5vmin; line-height: 1; margin-bottom: 0.4vmin; }
-	.revert-title { font-size: 4vmin; font-weight: 800; color: rgba(255,255,255,0.95); margin: 0; }
-	.revert-sub { font-size: 2.2vmin; font-weight: 500; color: rgba(255,185,80,0.85); margin: 0; text-transform: uppercase; letter-spacing: 0.06em; }
+	.revert-icon { font-size: 5.5cqmin; line-height: 1; margin-bottom: 0.4cqmin; }
+	.revert-title { font-size: 4cqmin; font-weight: 800; color: rgba(255,255,255,0.95); margin: 0; }
+	.revert-sub { font-size: 2.2cqmin; font-weight: 500; color: rgba(255,185,80,0.85); margin: 0; text-transform: uppercase; letter-spacing: 0.06em; }
 
 	@keyframes flash {
 		0%, 100% { opacity: 1; }

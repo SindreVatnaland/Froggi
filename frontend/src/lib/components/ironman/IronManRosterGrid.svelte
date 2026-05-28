@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
+	import { afterUpdate, onDestroy } from 'svelte';
 	import type { IronManRoster, IronManSettings } from '$lib/models/types/ironman';
 	import { IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 
@@ -16,6 +17,10 @@
 	export let activeGameCharId: number | null = null;
 	/** Override icon size (e.g. "6vmin"). When null, computed from slot count. */
 	export let iconSizeOverride: string | null = null;
+	/** Override grid column count. When set, ignores computed maxCols. */
+	export let cols: number | null = null;
+	/** When false, suppresses the pulsing active-ring at currentIndex (use for free charOrder). */
+	export let showActiveMarker: boolean = true;
 
 	function charIconId(id: number): number {
 		return IRONMAN_CHAR_FALLBACK[id] ?? id;
@@ -29,7 +34,7 @@
 		}
 		// full_roster / challenge
 		if (slot.completed) return 'done';
-		if (index === roster.currentIndex) return 'active';
+		if (showActiveMarker && index === roster.currentIndex) return 'active';
 		if (index > roster.currentIndex && obscured && !isLocal) return 'hidden';
 		return 'pending';
 	}
@@ -48,7 +53,40 @@
 	}
 
 	$: iconPx = iconSizeOverride ?? iconSize(roster.slots.length);
-	$: gridCols = maxCols(roster.slots.length);
+	$: gridCols = cols ?? maxCols(roster.slots.length);
+
+	// Flash animation tracking
+	let flashingSlots = new Set<number>();
+	let flashTypes = new Map<number, 'depleted' | 'done'>();
+	let prevState = new Map<number, { depleted: boolean; completed: boolean }>();
+	let stateInitialized = false;
+	let flashTimers: ReturnType<typeof setTimeout>[] = [];
+
+	$: if (roster && !stateInitialized) {
+		stateInitialized = true;
+		roster.slots.forEach(s => prevState.set(s.characterId, { depleted: s.depleted, completed: s.completed }));
+	}
+
+	afterUpdate(() => {
+		if (!stateInitialized) return;
+		roster.slots.forEach(s => {
+			const prev = prevState.get(s.characterId);
+			if (!prev) { prevState.set(s.characterId, { depleted: s.depleted, completed: s.completed }); return; }
+			const justDepleted = variant === 'standard' && s.depleted && !prev.depleted;
+			const justCompleted = variant !== 'standard' && s.completed && !prev.completed;
+			if (justDepleted || justCompleted) {
+				flashTypes.set(s.characterId, justDepleted ? 'depleted' : 'done');
+				flashingSlots = new Set([...flashingSlots, s.characterId]);
+				const t = setTimeout(() => {
+					flashingSlots = new Set([...flashingSlots].filter(id => id !== s.characterId));
+				}, 900);
+				flashTimers.push(t);
+			}
+			prevState.set(s.characterId, { depleted: s.depleted, completed: s.completed });
+		});
+	});
+
+	onDestroy(() => flashTimers.forEach(clearTimeout));
 </script>
 
 <div class="roster-wrap">
@@ -85,6 +123,9 @@
 					{#if variant === 'standard' && state === 'pending' && slot.stocksRemaining > 0 && slot.stocksRemaining < settings.stocksPerChar}
 						<div class="char-stocks">{slot.stocksRemaining}</div>
 					{/if}
+				{/if}
+				{#if flashingSlots.has(slot.characterId)}
+					<div class="char-flash char-flash--{flashTypes.get(slot.characterId)}"></div>
 				{/if}
 			</div>
 		{/each}
@@ -208,5 +249,27 @@
 		opacity: 0.25;
 		background: rgba(255,255,255,0.05);
 		border-radius: 4px;
+	}
+
+	.char-flash {
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+		pointer-events: none;
+		z-index: 3;
+		animation: char-flash-out 0.85s ease-out forwards;
+	}
+	.char-flash--depleted {
+		background: rgba(248, 113, 113, 0.95);
+		box-shadow: 0 0 14px rgba(248, 113, 113, 0.8);
+	}
+	.char-flash--done {
+		background: rgba(74, 222, 128, 0.95);
+		box-shadow: 0 0 14px rgba(74, 222, 128, 0.8);
+	}
+	@keyframes char-flash-out {
+		0%   { opacity: 1; transform: scale(1.2); }
+		35%  { opacity: 0.8; transform: scale(1.05); }
+		100% { opacity: 0; transform: scale(1); }
 	}
 </style>

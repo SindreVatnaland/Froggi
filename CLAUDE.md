@@ -179,7 +179,8 @@ const variants: { value: MyType; label: string; tip?: string }[] = [...];
 - Local bar: `rgba(96, 165, 250, 0.85)` (blue), opponent: `rgba(52, 211, 153, 0.85)` (green)
 - Winner bar + count turns `#4ade80`
 - Pass `oppScore={null}` for solo mode (renders single bar)
-- Use this for **both** bingo and Iron Man progress — do not write inline score display
+- Use this for the **minigames settings page** (has `border-secondary` which needs theme CSS vars)
+- OBS overlays use their own inline progress bar CSS (vmin units, no theme vars) — see `.im-pb-*` in `obs/game-preview/+page.svelte`
 
 **Character picker grid** (Iron Man setup):
 - `.char-btn`: opacity 0.4, no border, border-radius 6px
@@ -224,6 +225,26 @@ const variants: { value: MyType; label: string; tip?: string }[] = [...];
 #### Page transitions
 
 No page-level transitions (`in:fade`, `out:fade`, `in:fly`, `out:fly` on `<main>`). Step-navigation animations within a page (e.g. TutorialPages.svelte) are acceptable.
+
+### Minigame standards
+
+These conventions apply to **all** minigames (Bingo, Iron Man, and any future additions). Deviating from them creates inconsistency that is hard to fix later.
+
+**All game logic lives in Electron.** Services (`bingoService.ts`, `ironmanService.ts`) own every state transition, timer, win condition, and side-effect. The frontend is display-only — it never drives game state. When a new client connects, the service sends the full current state via `MessageHandler.initData()` so the overlay is always in sync regardless of when it connected.
+
+**Overlay aspect ratio.** The OBS browser source is square (1:1). The overlay container uses `width: min(100vw, 100vh); height: min(100vw, 100vh)` to stay square across any viewport. All measurements inside use `vmin` units so they scale with the container. Do not use `px` for layout-critical sizes in the overlay.
+
+**Layout structure.** Bingo: single centered board that fills the square. Iron Man: stacked P1 section (top) → P2 section (bottom) → next-char/status row → reserved chat area. Each player section = name pill + character grid + progress bar.
+
+**Fixed icon grid.** Iron Man character icons are always `6vmin`, always `8` columns (`iconSizeOverride="6vmin" cols={8}`). Icons do not shrink when the roster is larger — additional rows are added instead. Pass `showActiveMarker={false}` when `charOrder === 'free'` so `currentIndex` does not render a spurious active ring.
+
+**Progress bars.** Each player always has an inline progress bar. Iron Man: for `full_roster`/`challenge` tracks `completed / total`; for `standard` tracks `depleted / total`. Local = green `rgba(74, 222, 128, 0.85)`, opponent = red `rgba(248, 113, 113, 0.85)`. These are inline `.im-pb-*` CSS in the overlay page — do not use `ScoreProgressBar` (it has `border-secondary` which requires theme CSS vars).
+
+**Player name chips.** Name is displayed in a dark pill: `background: rgba(0,0,0,0.55); padding: 0.6vmin 1.8vmin; border-radius: 4px`. No `text-shadow`. The progress count `X/Y` sits right-aligned in the same header row.
+
+**Reserved chat area.** A `div.im-chat-reserved` with `height: 6vmin` is always present at the bottom of the iron man overlay. It is empty today but will be filled when chat integration is added. Do not remove or shrink it.
+
+**Win screen.** Both games use the same `.win-screen` component with trophy/skull emoji, large bold title (`IRON MAN!` / `BINGO!`), and subtitle. This is already in `obs/game-preview/+page.svelte` — do not add a separate win screen to new game overlays; extend this one.
 
 ### Overlay injection
 

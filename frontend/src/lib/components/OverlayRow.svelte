@@ -12,10 +12,19 @@
 	export let popupHeight: number = 600;
 	export let obsWidth: number = 500;
 	export let obsHeight: number = 500;
+	/** When true, pulses the Popup button to attract attention */
+	export let active: boolean = false;
 
 	let showQr = false;
+	let pulseKey = 0;
 
 	$: resolvedQrUrl = qrUrl || url;
+	$: if (active) pulseKey++;
+
+	function popupUrl(u: string) {
+		if (!u) return u;
+		return u + (u.includes('?') ? '&' : '?') + 'popup=1';
+	}
 </script>
 
 {#if url}
@@ -25,10 +34,13 @@
 			<span class="overlay-url">{url}</span>
 		</div>
 		<div class="overlay-row-actions">
-			<button
-				class="btn text-sm h-9 px-4 border-secondary rounded"
-				on:click={() => window.open(url, '_blank', `width=${popupWidth},height=${popupHeight}`)}
-			>Popup</button>
+			{#key pulseKey}
+				<button
+					class="btn text-sm h-9 px-4 border-secondary rounded"
+					class:popup-btn--active={active}
+					on:click={() => window.open(popupUrl(url), '_blank', `width=${popupWidth},height=${popupHeight}`)}
+				>Popup</button>
+			{/key}
 			<ObsIntegration {url} {title} width={obsWidth} height={obsHeight} />
 			<button
 				class="btn text-sm h-9 px-4 border-secondary rounded"
@@ -120,5 +132,15 @@
 		font-size: 0.72rem;
 		opacity: 0.4;
 		margin-top: 0.25rem;
+	}
+
+	@keyframes popup-attract {
+		0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+		70%  { box-shadow: 0 0 0 7px rgba(255,255,255,0); }
+		100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+	}
+
+	.popup-btn--active {
+		animation: popup-attract 1.1s ease-out 3;
 	}
 </style>

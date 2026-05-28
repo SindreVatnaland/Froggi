@@ -287,8 +287,8 @@ export class BingoService {
 					boxes: session.board.boxes.map((box) => ({
 						...box,
 						completedBy: box.completedBy === 'local' ? 'opponent'
-						           : box.completedBy === 'opponent' ? 'local'
-						           : box.completedBy,
+							: box.completedBy === 'opponent' ? 'local'
+								: box.completedBy,
 					})),
 				};
 				session.opponentName = this.lobby.opponentName;
@@ -330,8 +330,8 @@ export class BingoService {
 					boxes: session.board.boxes.map(box => ({
 						...box,
 						completedBy: box.completedBy === 'local' ? 'opponent' as const
-						           : box.completedBy === 'opponent' ? 'local' as const
-						           : box.completedBy,
+							: box.completedBy === 'opponent' ? 'local' as const
+								: box.completedBy,
 					})),
 				};
 				savedPeer.send(JSON.stringify({ type: 'BingoRestart', board: guestBoard, settings: session.settings, playerName: this.localPlayerName }));
@@ -539,7 +539,7 @@ export class BingoService {
 					};
 					this.stopVote();
 					this.clearFrozenTimers();
-		
+
 					this.voteForRole = 'host';
 					this.opponentCompletedBoxes.clear();
 					this.resetSessionAccumulators();
@@ -626,9 +626,9 @@ export class BingoService {
 			boxes: board.boxes.map((box) => ({
 				...box,
 				completedBy: box.completedBy === 'local' ? 'opponent'
-				           : box.completedBy === 'opponent' ? 'local'
-				           : box.completedBy === 'both' ? 'both'
-				           : null,
+					: box.completedBy === 'opponent' ? 'local'
+						: box.completedBy === 'both' ? 'both'
+							: null,
 			})),
 		};
 		this.peerSocket.send(JSON.stringify({ type: 'BingoSync', board: guestBoard }));
@@ -1044,14 +1044,14 @@ export class BingoService {
 					break;
 				case 'kill_fsmash': next = this.sessionKillsByMove.get('fsmash') ?? 0; break;
 				case 'kill_usmash': next = this.sessionKillsByMove.get('usmash') ?? 0; break;
-				case 'kill_nair':   next = this.sessionKillsByMove.get('nair') ?? 0; break;
-				case 'kill_fair':   next = this.sessionKillsByMove.get('fair') ?? 0; break;
-				case 'kill_bair':   next = this.sessionKillsByMove.get('bair') ?? 0; break;
-				case 'kill_uair':   next = this.sessionKillsByMove.get('uair') ?? 0; break;
-				case 'kill_dair':   next = this.sessionKillsByMove.get('dair') ?? 0; break;
+				case 'kill_nair': next = this.sessionKillsByMove.get('nair') ?? 0; break;
+				case 'kill_fair': next = this.sessionKillsByMove.get('fair') ?? 0; break;
+				case 'kill_bair': next = this.sessionKillsByMove.get('bair') ?? 0; break;
+				case 'kill_uair': next = this.sessionKillsByMove.get('uair') ?? 0; break;
+				case 'kill_dair': next = this.sessionKillsByMove.get('dair') ?? 0; break;
 				case 'kill_neutral_b': next = this.sessionKillsByMove.get('neutral_b') ?? 0; break;
-				case 'kill_side_b':    next = this.sessionKillsByMove.get('side_b') ?? 0; break;
-				case 'kill_up_b':      next = this.sessionKillsByMove.get('up_b') ?? 0; break;
+				case 'kill_side_b': next = this.sessionKillsByMove.get('side_b') ?? 0; break;
+				case 'kill_up_b': next = this.sessionKillsByMove.get('up_b') ?? 0; break;
 				case 'kill_throw':
 					next = (this.sessionKillsByMove.get('throw') ?? 0) >= 1 ? 1 : 0;
 					break;
@@ -1072,10 +1072,10 @@ export class BingoService {
 					break;
 				}
 				case 'all_blast_zones_game': {
-					const hasLeft  = (this.gameBlastZoneKills.get('left')  ?? 0) > 0;
+					const hasLeft = (this.gameBlastZoneKills.get('left') ?? 0) > 0;
 					const hasRight = (this.gameBlastZoneKills.get('right') ?? 0) > 0;
-					const hasDown  = (this.gameBlastZoneKills.get('down')  ?? 0) > 0;
-					const hasUp    = (this.gameBlastZoneKills.get('star')  ?? 0) > 0
+					const hasDown = (this.gameBlastZoneKills.get('down') ?? 0) > 0;
+					const hasUp = (this.gameBlastZoneKills.get('star') ?? 0) > 0
 						|| (this.gameBlastZoneKills.get('screen_ko') ?? 0) > 0;
 					next = [hasLeft, hasRight, hasDown, hasUp].filter(Boolean).length;
 					break;
@@ -1360,7 +1360,7 @@ export class BingoService {
 		const isSolo = this.session.role === 'solo';
 
 		const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
-		const oppFilter   = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
+		const oppFilter = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
 
 		const getLineWinIndices = (filter: (b: BingoBox) => boolean): number[] => {
 			const done = new Set(boxes.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
@@ -1436,41 +1436,41 @@ export class BingoService {
 			scoreTarget = Math.floor(total / 2) + 1;
 			scoreUnit = 'tiles';
 			localScore = boxes.filter(localFilter).length;
-			oppScore   = boxes.filter(oppFilter).length;
+			oppScore = boxes.filter(oppFilter).length;
 			localWinner = localScore >= scoreTarget;
-			oppWinner   = oppScore >= scoreTarget;
+			oppWinner = oppScore >= scoreTarget;
 			localWinBoxIndices = localWinner ? boxes.map((_, i) => i).filter(i => localFilter(boxes[i])) : [];
-			oppWinBoxIndices   = oppWinner   ? boxes.map((_, i) => i).filter(i => oppFilter(boxes[i]))   : [];
+			oppWinBoxIndices = oppWinner ? boxes.map((_, i) => i).filter(i => oppFilter(boxes[i])) : [];
 		} else if (wc === 'full') {
 			const total = boxes.length;
 			scoreTarget = total;
 			scoreUnit = 'tiles';
 			localScore = boxes.filter(localFilter).length;
-			oppScore   = boxes.filter(oppFilter).length;
+			oppScore = boxes.filter(oppFilter).length;
 			const allDone = boxes.every(b => b.completed);
 			localWinner = allDone && localScore >= oppScore;
-			oppWinner   = allDone && oppScore > localScore;
+			oppWinner = allDone && oppScore > localScore;
 			localWinBoxIndices = localWinner ? boxes.map((_, i) => i) : [];
-			oppWinBoxIndices   = oppWinner   ? boxes.map((_, i) => i) : [];
+			oppWinBoxIndices = oppWinner ? boxes.map((_, i) => i) : [];
 		} else if (wc === 'rowcontrol') {
 			scoreTarget = 3;
 			scoreUnit = 'lines';
 			localScore = countControlled(localFilter);
-			oppScore   = countControlled(oppFilter);
+			oppScore = countControlled(oppFilter);
 			localWinner = localScore >= 3;
-			oppWinner   = oppScore >= 3;
+			oppWinner = oppScore >= 3;
 			localWinBoxIndices = [];
-			oppWinBoxIndices   = [];
+			oppWinBoxIndices = [];
 		} else {
 			const n = wc as number;
 			scoreTarget = n;
 			scoreUnit = 'lines';
 			localScore = countLines(localFilter);
-			oppScore   = countLines(oppFilter);
+			oppScore = countLines(oppFilter);
 			localWinner = localScore >= n;
-			oppWinner   = oppScore >= n;
+			oppWinner = oppScore >= n;
 			localWinBoxIndices = getLineWinIndices(localFilter);
-			oppWinBoxIndices   = getLineWinIndices(oppFilter);
+			oppWinBoxIndices = getLineWinIndices(oppFilter);
 		}
 
 		return {
@@ -1505,7 +1505,7 @@ export class BingoService {
 			const required = Math.floor(size / 2) + 1;
 			const locked = new Set<number>();
 			const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
-			const oppFilter   = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
+			const oppFilter = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
 			const check = (line: number[], filter: (b: BingoBox) => boolean) => {
 				if (line.filter(i => filter(boxes[i])).length >= required) line.forEach(i => locked.add(i));
 			};
@@ -1559,10 +1559,15 @@ export class BingoService {
 	private startVote() {
 		if (!this.session) return;
 		const options: BingoVoteState['options'] = [];
-		if (this.canRandomize()) options.push({ id: 'randomize_opponent_tile', label: 'Randomize', description: 'Replace some uncompleted tiles with new challenges', votes: 0 });
-		if (this.canFreeze())    options.push({ id: 'freeze_tile',             label: 'Freeze',    description: 'Freeze some uncompleted tiles so they cannot be completed', votes: 0 });
-		if (this.canSwap())      options.push({ id: 'swap_tiles',              label: 'Swap',      description: "Move an opponent tile to a new position on the board", votes: 0 });
-		if (this.canShuffle())   options.push({ id: 'shuffle_untouched',       label: 'Shuffle',   description: 'Shuffle some uncompleted tiles into new positions', votes: 0 });
+		if (this.canRandomize()) options.push({ id: 'randomize_opponent_tile', label: 'Randomize', description: 'Reroll some uncompleted tiles', votes: 0 });
+		if (this.canFreeze()) {
+			const locked = this.getLockedBoxIndices();
+			const freezeEligible = this.session.board.boxes.filter((b, i) => !b.frozen && !b.completed && !locked.has(i));
+			const freezeCount = Math.max(1, Math.min(5, Math.floor(freezeEligible.length * 0.20)));
+			options.push({ id: 'freeze_tile', label: 'Freeze', description: `Freeze ${freezeCount} tile${freezeCount !== 1 ? 's' : ''} for 2 min`, votes: 0 });
+		}
+		if (this.canSwap()) options.push({ id: 'swap_tiles', label: 'Swap', description: "Move an opponent tile to a new position on the board", votes: 0 });
+		if (this.canShuffle()) options.push({ id: 'shuffle_untouched', label: 'Shuffle', description: 'Shuffle uncompleted tiles', votes: 0 });
 		// Pick 2 at random so the choice is meaningful
 		if (options.length > 2) {
 			for (let i = options.length - 1; i > 0; i--) {
@@ -1630,7 +1635,7 @@ export class BingoService {
 			else if (winner.id === 'shuffle_untouched') this.executeShuffle();
 			this.messageHandler.sendMessage('BingoVoteActionExecuted', { action: winner.id, channel: this.session.settings.twitchChannel });
 			if (this.session.settings.twitchEnabled) this.scheduleNextVote();
-		}, 7000);
+		}, 5500);
 	}
 
 	private executeRandomize(): string {

@@ -30,6 +30,86 @@
 		selectedGame = game;
 	}
 
+	// ── Global connection state ────────────────────────────────────────────
+	let connMode: 'idle' | 'host' | 'guest' = 'idle';
+	let guestPersistUrl = '';
+	let waitingForHostLobby = false;
+	let isPollingForHost = false;
+	let hostPollTimer: ReturnType<typeof setInterval> | null = null;
+	let showJoinView = false;
+
+	function enterHostMode() {
+		connMode = 'host';
+		showJoinView = false;
+	}
+
+	function leaveHostMode() {
+		if (inLobby || isActive) { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
+		if (imInLobby || imIsActive) { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		connMode = 'idle';
+		selectedGame = null;
+	}
+
+	function hostBackFromGame() {
+		if (selectedGame === 'bingo') { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
+		else if (selectedGame === 'ironman') { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		selectedGame = null;
+	}
+
+	function hostSelectBingo() {
+		if (imInLobby || imIsActive) { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		selectedGame = 'bingo';
+		enterLobby();
+	}
+
+	function hostSelectIronMan() {
+		if (inLobby || isActive) { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
+		selectedGame = 'ironman';
+		imHostLobby();
+	}
+
+	function disconnectGuest() {
+		stopGuestPolling();
+		connecting = false;
+		imConnecting = false;
+		$electronEmitter.emit('StopBingo');
+		$electronEmitter.emit('StopIronMan');
+		connMode = 'idle';
+		guestPersistUrl = '';
+		waitingForHostLobby = false;
+		selectedGame = null;
+	}
+
+	function startGuestPolling(url: string) {
+		if (isPollingForHost) return;
+		isPollingForHost = true;
+		hostPollTimer = setInterval(async () => {
+			try {
+				const r = await fetch(url + '/lobby-info', { headers: { 'ngrok-skip-browser-warning': 'true' } });
+				if (!r.ok) return;
+				const { game } = await r.json() as { game: 'bingo' | 'ironman' | null };
+				if (game === 'bingo') {
+					stopGuestPolling();
+					waitingForHostLobby = false;
+					selectedGame = 'bingo';
+					guestUrl = url;
+					joinAsGuest();
+				} else if (game === 'ironman') {
+					stopGuestPolling();
+					waitingForHostLobby = false;
+					selectedGame = 'ironman';
+					imGuestUrl = url;
+					imJoinGuest();
+				}
+			} catch { /* network error — retry next tick */ }
+		}, 2000);
+	}
+
+	function stopGuestPolling() {
+		if (hostPollTimer) { clearInterval(hostPollTimer); hostPollTimer = null; }
+		isPollingForHost = false;
+	}
+
 	// Unified join flow
 	let joinHash = '';
 	let joinConnecting = false;
@@ -53,17 +133,24 @@
 			const { game } = await res.json() as { game: 'bingo' | 'ironman' | null };
 			console.log('[Froggi] Join lobby-info response:', { game });
 			if (game === 'bingo') {
+				connMode = 'guest';
+				guestPersistUrl = baseUrl;
 				selectGame('bingo');
-				mode = 'guest';
 				guestUrl = baseUrl;
 				joinAsGuest();
 			} else if (game === 'ironman') {
+				connMode = 'guest';
+				guestPersistUrl = baseUrl;
 				selectGame('ironman');
-				imMode = 'guest';
 				imGuestUrl = baseUrl;
 				imJoinGuest();
 			} else {
-				joinError = 'No active lobby found. Make sure the host has opened a lobby.';
+				// No lobby open yet — connect and wait for host to pick a game
+				connMode = 'guest';
+				guestPersistUrl = baseUrl;
+				joinConnecting = false;
+				showJoinView = false;
+				startGuestPolling(baseUrl);
 			}
 		} catch (err) {
 			console.warn('[Froggi] Join failed:', err, '— decoded url:', baseUrl!);
@@ -75,10 +162,7 @@
 	// Bingo
 	const difficulties: BingoDifficulty[] = ['easy', 'medium', 'hard'];
 	const boardSizes: (3 | 4 | 5)[] = [3, 4, 5];
-	const modes: { value: Mode; label: string }[] = [
-		{ value: 'solo', label: 'Solo' },
-		{ value: 'host', label: 'Host' },
-	];
+	// modes array removed — mode is derived from connMode
 	const winConditions: { value: BingoWinCondition; label: string; tip: string }[] = [
 		{ value: 1, label: '1', tip: 'First to complete 1 line (row, column, or diagonal)' },
 		{ value: 2, label: '2', tip: 'First to complete 2 lines' },
@@ -98,6 +182,7 @@
 	];
 
 	let mode: Mode = 'solo';
+	$: mode = (connMode === 'guest' ? 'guest' : connMode === 'host' ? 'host' : 'solo') as Mode;
 	let guestUrl = '';
 	let connecting = false;
 
@@ -187,6 +272,16 @@
 	$: if ($bingoSession?.role === 'guest') connecting = false;
 	$: if (!$bingoSession && !$bingoLobby) { connecting = false; showingRestartSettings = false; }
 
+	// Guest auto-reconnect: when lobby/session clears, start polling for next game
+	$: if (connMode === 'guest' && guestPersistUrl
+			&& !$bingoLobby && !$bingoSession
+			&& !$ironManLobby && !$ironManSession
+			&& !joinConnecting && !isPollingForHost) {
+		waitingForHostLobby = true;
+		selectedGame = null;
+		startGuestPolling(guestPersistUrl);
+	}
+
 	$: inLobby = !!$bingoLobby && !$bingoSession;
 	$: session = $bingoSession;
 	$: board = session?.board ?? previewBoard;
@@ -214,7 +309,7 @@
 	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 	$: if (session?.startedAt) now = Date.now();
-	$: if (isActive) {
+	$: if (isActive && !hasWon) {
 		if (!timerInterval) timerInterval = setInterval(() => (now = Date.now()), 1000);
 	} else {
 		if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
@@ -235,10 +330,10 @@
 		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 	}
 
-	$: localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
 	$: shareUrl = $remoteAccess?.ngrok ?? '';
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
-	$: qrOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : localOverlayUrl;
+	$: _localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
+	$: localOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : _localOverlayUrl;
 
 	// Win ad (SlippiAd after 10s)
 	let showWinAd = false;
@@ -266,6 +361,10 @@
 	// Leaderboard popup
 	let showLeaderboard = false;
 	let showImLeaderboard = false;
+
+	// Rules popup
+	let showBingoRules = false;
+	let showImRules = false;
 
 	function rulesetKey(boardSize: number, winCondition: unknown, difficulty: string): string {
 		return `${boardSize}_${winCondition}_${difficulty}`;
@@ -324,9 +423,15 @@
 		return Math.max(0, Math.ceil((v.durationMs - (Date.now() - v.startedAt)) / 1000));
 	}
 	let voteTick = 0;
-	$: if (voteActive) {
-		const iv = setInterval(() => voteTick++, 1000);
-		setTimeout(() => clearInterval(iv), (vote?.durationMs ?? 30000) + 1000);
+	let _voteTickInterval: ReturnType<typeof setInterval> | null = null;
+	$: {
+		if (voteActive && !_voteTickInterval) {
+			_voteTickInterval = setInterval(() => voteTick++, 1000);
+		} else if (!voteActive && _voteTickInterval) {
+			clearInterval(_voteTickInterval);
+			_voteTickInterval = null;
+			voteTick = 0;
+		}
 	}
 	$: voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
 	$: if (voteTick) voteSecondsLeft = vote ? voteTimeLeft(vote) : 0;
@@ -486,6 +591,8 @@
 		{ value: 'full_roster', label: 'Full Roster', tip: 'Win with each character to complete it.\nFirst to finish your entire roster wins.' },
 		{ value: 'challenge', label: 'Challenge', tip: 'Solo: beat every character without a single loss.\nAny loss resets all progress. Fastest time recorded.' },
 	];
+	$: imAvailableVariants = connMode === 'idle' ? imVariants.filter(v => v.value !== 'standard') : imVariants;
+	$: if (connMode === 'idle' && imSettings.variant === 'standard') imSettings = { ...imSettings, variant: 'full_roster' };
 	const imOrderOptions: { value: IronManSettings['charOrder']; label: string; tip: string }[] = [
 		{ value: 'free', label: 'Free', tip: 'Play any remaining character each game.\nThe active character updates when a game starts.' },
 		{ value: 'fixed', label: 'Fixed', tip: 'Play in the exact order you set.\nThe next character is shown before each game.' },
@@ -503,10 +610,7 @@
 	// Melee CSS rows: row1=9, row2=10, row3=7
 	const imCharRows: [number, number][] = [[0, 9], [9, 19], [19, 26]];
 	let imMode: Mode = 'solo';
-	const imModes: { value: Mode; label: string }[] = [
-		{ value: 'solo', label: 'Solo' },
-		{ value: 'host', label: 'Host' },
-	];
+	$: imMode = (connMode === 'guest' ? 'guest' : connMode === 'host' ? 'host' : 'solo') as Mode;
 	let imSelectedChars: number[] = [];
 	let imGuestUrl = '';
 	let imConnecting = false;
@@ -673,12 +777,9 @@
 	$: if (imInLobby && imMode === 'host') $electronEmitter.emit('IronManUpdateLobbySettings', imSettings);
 	$: if (imMode === 'guest' && $ironManLobby?.settings) imSettings = $ironManLobby.settings;
 
-	$: imLocalOverlayUrl = $urls?.local
-		? $urls.local.replace(/\/$/, '') + '/obs/game-preview'
-		: '';
-	$: imQrOverlayUrl = tailscaleBase
+	$: imLocalOverlayUrl = tailscaleBase
 		? tailscaleBase.replace(/\/$/, '') + '/obs/game-preview'
-		: imLocalOverlayUrl;
+		: ($urls?.local ? $urls.local.replace(/\/$/, '') + '/obs/game-preview' : '');
 	$: shareCode = (() => {
 		if (!shareUrl) return '';
 		const version = $froggiSettings?.version ?? 'froggi';
@@ -695,10 +796,12 @@
 			<div>
 				<div class="flex items-center gap-2">
 					{#if selectedGame && !isActive && !imIsActive}
-						<button class="back-btn" on:click={() => { selectedGame = null;  }}>Change Game</button>
+						<button class="back-btn" on:click={connMode === 'idle' ? () => (selectedGame = null) : hostBackFromGame}>← Back</button>
+					{:else if connMode !== 'idle' && !selectedGame && !isActive && !imIsActive}
+						<button class="back-btn" on:click={connMode === 'host' ? leaveHostMode : disconnectGuest}>← Disconnect</button>
 					{/if}
 					<h1 class="font-bold text-3xl">
-						{#if selectedGame === 'bingo'}Bingo{:else if selectedGame === 'ironman'}Iron Man{:else}Minigames{/if}
+						{#if selectedGame === 'bingo'}Bingo{:else if selectedGame === 'ironman'}Iron Man{:else if connMode === 'host'}Hosting{:else if connMode === 'guest'}Connected{:else}Minigames{/if}
 					</h1>
 				</div>
 				{#if selectedGame === 'bingo' && isActive}
@@ -723,6 +826,7 @@
 			{#if selectedGame === 'bingo'}
 				{#if isActive}
 					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showBingoRules = true)}>Rules</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
 						{#if showingRestartSettings}
 							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={() => (showingRestartSettings = false)}>Cancel</button>
@@ -732,95 +836,127 @@
 							<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={stop}>End</button>
 						{/if}
 					</div>
-				{:else if inLobby && mode === 'host'}
+				{:else if inLobby && connMode === 'host'}
 					<div class="flex gap-2">
-						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Cancel</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" on:click={start} disabled={!$bingoLobby?.opponentConnected}>Start</button>
 					</div>
-				{:else if inLobby && mode === 'guest'}
-					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={stop}>Leave</button>
-				{:else}
+				{:else if inLobby && connMode === 'guest'}
+					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={disconnectGuest}>Leave</button>
+				{:else if connMode === 'idle'}
 					<div class="flex gap-2">
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showBingoRules = true)}>Rules</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showLeaderboard = true)}>Best Times</button>
-						{#if mode === 'host'}
-							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={enterLobby}>Host</button>
-						{:else}
-							<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={startSolo}>Start</button>
-						{/if}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={startSolo}>Start</button>
 					</div>
 				{/if}
 			{:else if selectedGame === 'ironman'}
 				<div class="flex gap-2">
 					{#if imIsActive}
 						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={imStop}>End</button>
-					{:else if imInLobby}
-						{#if $ironManLobby?.opponentConnected && imMode !== 'guest'}
-							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('host')}>Start Iron Man</button>
-						{:else if imMode === 'guest' && !imIsSharedRandom}
-							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('guest')}>Start Guest</button>
+					{:else if imInLobby && connMode === 'host'}
+						{#if $ironManLobby?.opponentConnected}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('host')}>Start</button>
 						{/if}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={imStop}>Cancel</button>
-					{:else if imMode === 'solo'}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('solo')}>Start Solo</button>
-					{:else if imMode === 'host'}
-						<button class="btn text-sm h-9 px-4 border-secondary rounded" on:click={imHostLobby}>Open Lobby</button>
-					{/if}
-					{#if imMode === 'solo'}
+					{:else if imInLobby && connMode === 'guest'}
+						{#if !imIsSharedRandom}
+							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('guest')}>Ready</button>
+						{/if}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={disconnectGuest}>Leave</button>
+					{:else if connMode === 'idle'}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('solo')}>Start</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showImLeaderboard = true)}>Best Times</button>
 					{/if}
+					<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showImRules = true)}>Rules</button>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Game selector (inline, no modal) -->
+		<!-- Game selector -->
 		{#if !selectedGame}
-			<div class="game-grid">
-				<button class="game-card border-secondary" on:click={() => selectGame('bingo')}>
-					<span class="game-card-title">Bingo</span>
-					<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
-				</button>
-				<div class="game-card game-card--soon border-secondary">
-					<span class="game-card-title">Races</span>
-					<span class="game-card-badge">Coming soon</span>
-				</div>
-				<button class="game-card border-secondary" on:click={() => selectGame('ironman')}>
-					<span class="game-card-title">Iron Man</span>
-					<span class="game-card-desc">Play through a roster of characters — standard crew battle or race to complete all.</span>
-				</button>
-			</div>
-			<div class="join-section border-secondary">
-				<p class="selector-subtitle">Join a game</p>
-				<div class="join-row">
-					<input
-						class="url-input border-secondary background-primary-color text-secondary-color join-input"
-						placeholder="Paste share code or URL…"
-						bind:value={joinHash}
-						on:keydown={(e) => e.key === 'Enter' && joinGame()}
-					/>
-					<button class="btn text-sm h-9 px-4 border-secondary rounded" disabled={joinConnecting || !joinHash.trim()} on:click={joinGame}>
-						{joinConnecting ? 'Joining…' : 'Join'}
+			{#if connMode === 'idle'}
+				<!-- Solo: game cards + Host/Join actions -->
+				<div class="game-grid">
+					<button class="game-card border-secondary" on:click={() => selectGame('bingo')}>
+						<span class="game-card-title">Bingo</span>
+						<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
+					</button>
+					<div class="game-card game-card--soon border-secondary">
+						<span class="game-card-title">Races</span>
+						<span class="game-card-badge">Coming soon</span>
+					</div>
+					<button class="game-card border-secondary" on:click={() => selectGame('ironman')}>
+						<span class="game-card-title">Iron Man</span>
+						<span class="game-card-desc">Play through a roster of characters — standard crew battle or race to complete all.</span>
 					</button>
 				</div>
-				{#if joinError}
-					<p class="join-error">{joinError}</p>
+				<div class="conn-separator"><span class="conn-separator-label">play with a friend</span></div>
+				{#if showJoinView}
+					<div class="join-section border-secondary">
+						<div class="flex items-center gap-3">
+							<button class="back-btn" on:click={() => (showJoinView = false)}>← Back</button>
+							<p class="selector-subtitle">Join a game</p>
+						</div>
+						<div class="join-row">
+							<input
+								class="url-input border-secondary background-primary-color text-secondary-color join-input"
+								placeholder="Paste share code or URL…"
+								bind:value={joinHash}
+								on:keydown={(e) => e.key === 'Enter' && joinGame()}
+							/>
+							<button class="btn text-sm h-9 px-4 border-secondary rounded" disabled={joinConnecting || !joinHash.trim()} on:click={joinGame}>
+								{joinConnecting ? 'Joining…' : 'Join'}
+							</button>
+						</div>
+						{#if joinError}
+							<p class="join-error">{joinError}</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="conn-card-grid">
+						<button class="game-card border-secondary" on:click={enterHostMode}>
+							<span class="game-card-title">Host</span>
+							<span class="game-card-desc">Generate a share code and invite a friend to your session.</span>
+						</button>
+						<button class="game-card border-secondary" on:click={() => (showJoinView = true)}>
+							<span class="game-card-title">Join</span>
+							<span class="game-card-desc">Paste a share code to join a friend's session.</span>
+						</button>
+					</div>
 				{/if}
-			</div>
+
+			{:else if connMode === 'host'}
+				<!-- Host: share code + game cards -->
+				<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
+				<p class="conn-hint">Share the code with a friend, then pick a game below.</p>
+				<div class="game-grid">
+					<button class="game-card border-secondary" on:click={hostSelectBingo}>
+						<span class="game-card-title">Bingo</span>
+						<span class="game-card-desc">Complete challenges in unranked play and race to be the first to get a bingo.</span>
+					</button>
+					<div class="game-card game-card--soon border-secondary">
+						<span class="game-card-title">Races</span>
+						<span class="game-card-badge">Coming soon</span>
+					</div>
+					<button class="game-card border-secondary" on:click={hostSelectIronMan}>
+						<span class="game-card-title">Iron Man</span>
+						<span class="game-card-desc">Play through a roster of characters — standard crew battle or race to complete all.</span>
+					</button>
+				</div>
+
+			{:else if connMode === 'guest'}
+				<!-- Guest: waiting for host to select a game -->
+				<div class="conn-status-row border-secondary">
+					<span class="conn-status-dot">●</span>
+					<span class="text-sm">Connected — waiting for host to select a game…</span>
+					<button class="btn text-sm h-8 px-3 border-secondary rounded opacity-50 ml-auto" on:click={disconnectGuest}>Disconnect</button>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Bingo: settings (idle + lobby + restart) -->
 		{#if selectedGame === 'bingo' && (!isActive && (mode !== 'guest' || inLobby) || showingRestartSettings)}
 			<div class="settings-row border-secondary" class:settings-row--readonly={mode === 'guest' && inLobby && !showingRestartSettings}>
-				{#if !(mode === 'guest' && inLobby) || showingRestartSettings}
-				<div class="settings-group">
-					<span class="settings-label">Mode</span>
-					<div class="pill-group">
-						{#each modes as { value: m, label }}
-							<button class="pill" class:pill--active={mode === m} on:click={() => (mode = m)}>{label}</button>
-						{/each}
-					</div>
-				</div>
-				{/if}
-				<div class="settings-group">
+					<div class="settings-group">
 					<span class="settings-label">Size</span>
 					<div class="pill-group">
 						{#each boardSizes as s}
@@ -872,7 +1008,7 @@
 					{/if}
 				</div>
 				{/if}
-				{#if mode === 'host' && !(mode === 'guest' && inLobby)}
+				{#if mode === 'host'}
 				<div class="settings-group twitch-group">
 					<span class="settings-label">Twitch</span>
 					<div class="pill-group">
@@ -945,18 +1081,18 @@
 		{/if}
 
 		<!-- Bingo: host share code -->
-		{#if selectedGame === 'bingo' && ((isActive && role === 'host') || (!isActive && mode === 'host') || (inLobby && mode === 'host'))}
+		{#if selectedGame === 'bingo' && !isActive && connMode === 'host'}
 			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
 		{/if}
 
 		<!-- Bingo: OBS / device overlay row -->
 		{#if selectedGame === 'bingo' && localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
+			<OverlayRow url={localOverlayUrl} qrUrl={localOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} active={isActive} />
 		{/if}
 
 		<!-- Bingo: guest waiting — OBS options + localhost URL -->
 		{#if selectedGame === 'bingo' && inLobby && mode === 'guest' && localOverlayUrl}
-			<OverlayRow url={localOverlayUrl} qrUrl={qrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
+			<OverlayRow url={localOverlayUrl} qrUrl={localOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} active={isActive} />
 			{#if localUrlForCopy}
 				<div class="local-url-row border-secondary">
 					<span class="settings-label">Localhost URL</span>
@@ -1026,8 +1162,9 @@
 						{/each}
 					</div>
 				</div>
-			{:else if vote && voteActive && !isMyVote}
-				<div class="vote-teaser border-secondary" in:fly={{ y: -20, duration: 280 }} out:fly={{ y: -16, duration: 200 }}>
+			{/if}
+			{#if selectedGame === 'bingo' && isActive && vote && voteActive && !isMyVote}
+				<div class="vote-teaser border-secondary" in:fly={{ y: 10, duration: 300 }} out:fly={{ y: -10, duration: 220 }}>
 					<span class="vote-teaser-channel">{session?.settings.twitchChannel ?? 'Opponent'}</span>
 					<span class="vote-teaser-text"> chat is <span class="vote-teaser-word">{teaserDisplayed}</span><span class="vote-teaser-cursor">|</span></span>
 				</div>
@@ -1094,19 +1231,11 @@
 		<!-- Iron Man: settings strip (always visible when not active) -->
 		{#if selectedGame === 'ironman' && !imIsActive}
 			<div class="settings-row border-secondary" class:settings-row--readonly={imMode === 'guest' && imInLobby}>
-				<div class="settings-group">
-					<span class="settings-label">Mode</span>
-					<div class="pill-group">
-						{#each imModes as m}
-							<button class="pill" class:pill--active={imMode === m.value} on:click={() => imMode = m.value}>{m.label}</button>
-						{/each}
-					</div>
-				</div>
 				{#if imMode !== 'guest' || imInLobby}
 					<div class="settings-group">
 						<span class="settings-label">Variant</span>
 						<div class="pill-group">
-							{#each imVariants as { value, label, tip }}
+							{#each imAvailableVariants as { value, label, tip }}
 								<button
 									class="pill"
 									class:pill--active={imSettings.variant === value}
@@ -1190,18 +1319,18 @@
 		{/if}
 
 		<!-- Iron Man: host share code (before char picker) -->
-		{#if selectedGame === 'ironman' && (imMode === 'host' || imInLobby) && !imIsActive}
+		{#if selectedGame === 'ironman' && connMode === 'host' && !imIsActive}
 			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
 		{/if}
 
 		<!-- Iron Man: OBS / device overlay — under rules -->
 		{#if selectedGame === 'ironman' && imLocalOverlayUrl && imMode !== 'guest'}
-			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imLocalOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} active={imIsActive} />
 		{/if}
 
 		<!-- Iron Man: guest waiting — OBS options + localhost URL -->
 		{#if selectedGame === 'ironman' && imInLobby && imMode === 'guest' && imLocalOverlayUrl}
-			<OverlayRow url={imLocalOverlayUrl} qrUrl={imQrOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} />
+			<OverlayRow url={imLocalOverlayUrl} qrUrl={imLocalOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} active={imIsActive} />
 			{#if localUrlForCopy}
 				<div class="local-url-row border-secondary">
 					<span class="settings-label">Localhost URL</span>
@@ -1272,7 +1401,6 @@
 			<div class="dash-card border-secondary flex flex-col gap-4">
 				{#if imMode === 'guest' && imIsSharedRandom}
 					<p class="text-sm opacity-50">Waiting for host to start — your roster will be selected automatically…</p>
-					<SlippiAd compact />
 				{:else if $ironManLobby?.opponentConnected}
 					<span class="text-green-400 text-sm font-semibold" in:fly={{ y: -8, duration: 150 }}>● {$ironManLobby.opponentName ?? 'Guest'} connected</span>
 					{#if imSettings.charSelection !== 'random' && imSettings.rosterSize < 26}
@@ -1296,7 +1424,6 @@
 					{/if}
 				{:else}
 					<p class="text-sm opacity-50">Waiting for opponent to connect…</p>
-					<SlippiAd compact />
 				{/if}
 			</div>
 		{/if}
@@ -1469,6 +1596,97 @@
 	</div>
 {/if}
 
+<!-- Bingo rules popup -->
+{#if showBingoRules}
+	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+	<div class="selector-backdrop" on:click={() => (showBingoRules = false)}>
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="leaderboard-modal rules-modal background-primary-color border-secondary" on:click|stopPropagation in:fly={{ y: 20, duration: 180 }}>
+			<div class="leaderboard-header">
+				<p class="selector-title">Bingo — How to play</p>
+				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showBingoRules = false)}>✕</button>
+			</div>
+			<div class="leaderboard-body rules-body">
+				<div class="rules-section">
+					<p class="rules-heading">Goal</p>
+					<p class="rules-text">Each player gets a randomized board of Melee challenges. Complete challenges during unranked games. Score lines and reach the target to win.</p>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Completing a tile</p>
+					<p class="rules-text">A tile is completed when you perform the described action during a game — e.g. "Play as Fox", "Win with a back aerial", "Taunt". Tiles auto-complete when your game ends and the action was performed.</p>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Win conditions</p>
+					<div class="rules-list">
+						<div class="rules-entry"><span class="rules-key">1–5 lines</span><span class="rules-val">First to complete N lines (rows, columns, diagonals) wins.</span></div>
+						<div class="rules-entry"><span class="rules-key">Full Board</span><span class="rules-val">Complete every tile on the board.</span></div>
+						<div class="rules-entry"><span class="rules-key">Lockout</span><span class="rules-val">Each tile can only be claimed by one player. First to hold the majority of tiles wins.</span></div>
+						<div class="rules-entry"><span class="rules-key">Row Control</span><span class="rules-val">Control a line by holding the majority of its tiles. First to control 3 lines wins. Contest your opponent's lines to block them.</span></div>
+					</div>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Difficulty</p>
+					<div class="rules-list">
+						<div class="rules-entry"><span class="rules-key">Easy</span><span class="rules-val">Common actions — play characters, basic moves, win conditions.</span></div>
+						<div class="rules-entry"><span class="rules-key">Medium</span><span class="rules-val">Specific moves, multi-stock games, stage interactions.</span></div>
+						<div class="rules-entry"><span class="rules-key">Hard</span><span class="rules-val">Technical feats, rare conditions, precise situations.</span></div>
+					</div>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Twitch integration</p>
+					<p class="rules-text">When enabled, your Twitch chat votes every few minutes to shuffle, freeze, randomize, or swap tiles on the board — affecting both players.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Iron Man rules popup -->
+{#if showImRules}
+	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+	<div class="selector-backdrop" on:click={() => (showImRules = false)}>
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="leaderboard-modal rules-modal background-primary-color border-secondary" on:click|stopPropagation in:fly={{ y: 20, duration: 180 }}>
+			<div class="leaderboard-header">
+				<p class="selector-title">Iron Man — How to play</p>
+				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showImRules = false)}>✕</button>
+			</div>
+			<div class="leaderboard-body rules-body">
+				<div class="rules-section">
+					<p class="rules-heading">Goal</p>
+					<p class="rules-text">Play through a roster of characters in unranked games. How you progress and what winning means depends on the variant.</p>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Variants</p>
+					<div class="rules-list">
+						<div class="rules-entry"><span class="rules-key">Standard</span><span class="rules-val">Crew battle. Lose a game and that character is depleted. The last player with characters remaining wins.</span></div>
+						<div class="rules-entry"><span class="rules-key">Full Roster</span><span class="rules-val">Win with each character to complete it. First to complete their entire roster wins.</span></div>
+						<div class="rules-entry"><span class="rules-key">Challenge</span><span class="rules-val">Solo only. Complete every character without a single loss. Any loss resets all progress — fastest run is recorded on the leaderboard.</span></div>
+					</div>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Character order</p>
+					<div class="rules-list">
+						<div class="rules-entry"><span class="rules-key">Free</span><span class="rules-val">Pick any remaining character before each game. The overlay updates when a game starts.</span></div>
+						<div class="rules-entry"><span class="rules-key">Fixed</span><span class="rules-val">Play in the exact order you set up. The next character is shown on the overlay before each game.</span></div>
+						<div class="rules-entry"><span class="rules-key">Random</span><span class="rules-val">Order is randomised at the start of the session. The next character is shown before each game.</span></div>
+					</div>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Roster size</p>
+					<p class="rules-text">Choose how many characters are in your roster (5–26). "All" uses all 26 Melee characters. Smaller rosters are faster to complete.</p>
+				</div>
+				<div class="rules-section">
+					<p class="rules-heading">Characters</p>
+					<div class="rules-list">
+						<div class="rules-entry"><span class="rules-key">Pick</span><span class="rules-val">Manually choose which characters to include before starting.</span></div>
+						<div class="rules-entry"><span class="rules-key">Random</span><span class="rules-val">Characters are drawn randomly at session start. In host mode, choose whether both players get the same roster or independent ones.</span></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	main {
@@ -1555,6 +1773,53 @@
 		max-height: 80vh;
 		overflow: hidden;
 	}
+
+	.rules-modal { max-width: 520px; }
+
+	.rules-body { gap: 1.4rem; }
+
+	.rules-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.rules-heading {
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		opacity: 0.45;
+		margin: 0;
+	}
+
+	.rules-text {
+		font-size: 0.82rem;
+		opacity: 0.75;
+		line-height: 1.55;
+		margin: 0;
+	}
+
+	.rules-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.rules-entry {
+		display: flex;
+		gap: 0.6rem;
+		font-size: 0.82rem;
+		line-height: 1.4;
+	}
+
+	.rules-key {
+		font-weight: 600;
+		flex-shrink: 0;
+		width: 6.5rem;
+		opacity: 0.9;
+	}
+
+	.rules-val { opacity: 0.65; }
 
 	.leaderboard-header {
 		display: flex;
@@ -1687,6 +1952,53 @@
 		text-transform: uppercase;
 		letter-spacing: 0.07em;
 		opacity: 0.7;
+	}
+
+	.conn-card-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.75rem;
+	}
+
+	.conn-separator {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.conn-separator::before,
+	.conn-separator::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: color-mix(in srgb, var(--secondary-color) 20%, transparent);
+	}
+
+	.conn-separator-label {
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.35;
+		white-space: nowrap;
+	}
+
+	.conn-status-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem 1.1rem;
+		border-radius: 0.375rem;
+	}
+
+	.conn-status-dot {
+		color: #4ade80;
+		font-size: 0.7rem;
+	}
+
+	.conn-hint {
+		font-size: 0.75rem;
+		opacity: 0.45;
+		margin: -0.5rem 0 0;
 	}
 
 	.join-section {

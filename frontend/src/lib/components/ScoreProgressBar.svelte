@@ -18,21 +18,24 @@
 	<div class="spb-row" class:spb-row--winner={localWinner}>
 		<span class="spb-name">{localName}</span>
 		<div class="spb-track">
-			<div class="spb-fill spb-fill--local" style="width:{pct(localScore)}%"></div>
+			<div class="spb-fill spb-fill--local" style="width:{pct(localScore)}%" />
 		</div>
-		<span class="spb-count">{localScore}<span class="spb-of">/{target}</span></span>
+		<span class="spb-count">
+			{localScore}
+			<span class="spb-of">/{target}</span>
+		</span>
 	</div>
 	{#if oppScore !== null}
 		<div class="spb-row" class:spb-row--winner={oppWinner}>
 			<span class="spb-name">{oppName}</span>
 			<div class="spb-track">
-				<div class="spb-fill spb-fill--opp" style="width:{pct(oppScore)}%"></div>
+				<div class="spb-fill spb-fill--opp" style="width:{pct(oppScore)}%" />
 			</div>
-			<span class="spb-count">{oppScore}<span class="spb-of">/{target}</span></span>
+			<span class="spb-count">
+				{oppScore}
+				<span class="spb-of">/{target}</span>
+			</span>
 		</div>
-	{/if}
-	{#if unit}
-		<span class="spb-unit">{unit}</span>
 	{/if}
 </div>
 

@@ -621,6 +621,14 @@ export class IronManService {
 		this.messageHandler.sendMessage('IronManCurrentChar', { localCharId: null, oppCharId: null });
 	}
 
+	public getSession(): IronManSession | null {
+		return this.session;
+	}
+
+	public getLobby(): IronManLobbyPayload | null {
+		return this.lobby;
+	}
+
 	private emitState() {
 		this.messageHandler.sendMessage('IronManState', { session: this.session });
 	}

@@ -35,6 +35,7 @@ import { ElectronWebhookStore } from './store/storeWebhook';
 import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 import { BingoService } from './bingoService';
+import { IronManService } from './ironmanService';
 
 @singleton()
 export class MessageHandler {
@@ -76,6 +77,7 @@ export class MessageHandler {
 		@inject(delay(() => NgrokService)) private ngrokService: NgrokService,
 		@inject(delay(() => ElectronWebhookStore)) private storeWebhook: ElectronWebhookStore,
 		@inject(delay(() => BingoService)) private bingoService: BingoService,
+		@inject(delay(() => IronManService)) private ironManService: IronManService,
 	) {
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
@@ -265,12 +267,14 @@ export class MessageHandler {
 	}
 
 	private sendElectronMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
-		this.mainWindow.webContents.send(
-			'message',
-			JSON.stringify({
-				[topic]: payload,
-			}),
-		);
+		try {
+			this.mainWindow.webContents.send(
+				'message',
+				JSON.stringify({
+					[topic]: payload,
+				}),
+			);
+		} catch { /* renderer frame disposed */ }
 	}
 
 	sendInitMessage<J extends keyof MessageEvents>(
@@ -333,6 +337,8 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'BingoLobbyState', this.bingoService.getLobby());
 		this.sendInitMessage(socketId, 'BingoState', { session: this.bingoService.getSession() });
 		this.sendInitMessage(socketId, 'BingoVoteState', this.bingoService.getVoteState());
+		this.sendInitMessage(socketId, 'IronManLobbyState', this.ironManService.getLobby());
+		this.sendInitMessage(socketId, 'IronManState', { session: this.ironManService.getSession() });
 		this.sendInitMessage(socketId, 'TwitchUsername', this.storeSettings.getTwitchUsername());
 	}
 
