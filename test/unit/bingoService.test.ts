@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { BingoService } from '../../electron/services/bingoService';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { getMoveCategory } from '../../frontend/src/lib/models/constants/moveCategories';
-import type { BingoBox, BingoChallengeId, BingoSession } from '../../frontend/src/lib/models/types/bingo';
+import type { BingoTile, BingoChallengeId, BingoSession } from '../../frontend/src/lib/models/types/bingo';
 
 const MY_IDX = 0;
 const OPP_IDX = 1;
@@ -79,9 +79,9 @@ describe('BingoService', () => {
 
 	// ── Test helpers ─────────────────────────────────────────────────────────
 
-	function makeBox(challengeId: BingoChallengeId, overrides: Partial<BingoBox> = {}): BingoBox {
+	function makeTile(challengeId: BingoChallengeId, overrides: Partial<BingoTile> = {}): BingoTile {
 		return {
-			instanceId: 'box-1',
+			instanceId: 'tile-1',
 			challengeId,
 			label: 'test',
 			description: 'test',
@@ -95,9 +95,9 @@ describe('BingoService', () => {
 		};
 	}
 
-	function startSession(boxes: BingoBox[]) {
+	function startSession(tiles: BingoTile[]) {
 		const session: BingoSession = {
-			board: { id: 'board-1', size: 3, boxes, difficulty: 'medium', createdAt: Date.now() },
+			board: { id: 'board-1', size: 3, tiles, difficulty: 'medium', createdAt: Date.now() },
 			settings: {
 				mode: 'solo', boardSize: 3, difficulty: 'medium', winCondition: 1,
 				lines: { rows: true, columns: true, diagonals: true },
@@ -244,7 +244,7 @@ describe('BingoService', () => {
 			['kill_side_b',    19] as [BingoChallengeId, number],
 			['kill_up_b',      20] as [BingoChallengeId, number],
 		])('%s: kill with move ID %i completes the challenge', (challengeId, moveId) => {
-			startSession([makeBox(challengeId)]);
+			startSession([makeTile(challengeId)]);
 			setupGame();
 			emitKill(moveId);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
@@ -256,7 +256,7 @@ describe('BingoService', () => {
 			[55, 'Up Throw'],
 			[56, 'Down Throw'],
 		] as [number, string][])('kill_throw: %s (ID %i) completes the challenge', (moveId) => {
-			startSession([makeBox('kill_throw')]);
+			startSession([makeTile('kill_throw')]);
 			setupGame();
 			emitKill(moveId);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
@@ -264,28 +264,28 @@ describe('BingoService', () => {
 
 		// Regression tests: wrong move should NOT trigger the challenge
 		it('nair (13) does NOT complete kill_fsmash', () => {
-			startSession([makeBox('kill_fsmash')]);
+			startSession([makeTile('kill_fsmash')]);
 			setupGame();
 			emitKill(13);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('ftilt (7) does NOT complete kill_fsmash', () => {
-			startSession([makeBox('kill_fsmash')]);
+			startSession([makeTile('kill_fsmash')]);
 			setupGame();
 			emitKill(7);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('fsmash (10) does NOT complete kill_nair', () => {
-			startSession([makeBox('kill_nair')]);
+			startSession([makeTile('kill_nair')]);
 			setupGame();
 			emitKill(10);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('opponent SD (lastHitBy != me) does NOT count as my kill', () => {
-			startSession([makeBox('kill_nair')]);
+			startSession([makeTile('kill_nair')]);
 			setupGame();
 			// Opponent self-destructs: lastHitBy is their own index
 			localEmitter.emit('GameFrame', frame(1, 13, 3));
@@ -297,56 +297,56 @@ describe('BingoService', () => {
 	// ── Death directions ──────────────────────────────────────────────────────
 	describe('death directions', () => {
 		it('star_ko: action state 4 (DEAD_UP_STAR) completes star_ko', () => {
-			startSession([makeBox('star_ko')]);
+			startSession([makeTile('star_ko')]);
 			setupGame();
 			emitKill(0, 4);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('star_ko: action state 5 (DEAD_UP_STAR_ICE) also completes star_ko', () => {
-			startSession([makeBox('star_ko')]);
+			startSession([makeTile('star_ko')]);
 			setupGame();
 			emitKill(0, 5);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('screen_ko: action state 6 (DEAD_UP_FALL) completes screen_ko', () => {
-			startSession([makeBox('screen_ko')]);
+			startSession([makeTile('screen_ko')]);
 			setupGame();
 			emitKill(0, 6);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('screen_ko: action state 7 also completes screen_ko', () => {
-			startSession([makeBox('screen_ko')]);
+			startSession([makeTile('screen_ko')]);
 			setupGame();
 			emitKill(0, 7);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('star_ko state (4) does NOT complete screen_ko', () => {
-			startSession([makeBox('screen_ko')]);
+			startSession([makeTile('screen_ko')]);
 			setupGame();
 			emitKill(0, 4);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('screen_ko state (6) does NOT complete star_ko', () => {
-			startSession([makeBox('star_ko')]);
+			startSession([makeTile('star_ko')]);
 			setupGame();
 			emitKill(0, 6);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('spike: action state 0 (DEAD_DOWN) completes spike_meteor_total', () => {
-			startSession([makeBox('spike_meteor_total')]);
+			startSession([makeTile('spike_meteor_total')]);
 			setupGame();
 			emitKill(0, 0);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('blast_zone_direction left: state 1 completes left challenge', () => {
-			startSession([makeBox('blast_zone_direction', {
+			startSession([makeTile('blast_zone_direction', {
 				params: { difficulty: 'medium', target: 1, direction: 'left' },
 			})]);
 			setupGame();
@@ -355,7 +355,7 @@ describe('BingoService', () => {
 		});
 
 		it('blast_zone_direction right: state 2 completes right challenge', () => {
-			startSession([makeBox('blast_zone_direction', {
+			startSession([makeTile('blast_zone_direction', {
 				params: { difficulty: 'medium', target: 1, direction: 'right' },
 			})]);
 			setupGame();
@@ -364,7 +364,7 @@ describe('BingoService', () => {
 		});
 
 		it('blast_zone_direction right (state 2) does NOT complete left challenge', () => {
-			startSession([makeBox('blast_zone_direction', {
+			startSession([makeTile('blast_zone_direction', {
 				params: { difficulty: 'medium', target: 1, direction: 'left' },
 			})]);
 			setupGame();
@@ -409,8 +409,8 @@ describe('BingoService', () => {
 	// ── Tile ownership ────────────────────────────────────────────────────────
 	describe('tile ownership', () => {
 		it('dev local→opponent→local: stays both, not stolen back', () => {
-			const box = makeBox('win_games_total', { instanceId: 'b1', target: 1, hasProgress: true });
-			startSession([box]);
+			const tile = makeTile('win_games_total', { instanceId: 'b1', target: 1, hasProgress: true });
+			startSession([tile]);
 
 			// P1 completes via dev
 			clientEmitter.emit('BingoDevSimulate', 'b1', 'local');
@@ -435,8 +435,8 @@ describe('BingoService', () => {
 		});
 
 		it('dev simulate cannot complete a frozen tile', () => {
-			const box = makeBox('win_games_total', { instanceId: 'b2', target: 1, frozen: true });
-			startSession([box]);
+			const tile = makeTile('win_games_total', { instanceId: 'b2', target: 1, frozen: true });
+			startSession([tile]);
 
 			clientEmitter.emit('BingoDevSimulate', 'b2', 'local');
 
@@ -445,10 +445,10 @@ describe('BingoService', () => {
 		});
 
 		it('real game: progress skipped on frozen tile', () => {
-			const box = makeBox('win_games_total', {
+			const tile = makeTile('win_games_total', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true, frozen: true,
 			});
-			startSession([box]);
+			startSession([tile]);
 			setupGame();
 			emitGame(true);
 			// frozen → skipped
@@ -460,7 +460,7 @@ describe('BingoService', () => {
 	// ── Win-based challenges ──────────────────────────────────────────────────
 	describe('win-based challenges', () => {
 		it('win_in_a_row: progress increments to 1 after first win', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 3, params: { difficulty: 'medium', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true);
@@ -469,7 +469,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_in_a_row: progress increments to 2 after second consecutive win', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 3, params: { difficulty: 'medium', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true);
@@ -479,7 +479,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_in_a_row: two consecutive wins completes target=2', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true);
@@ -488,7 +488,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_in_a_row: quitting (LRAS) resets streak even if player was ahead', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true);   // streak = 1
@@ -498,7 +498,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_in_a_row: streak resets on loss', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true);
@@ -508,7 +508,7 @@ describe('BingoService', () => {
 		});
 
 		it('four_stock_opponent: winning with 4 stocks remaining completes challenge', () => {
-			startSession([makeBox('four_stock_opponent')]);
+			startSession([makeTile('four_stock_opponent')]);
 			setupGame();
 			localEmitter.emit('PostGameStats', {
 				postGameStats: { overall: [{ playerIndex: MY_IDX, totalDamage: 0 }], stocks: [], actionCounts: [] },
@@ -527,7 +527,7 @@ describe('BingoService', () => {
 		});
 
 		it('four_stock_opponent: winning with 3 stocks does NOT complete challenge', () => {
-			startSession([makeBox('four_stock_opponent')]);
+			startSession([makeTile('four_stock_opponent')]);
 			setupGame();
 			emitGame(true); // 3 stocks remaining (default in emitGame)
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
@@ -539,7 +539,7 @@ describe('BingoService', () => {
 		// 90 seconds = 5400 frames (frame 0 = game start)
 
 		it('winning with last frame 5000 (~83s) completes challenge', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(5000, 0, 2));
 			emitGame(true);
@@ -547,7 +547,7 @@ describe('BingoService', () => {
 		});
 
 		it('winning with last frame 5399 (just under 90s) completes challenge', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(5399, 0, 2));
 			emitGame(true);
@@ -555,7 +555,7 @@ describe('BingoService', () => {
 		});
 
 		it('winning with last frame 5400 (exactly 90s) does NOT complete challenge', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(5400, 0, 2));
 			emitGame(true);
@@ -563,7 +563,7 @@ describe('BingoService', () => {
 		});
 
 		it('winning with last frame 6000 (~100s) does NOT complete challenge', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(6000, 0, 2));
 			emitGame(true);
@@ -571,7 +571,7 @@ describe('BingoService', () => {
 		});
 
 		it('losing a fast game does NOT complete challenge', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(3000, 0, 2));
 			emitGame(false);
@@ -579,7 +579,7 @@ describe('BingoService', () => {
 		});
 
 		it('pre-game frames (negative frame numbers) are not counted as duration', () => {
-			startSession([makeBox('win_under_90s')]);
+			startSession([makeTile('win_under_90s')]);
 			setupGame();
 			// Only pre-game frames emitted — duration stays 0
 			localEmitter.emit('GameFrame', frame(-100, 0, 4));
@@ -592,7 +592,7 @@ describe('BingoService', () => {
 
 	// ── spike_diverse_moves ───────────────────────────────────────────────────
 	describe('spike_diverse_moves', () => {
-		const box3 = () => makeBox('spike_diverse_moves', {
+		const tile3 = () => makeTile('spike_diverse_moves', {
 			target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 		});
 
@@ -603,7 +603,7 @@ describe('BingoService', () => {
 		}
 
 		it('3 spike kills with 3 different moves completes target=3', () => {
-			startSession([box3()]);
+			startSession([tile3()]);
 			setupGame(); emitSpikeKill(17); // dair
 			setupGame(); emitSpikeKill(21); // down_b
 			setupGame(); emitSpikeKill(20); // up_b
@@ -611,7 +611,7 @@ describe('BingoService', () => {
 		});
 
 		it('3 spike kills with the SAME move does NOT complete target=3', () => {
-			startSession([box3()]);
+			startSession([tile3()]);
 			setupGame(); emitSpikeKill(17);
 			setupGame(); emitSpikeKill(17);
 			setupGame(); emitSpikeKill(17);
@@ -619,14 +619,14 @@ describe('BingoService', () => {
 		});
 
 		it('2 different spike moves does NOT complete target=3', () => {
-			startSession([box3()]);
+			startSession([tile3()]);
 			setupGame(); emitSpikeKill(17); // dair
 			setupGame(); emitSpikeKill(21); // down_b
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('spike kill where opponent self-destructs (lastHitBy != me) does NOT count', () => {
-			startSession([box3()]);
+			startSession([tile3()]);
 			setupGame();
 			localEmitter.emit('GameFrame', frame(1, 17, 3));
 			localEmitter.emit('GameFrame', frame(2, 17, 2, { oppActionState: 0, lastHitBy: OPP_IDX }));
@@ -634,7 +634,7 @@ describe('BingoService', () => {
 		});
 
 		it('non-spike kill (blast zone) with dair does NOT count toward diverse spike moves', () => {
-			startSession([box3()]);
+			startSession([tile3()]);
 			setupGame();
 			// dair kill but sent left (blast zone), not down
 			localEmitter.emit('GameFrame', frame(1, 17, 3));
@@ -645,7 +645,7 @@ describe('BingoService', () => {
 
 	// ── kill_per_stock_diverse ────────────────────────────────────────────────
 	describe('kill_per_stock_diverse', () => {
-		const box4 = () => makeBox('kill_per_stock_diverse', {
+		const tile4 = () => makeTile('kill_per_stock_diverse', {
 			target: 4, params: { difficulty: 'hard', target: 4 }, hasProgress: true,
 		});
 
@@ -656,7 +656,7 @@ describe('BingoService', () => {
 		}
 
 		it('winning with 4 kills using 4 different moves completes target=4', () => {
-			startSession([box4()]);
+			startSession([tile4()]);
 			setupGame();
 			emitKillWith(10, 3); // fsmash
 			emitKillWith(14, 2); // fair
@@ -667,7 +667,7 @@ describe('BingoService', () => {
 		});
 
 		it('winning with 4 kills but only 3 different moves does NOT complete target=4', () => {
-			startSession([box4()]);
+			startSession([tile4()]);
 			setupGame();
 			emitKillWith(10, 3); // fsmash
 			emitKillWith(14, 2); // fair
@@ -678,7 +678,7 @@ describe('BingoService', () => {
 		});
 
 		it('losing a game with all different kills does NOT complete challenge', () => {
-			startSession([box4()]);
+			startSession([tile4()]);
 			setupGame();
 			emitKillWith(10, 3);
 			emitKillWith(14, 2);
@@ -689,7 +689,7 @@ describe('BingoService', () => {
 		});
 
 		it('diverse kills reset between games — second game can still complete', () => {
-			startSession([box4()]);
+			startSession([tile4()]);
 			setupGame();
 			// First game: only 2 different moves → not complete
 			emitKillWith(10, 3);
@@ -710,19 +710,19 @@ describe('BingoService', () => {
 
 	// ── win_games_total ───────────────────────────────────────────────────────
 	describe('win_games_total', () => {
-		const box5 = () => makeBox('win_games_total', {
+		const tile5 = () => makeTile('win_games_total', {
 			target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 		});
 
 		it('progress increments to 1 after first win', () => {
-			startSession([box5()]);
+			startSession([tile5()]);
 			setupGame(); emitGame(true);
 			expect(lastChallengeUpdate()?.progress).toBe(1);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('3 wins completes target=3', () => {
-			startSession([box5()]);
+			startSession([tile5()]);
 			setupGame(); emitGame(true);
 			setupGame(); emitGame(true);
 			setupGame(); emitGame(true);
@@ -730,7 +730,7 @@ describe('BingoService', () => {
 		});
 
 		it('losses do NOT count toward total', () => {
-			startSession([box5()]);
+			startSession([tile5()]);
 			setupGame(); emitGame(true);
 			setupGame(); emitGame(false);
 			setupGame(); emitGame(false);
@@ -738,7 +738,7 @@ describe('BingoService', () => {
 		});
 
 		it('quitting a game (local LRAS) does NOT count as a win', () => {
-			startSession([box5()]);
+			startSession([tile5()]);
 			setupGame(); emitGame(true);
 			setupGame(); emitLras(true); // local quit — reverts progress
 			setupGame(); emitGame(true);
@@ -748,7 +748,7 @@ describe('BingoService', () => {
 		});
 
 		it('opponent quitting (opponent LRAS) does NOT revert local progress', () => {
-			startSession([box5()]);
+			startSession([tile5()]);
 			setupGame(); emitGame(true);
 			setupGame(); emitGame(true);
 			setupGame(); emitLras(false); // opponent quit
@@ -761,10 +761,10 @@ describe('BingoService', () => {
 
 	// ── all_blast_zones_game ─────────────────────────────────────────────────
 	describe('all_blast_zones_game', () => {
-		const box = () => makeBox('all_blast_zones_game', { target: 4, hasProgress: true });
+		const tile = () => makeTile('all_blast_zones_game', { target: 4, hasProgress: true });
 
 		it('left + right + spike(down) + star(up) in one game completes', () => {
-			startSession([box()]);
+			startSession([tile()]);
 			setupGame();
 			emitKill(0, 1); // left
 			emitKill(0, 2); // right
@@ -774,7 +774,7 @@ describe('BingoService', () => {
 		});
 
 		it('left + right + spike + screen_ko(up) in one game completes', () => {
-			startSession([box()]);
+			startSession([tile()]);
 			setupGame();
 			emitKill(0, 1); // left
 			emitKill(0, 2); // right
@@ -784,7 +784,7 @@ describe('BingoService', () => {
 		});
 
 		it('missing top blast zone (no star/screen_ko) does NOT complete', () => {
-			startSession([box()]);
+			startSession([tile()]);
 			setupGame();
 			emitKill(0, 1); // left
 			emitKill(0, 2); // right
@@ -794,7 +794,7 @@ describe('BingoService', () => {
 		});
 
 		it('missing spike (down) does NOT complete', () => {
-			startSession([box()]);
+			startSession([tile()]);
 			setupGame();
 			emitKill(0, 1); // left
 			emitKill(0, 2); // right
@@ -804,7 +804,7 @@ describe('BingoService', () => {
 		});
 
 		it('all 4 directions split across games does NOT complete', () => {
-			startSession([box()]);
+			startSession([tile()]);
 			setupGame(); emitKill(0, 1); emitKill(0, 2); // left + right game 1
 			setupGame(); emitKill(0, 0); emitKill(0, 4); // spike + star game 2
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
@@ -814,7 +814,7 @@ describe('BingoService', () => {
 	// ── LRAS revert ───────────────────────────────────────────────────────────
 	describe('LRAS revert', () => {
 		it('local quit reverts spike kills accumulated during that game', () => {
-			startSession([makeBox('spike_meteor_total', {
+			startSession([makeTile('spike_meteor_total', {
 				target: 3, params: { difficulty: 'medium', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -830,7 +830,7 @@ describe('BingoService', () => {
 		});
 
 		it('opponent quit does NOT revert local kills', () => {
-			startSession([makeBox('spike_meteor_total', {
+			startSession([makeTile('spike_meteor_total', {
 				target: 3, params: { difficulty: 'medium', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -847,7 +847,7 @@ describe('BingoService', () => {
 		});
 
 		it('spike_meteor_single_game progress reverts when local player quits', () => {
-			startSession([makeBox('spike_meteor_single_game', {
+			startSession([makeTile('spike_meteor_single_game', {
 				target: 4, params: { difficulty: 'hard', target: 4 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -862,7 +862,7 @@ describe('BingoService', () => {
 		it('spike_meteor_single_game: after LRAS-reverted game, next game shows fresh count not old stuck value', () => {
 			// Regression: old Math.max(prev, gameSpikes) would keep prev=3 after LRAS
 			// so a new game with 1 spike would still show 3 instead of 1
-			startSession([makeBox('spike_meteor_single_game', {
+			startSession([makeTile('spike_meteor_single_game', {
 				target: 5, params: { difficulty: 'hard', target: 5 }, hasProgress: true,
 			})]);
 			// First game: 3 spikes then quit
@@ -880,13 +880,13 @@ describe('BingoService', () => {
 		});
 
 		it('LRAS reverts kill_neutral_b even when it was completed during the game', () => {
-			// Bug: checkChallenges() skips completed boxes, so completing a box during an
+			// Bug: checkChallenges() skips completed tiles, so completing a tile during an
 			// aborted game would leave it permanently completed.
-			startSession([makeBox('kill_neutral_b', {
+			startSession([makeTile('kill_neutral_b', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame();
-			// 2 neutral-b kills — completes the box
+			// 2 neutral-b kills — completes the tile
 			emitKill(18, 2); emitKill(18, 2);
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 			// Quit — must un-complete
@@ -897,7 +897,7 @@ describe('BingoService', () => {
 		});
 
 		it('LRAS does not count as a win for win_games_total', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 5, params: { difficulty: 'easy', target: 5 }, hasProgress: true,
 			})]);
 			setupGame(); emitLras(true); // quit first game
@@ -906,7 +906,7 @@ describe('BingoService', () => {
 		});
 
 		it('LRAS reverts star_ko progress', () => {
-			startSession([makeBox('star_ko', {
+			startSession([makeTile('star_ko', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -918,7 +918,7 @@ describe('BingoService', () => {
 		});
 
 		it('LRAS reverts zero_death progress', () => {
-			startSession([makeBox('zero_death', {
+			startSession([makeTile('zero_death', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -936,7 +936,7 @@ describe('BingoService', () => {
 		it('LRAS after taking last stock (win + LRAS) does NOT revert progress', () => {
 			// Player takes last stock then immediately presses L+R+A+Start — Slippi records
 			// it as NO_CONTEST but opponent has 0 stocks, so it counts as a win.
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -986,7 +986,7 @@ describe('BingoService', () => {
 		}
 
 		it('2 SDs at 0% within 900 frames reverts progress', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true); // win #1 → progress 1
@@ -1000,7 +1000,7 @@ describe('BingoService', () => {
 		});
 
 		it('2 SDs more than 900 frames apart does NOT revert', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true); // win #1 → progress 1
@@ -1014,7 +1014,7 @@ describe('BingoService', () => {
 		});
 
 		it('SD at >5% is not counted (soft threshold)', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitGame(true); // win #1
@@ -1027,7 +1027,7 @@ describe('BingoService', () => {
 		});
 
 		it('aggressive SD does NOT revert when player wins', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1043,7 +1043,7 @@ describe('BingoService', () => {
 	// ── win_low_damage ────────────────────────────────────────────────────────
 	describe('win_low_damage', () => {
 		it('completes when winning with damage taken below threshold', () => {
-			startSession([makeBox('win_low_damage', {
+			startSession([makeTile('win_low_damage', {
 				params: { difficulty: 'medium', target: 1, percent: 100 },
 			})]);
 			setupGame();
@@ -1054,7 +1054,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete when damage equals threshold', () => {
-			startSession([makeBox('win_low_damage', {
+			startSession([makeTile('win_low_damage', {
 				params: { difficulty: 'hard', target: 1, percent: 50 },
 			})]);
 			setupGame();
@@ -1065,7 +1065,7 @@ describe('BingoService', () => {
 		});
 
 		it('accumulates damage across stock resets (negative diffs ignored)', () => {
-			startSession([makeBox('win_low_damage', {
+			startSession([makeTile('win_low_damage', {
 				params: { difficulty: 'medium', target: 1, percent: 100 },
 			})]);
 			setupGame();
@@ -1080,7 +1080,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete on a loss', () => {
-			startSession([makeBox('win_low_damage', {
+			startSession([makeTile('win_low_damage', {
 				params: { difficulty: 'easy', target: 1, percent: 150 },
 			})]);
 			setupGame();
@@ -1114,7 +1114,7 @@ describe('BingoService', () => {
 		}
 
 		it('completes when best combo meets threshold', () => {
-			startSession([makeBox('combo_damage', { params: { difficulty: 'medium', target: 1, percent: 50 } })]);
+			startSession([makeTile('combo_damage', { params: { difficulty: 'medium', target: 1, percent: 50 } })]);
 			setupGame();
 			emitGameWithCombos(true, [
 				{ playerIndex: OPP_IDX, startPercent: 0, currentPercent: 60 }, // 60% combo
@@ -1124,7 +1124,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete when best combo is below threshold', () => {
-			startSession([makeBox('combo_damage', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
+			startSession([makeTile('combo_damage', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
 			setupGame();
 			emitGameWithCombos(true, [
 				{ playerIndex: OPP_IDX, startPercent: 0, currentPercent: 50 }, // 50% best
@@ -1133,7 +1133,7 @@ describe('BingoService', () => {
 		});
 
 		it('only counts conversions on the opponent (not self-damage)', () => {
-			startSession([makeBox('combo_damage', { params: { difficulty: 'easy', target: 1, percent: 30 } })]);
+			startSession([makeTile('combo_damage', { params: { difficulty: 'easy', target: 1, percent: 30 } })]);
 			setupGame();
 			emitGameWithCombos(true, [
 				{ playerIndex: MY_IDX, startPercent: 0, currentPercent: 100 }, // damage on ME — irrelevant
@@ -1156,7 +1156,7 @@ describe('BingoService', () => {
 		}
 
 		it('completes when airborne ratio meets threshold on win', () => {
-			startSession([makeBox('airborne_win', { params: { difficulty: 'easy', target: 1, percent: 50 } })]);
+			startSession([makeTile('airborne_win', { params: { difficulty: 'easy', target: 1, percent: 50 } })]);
 			setupGame();
 			// 3 airborne frames, 1 grounded = 75% airborne
 			emitFrameWithAirborne(1, true);
@@ -1168,7 +1168,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete when airborne ratio is below threshold', () => {
-			startSession([makeBox('airborne_win', { params: { difficulty: 'hard', target: 1, percent: 70 } })]);
+			startSession([makeTile('airborne_win', { params: { difficulty: 'hard', target: 1, percent: 70 } })]);
 			setupGame();
 			emitFrameWithAirborne(1, true);
 			emitFrameWithAirborne(2, false);
@@ -1178,7 +1178,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete on a loss even with enough airborne time', () => {
-			startSession([makeBox('airborne_win', { params: { difficulty: 'easy', target: 1, percent: 50 } })]);
+			startSession([makeTile('airborne_win', { params: { difficulty: 'easy', target: 1, percent: 50 } })]);
 			setupGame();
 			emitFrameWithAirborne(1, true);
 			emitFrameWithAirborne(2, true);
@@ -1190,7 +1190,7 @@ describe('BingoService', () => {
 	// ── same_move_kills ───────────────────────────────────────────────────────
 	describe('same_move_kills', () => {
 		it('completes when 3 stocks taken with same move on win', () => {
-			startSession([makeBox('same_move_kills', {
+			startSession([makeTile('same_move_kills', {
 				target: 3, params: { difficulty: 'hard', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1201,7 +1201,7 @@ describe('BingoService', () => {
 		});
 
 		it('shows progress mid-game via handleOpponentStockLost', () => {
-			startSession([makeBox('same_move_kills', {
+			startSession([makeTile('same_move_kills', {
 				target: 3, params: { difficulty: 'hard', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1212,7 +1212,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete when kills spread across different moves', () => {
-			startSession([makeBox('same_move_kills', {
+			startSession([makeTile('same_move_kills', {
 				target: 3, params: { difficulty: 'hard', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1222,7 +1222,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete on a loss', () => {
-			startSession([makeBox('same_move_kills', {
+			startSession([makeTile('same_move_kills', {
 				target: 3, params: { difficulty: 'hard', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1235,7 +1235,7 @@ describe('BingoService', () => {
 	// ── no_smash_win ──────────────────────────────────────────────────────────
 	describe('no_smash_win', () => {
 		it('completes when winning without landing fsmash or dsmash', () => {
-			startSession([makeBox('no_smash_win')]);
+			startSession([makeTile('no_smash_win')]);
 			setupGame();
 			emitKill(13); // nair kill — no smash
 			emitGame(true);
@@ -1243,7 +1243,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete if fsmash (moveId=10) was landed', () => {
-			startSession([makeBox('no_smash_win')]);
+			startSession([makeTile('no_smash_win')]);
 			setupGame();
 			emitKill(10); // fsmash kill
 			emitGame(true);
@@ -1251,7 +1251,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete if usmash (moveId=11) was landed', () => {
-			startSession([makeBox('no_smash_win')]);
+			startSession([makeTile('no_smash_win')]);
 			setupGame();
 			emitKill(11); // usmash kill
 			emitGame(true);
@@ -1259,7 +1259,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete if dsmash (moveId=12) was landed', () => {
-			startSession([makeBox('no_smash_win')]);
+			startSession([makeTile('no_smash_win')]);
 			setupGame();
 			emitKill(12); // dsmash kill
 			emitGame(true);
@@ -1267,7 +1267,7 @@ describe('BingoService', () => {
 		});
 
 		it('does NOT complete on a loss', () => {
-			startSession([makeBox('no_smash_win')]);
+			startSession([makeTile('no_smash_win')]);
 			setupGame();
 			emitGame(false);
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
@@ -1313,35 +1313,35 @@ describe('BingoService', () => {
 		}
 
 		it('does not complete with fewer than 3 attempts', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 20 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 20 } })]);
 			setupGame();
 			emitGameWithEdgeguard(2, 1); // only 2 attempts — min 3 required
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('completes at easy (20%) with 1 success out of 3', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 20 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 20 } })]);
 			setupGame();
 			emitGameWithEdgeguard(3, 1); // 1/3 = 33% ≥ 20%
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('completes at medium (50%) with 2 successes out of 3', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'medium', target: 1, percent: 50 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'medium', target: 1, percent: 50 } })]);
 			setupGame();
 			emitGameWithEdgeguard(3, 2); // 2/3 = 66% ≥ 50%
 			expect(lastChallengeUpdate()?.completed).toBe(true);
 		});
 
 		it('does NOT complete at hard (80%) with 2 out of 3 successes', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
 			setupGame();
 			emitGameWithEdgeguard(3, 2); // 2/3 = 66% < 80%
 			expect(lastChallengeUpdate()?.completed).toBeFalsy();
 		});
 
 		it('accumulates attempts across games', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'hard', target: 1, percent: 80 } })]);
 			setupGame();
 			emitGameWithEdgeguard(2, 2); // session: 2/2 so far (below min-3)
 			setupGame();
@@ -1350,23 +1350,23 @@ describe('BingoService', () => {
 		});
 
 		it('LRAS on game 2 does not undo completion earned in game 1', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 100 } })]);
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 100 } })]);
 			setupGame();
-			emitGameWithEdgeguard(3, 3); // game 1: complete box
+			emitGameWithEdgeguard(3, 3); // game 1: complete tile
 			expect(lastChallengeUpdate()?.completed).toBe(true);
-			// Game 2: snapshot captures completed box state
+			// Game 2: snapshot captures completed tile state
 			setupGame();
 			emitLras(true); // quit — no edgeguard accumulated this game, snapshot = completed
 			// No revert update with completed=false should be sent
 			expect(allUpdates().some((u: any) => u?.completed === false)).toBe(false);
 		});
 
-		it('LRAS on game that would complete box reverts it', () => {
-			startSession([makeBox('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 100 } })]);
+		it('LRAS on game that would complete tile reverts it', () => {
+			startSession([makeTile('edgeguard_rate', { params: { difficulty: 'easy', target: 1, percent: 100 } })]);
 			// Game 1: only 2 attempts — no completion
 			setupGame();
 			emitGameWithEdgeguard(2, 2);
-			// Game 2 starts — snapshot: { attempts: 2, box: not completed }
+			// Game 2 starts — snapshot: { attempts: 2, tile: not completed }
 			setupGame();
 			// LRAS — PostGameStats never processed, so no additional attempts
 			emitLras(true);
@@ -1381,7 +1381,7 @@ describe('BingoService', () => {
 	// isLocalQuit check does NOT fire — game is a normal win or loss.
 	describe('offline game sequence', () => {
 		it('win_games_total: win → offline-loss → win = 2 total (not 3)', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 15, params: { difficulty: 'hard', target: 15 }, hasProgress: true,
 			})]);
 			setupGame(); emitOfflineGame(true);   // win #1 → progress 1
@@ -1392,7 +1392,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_games_total: offline-win counted same as online win', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame(); emitOfflineGame(true);
@@ -1402,7 +1402,7 @@ describe('BingoService', () => {
 		});
 
 		it('win_in_a_row: offline loss resets streak, so win→loss→win does not complete target=2', () => {
-			startSession([makeBox('win_in_a_row', {
+			startSession([makeTile('win_in_a_row', {
 				target: 2, params: { difficulty: 'medium', target: 2 }, hasProgress: true,
 			})]);
 			setupGame(); emitOfflineGame(true);   // streak = 1
@@ -1412,7 +1412,7 @@ describe('BingoService', () => {
 		});
 
 		it('offline replay mismatch: wrong replay loaded (frame diff > 30s) → game skipped', () => {
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();
@@ -1446,7 +1446,7 @@ describe('BingoService', () => {
 
 		it('offline win-while-losing (both stocks remain) is a loss, not a win', () => {
 			// gameEndMethod=2 with both players having stocks → didWin=false
-			startSession([makeBox('win_games_total', {
+			startSession([makeTile('win_games_total', {
 				target: 3, params: { difficulty: 'easy', target: 3 }, hasProgress: true,
 			})]);
 			setupGame();

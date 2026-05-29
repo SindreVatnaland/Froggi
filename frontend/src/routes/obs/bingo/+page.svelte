@@ -151,7 +151,7 @@
 	$: size = board.size;
 	$: role = session?.role ?? 'solo';
 	$: opponentConnected = session?.opponentConnected ?? false;
-	$: completedCount = board.boxes.filter((b) => b.completed).length;
+	$: completedCount = board.tiles.filter((b) => b.completed).length;
 	$: activeWinCondition = session?.settings?.winCondition ?? settings.winCondition;
 
 	function winConditionLabel(wc: BingoWinCondition): string {
@@ -217,8 +217,8 @@
 
 	// Win state computed by backend, sent with every BingoState
 	$: winState = session?.winState ?? null;
-	$: localWinBoxes = new Set<number>(winState?.localWinBoxIndices ?? []);
-	$: oppWinBoxes = new Set<number>(winState?.oppWinBoxIndices ?? []);
+	$: localWinTiles = new Set<number>(winState?.localWinTileIndices ?? []);
+	$: oppWinTiles = new Set<number>(winState?.oppWinTileIndices ?? []);
 	$: hasWon = winState?.hasWon ?? false;
 	$: localScore = winState?.localScore ?? 0;
 	$: oppScore = winState?.oppScore ?? null;
@@ -230,19 +230,19 @@
 
 	// Dev popup perspective: when devRole=guest, flip everything to guest's POV
 	$: effectiveRole = devRole ?? role;
-	$: displayBoxes = devRole === 'guest'
-		? board.boxes.map(b => ({
+	$: displayTiles = devRole === 'guest'
+		? board.tiles.map(b => ({
 			...b,
 			completedBy: b.completedBy === 'local' ? 'opponent' as const
 			           : b.completedBy === 'opponent' ? 'local' as const
 			           : b.completedBy,
 		  }))
-		: board.boxes;
+		: board.tiles;
 	$: localControlledLines = winState?.localControlledLines ?? [];
 	$: oppControlledLines = winState?.oppControlledLines ?? [];
 
-	$: displayLocalWinBoxes = devRole === 'guest' ? oppWinBoxes : localWinBoxes;
-	$: displayOppWinBoxes = devRole === 'guest' ? localWinBoxes : oppWinBoxes;
+	$: displayLocalWinTiles = devRole === 'guest' ? oppWinTiles : localWinTiles;
+	$: displayOppWinTiles = devRole === 'guest' ? localWinTiles : oppWinTiles;
 	$: displayLocalControlledLines = devRole === 'guest' ? oppControlledLines : localControlledLines;
 	$: displayOppControlledLines = devRole === 'guest' ? localControlledLines : oppControlledLines;
 	$: displayLocalScore = devRole === 'guest' ? (oppScore ?? 0) : localScore;
@@ -278,7 +278,7 @@
 				</div>
 				{#if isActive}
 					<p class="text-sm opacity-50 mt-1">
-						{completedCount}/{board.boxes.length} · {board.difficulty} · {winConditionLabel(activeWinCondition)}
+						{completedCount}/{board.tiles.length} · {board.difficulty} · {winConditionLabel(activeWinCondition)}
 						{#if role !== 'solo'}
 							· {role === 'host' ? 'Hosting' : 'Guest'}
 							{#if opponentConnected}
@@ -447,11 +447,11 @@
 		{#if !inLobby}
 		<div style="aspect-ratio:1/1; width:100%;">
 			<BingoBoardGrid
-				boxes={displayBoxes}
+				tiles={displayTiles}
 				{size}
 				role={effectiveRole}
-				localWinBoxes={displayLocalWinBoxes}
-				oppWinBoxes={displayOppWinBoxes}
+				localWinTiles={displayLocalWinTiles}
+				oppWinTiles={displayOppWinTiles}
 				localControlledLines={displayLocalControlledLines}
 				oppControlledLines={displayOppControlledLines}
 				devMode={isActive}

@@ -129,7 +129,8 @@
       "WebSearch",
       "WebFetch(domain:docs.discord.com)",
       "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:www.answeroverflow.com)"
+      "WebFetch(domain:www.answeroverflow.com)",
+      "Bash(perl -i -pe ' *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

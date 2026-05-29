@@ -32,8 +32,8 @@
 	$: opponentName = $bingoSession?.opponentName ?? null;
 
 	$: winState = $bingoSession?.winState ?? null;
-	$: localWinBoxes = new Set<number>(winState?.localWinBoxIndices ?? []);
-	$: oppWinBoxes = new Set<number>(winState?.oppWinBoxIndices ?? []);
+	$: localWinTiles = new Set<number>(winState?.localWinTileIndices ?? []);
+	$: oppWinTiles = new Set<number>(winState?.oppWinTileIndices ?? []);
 	$: localControlledLines = winState?.localControlledLines ?? [];
 	$: oppControlledLines = winState?.oppControlledLines ?? [];
 	$: bingoHasWon = winState?.hasWon ?? false;
@@ -164,7 +164,7 @@
 		winTriggered = true;
 		winElapsedSeconds = $bingoSession ? Math.floor((now - $bingoSession.startedAt) / 1000) : 0;
 		isLocalWinner = winState?.localWinner ?? false;
-		triggerWinExit(bingoBoard.boxes.length);
+		triggerWinExit(bingoBoard.tiles.length);
 	}
 
 	function triggerWinExit(count: number) {
@@ -396,11 +396,11 @@
 					{/if}
 					<div style="width:100%; aspect-ratio:1/1; flex-shrink:0; overflow:visible; --bingo-font-size:2.8cqmin; --bingo-char-size:6cqmin; --bingo-char-size-lg:8cqmin; --bingo-sub-size:2.2cqmin; --bingo-badge-size:2cqmin; --bingo-desc-size:1.9cqmin; --bingo-gap:3px; --bingo-radius:4px; --bingo-frozen-icon-lg:3.5em; --bingo-frozen-cd-lg:2.2em;">
 						<BingoBoardGrid
-							boxes={displayBingoBoard?.boxes ?? []}
+							tiles={displayBingoBoard?.tiles ?? []}
 							size={bingoSize}
 							role={bingoRole}
-							{localWinBoxes}
-							{oppWinBoxes}
+							{localWinTiles}
+							{oppWinTiles}
 							{exitingBoxIndices}
 							{isLocalWinner}
 							{localControlledLines}
@@ -554,7 +554,7 @@
 		display: flex;
 		flex-direction: column;
 		padding: 2.5cqmin;
-		box-sizing: border-box;
+		box-sizing: border-tile;
 		overflow: hidden;
 	}
 

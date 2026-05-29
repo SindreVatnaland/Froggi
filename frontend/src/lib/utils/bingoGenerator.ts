@@ -7,7 +7,7 @@ import {
 	CHARACTER_NAMES,
 	type ChallengeDefinition,
 } from '../models/constants/bingoChallenges';
-import type { BingoBoard, BingoBox, BingoChallengeId, BingoDifficulty, BingoSettings } from '../models/types/bingo';
+import type { BingoBoard, BingoTile, BingoChallengeId, BingoDifficulty, BingoSettings } from '../models/types/bingo';
 
 const CHALLENGE_CATEGORY: Partial<Record<BingoChallengeId, string>> = {
 	win_with_character:      'character',
@@ -59,14 +59,14 @@ const CHALLENGE_CATEGORY: Partial<Record<BingoChallengeId, string>> = {
 
 export function generateBoard(settings: BingoSettings): BingoBoard {
 	const { boardSize, difficulty } = settings;
-	const totalBoxes = boardSize * boardSize;
+	const totalTiles = boardSize * boardSize;
 
-	const boxes = pickChallenges(totalBoxes, difficulty);
+	const tiles = pickChallenges(totalTiles, difficulty);
 
 	return {
 		id: uid(),
 		size: boardSize,
-		boxes,
+		tiles,
 		difficulty,
 		createdAt: Date.now(),
 	};
@@ -85,20 +85,20 @@ function buildPool(difficulty: BingoDifficulty): ChallengeDefinition[] {
 	return pool;
 }
 
-function pickChallenges(count: number, difficulty: BingoDifficulty): BingoBox[] {
+function pickChallenges(count: number, difficulty: BingoDifficulty): BingoTile[] {
 	const pool = buildPool(difficulty);
-	// Max ~40% of board as kill-method boxes to preserve variety
+	// Max ~40% of board as kill-method tiles to preserve variety
 	const maxKillMethod = Math.ceil(count * 0.4);
 	const maxCharacter = Math.min(6, count);
 	const minCharacter = Math.min(4, count);
 
-	// Prioritise character boxes so we reliably hit the minimum of 4.
+	// Prioritise character tiles so we reliably hit the minimum of 4.
 	// Within each group the shuffle order from buildPool is preserved.
 	const charPool = pool.filter(d => CHARACTER_CHALLENGES.has(d.id));
 	const otherPool = pool.filter(d => !CHARACTER_CHALLENGES.has(d.id));
 	const orderedPool = [...charPool, ...otherPool];
 
-	const selected: BingoBox[] = [];
+	const selected: BingoTile[] = [];
 	const usedIds = new Set<BingoChallengeId>();
 	let killMethodCount = 0;
 	let characterCount = 0;
@@ -123,7 +123,7 @@ function pickChallenges(count: number, difficulty: BingoDifficulty): BingoBox[] 
 		// 90%+ L-cancel rate is already hard — only require 1 game
 		if (def.id === 'lcancel_rate' && (percent ?? 0) >= 90) target = 1;
 
-		const params: BingoBox['params'] = {
+		const params: BingoTile['params'] = {
 			difficulty,
 			target,
 			...(percent !== undefined ? { percent } : {}),
@@ -171,13 +171,13 @@ function pickChallenges(count: number, difficulty: BingoDifficulty): BingoBox[] 
 	return spreadByCategory(selected);
 }
 
-function spreadByCategory(boxes: BingoBox[]): BingoBox[] {
-	const n = boxes.length;
-	const groups = new Map<string, BingoBox[]>();
-	for (const box of boxes) {
-		const cat = CHALLENGE_CATEGORY[box.challengeId] ?? 'other';
+function spreadByCategory(tiles: BingoTile[]): BingoTile[] {
+	const n = tiles.length;
+	const groups = new Map<string, BingoTile[]>();
+	for (const tile of tiles) {
+		const cat = CHALLENGE_CATEGORY[tile.challengeId] ?? 'other';
 		if (!groups.has(cat)) groups.set(cat, []);
-		groups.get(cat)!.push(box);
+		groups.get(cat)!.push(tile);
 	}
 	for (const group of groups.values()) shuffle(group);
 
@@ -186,7 +186,7 @@ function spreadByCategory(boxes: BingoBox[]): BingoBox[] {
 	shuffle(lists);
 
 	// Build a flat round-robin sequence (same-category items spaced ~numCategories apart)
-	const sequence: BingoBox[] = [];
+	const sequence: BingoTile[] = [];
 	let i = 0;
 	while (sequence.length < n) {
 		for (const list of lists) {
@@ -201,7 +201,7 @@ function spreadByCategory(boxes: BingoBox[]): BingoBox[] {
 	// Scatter using a stride coprime to n (7 is coprime to 9, 16, and 25).
 	// Pure round-robin maps sequence[k] → grid position k, which on a 5-wide
 	// board places every Nth item in the same column. The stride breaks that.
-	const result = new Array<BingoBox>(n);
+	const result = new Array<BingoTile>(n);
 	let pos = 0;
 	for (let j = 0; j < n; j++) {
 		result[pos] = sequence[j];

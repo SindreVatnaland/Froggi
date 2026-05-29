@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import { BingoService } from '../../electron/services/bingoService';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import type { BingoBox, BingoChallengeId, BingoSession, BingoVoteState } from '../../frontend/src/lib/models/types/bingo';
+import type { BingoTile, BingoChallengeId, BingoSession, BingoVoteState } from '../../frontend/src/lib/models/types/bingo';
 
 const MY_IDX = 0;
 
-function makeBox(id: BingoChallengeId, overrides: Partial<BingoBox> = {}): BingoBox {
+function makeTile(id: BingoChallengeId, overrides: Partial<BingoTile> = {}): BingoTile {
 	return {
-		instanceId: `box-${id}-${Math.random().toString(36).slice(-4)}`,
+		instanceId: `tile-${id}-${Math.random().toString(36).slice(-4)}`,
 		challengeId: id,
 		label: id,
 		description: id,
@@ -19,9 +19,9 @@ function makeBox(id: BingoChallengeId, overrides: Partial<BingoBox> = {}): Bingo
 	};
 }
 
-function makeSession(boxes: BingoBox[], size = 3, twitchEnabled = false): BingoSession {
+function makeSession(tiles: BingoTile[], size = 3, twitchEnabled = false): BingoSession {
 	return {
-		board: { id: 'b1', size, boxes, difficulty: 'medium', createdAt: Date.now() },
+		board: { id: 'b1', size, tiles, difficulty: 'medium', createdAt: Date.now() },
 		settings: {
 			mode: 'lockout', boardSize: size as 3, difficulty: 'medium', winCondition: 'lockout',
 			lines: { rows: true, columns: true, diagonals: true },
@@ -71,23 +71,23 @@ describe('BingoService vote logic', () => {
 
 		it('returns empty set when no completed rows', () => {
 			// 3x3 board, no completed tiles
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}` })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}` })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			expect(service.getLockedBoxIndices().size).toBe(0);
 		});
 
 		it('marks all tiles in a completed local row as locked', () => {
 			// 3x3 board: row 0 (indices 0,1,2) all completed by local
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i < 3,
 					completedBy: i < 3 ? 'local' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const locked = service.getLockedBoxIndices();
 			expect(locked.has(0)).toBe(true);
 			expect(locked.has(1)).toBe(true);
@@ -99,14 +99,14 @@ describe('BingoService vote logic', () => {
 
 		it('marks all tiles in a completed opponent column as locked', () => {
 			// 3x3 board: column 0 (indices 0,3,6) all completed by opponent
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i % 3 === 0,
 					completedBy: i % 3 === 0 ? 'opponent' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const locked = service.getLockedBoxIndices();
 			expect(locked.has(0)).toBe(true);
 			expect(locked.has(3)).toBe(true);
@@ -116,14 +116,14 @@ describe('BingoService vote logic', () => {
 
 		it('marks diagonal tiles as locked when all completed', () => {
 			// 3x3 board: main diagonal (0,4,8) completed by local
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: [0, 4, 8].includes(i),
 					completedBy: [0, 4, 8].includes(i) ? 'local' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const locked = service.getLockedBoxIndices();
 			expect(locked.has(0)).toBe(true);
 			expect(locked.has(4)).toBe(true);
@@ -133,14 +133,14 @@ describe('BingoService vote logic', () => {
 
 		it('does NOT lock a row where only some tiles are completed', () => {
 			// Only 2 of 3 tiles in row 0 are completed
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i < 2,
 					completedBy: i < 2 ? 'local' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			expect(service.getLockedBoxIndices().size).toBe(0);
 		});
 	});
@@ -150,15 +150,15 @@ describe('BingoService vote logic', () => {
 	describe('executeSwap', () => {
 		it('returns early message when fewer than 2 eligible tiles', () => {
 			// All 9 tiles in completed rows → all locked
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: true,
 					completedBy: 'local',
 				})
 			);
 			// Row 0, row 1, row 2 all complete → all 9 locked
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const result = service.executeSwap();
 			expect(result).toMatch(/not enough|protected/i);
 			// No tile replaced event emitted
@@ -169,15 +169,15 @@ describe('BingoService vote logic', () => {
 		it('swaps only non-locked tiles', () => {
 			// Row 0 (indices 0,1,2) all complete by local → locked
 			// Remaining 6 tiles unlocked
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox(`win_games_total`, {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile(`win_games_total`, {
 					instanceId: `b${i}`,
 					completed: i < 3,
 					completedBy: i < 3 ? 'local' : null,
 					target: i + 1, // distinct labels so we can verify swap
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeSwap();
 			// Should succeed and return a description
@@ -191,40 +191,40 @@ describe('BingoService vote logic', () => {
 		});
 
 		it('swapped tiles are reset to progress 0 and completedBy null', () => {
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i === 5, // one completed tile not in any winning row
 					completedBy: i === 5 ? 'local' : null,
 					progress: i === 5 ? 1 : 0,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			service.executeSwap();
 			const replaced = sendMessage.mock.calls.filter(([t]) => t === 'BingoTileReplaced');
 			for (const [, data] of replaced) {
-				expect(data.box.completed).toBe(false);
-				expect(data.box.completedBy).toBeNull();
-				expect(data.box.progress).toBe(0);
+				expect(data.tile.completed).toBe(false);
+				expect(data.tile.completedBy).toBeNull();
+				expect(data.tile.progress).toBe(0);
 			}
 		});
 
 		it('does not swap frozen tiles', () => {
 			// Only tiles 3 and 4 are eligible (not locked, not frozen)
 			// Tile 5 is frozen, tiles 0-2 frozen, rest locked
-			const boxes = Array.from({ length: 9 }, (_, i) => {
-				if (i < 3) return makeBox('win_games_total', { instanceId: `b${i}`, completed: true, completedBy: 'local' }); // locked
-				if (i === 5) return makeBox('win_games_total', { instanceId: `b${i}`, frozen: true }); // frozen
-				return makeBox('win_games_total', { instanceId: `b${i}` });
+			const tiles = Array.from({ length: 9 }, (_, i) => {
+				if (i < 3) return makeTile('win_games_total', { instanceId: `b${i}`, completed: true, completedBy: 'local' }); // locked
+				if (i === 5) return makeTile('win_games_total', { instanceId: `b${i}`, frozen: true }); // frozen
+				return makeTile('win_games_total', { instanceId: `b${i}` });
 			});
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			service.executeSwap();
 			const replaced = sendMessage.mock.calls.filter(([t]) => t === 'BingoTileReplaced');
 			// Tile 5 (frozen) must not appear in replaced
 			for (const [, data] of replaced) {
-				expect(data.box.frozen).not.toBe(true);
+				expect(data.tile.frozen).not.toBe(true);
 			}
 		});
 	});
@@ -233,24 +233,24 @@ describe('BingoService vote logic', () => {
 
 	describe('executeRandomize', () => {
 		it('returns message when no eligible opponent tiles', () => {
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}`, completedBy: null })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}`, completedBy: null })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const result = service.executeRandomize();
 			expect(result).toMatch(/no eligible/i);
 		});
 
 		it('does not randomize opponent tiles in locked rows', () => {
 			// Row 0 all completed by opponent → locked
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i < 3,
 					completedBy: i < 3 ? 'opponent' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const result = service.executeRandomize();
 			// All opponent tiles are in locked row, so none eligible
 			expect(result).toMatch(/no eligible/i);
@@ -258,14 +258,14 @@ describe('BingoService vote logic', () => {
 
 		it('randomizes an opponent tile that is not in a locked row', () => {
 			// Row 0 complete by opponent (locked). Row 1 index 3 also opponent but not locked.
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i < 3 || i === 3,
 					completedBy: i < 3 || i === 3 ? 'opponent' : null,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeRandomize();
 			expect(result).not.toMatch(/no eligible/i);
@@ -277,15 +277,15 @@ describe('BingoService vote logic', () => {
 
 		it('does not randomize frozen opponent tiles', () => {
 			// Only opponent tile is frozen → no eligible targets
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', {
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', {
 					instanceId: `b${i}`,
 					completed: i === 4,
 					completedBy: i === 4 ? 'opponent' : null,
 					frozen: i === 4,
 				})
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const result = service.executeRandomize();
 			expect(result).toMatch(/no eligible/i);
 		});
@@ -295,10 +295,10 @@ describe('BingoService vote logic', () => {
 
 	describe('executeFreeze', () => {
 		it('freezes a random non-locked incomplete tile', () => {
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}` })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}` })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeFreeze();
 			expect(result).toContain('Froze tile');
@@ -309,23 +309,23 @@ describe('BingoService vote logic', () => {
 
 		it('returns message when no eligible tiles', () => {
 			// All tiles already frozen
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}`, frozen: true })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}`, frozen: true })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			const result = service.executeFreeze();
 			expect(result).toMatch(/no eligible/i);
 		});
 
 		it('unfreezes tile after 2 minutes', () => {
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}` })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}` })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			service.executeFreeze();
 			sendMessage.mockClear();
-			// Advance 2 minutes
-			jest.advanceTimersByTime(120000);
+			// Advance past max freeze duration (50s + up to 150s = 200s max)
+			jest.advanceTimersByTime(201000);
 			const updates = sendMessage.mock.calls.filter(([t]) => t === 'BingoChallengeUpdates');
 			expect(updates.length).toBeGreaterThan(0);
 			expect(updates[0][1].updates[0].frozen).toBe(false);
@@ -409,10 +409,10 @@ describe('BingoService vote logic', () => {
 
 	describe('resolveVote (winner determination)', () => {
 		it('picks highest-vote option', () => {
-			const boxes = Array.from({ length: 9 }, (_, i) =>
-				makeBox('win_games_total', { instanceId: `b${i}`, completedBy: i < 3 ? 'local' : null, completed: i < 3 })
+			const tiles = Array.from({ length: 9 }, (_, i) =>
+				makeTile('win_games_total', { instanceId: `b${i}`, completedBy: i < 3 ? 'local' : null, completed: i < 3 })
 			);
-			service.session = makeSession(boxes);
+			service.session = makeSession(tiles);
 			service.voteState = {
 				active: true,
 				options: [

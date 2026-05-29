@@ -402,13 +402,28 @@ export class IronManService {
 		if (charId == null) return false;
 		const { variant } = this.session.settings;
 
+		let localValid: boolean;
 		if (variant === 'full_roster' || variant === 'challenge') {
 			const activeSlot = this.session.localRoster.slots[this.session.localRoster.currentIndex];
-			return activeSlot != null && activeSlot.characterId === charId;
+			localValid = activeSlot != null && activeSlot.characterId === charId;
+		} else {
+			localValid = this.session.localRoster.slots.some(s => s.characterId === charId && !s.depleted);
 		}
 
-		// Standard: any undepleted roster char is valid
-		return this.session.localRoster.slots.some(s => s.characterId === charId && !s.depleted);
+		if (!localValid) return false;
+
+		if (this.session.role === 'local' && this.session.opponentRoster) {
+			const oppCharId = this.currentGameOppCharId;
+			if (oppCharId == null) return false;
+			if (variant === 'full_roster') {
+				const oppRoster = this.session.opponentRoster;
+				const activeSlot = oppRoster.slots[oppRoster.currentIndex];
+				return activeSlot != null && activeSlot.characterId === oppCharId;
+			}
+			return this.session.opponentRoster.slots.some(s => s.characterId === oppCharId && !s.depleted);
+		}
+
+		return localValid;
 	}
 
 	// ── Game processing ───────────────────────────────────────────────────────
@@ -508,6 +523,21 @@ export class IronManService {
 
 	private processFullRoster(didWin: boolean) {
 		if (!this.session) return;
+
+		if (this.session.role === 'local' && this.session.opponentRoster) {
+			const advanceRoster = didWin ? this.session.localRoster : this.session.opponentRoster;
+			const slot = advanceRoster.slots[advanceRoster.currentIndex];
+			if (!slot) return;
+			slot.completed = true;
+			advanceRoster.currentIndex++;
+			while (advanceRoster.currentIndex < advanceRoster.slots.length && advanceRoster.slots[advanceRoster.currentIndex].completed) {
+				advanceRoster.currentIndex++;
+			}
+			if (this.session.localRoster.slots.every(s => s.completed)) this.session.winner = 'local';
+			else if (this.session.opponentRoster.slots.every(s => s.completed)) this.session.winner = 'opponent';
+			return;
+		}
+
 		if (!didWin) return; // Loss: stay on same char
 
 		const roster = this.session.localRoster;
@@ -517,12 +547,10 @@ export class IronManService {
 		slot.completed = true;
 		roster.currentIndex++;
 
-		// Skip already-completed slots (shouldn't happen but safe)
 		while (roster.currentIndex < roster.slots.length && roster.slots[roster.currentIndex].completed) {
 			roster.currentIndex++;
 		}
 
-		// Win condition: all completed
 		if (roster.slots.every(s => s.completed)) {
 			this.session.winner = 'local';
 			if (this.fullRosterStartTime != null) {

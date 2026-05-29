@@ -23,10 +23,10 @@
 
 <div class="bingo-wrap" style={style.cssValue}>
 	{#if defaultPreview}
-		<BingoBoardGrid boxes={PREVIEW_BOXES} size={3} role="solo" />
+		<BingoBoardGrid tiles={PREVIEW_BOXES} size={3} role="solo" />
 	{:else if session}
 		<BingoBoardGrid
-			boxes={session.board.boxes}
+			tiles={session.board.tiles}
 			size={session.board.size}
 			role={session.role}
 		/>

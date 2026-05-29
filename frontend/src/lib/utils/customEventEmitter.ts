@@ -37,7 +37,7 @@ import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
 import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
-import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteStates, BingoVoteActionType, BingoTileReplacedPayload } from '../models/types/bingo';
+import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteStates, BingoVoteActionType, BingoTileReplacedPayload, BingoTilesRollingPayload } from '../models/types/bingo';
 import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
 
 export interface MessageEvents {
@@ -203,6 +203,7 @@ export interface MessageEvents {
 	BingoDevResolveVote: (action: BingoVoteActionType) => void;
 	BingoDevSimulateOpponent: () => void;
 	BingoTileReplaced: (data: BingoTileReplacedPayload) => void;
+	BingoTilesRolling: (data: BingoTilesRollingPayload) => void;
 	BingoTilesSwapped: (data: { indexA: number; indexB: number }) => void;
 	BingoTilesShuffled: (data: { newOrder: number[] }) => void;
 	GetTwitchUsername: () => void;

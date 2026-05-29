@@ -234,6 +234,8 @@ No page-level transitions (`in:fade`, `out:fade`, `in:fly`, `out:fly` on `<main>
 
 These conventions apply to **all** minigames (Bingo, Iron Man, and any future additions). Deviating from them creates inconsistency that is hard to fix later.
 
+**All game modes use the same event pipeline.** Solo, Local VS, Host, and Guest all emit and receive the same events. Game events (game start/end, stats) are applied to the board/roster regardless of how the session was started. No special-casing per mode. Local VS simply sets `role: 'local'` and provides `opponentRoster` upfront; the service processes game results the same way as online.
+
 **All game logic lives in Electron.** Services (`bingoService.ts`, `ironmanService.ts`) own every state transition, timer, win condition, and side-effect. The frontend is display-only — it never drives game state. When a new client connects, the service sends the full current state via `MessageHandler.initData()` so the overlay is always in sync regardless of when it connected.
 
 **Twitch vote system (Bingo).** Both host and guest chats vote simultaneously on separate option sets (host gets options 0-1, guest gets 2-3 from a single shuffled pool). Guest vote starts with a 0–10s random offset. Resolved votes go into `pendingActions`; `processActionQueue()` drives the popup→action sequence: show result popup for 3s → execute action → 1s pause → clear popup → process next. The frontend reflects state directly from `bingoVoteStates` — no client-side queue.

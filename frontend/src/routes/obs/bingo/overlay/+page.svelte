@@ -10,15 +10,15 @@
 	$: localName = $currentPlayer?.displayName || 'You';
 	$: board = session?.board;
 
-	// Keep last board so boxes stay visible during the fade-out when session ends
+	// Keep last board so tiles stay visible during the fade-out when session ends
 	let displayBoard = board;
 	$: if (board) displayBoard = board;
 
 	$: size = displayBoard?.size ?? 5;
 	$: role = session?.role ?? 'solo';
 
-	$: localWinBoxes = new Set<number>(session?.winState?.localWinBoxIndices ?? []);
-	$: oppWinBoxes = new Set<number>(session?.winState?.oppWinBoxIndices ?? []);
+	$: localWinTiles = new Set<number>(session?.winState?.localWinTileIndices ?? []);
+	$: oppWinTiles = new Set<number>(session?.winState?.oppWinTileIndices ?? []);
 	$: localControlledLines = session?.winState?.localControlledLines ?? [];
 	$: oppControlledLines = session?.winState?.oppControlledLines ?? [];
 
@@ -47,7 +47,7 @@
 	// ── Animation state machine ───────────────────────────────────────────────
 	// idle      → no board
 	// playing   → board visible, game in progress
-	// exit      → boxes animating out (win detected)
+	// exit      → tiles animating out (win detected)
 	// winner    → win screen (no ad yet)
 	// winner-ad → win screen + froggi ad
 	type AnimPhase = 'idle' | 'playing' | 'exit' | 'winner' | 'winner-ad';
@@ -81,37 +81,37 @@
 
 	// Unified win detection: normal win, timer expiry, and sudden death resolution in one block
 	$: if (animPhase === 'playing' && board && !winTriggered) {
-		const boxes = board.boxes;
+		const tiles = board.tiles;
 		if (session?.winState?.hasWon) {
 			winTriggered = true;
 			winElapsedSeconds = elapsedSeconds;
 			isLocalWinner = session.winState.localWinner;
-			triggerWinExit(boxes.length);
+			triggerWinExit(tiles.length);
 		} else if (timerSecondsLeft === 0) {
 			if (timerSuddenDeath) {
 				// Sudden death: first new completion wins
-				const completed = boxes.filter(b => b.completed).length;
+				const completed = tiles.filter(b => b.completed).length;
 				if (completed > suddenDeathBaseCount) {
 					timerSuddenDeath = false;
 					winTriggered = true;
 					winElapsedSeconds = elapsedSeconds;
 					isLocalWinner = session?.winState?.localWinner ?? true;
-					triggerWinExit(boxes.length);
+					triggerWinExit(tiles.length);
 				}
 			} else {
-				// Timer just expired: resolve by score then boxes, or enter sudden death
+				// Timer just expired: resolve by score then tiles, or enter sudden death
 				const localS = session?.winState?.localScore ?? 0;
 				const oppS = session?.winState?.oppScore ?? 0;
-				const localBoxes = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-				const oppBoxes   = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-				if (localS !== oppS || localBoxes !== oppBoxes) {
+				const localTiles = tiles.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+				const oppTiles   = tiles.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+				if (localS !== oppS || localTiles !== oppTiles) {
 					winTriggered = true;
 					winElapsedSeconds = elapsedSeconds;
-					isLocalWinner = localS !== oppS ? localS > oppS : localBoxes > oppBoxes;
-					triggerWinExit(boxes.length);
+					isLocalWinner = localS !== oppS ? localS > oppS : localTiles > oppTiles;
+					triggerWinExit(tiles.length);
 				} else {
 					timerSuddenDeath = true;
-					suddenDeathBaseCount = boxes.filter(b => b.completed).length;
+					suddenDeathBaseCount = tiles.filter(b => b.completed).length;
 				}
 			}
 		}
@@ -253,7 +253,7 @@
 			</div>
 		{/if}
 		<div class="board-wrap">
-			<!-- Winner name shown behind boxes during exit -->
+			<!-- Winner name shown behind tiles during exit -->
 			{#if animPhase === 'exit'}
 				<div class="exit-backdrop" class:exit-backdrop--winner={isLocalWinner} in:fade={{ duration: 300 }}>
 					BINGO!
@@ -261,7 +261,7 @@
 			{/if}
 
 			{#if timerSuddenDeath && animPhase !== 'exit'}
-				<div class="sudden-death">⚡ Sudden death — next box wins!</div>
+				<div class="sudden-death">⚡ Sudden death — next tile wins!</div>
 			{:else if timerSecondsLeft !== null && animPhase !== 'exit'}
 				<div class="timer" class:timer--urgent={timerSecondsLeft <= 300}>
 					{timerSecondsLeft === 0 ? "⏱ Time's up!" : `⏱ ${formatTime(timerSecondsLeft)}`}
@@ -270,11 +270,11 @@
 
 			<div style="flex:1; min-height:0; --bingo-font-size:2.8vmin; --bingo-char-size:4vmin; --bingo-sub-size:2.2vmin; --bingo-badge-size:2vmin; --bingo-desc-size:1.9vmin; --bingo-gap:3px; --bingo-radius:4px;">
 				<BingoBoardGrid
-					boxes={displayBoard?.boxes ?? []}
+					tiles={displayBoard?.tiles ?? []}
 					{size}
 					{role}
-					{localWinBoxes}
-					{oppWinBoxes}
+					{localWinTiles}
+					{oppWinTiles}
 					{localControlledLines}
 					{oppControlledLines}
 					{exitingBoxIndices}

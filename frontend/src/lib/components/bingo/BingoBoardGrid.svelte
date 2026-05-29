@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { BingoBox } from '../../models/types/bingo';
+	import type { BingoTile } from '../../models/types/bingo';
 	import { bingoShuffleDelays } from '$lib/utils/store.svelte';
 	import { scale } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
@@ -9,20 +9,20 @@
 
 	import type { BingoControlledLine } from '../../models/types/bingo';
 
-	export let boxes: BingoBox[];
+	export let tiles: BingoTile[];
 	export let size: number;
 	export let role: string = 'solo';
-	export let localWinBoxes: Set<number> = new Set();
-	export let oppWinBoxes: Set<number> = new Set();
+	export let localWinTiles: Set<number> = new Set();
+	export let oppWinTiles: Set<number> = new Set();
 	/** Controlled rows/cols for rowcontrol mode (renders border overlay instead of per-tile highlight) */
 	export let localControlledLines: BingoControlledLine[] = [];
 	export let oppControlledLines: BingoControlledLine[] = [];
 	/** Enable dev-mode click halves (left = local, right = opponent) */
 	export let devMode: boolean = false;
-	/** Boxes currently playing their CSS exit animation */
+	/** Tiles currently playing their CSS exit animation */
 	export let exitingBoxIndices: Set<number> = new Set();
 	export let isLocalWinner: boolean = false;
-	/** Play staggered entry scale animation when boxes mount */
+	/** Play staggered entry scale animation when tiles mount */
 	export let animateEntry: boolean = false;
 
 	const dispatch = createEventDispatcher<{
@@ -50,14 +50,14 @@
 		return label;
 	}
 
-	function showProg(box: BingoBox): boolean {
+	function showProg(tile: BingoTile): boolean {
 		if (role === 'solo') return true;
-		return box.completedBy !== 'opponent';
+		return tile.completedBy !== 'opponent';
 	}
 
-	function pct(box: BingoBox): number {
-		if (!box.hasProgress || box.target <= 0) return box.completed ? 100 : 0;
-		return Math.min(100, (box.progress / box.target) * 100);
+	function pct(tile: BingoTile): number {
+		if (!tile.hasProgress || tile.target <= 0) return tile.completed ? 100 : 0;
+		return Math.min(100, (tile.progress / tile.target) * 100);
 	}
 
 	function handleClick(e: MouseEvent, instanceId: string) {
@@ -67,30 +67,31 @@
 		dispatch('devsimulate', { instanceId, player });
 	}
 
-	// Frozen countdown — reactive on both boxes and now
+	// Frozen countdown — reactive on both tiles and now
 	let now = Date.now();
 	let clockInterval: ReturnType<typeof setInterval> | null = null;
-	$: hasFrozen = boxes.some(b => b.frozen && b.frozenUntil);
+	$: hasFrozen = tiles.some(b => b.frozen && b.frozenUntil);
 	$: if (hasFrozen && !clockInterval) {
+		now = Date.now();
 		clockInterval = setInterval(() => { now = Date.now(); }, 1000);
 	} else if (!hasFrozen && clockInterval) {
 		clearInterval(clockInterval);
 		clockInterval = null;
 	}
-	$: frozenCountdowns = boxes.map(b =>
+	$: frozenCountdowns = tiles.map(b =>
 		b.frozen && b.frozenUntil ? Math.max(0, Math.ceil((b.frozenUntil - now) / 1000)) : 0
 	);
 
 	// Shake/pop animation on tile change
-	let prevBoxes: BingoBox[] = boxes.map(b => ({ ...b }));
+	let prevTiles: BingoTile[] = tiles.map(b => ({ ...b }));
 	let shakeIndices: Set<number> = new Set();
 	let shakeTimers: ReturnType<typeof setTimeout>[] = [];
 
 	afterUpdate(() => {
 		const changed: number[] = [];
-		for (let i = 0; i < boxes.length; i++) {
-			const prev = prevBoxes[i];
-			const curr = boxes[i];
+		for (let i = 0; i < tiles.length; i++) {
+			const prev = prevTiles[i];
+			const curr = tiles[i];
 			if (prev && curr && (
 				prev.frozen !== curr.frozen ||
 				prev.completed !== curr.completed ||
@@ -101,7 +102,7 @@
 				changed.push(i);
 			}
 		}
-		prevBoxes = boxes.map(b => ({ ...b }));
+		prevTiles = tiles.map(b => ({ ...b }));
 		if (changed.length === 0) return;
 		changed.forEach((idx, n) => {
 			const t1 = setTimeout(() => {
@@ -123,91 +124,82 @@
 
 <div class="grid-wrap">
 <div class="bingo-grid" style="--cols:{size}">
-	{#each boxes as box, i (box.instanceId)}
-		{@const isLocalW = localWinBoxes.has(i)}
-		{@const isOppW = oppWinBoxes.has(i)}
-		{@const isOpp = box.completedBy === 'opponent'}
-		{@const isMine = box.completedBy === 'local'}
-		{@const isBoth = box.completedBy === 'both'}
+	{#each tiles as tile, i (tile.instanceId)}
+		{@const isLocalW = localWinTiles.has(i)}
+		{@const isOppW = oppWinTiles.has(i)}
+		{@const isOpp = tile.completedBy === 'opponent'}
+		{@const isMine = tile.completedBy === 'local'}
+		{@const isBoth = tile.completedBy === 'both'}
 		{@const isExiting = exitingBoxIndices.has(i)}
-		{@const isFrozen = !!box.frozen}
+		{@const isFrozen = !!tile.frozen}
 		{@const isShaking = shakeIndices.has(i)}
-		{@const sp = showProg(box)}
-		{@const progPct = sp ? pct(box) : 0}
+		{@const sp = showProg(tile)}
+		{@const progPct = sp ? pct(tile) : 0}
 		{@const secsLeft = frozenCountdowns[i] ?? 0}
-		{@const frozenProminent = isFrozen && (role === 'solo' || (role === 'host' ? !box.frozenForOpponent : !!box.frozenForOpponent))}
+		{@const frozenProminent = isFrozen && (role === 'solo' || (role === 'host' ? !tile.frozenForOpponent : !!tile.frozenForOpponent))}
 		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 		<div
-			class="box"
-			class:box--mine={isMine}
-			class:box--opp={isOpp}
-			class:box--both={isBoth}
-			class:box--win-local={isLocalW && !isOppW}
-			class:box--win-opp={isOppW && !isLocalW}
-			class:box--win-both={isLocalW && isOppW}
-			class:box--exit-fall={isExiting && !isLocalWinner}
-			class:box--exit-rise={isExiting && isLocalWinner}
-			class:box--frozen={isFrozen}
-			class:box--frozen-prominent={frozenProminent}
-			class:box--shake={isShaking}
-			class:box--dev={devMode}
-			use:tooltip={{ content: box.description, placement: 'top', delay: [400, 0] }}
-			on:click={(e) => handleClick(e, box.instanceId)}
+			class="tile"
+			class:tile--mine={isMine}
+			class:tile--opp={isOpp}
+			class:tile--both={isBoth}
+			class:tile--win-local={isLocalW && !isOppW}
+			class:tile--win-opp={isOppW && !isLocalW}
+			class:tile--win-both={isLocalW && isOppW}
+			class:tile--exit-fall={isExiting && !isLocalWinner}
+			class:tile--exit-rise={isExiting && isLocalWinner}
+			class:tile--frozen={isFrozen}
+			class:tile--frozen-prominent={frozenProminent}
+			class:tile--shake={isShaking}
+			class:tile--dev={devMode}
+			use:tooltip={{ content: tile.description, placement: 'top', delay: [400, 0] }}
+			on:click={(e) => handleClick(e, tile.instanceId)}
 			animate:flip={{ duration: 250, easing: quintOut }}
 			in:scale={animateEntry
 				? { delay: i * 35, duration: 220, start: 0.3, easing: backOut }
 				: { duration: 0 }}
 		>
-			{#if box.completed && !isExiting}
+			{#if tile.completed && !isExiting}
 				<div class="box-pop" in:scale={{ duration: 280, start: 0.4, opacity: 0, easing: backOut }}></div>
 			{/if}
-			{#if sp && box.hasProgress && !box.completed}
+			{#if sp && tile.hasProgress && !tile.completed}
 				<div class="prog" style="width:{progPct}%"></div>
 			{/if}
-			<div class="box-inner">
-				{#if box.challengeId === 'win_with_character' && box.params.characterId != null}
-					{#if box.target <= 1}
+			<div class="tile-inner">
+				{#if tile.challengeId === 'win_with_character' && tile.params.characterId != null}
+					{#if tile.target <= 1}
 						<span class="label label--winicas">Win as</span>
 						<img
-							src="/image/characters/css/{charIconId(box.params.characterId)}.png"
+							src="/image/characters/css/{charIconId(tile.params.characterId)}.png"
 							alt=""
 							class="char-icon char-icon--large"
 						/>
 					{:else}
-						{@const prefix = charLabelPrefix(box.label)}
+						{@const prefix = charLabelPrefix(tile.label)}
 						<span class="label" style="font-size:{labelFontSize(prefix)}">{prefix}</span>
 						<img
-							src="/image/characters/css/{charIconId(box.params.characterId)}.png"
+							src="/image/characters/css/{charIconId(tile.params.characterId)}.png"
 							alt=""
 							class="char-icon"
 						/>
 					{/if}
 				{:else}
-					<span class="label" style="font-size:{labelFontSize(box.label)}">{box.label}</span>
+					<span class="label" style="font-size:{labelFontSize(tile.label)}">{tile.label}</span>
 				{/if}
 			</div>
-			{#if sp && box.hasProgress && !box.completed && !(box.challengeId === 'win_with_character' && box.target <= 1)}
-				<span class="sub">{box.progress}/{box.target}</span>
+			{#if sp && tile.hasProgress && !tile.completed && !(tile.challengeId === 'win_with_character' && tile.target <= 1)}
+				<span class="sub">{tile.progress}/{tile.target}</span>
 			{/if}
 			{#if isOpp}
 				<span class="opp-badge">✓</span>
 			{/if}
 			{#if isFrozen}
-				{#if frozenProminent}
-					<div class="frozen-badge frozen-badge--center">
-						<span class="frozen-icon frozen-icon--large">❄</span>
-						{#if secsLeft > 0}
-							<span class="frozen-countdown frozen-countdown--large">{secsLeft}s</span>
-						{/if}
-					</div>
-				{:else}
-					<div class="frozen-badge frozen-badge--corner">
-						<span class="frozen-icon">❄</span>
-						{#if secsLeft > 0}
-							<span class="frozen-countdown">{secsLeft}s</span>
-						{/if}
-					</div>
-				{/if}
+				<div class="frozen-badge frozen-badge--center">
+					<span class="frozen-icon frozen-icon--large">❄</span>
+					{#if secsLeft > 0}
+						<span class="frozen-countdown frozen-countdown--large">{secsLeft}s</span>
+					{/if}
+				</div>
 			{/if}
 			{#if devMode}
 				<div class="dev-half dev-half--left"></div>
@@ -262,7 +254,7 @@
 		z-index: 5;
 	}
 
-	.box {
+	.tile {
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -276,39 +268,39 @@
 	}
 
 	/* ── Completion colors (green = local, red = opponent) ── */
-	.box--mine { background: rgba(74, 222, 128, 0.28); border-color: rgba(74, 222, 128, 0.5); }
-	.box--opp  { background: rgba(248, 113, 113, 0.28); border-color: rgba(248, 113, 113, 0.5); }
-	.box--both {
+	.tile--mine { background: rgba(74, 222, 128, 0.28); border-color: rgba(74, 222, 128, 0.5); }
+	.tile--opp  { background: rgba(248, 113, 113, 0.28); border-color: rgba(248, 113, 113, 0.5); }
+	.tile--both {
 		background: linear-gradient(135deg, rgba(74, 222, 128, 0.28) 50%, rgba(248, 113, 113, 0.28) 50%);
 		border-color: rgba(255, 255, 255, 0.25);
 	}
 
 	/* ── Win row: layered on top of completion color ── */
-	.box--win-local { border: 2px solid rgba(74, 222, 128, 0.95); background: rgba(74, 222, 128, 0.55); }
-	.box--win-opp   { border: 2px solid rgba(248, 113, 113, 0.95); background: rgba(248, 113, 113, 0.55); }
-	.box--win-both  { border: 2px solid rgba(255, 255, 255, 0.75); }
+	.tile--win-local { border: 2px solid rgba(74, 222, 128, 0.95); background: rgba(74, 222, 128, 0.55); }
+	.tile--win-opp   { border: 2px solid rgba(248, 113, 113, 0.95); background: rgba(248, 113, 113, 0.55); }
+	.tile--win-both  { border: 2px solid rgba(255, 255, 255, 0.75); }
 
-	/* both-completed box inside any win row keeps diagonal */
-	.box--both.box--win-local,
-	.box--both.box--win-opp,
-	.box--both.box--win-both {
+	/* both-completed tile inside any win row keeps diagonal */
+	.tile--both.tile--win-local,
+	.tile--both.tile--win-opp,
+	.tile--both.tile--win-both {
 		background: linear-gradient(135deg, rgba(74, 222, 128, 0.55) 50%, rgba(248, 113, 113, 0.55) 50%);
 	}
 
 	/* ── Exit animations ── */
-	@keyframes box-fall {
+	@keyframes tile-fall {
 		0%   { opacity: 1; transform: translateY(0) scale(1); }
 		100% { opacity: 0; transform: translateY(120px) scale(0.6); }
 	}
-	@keyframes box-rise {
+	@keyframes tile-rise {
 		0%   { opacity: 1; transform: translateY(0) scale(1); }
 		100% { opacity: 0; transform: translateY(-120px) scale(0.6); }
 	}
-	.box--exit-fall { animation: box-fall 0.35s ease-in forwards; }
-	.box--exit-rise { animation: box-rise 0.35s ease-in forwards; }
+	.tile--exit-fall { animation: tile-fall 0.35s ease-in forwards; }
+	.tile--exit-rise { animation: tile-rise 0.35s ease-in forwards; }
 
 	/* ── Shake/pop on tile change ── */
-	.box--shake {
+	.tile--shake {
 		animation: tile-pop-shake 0.52s ease-in-out both;
 		z-index: 3;
 	}
@@ -322,7 +314,7 @@
 		100% { transform: scale(1); filter: brightness(1); }
 	}
 
-	.box-pop {
+	.tile-pop {
 		position: absolute;
 		inset: 0;
 		border-radius: var(--bingo-radius, 0.375rem);
@@ -340,7 +332,7 @@
 		transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 	}
 
-	.box-inner {
+	.tile-inner {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -354,7 +346,7 @@
 	}
 
 	/* Dim tile content while frozen so badge is readable */
-	.box--frozen .box-inner { opacity: 0.38; }
+	.tile--frozen .tile-inner { opacity: 0.38; }
 
 	.char-icon {
 		width: var(--bingo-char-size, 56px);
@@ -404,13 +396,13 @@
 	}
 
 	/* ── Frozen ── */
-	.box--frozen {
+	.tile--frozen {
 		border-color: rgba(147, 210, 255, 0.8) !important;
 		background: rgba(147, 210, 255, 0.12) !important;
 		animation: frozen-pulse 2s ease-in-out infinite;
 	}
 	/* Opponent/solo: heavier dim so centered timer is readable */
-	.box--frozen-prominent .box-inner { opacity: 0.22 !important; }
+	.tile--frozen-prominent .tile-inner { opacity: 0.22 !important; }
 
 	@keyframes frozen-pulse {
 		0%, 100% { box-shadow: 0 0 0 0 rgba(147, 210, 255, 0); }
@@ -503,7 +495,7 @@
 	}
 
 	/* ── Dev mode click hints ── */
-	.box--dev { cursor: pointer; }
+	.tile--dev { cursor: pointer; }
 
 	.dev-half {
 		position: absolute;
@@ -518,6 +510,6 @@
 	.dev-half--left  { left: 0; }
 	.dev-half--right { right: 0; }
 
-	.box--dev:hover .dev-half--left  { background: rgba(74, 222, 128, 0.25); opacity: 1; }
-	.box--dev:hover .dev-half--right { background: rgba(248, 113, 113, 0.25); opacity: 1; }
+	.tile--dev:hover .dev-half--left  { background: rgba(74, 222, 128, 0.25); opacity: 1; }
+	.tile--dev:hover .dev-half--right { background: rgba(248, 113, 113, 0.25); opacity: 1; }
 </style>

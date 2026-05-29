@@ -10,7 +10,7 @@
 	import { onMount } from 'svelte';
 	import { generateBoard } from '$lib/utils/bingoGenerator';
 	import { countLines, countControlledLines, getControlledLines, hasWon as bingoHasWon, scoreTarget as bingoScoreTarget } from '$lib/utils/bingoWinCondition';
-	import type { BingoSettings, BingoBox, BingoRole, BingoDifficulty, BingoWinCondition, BingoVoteActionType } from '$lib/models/types/bingo';
+	import type { BingoSettings, BingoTile, BingoRole, BingoDifficulty, BingoWinCondition, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSettings, IronManRoster, IronManCharSelection, IronManRandomSync } from '$lib/models/types/ironman';
 	import { IRONMAN_CHARS, IRONMAN_CHAR_NAMES, IRONMAN_CHAR_FALLBACK } from '$lib/models/types/ironman';
 	import { tooltip } from 'svooltip';
@@ -23,6 +23,7 @@
 
 	type Game = 'bingo' | 'ironman';
 	type Mode = 'solo' | 'host' | 'guest';
+	type ImMode = 'solo' | 'host' | 'guest' | 'local';
 
 	let selectedGame: Game | null = null;
 
@@ -31,7 +32,7 @@
 	}
 
 	// ── Global connection state ────────────────────────────────────────────
-	let connMode: 'idle' | 'host' | 'guest' = 'idle';
+	let connMode: 'idle' | 'host' | 'guest' | 'local' = 'idle';
 	let guestPersistUrl = '';
 	let waitingForHostLobby = false;
 	let isPollingForHost = false;
@@ -46,6 +47,17 @@
 	function leaveHostMode() {
 		if (inLobby || isActive) { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
 		if (imInLobby || imIsActive) { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		connMode = 'idle';
+		selectedGame = null;
+	}
+
+	function enterLocalMode() {
+		connMode = 'local';
+		selectedGame = 'ironman';
+	}
+
+	function leaveLocalMode() {
+		if (imIsActive) { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
 		connMode = 'idle';
 		selectedGame = null;
 	}
@@ -299,7 +311,7 @@
 	$: size = board.size;
 	$: role = session?.role ?? 'solo';
 	$: opponentConnected = session?.opponentConnected ?? false;
-	$: completedCount = board.boxes.filter((b) => b.completed).length;
+	$: completedCount = board.tiles.filter((b) => b.completed).length;
 	$: activeWinCondition = session?.settings?.winCondition ?? settings.winCondition;
 
 	// If session already active when page loads, jump into it
@@ -521,8 +533,8 @@
 
 
 
-	function getWinBoxesFiltered(boxes: BingoBox[], sz: number, filter: (b: BingoBox) => boolean): Set<number> {
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter((i) => i >= 0));
+	function getWinTilesFiltered(tiles: BingoTile[], sz: number, filter: (b: BingoTile) => boolean): Set<number> {
+		const done = new Set(tiles.map((b, i) => (filter(b) ? i : -1)).filter((i) => i >= 0));
 		const win = new Set<number>();
 		for (let r = 0; r < sz; r++) {
 			const row = Array.from({ length: sz }, (_, c) => r * sz + c);
@@ -539,34 +551,34 @@
 		return win;
 	}
 
-	$: localWinBoxes = activeWinCondition === 'rowcontrol'
+	$: localWinTiles = activeWinCondition === 'rowcontrol'
 		? new Set<number>()
-		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
-	$: oppWinBoxes = activeWinCondition === 'rowcontrol'
+		: getWinTilesFiltered(board.tiles, size, b => b.completedBy === 'local' || b.completedBy === 'both');
+	$: oppWinTiles = activeWinCondition === 'rowcontrol'
 		? new Set<number>()
-		: getWinBoxesFiltered(board.boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
-	$: localControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'local') : [];
-	$: oppControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.boxes, size, 'opponent') : [];
+		: getWinTilesFiltered(board.tiles, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
+	$: localControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.tiles, size, 'local') : [];
+	$: oppControlledLines = activeWinCondition === 'rowcontrol' ? getControlledLines(board.tiles, size, 'opponent') : [];
 
-	$: hasWon = bingoHasWon(board.boxes, size, activeWinCondition);
+	$: hasWon = bingoHasWon(board.tiles, size, activeWinCondition);
 
 	$: localScore = (() => {
 		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'rowcontrol') return countControlledLines(boxes, size, 'local');
-		if (wc === 'lockout' || wc === 'full') return boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		return countLines(boxes, size, b => b.completedBy === 'local' || b.completedBy === 'both');
+		const tiles = board.tiles;
+		if (wc === 'rowcontrol') return countControlledLines(tiles, size, 'local');
+		if (wc === 'lockout' || wc === 'full') return tiles.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+		return countLines(tiles, size, b => b.completedBy === 'local' || b.completedBy === 'both');
 	})();
 
 	$: oppScore = (() => {
 		const wc = activeWinCondition;
-		const boxes = board.boxes;
-		if (wc === 'rowcontrol') return countControlledLines(boxes, size, 'opponent');
-		if (wc === 'lockout' || wc === 'full') return boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
-		return countLines(boxes, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
+		const tiles = board.tiles;
+		if (wc === 'rowcontrol') return countControlledLines(tiles, size, 'opponent');
+		if (wc === 'lockout' || wc === 'full') return tiles.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+		return countLines(tiles, size, b => b.completedBy === 'opponent' || b.completedBy === 'both');
 	})();
 
-	$: scoreTarget = bingoScoreTarget(board.boxes, size, activeWinCondition);
+	$: scoreTarget = bingoScoreTarget(board.tiles, size, activeWinCondition);
 
 	$: scoreUnit = activeWinCondition === 'lockout' || activeWinCondition === 'full' ? 'tiles' : 'lines';
 
@@ -590,8 +602,11 @@
 		{ value: 'full_roster', label: 'Full Roster', tip: 'Win with each character to complete it.\nFirst to finish your entire roster wins.' },
 		{ value: 'challenge', label: 'Challenge', tip: 'Solo: beat every character without a single loss.\nAny loss resets all progress. Fastest time recorded.' },
 	];
-	$: imAvailableVariants = connMode === 'idle' ? imVariants.filter(v => v.value !== 'standard') : imVariants;
+	$: imAvailableVariants = connMode === 'idle' ? imVariants.filter(v => v.value !== 'standard') :
+		connMode === 'local' ? imVariants.filter(v => v.value !== 'challenge') :
+		imVariants;
 	$: if (connMode === 'idle' && imSettings.variant === 'standard') imSettings = { ...imSettings, variant: 'full_roster' };
+	$: if (connMode === 'local' && imSettings.variant === 'challenge') imSettings = { ...imSettings, variant: 'standard' };
 	const imOrderOptions: { value: IronManSettings['charOrder']; label: string; tip: string }[] = [
 		{ value: 'free', label: 'Free', tip: 'Play any remaining character each game.\nThe active character updates when a game starts.' },
 		{ value: 'fixed', label: 'Fixed', tip: 'Play in the exact order you set.\nThe next character is shown before each game.' },
@@ -608,9 +623,10 @@
 	const imRosterSizes = [5, 7, 11, 15, 25, 26] as const;
 	// Melee CSS rows: row1=9, row2=10, row3=7
 	const imCharRows: [number, number][] = [[0, 9], [9, 19], [19, 26]];
-	let imMode: Mode = 'solo';
-	$: imMode = (connMode === 'guest' ? 'guest' : connMode === 'host' ? 'host' : 'solo') as Mode;
+	let imMode: ImMode = 'solo';
+	$: imMode = (connMode === 'guest' ? 'guest' : connMode === 'host' ? 'host' : connMode === 'local' ? 'local' : 'solo') as ImMode;
 	let imSelectedChars: number[] = [];
+	let imSelectedCharsP2: number[] = [];
 	let imGuestUrl = '';
 	let imConnecting = false;
 
@@ -618,8 +634,11 @@
 	$: if (imSettings.rosterSize === 26 && imSelectedChars.length !== IRONMAN_CHARS.length) {
 		imSelectedChars = [...IRONMAN_CHARS];
 	}
+	$: if (imSettings.rosterSize === 26 && imSelectedCharsP2.length !== IRONMAN_CHARS.length && connMode === 'local') {
+		imSelectedCharsP2 = [...IRONMAN_CHARS];
+	}
 
-	// Drag-to-reorder
+	// Drag-to-reorder (P1)
 	let imDragFrom: number | null = null;
 	function imDragStart(i: number) { imDragFrom = i; }
 	function imDragOver(e: DragEvent) { e.preventDefault(); }
@@ -632,6 +651,20 @@
 		imDragFrom = null;
 	}
 	function imDragEnd() { imDragFrom = null; }
+
+	// Drag-to-reorder (P2)
+	let imDragFromP2: number | null = null;
+	function imDragStartP2(i: number) { imDragFromP2 = i; }
+	function imDragOverP2(e: DragEvent) { e.preventDefault(); }
+	function imDropP2(i: number) {
+		if (imDragFromP2 === null || imDragFromP2 === i) return;
+		const arr = [...imSelectedCharsP2];
+		const [moved] = arr.splice(imDragFromP2, 1);
+		arr.splice(i, 0, moved);
+		imSelectedCharsP2 = arr;
+		imDragFromP2 = null;
+	}
+	function imDragEndP2() { imDragFromP2 = null; }
 
 	$: imPreviewNextCharId = (imSettings.charOrder === 'fixed' || imSettings.charOrder === 'random') && imSelectedChars.length > 0
 		? imSelectedChars[0]
@@ -647,7 +680,9 @@
 	$: imLocalName = imSession?.localName ?? 'You';
 	$: imOpponentName = imSession?.opponentName ?? 'Opponent';
 	$: imPendingCarry = imSession?.pendingCarryStocks ?? null;
-	$: imCanStart = imSettings.charSelection === 'random' || imSettings.rosterSize === 26 || imSelectedChars.length === imSettings.rosterSize;
+	$: imCanStart = imSettings.charSelection === 'random' || imSettings.rosterSize === 26 ||
+		(imSelectedChars.length === imSettings.rosterSize &&
+		 (connMode !== 'local' || imSelectedCharsP2.length === imSettings.rosterSize));
 	$: imIsSharedRandom = imSettings.charSelection === 'random' && imSettings.randomSync === 'shared';
 
 	$: imLocalProgress = (() => {
@@ -714,31 +749,49 @@
 		}
 	}
 
-	function imStart(role: 'solo' | 'host' | 'guest') {
-		let chars: number[];
-		if (imSettings.rosterSize === 26) {
-			chars = [...IRONMAN_CHARS];
-		} else if (imSettings.charSelection === 'random') {
-			const all = [...IRONMAN_CHARS] as number[];
-			for (let i = all.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				[all[i], all[j]] = [all[j], all[i]];
-			}
-			chars = all.slice(0, imSettings.rosterSize);
-		} else {
-			chars = imSelectedChars.slice(0, imSettings.rosterSize);
+	function imToggleCharP2(id: number) {
+		if (imSettings.rosterSize === 26) return;
+		if (imSelectedCharsP2.includes(id)) {
+			imSelectedCharsP2 = imSelectedCharsP2.filter(c => c !== id);
+		} else if (imSelectedCharsP2.length < imSettings.rosterSize) {
+			imSelectedCharsP2 = [...imSelectedCharsP2, id];
 		}
+	}
+
+	function imStart(role: 'solo' | 'host' | 'guest' | 'local') {
+		function pickChars(seed: number[]): number[] {
+			if (imSettings.rosterSize === 26) return [...IRONMAN_CHARS];
+			if (imSettings.charSelection === 'random') {
+				const all = [...IRONMAN_CHARS] as number[];
+				for (let i = all.length - 1; i > 0; i--) {
+					const j = Math.floor(Math.random() * (i + 1));
+					[all[i], all[j]] = [all[j], all[i]];
+				}
+				return all.slice(0, imSettings.rosterSize);
+			}
+			return seed.slice(0, imSettings.rosterSize);
+		}
+
+		const chars = pickChars(imSelectedChars);
 		if (chars.length < 1) return;
 		const localRoster = imBuildRoster(chars);
+
+		let opponentRoster = null;
+		if (role === 'local') {
+			const charsP2 = pickChars(imSelectedCharsP2);
+			if (charsP2.length < 1) return;
+			opponentRoster = imBuildRoster(charsP2);
+		}
+
 		$electronEmitter.emit('StartIronMan', {
 			settings: imSettings,
 			localRoster,
-			opponentRoster: null,
+			opponentRoster,
 			role,
-			localName: $currentPlayer?.displayName || 'Player',
-			opponentName: role === 'host' ? ($ironManLobby?.opponentName ?? null) : ($ironManLobby?.opponentName ?? null),
-			localPlayerIndex: $currentPlayer?.playerIndex ?? null,
-			opponentConnected: role === 'host' ? ($ironManLobby?.opponentConnected ?? false) : (role === 'guest'),
+			localName: role === 'local' ? 'P1' : ($currentPlayer?.displayName || 'Player'),
+			opponentName: role === 'local' ? 'P2' : ($ironManLobby?.opponentName ?? null),
+			localPlayerIndex: role === 'local' ? 0 : ($currentPlayer?.playerIndex ?? null),
+			opponentConnected: role === 'local' ? true : (role === 'host' ? ($ironManLobby?.opponentConnected ?? false) : (role === 'guest')),
 			startedAt: Date.now(),
 			winner: null,
 			pendingCarryStocks: null,
@@ -758,8 +811,7 @@
 	function imStop() {
 		imConnecting = false;
 		$electronEmitter.emit('StopIronMan');
-		selectedGame = null;
-		
+		if (connMode !== 'local') selectedGame = null;
 	}
 
 	function imVariantLabel(v: IronManSettings['variant']): string {
@@ -795,17 +847,25 @@
 			<div>
 				<div class="flex items-center gap-2">
 					{#if selectedGame && !isActive && !imIsActive}
-						<button class="back-btn" on:click={connMode === 'idle' ? () => (selectedGame = null) : hostBackFromGame}>← Back</button>
+						<button class="back-btn" on:click={
+							connMode === 'idle' ? () => (selectedGame = null) :
+							connMode === 'local' ? leaveLocalMode :
+							hostBackFromGame
+						}>← Back</button>
 					{:else if connMode !== 'idle' && !selectedGame && !isActive && !imIsActive}
-						<button class="back-btn" on:click={connMode === 'host' ? leaveHostMode : disconnectGuest}>← Disconnect</button>
+						<button class="back-btn" on:click={
+							connMode === 'host' ? leaveHostMode :
+							connMode === 'local' ? leaveLocalMode :
+							disconnectGuest
+						}>← Disconnect</button>
 					{/if}
 					<h1 class="font-bold text-3xl">
-						{#if selectedGame === 'bingo'}Bingo{:else if selectedGame === 'ironman'}Iron Man{:else if connMode === 'host'}Hosting{:else if connMode === 'guest'}Connected{:else}Minigames{/if}
+						{#if selectedGame === 'bingo'}Bingo{:else if selectedGame === 'ironman'}Iron Man{:else if connMode === 'host'}Hosting{:else if connMode === 'guest'}Connected{:else if connMode === 'local'}Local VS{:else}Minigames{/if}
 					</h1>
 				</div>
 				{#if selectedGame === 'bingo' && isActive}
 					<p class="text-sm opacity-50 mt-1">
-						{completedCount}/{board.boxes.length} · {board.difficulty} · {winConditionLabel(activeWinCondition)}
+						{completedCount}/{board.tiles.length} · {board.difficulty} · {winConditionLabel(activeWinCondition)}
 						{#if role !== 'solo'}
 							· {role === 'host' ? 'Hosting' : 'Guest'}
 							{#if opponentConnected}
@@ -865,6 +925,8 @@
 							<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('guest')}>Ready</button>
 						{/if}
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-50" on:click={disconnectGuest}>Leave</button>
+					{:else if connMode === 'local'}
+						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('local')}>Start</button>
 					{:else if connMode === 'idle'}
 						<button class="btn text-sm h-9 px-4 border-secondary rounded disabled:opacity-40" disabled={!imCanStart} on:click={() => imStart('solo')}>Start</button>
 						<button class="btn text-sm h-9 px-4 border-secondary rounded opacity-60" on:click={() => (showImLeaderboard = true)}>Best Times</button>
@@ -915,7 +977,11 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="conn-card-grid">
+					<div class="conn-card-grid conn-card-grid--3">
+						<button class="game-card border-secondary" on:click={enterLocalMode}>
+							<span class="game-card-title">Local VS</span>
+							<span class="game-card-desc">Play Iron Man against a friend on the same machine.</span>
+						</button>
 						<button class="game-card border-secondary" on:click={enterHostMode}>
 							<span class="game-card-title">Host</span>
 							<span class="game-card-desc">Generate a share code and invite a friend to your session.</span>
@@ -1178,11 +1244,11 @@
 		{#if selectedGame === 'bingo' && !inLobby}
 			<div style="aspect-ratio:1/1; width:100%;">
 				<BingoBoardGrid
-					boxes={board.boxes}
+					tiles={board.tiles}
 					{size}
 					{role}
-					{localWinBoxes}
-					{oppWinBoxes}
+					{localWinTiles}
+					{oppWinTiles}
 					{localControlledLines}
 					{oppControlledLines}
 					devMode={isActive}
@@ -1259,7 +1325,10 @@
 									class:pill--active={imSettings.rosterSize === size}
 									on:click={() => {
 										imSettings = { ...imSettings, rosterSize: size };
-										if (size < 26) imSelectedChars = imSelectedChars.slice(0, size);
+										if (size < 26) {
+											imSelectedChars = imSelectedChars.slice(0, size);
+											imSelectedCharsP2 = imSelectedCharsP2.slice(0, size);
+										}
 									}}
 								>{size === 26 ? 'All' : size}</button>
 							{/each}
@@ -1291,7 +1360,7 @@
 							{/each}
 						</div>
 					</div>
-					{#if imSettings.charSelection === 'random' && imMode !== 'solo'}
+					{#if imSettings.charSelection === 'random' && imMode !== 'solo' && imMode !== 'local'}
 						<div class="settings-group">
 							<span class="settings-label">Sync</span>
 							<div class="pill-group">
@@ -1306,7 +1375,7 @@
 							</div>
 						</div>
 					{/if}
-					{#if imMode !== 'solo'}
+					{#if imMode !== 'solo' && imMode !== 'local'}
 						<div class="settings-group">
 							<span class="settings-label">Hide characters</span>
 							<div class="pill-group">
@@ -1347,7 +1416,103 @@
 
 		<!-- Iron Man: main content -->
 		{#if selectedGame === 'ironman' && !imIsActive && !imInLobby && imMode !== 'guest'}
-			<!-- Solo/Host: char picker setup -->
+			<!-- Solo/Host/Local: char picker setup -->
+			{#if imMode === 'local'}
+				<div class="local-pickers-row">
+					<!-- P1 picker -->
+					<div class="dash-card border-secondary flex flex-col gap-4 flex-1 min-w-0">
+						{#if imSettings.charSelection === 'random'}
+							<p class="dash-label">P1 — random at start</p>
+						{:else if imSettings.rosterSize < 26}
+							<p class="dash-label">P1 — {imSelectedChars.length}/{imSettings.rosterSize} selected</p>
+						{:else}
+							<p class="dash-label">P1 — all 26</p>
+						{/if}
+						{#if imSettings.charSelection !== 'random'}
+						<div class="char-picker">
+							{#each imCharRows as [start, end]}
+								<div class="char-row">
+									{#each IRONMAN_CHARS.slice(start, end) as charId}
+										<button
+											class="char-btn"
+											class:char-btn--selected={imSelectedChars.includes(charId)}
+											class:char-btn--full={imSettings.rosterSize < 26 && !imSelectedChars.includes(charId) && imSelectedChars.length >= imSettings.rosterSize}
+											on:click={() => imToggleChar(charId)}
+											title={IRONMAN_CHAR_NAMES[charId]}
+										>
+											<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="char-btn-img" />
+										</button>
+									{/each}
+								</div>
+							{/each}
+						</div>
+						{/if}
+						{#if imSettings.charSelection !== 'random' && imSelectedChars.length > 0 && imSettings.charOrder !== 'free' && imSettings.rosterSize < 26}
+							<div class="order-strip-wrap">
+								<span class="order-strip-label">P1 play order — drag to rearrange</span>
+								<div class="order-strip">
+									{#each imSelectedChars as charId, i}
+										<!-- svelte-ignore a11y-no-static-element-interactions -->
+										<div class="order-slot" class:order-slot--first={i === 0} draggable="true"
+											on:dragstart={() => imDragStart(i)} on:dragover={imDragOver}
+											on:drop={() => imDrop(i)} on:dragend={imDragEnd}
+											title={IRONMAN_CHAR_NAMES[charId]}>
+											<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="order-icon" />
+											{#if i === 0}<span class="order-badge">1st</span>{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+					<!-- P2 picker -->
+					<div class="dash-card border-secondary flex flex-col gap-4 flex-1 min-w-0">
+						{#if imSettings.charSelection === 'random'}
+							<p class="dash-label">P2 — random at start</p>
+						{:else if imSettings.rosterSize < 26}
+							<p class="dash-label">P2 — {imSelectedCharsP2.length}/{imSettings.rosterSize} selected</p>
+						{:else}
+							<p class="dash-label">P2 — all 26</p>
+						{/if}
+						{#if imSettings.charSelection !== 'random'}
+						<div class="char-picker">
+							{#each imCharRows as [start, end]}
+								<div class="char-row">
+									{#each IRONMAN_CHARS.slice(start, end) as charId}
+										<button
+											class="char-btn"
+											class:char-btn--selected={imSelectedCharsP2.includes(charId)}
+											class:char-btn--full={imSettings.rosterSize < 26 && !imSelectedCharsP2.includes(charId) && imSelectedCharsP2.length >= imSettings.rosterSize}
+											on:click={() => imToggleCharP2(charId)}
+											title={IRONMAN_CHAR_NAMES[charId]}
+										>
+											<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="char-btn-img" />
+										</button>
+									{/each}
+								</div>
+							{/each}
+						</div>
+						{/if}
+						{#if imSettings.charSelection !== 'random' && imSelectedCharsP2.length > 0 && imSettings.charOrder !== 'free' && imSettings.rosterSize < 26}
+							<div class="order-strip-wrap">
+								<span class="order-strip-label">P2 play order — drag to rearrange</span>
+								<div class="order-strip">
+									{#each imSelectedCharsP2 as charId, i}
+										<!-- svelte-ignore a11y-no-static-element-interactions -->
+										<div class="order-slot" class:order-slot--first={i === 0} draggable="true"
+											on:dragstart={() => imDragStartP2(i)} on:dragover={imDragOverP2}
+											on:drop={() => imDropP2(i)} on:dragend={imDragEndP2}
+											title={IRONMAN_CHAR_NAMES[charId]}>
+											<img src="/image/characters/css/{IRONMAN_CHAR_FALLBACK[charId] ?? charId}.png" alt={IRONMAN_CHAR_NAMES[charId]} class="order-icon" />
+											{#if i === 0}<span class="order-badge">1st</span>{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{:else}
 			<div class="dash-card border-secondary flex flex-col gap-4">
 				{#if imSettings.charSelection === 'random'}
 					<p class="dash-label">Characters selected randomly at start — {imSettings.rosterSize === 26 ? 'all 26' : imSettings.rosterSize + ' random'}</p>
@@ -1400,6 +1565,7 @@
 					</div>
 				{/if}
 			</div>
+			{/if}
 
 		{:else if selectedGame === 'ironman' && imInLobby}
 			<!-- Lobby: waiting or char picker after opponent connects -->
@@ -1963,6 +2129,16 @@
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.75rem;
+	}
+
+	.conn-card-grid--3 {
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.local-pickers-row {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
 	}
 
 	.conn-separator {

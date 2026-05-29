@@ -59,7 +59,7 @@ export interface BingoChallengeConfig {
 
 export interface BingoChallengeParams {
 	difficulty: BingoDifficulty;
-	/** Resolved integer target for this specific box instance */
+	/** Resolved integer target for this specific tile instance */
 	target: number;
 	/** For direction-specific challenges */
 	direction?: 'left' | 'right';
@@ -70,7 +70,7 @@ export interface BingoChallengeParams {
 	percent?: number;
 }
 
-export interface BingoBox {
+export interface BingoTile {
 	instanceId: string;
 	challengeId: BingoChallengeId;
 	label: string;
@@ -90,7 +90,7 @@ export interface BingoBox {
 export interface BingoBoard {
 	id: string;
 	size: number;
-	boxes: BingoBox[];
+	tiles: BingoTile[];
 	difficulty: BingoDifficulty;
 	createdAt: number;
 }
@@ -172,7 +172,12 @@ export interface BingoVoteStates {
 
 export interface BingoTileReplacedPayload {
 	instanceId: string;
-	box: BingoBox;
+	tile: BingoTile;
+}
+
+export interface BingoTilesRollingPayload {
+	rolls: Array<{ instanceId: string; frames: BingoTile[] }>;
+	delayMs: number;
 }
 
 export interface BingoLobbyPayload {
@@ -190,9 +195,9 @@ export interface BingoControlledLine {
 }
 
 export interface BingoWinState {
-	/** Indices of boxes that are part of a completed/controlled line for each player */
-	localWinBoxIndices: number[];
-	oppWinBoxIndices: number[];
+	/** Indices of tiles that are part of a completed/controlled line for each player */
+	localWinTileIndices: number[];
+	oppWinTileIndices: number[];
 	/** Controlled rows/cols for rowcontrol mode (used for border rendering instead of per-tile highlight) */
 	localControlledLines?: BingoControlledLine[];
 	oppControlledLines?: BingoControlledLine[];

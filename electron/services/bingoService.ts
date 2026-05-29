@@ -16,7 +16,7 @@ import type {
 	BingoSettings,
 	BingoSoloWinPayload,
 	BingoLeaderboardEntry,
-	BingoBox,
+	BingoTile,
 	BingoDifficulty,
 	BingoChallengeId,
 	BingoVoteState,
@@ -56,7 +56,7 @@ interface SessionSnapshot {
 	sessionGwmJudgeKills: number;
 	sessionTurnipHeld: boolean;
 	sessionEggLays: number;
-	boxStates: Map<string, { progress: number; completed: boolean; completedBy: 'local' | 'opponent' | 'both' | null }>;
+	tileStates: Map<string, { progress: number; completed: boolean; completedBy: 'local' | 'opponent' | 'both' | null }>;
 }
 
 interface ZeroDeathAttempt {
@@ -134,7 +134,7 @@ export class BingoService {
 	private characterWins: Map<number, number> = new Map();
 	private lastGameWasWin: boolean = false;
 	private sessionSnapshot: SessionSnapshot | null = null;
-	private opponentCompletedBoxes: Set<string> = new Set();
+	private opponentCompletedTiles: Set<string> = new Set();
 	private readonly revertEnabled: boolean = true;
 
 	// Vote state
@@ -310,11 +310,11 @@ export class BingoService {
 				// Send board to waiting guest (perspectives flipped)
 				const guestBoard = {
 					...session.board,
-					boxes: session.board.boxes.map((box) => ({
-						...box,
-						completedBy: box.completedBy === 'local' ? 'opponent'
-							: box.completedBy === 'opponent' ? 'local'
-								: box.completedBy,
+					tiles: session.board.tiles.map((tile) => ({
+						...tile,
+						completedBy: tile.completedBy === 'local' ? 'opponent'
+							: tile.completedBy === 'opponent' ? 'local'
+								: tile.completedBy,
 					})),
 				};
 				session.opponentName = this.lobby.opponentName;
@@ -352,11 +352,11 @@ export class BingoService {
 				this.peerSocket = savedPeer;
 				const guestBoard = {
 					...session.board,
-					boxes: session.board.boxes.map(box => ({
-						...box,
-						completedBy: box.completedBy === 'local' ? 'opponent' as const
-							: box.completedBy === 'opponent' ? 'local' as const
-								: box.completedBy,
+					tiles: session.board.tiles.map(tile => ({
+						...tile,
+						completedBy: tile.completedBy === 'local' ? 'opponent' as const
+							: tile.completedBy === 'opponent' ? 'local' as const
+								: tile.completedBy,
 					})),
 				};
 				savedPeer.send(JSON.stringify({ type: 'BingoRestart', board: guestBoard, settings: session.settings, playerName: this.localPlayerName }));
@@ -453,14 +453,14 @@ export class BingoService {
 
 	private sendChallengeUpdates(updates: BingoChallengeUpdate[], reverted: boolean = false): void {
 		if (!this.session) return;
-		const boxes = this.session.board.boxes;
-		const totalCheckedLocal = boxes.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
-		const totalCheckedOpponent = boxes.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
+		const tiles = this.session.board.tiles;
+		const totalCheckedLocal = tiles.filter(b => b.completedBy === 'local' || b.completedBy === 'both').length;
+		const totalCheckedOpponent = tiles.filter(b => b.completedBy === 'opponent' || b.completedBy === 'both').length;
 		const completedUpdate = updates.find(u => u.completed) ?? updates[updates.length - 1] ?? null;
-		const latestBox = completedUpdate ? boxes.find(b => b.instanceId === completedUpdate.instanceId) : null;
-		const latestUpdate = completedUpdate && latestBox ? {
+		const latestTile = completedUpdate ? tiles.find(b => b.instanceId === completedUpdate.instanceId) : null;
+		const latestUpdate = completedUpdate && latestTile ? {
 			instanceId: completedUpdate.instanceId,
-			label: latestBox.label,
+			label: latestTile.label,
 			completedBy: completedUpdate.completedBy ?? null,
 			reverted,
 		} : null;
@@ -474,22 +474,22 @@ export class BingoService {
 
 	private devCompleteLocal(instanceId: string) {
 		if (!this.session) return;
-		const box = this.session.board.boxes.find((b) => b.instanceId === instanceId);
-		if (!box) return;
-		if (box.frozen && !box.frozenForOpponent) return;
+		const tile = this.session.board.tiles.find((b) => b.instanceId === instanceId);
+		if (!tile) return;
+		if (tile.frozen && !tile.frozenForOpponent) return;
 		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
 		// Already fully claimed by local (or shared) — no stealing back
-		if (box.completedBy === 'local' || box.completedBy === 'both') return;
-		if (isExclusive && box.completedBy) return;
-		if (!isExclusive && box.completedBy === 'opponent') {
-			box.completedBy = 'both';
+		if (tile.completedBy === 'local' || tile.completedBy === 'both') return;
+		if (isExclusive && tile.completedBy) return;
+		if (!isExclusive && tile.completedBy === 'opponent') {
+			tile.completedBy = 'both';
 		} else {
-			box.completed = true;
-			box.completedBy = 'local';
-			box.progress = box.target;
+			tile.completed = true;
+			tile.completedBy = 'local';
+			tile.progress = tile.target;
 			this.sendCompletionToPeer(instanceId);
 		}
-		this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: box.completedBy ?? undefined }]);
+		this.sendChallengeUpdates([{ instanceId, progress: tile.target, completed: true, completedBy: tile.completedBy ?? undefined }]);
 		this.sendBoardToPeer(this.session.board);
 	}
 
@@ -563,7 +563,7 @@ export class BingoService {
 					this.stopVote();
 					this.clearFrozenTimers();
 
-					this.opponentCompletedBoxes.clear();
+					this.opponentCompletedTiles.clear();
 					this.resetSessionAccumulators();
 					this.resetGameState();
 					this.session = session;
@@ -600,23 +600,23 @@ export class BingoService {
 
 	private applyOpponentCompletion(instanceId: string) {
 		if (!this.session) return;
-		const box = this.session.board.boxes.find((b) => b.instanceId === instanceId);
+		const tile = this.session.board.tiles.find((b) => b.instanceId === instanceId);
 		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
 
-		if (box) {
-			if (isExclusive && box.completedBy) {
-				// Exclusive mode: box already taken — reject silently, send authoritative board back
-			} else if (!box.completedBy) {
-				box.completed = true;
-				box.completedBy = 'opponent';
-				box.progress = box.target;
-				this.opponentCompletedBoxes.add(instanceId);
-				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'opponent' }]);
-			} else if (!isExclusive && box.completedBy === 'local') {
-				// Non-exclusive: both players completed the same box
-				box.completedBy = 'both';
-				this.opponentCompletedBoxes.add(instanceId);
-				this.sendChallengeUpdates([{ instanceId, progress: box.target, completed: true, completedBy: 'both' }]);
+		if (tile) {
+			if (isExclusive && tile.completedBy) {
+				// Exclusive mode: tile already taken — reject silently, send authoritative board back
+			} else if (!tile.completedBy) {
+				tile.completed = true;
+				tile.completedBy = 'opponent';
+				tile.progress = tile.target;
+				this.opponentCompletedTiles.add(instanceId);
+				this.sendChallengeUpdates([{ instanceId, progress: tile.target, completed: true, completedBy: 'opponent' }]);
+			} else if (!isExclusive && tile.completedBy === 'local') {
+				// Non-exclusive: both players completed the same tile
+				tile.completedBy = 'both';
+				this.opponentCompletedTiles.add(instanceId);
+				this.sendChallengeUpdates([{ instanceId, progress: tile.target, completed: true, completedBy: 'both' }]);
 			}
 		}
 		this.sendBoardToPeer(this.session.board);
@@ -645,11 +645,11 @@ export class BingoService {
 		if (this.peerSocket?.readyState !== WebSocket.OPEN) return;
 		const guestBoard = {
 			...board,
-			boxes: board.boxes.map((box) => ({
-				...box,
-				completedBy: box.completedBy === 'local' ? 'opponent'
-					: box.completedBy === 'opponent' ? 'local'
-						: box.completedBy === 'both' ? 'both'
+			tiles: board.tiles.map((tile) => ({
+				...tile,
+				completedBy: tile.completedBy === 'local' ? 'opponent'
+					: tile.completedBy === 'opponent' ? 'local'
+						: tile.completedBy === 'both' ? 'both'
 							: null,
 			})),
 		};
@@ -821,15 +821,15 @@ export class BingoService {
 
 	private reapplyOpponentCompletions(): void {
 		if (!this.session) return;
-		for (const instanceId of this.opponentCompletedBoxes) {
-			const box = this.session.board.boxes.find(b => b.instanceId === instanceId);
-			if (!box) continue;
-			if (!box.completedBy) {
-				box.completed = true;
-				box.completedBy = 'opponent';
-				box.progress = box.target;
-			} else if (box.completedBy === 'local') {
-				box.completedBy = 'both';
+		for (const instanceId of this.opponentCompletedTiles) {
+			const tile = this.session.board.tiles.find(b => b.instanceId === instanceId);
+			if (!tile) continue;
+			if (!tile.completedBy) {
+				tile.completed = true;
+				tile.completedBy = 'opponent';
+				tile.progress = tile.target;
+			} else if (tile.completedBy === 'local') {
+				tile.completedBy = 'both';
 			}
 		}
 	}
@@ -843,22 +843,22 @@ export class BingoService {
 		}
 		if (this.sessionSnapshot && this.session) {
 			const preRevert = new Map(
-				this.session.board.boxes.map(b => [b.instanceId, { progress: b.progress, completed: b.completed, completedBy: b.completedBy }])
+				this.session.board.tiles.map(b => [b.instanceId, { progress: b.progress, completed: b.completed, completedBy: b.completedBy }])
 			);
 			this.restoreSessionSnapshot(this.sessionSnapshot);
 			this.reapplyOpponentCompletions();
 			this.winStreak = 0;
 			this.resetGameState();
 			const revertUpdates: BingoChallengeUpdate[] = [];
-			for (const box of this.session.board.boxes) {
-				const pre = preRevert.get(box.instanceId);
+			for (const tile of this.session.board.tiles) {
+				const pre = preRevert.get(tile.instanceId);
 				if (!pre) continue;
-				if (box.progress !== pre.progress || box.completed !== pre.completed || box.completedBy !== pre.completedBy) {
+				if (tile.progress !== pre.progress || tile.completed !== pre.completed || tile.completedBy !== pre.completedBy) {
 					revertUpdates.push({
-						instanceId: box.instanceId,
-						progress: box.progress,
-						completed: box.completed,
-						completedBy: box.completedBy ?? undefined,
+						instanceId: tile.instanceId,
+						progress: tile.progress,
+						completed: tile.completed,
+						completedBy: tile.completedBy ?? undefined,
 					});
 				}
 			}
@@ -990,15 +990,15 @@ export class BingoService {
 
 	private getLCancelRateRequired(): number {
 		if (!this.session) return 0.9;
-		const box = this.session.board.boxes.find((b) => b.challengeId === 'lcancel_rate' && !b.completed);
-		if (!box) return 0.9;
-		return (box.params.percent ?? 90) / 100;
+		const tile = this.session.board.tiles.find((b) => b.challengeId === 'lcancel_rate' && !b.completed);
+		if (!tile) return 0.9;
+		return (tile.params.percent ?? 90) / 100;
 	}
 
 	private getStocksUnderPercentThreshold(): number {
 		if (!this.session) return 40;
-		const box = this.session.board.boxes.find((b) => b.challengeId === 'stocks_under_percent' && !b.completed);
-		return box?.params.percent ?? 40;
+		const tile = this.session.board.tiles.find((b) => b.challengeId === 'stocks_under_percent' && !b.completed);
+		return tile?.params.percent ?? 40;
 	}
 
 	private updateAllChallenges(ctx: {
@@ -1013,21 +1013,21 @@ export class BingoService {
 		const updates: BingoChallengeUpdate[] = [];
 
 		const isExclusive = this.session.settings.winCondition === 'lockout' || this.session.settings.winCondition === 'rowcontrol';
-		for (const box of this.session.board.boxes) {
-			if (box.completedBy === 'local' || box.completedBy === 'both') continue;
-			if (isExclusive && box.completedBy === 'opponent') continue;
-			if (box.frozen && !box.frozenForOpponent) continue;
-			const prev = box.progress;
+		for (const tile of this.session.board.tiles) {
+			if (tile.completedBy === 'local' || tile.completedBy === 'both') continue;
+			if (isExclusive && tile.completedBy === 'opponent') continue;
+			if (tile.frozen && !tile.frozenForOpponent) continue;
+			const prev = tile.progress;
 			let next = prev;
 
-			switch (box.challengeId) {
+			switch (tile.challengeId) {
 				case 'win_with_character':
-					if (ctx.didWin && box.params.characterId === ctx.myCharacterId) {
+					if (ctx.didWin && tile.params.characterId === ctx.myCharacterId) {
 						next = this.characterWins.get(ctx.myCharacterId) ?? 0;
 					}
 					break;
 				case 'win_in_a_row':
-					next = Math.min(this.winStreak, box.target);
+					next = Math.min(this.winStreak, tile.target);
 					break;
 				case 'win_games_total':
 					next = this.sessionTotalWins;
@@ -1042,10 +1042,10 @@ export class BingoService {
 					if (ctx.didWin && ctx.durationSeconds < 90) next = 1;
 					break;
 				case 'deal_damage_game':
-					if (ctx.totalDamage >= (box.params.percent ?? 300)) next = box.target;
+					if (ctx.totalDamage >= (tile.params.percent ?? 300)) next = tile.target;
 					break;
 				case 'opponent_reach_percent':
-					if (this.peakOpponentPercent >= (box.params.percent ?? 150)) next = 1;
+					if (this.peakOpponentPercent >= (tile.params.percent ?? 150)) next = 1;
 					break;
 				case 'stocks_under_percent':
 					next = this.sessionStocksUnderPercent;
@@ -1062,7 +1062,7 @@ export class BingoService {
 				case 'kill_per_stock_diverse':
 					next = this.gameKillMoveCategories.size;
 					// don't mark complete until the game ends with a win
-					if (next >= box.target && !ctx.didWin) next = box.target - 1;
+					if (next >= tile.target && !ctx.didWin) next = tile.target - 1;
 					break;
 				case 'kill_fsmash': next = this.sessionKillsByMove.get('fsmash') ?? 0; break;
 				case 'kill_usmash': next = this.sessionKillsByMove.get('usmash') ?? 0; break;
@@ -1078,7 +1078,7 @@ export class BingoService {
 					next = (this.sessionKillsByMove.get('throw') ?? 0) >= 1 ? 1 : 0;
 					break;
 				case 'blast_zone_direction': {
-					const dir = box.params.direction ?? 'left';
+					const dir = tile.params.direction ?? 'left';
 					next = this.sessionBlastZoneKills.get(dir) ?? 0;
 					break;
 				}
@@ -1090,7 +1090,7 @@ export class BingoService {
 					break;
 				case 'same_blast_zone_game': {
 					const maxSide = Math.max(...this.gameBlastZoneKills.values(), 0);
-					if (maxSide >= box.target) next = box.target;
+					if (maxSide >= tile.target) next = tile.target;
 					break;
 				}
 				case 'all_blast_zones_game': {
@@ -1109,41 +1109,41 @@ export class BingoService {
 					next = this.sessionWallTechs;
 					break;
 				case 'win_low_damage':
-					if (ctx.didWin && this.myDamageTakenThisGame < (box.params.percent ?? 100)) next = 1;
+					if (ctx.didWin && this.myDamageTakenThisGame < (tile.params.percent ?? 100)) next = 1;
 					break;
 				case 'combo_damage':
-					if ((ctx.bestComboDamage ?? 0) >= (box.params.percent ?? 50)) next = 1;
+					if ((ctx.bestComboDamage ?? 0) >= (tile.params.percent ?? 50)) next = 1;
 					break;
 				case 'airborne_win': {
 					if (ctx.didWin && this.myTotalGameFrames > 0) {
 						const ratio = this.myAirborneFrames / this.myTotalGameFrames;
-						if (ratio >= (box.params.percent ?? 60) / 100) next = 1;
+						if (ratio >= (tile.params.percent ?? 60) / 100) next = 1;
 					}
 					break;
 				}
 				case 'same_move_kills': {
 					const maxSameMove = Math.max(...this.gameKillsPerMove.values(), 0);
 					next = maxSameMove;
-					if (next >= box.target && !ctx.didWin) next = box.target - 1;
+					if (next >= tile.target && !ctx.didWin) next = tile.target - 1;
 					break;
 				}
 				case 'no_smash_win':
 					if (ctx.didWin && !this.usedSmashThisGame) next = 1;
 					break;
 				case 'win_low_apm':
-					if (ctx.didWin && ctx.myApm != null && ctx.myApm < (box.params.percent ?? 150)) next = 1;
+					if (ctx.didWin && ctx.myApm != null && ctx.myApm < (tile.params.percent ?? 150)) next = 1;
 					break;
 				case 'edgeguard_rate': {
 					const attempts = this.sessionEdgeguardAttempts;
-					const required = (box.params.percent ?? 50) / 100;
+					const required = (tile.params.percent ?? 50) / 100;
 					if (attempts >= 3 && this.sessionEdgeguardSuccesses / attempts >= required) next = 1;
 					break;
 				}
 				case 'win_high_apm':
-					if (ctx.didWin && ctx.myApm != null && ctx.myApm > (box.params.percent ?? 350)) next = 1;
+					if (ctx.didWin && ctx.myApm != null && ctx.myApm > (tile.params.percent ?? 350)) next = 1;
 					break;
 				case 'win_low_damage_dealt':
-					if (ctx.didWin && ctx.totalDamage < (box.params.percent ?? 150)) next = 1;
+					if (ctx.didWin && ctx.totalDamage < (tile.params.percent ?? 150)) next = 1;
 					break;
 				case 'rest_kill':
 					if (this.sessionRestKills >= 1) next = 1;
@@ -1162,20 +1162,20 @@ export class BingoService {
 					break;
 			}
 
-			if (next !== prev || next >= box.target) {
-				box.progress = Math.min(next, box.target);
-				const wasCompleted = box.completed;
-				const prevCompletedBy = box.completedBy;
-				box.completed = box.progress >= box.target;
-				if (box.completed && !wasCompleted) {
-					box.completedBy = 'local';
-					this.sendCompletionToPeer(box.instanceId);
-				} else if (box.completed && wasCompleted && prevCompletedBy === 'opponent') {
-					box.completedBy = 'both';
-					this.sendCompletionToPeer(box.instanceId);
+			if (next !== prev || next >= tile.target) {
+				tile.progress = Math.min(next, tile.target);
+				const wasCompleted = tile.completed;
+				const prevCompletedBy = tile.completedBy;
+				tile.completed = tile.progress >= tile.target;
+				if (tile.completed && !wasCompleted) {
+					tile.completedBy = 'local';
+					this.sendCompletionToPeer(tile.instanceId);
+				} else if (tile.completed && wasCompleted && prevCompletedBy === 'opponent') {
+					tile.completedBy = 'both';
+					this.sendCompletionToPeer(tile.instanceId);
 				}
-				if (box.completed !== wasCompleted || next !== prev || box.completedBy !== prevCompletedBy) {
-					updates.push({ instanceId: box.instanceId, progress: box.progress, completed: box.completed, completedBy: box.completedBy ?? undefined });
+				if (tile.completed !== wasCompleted || next !== prev || tile.completedBy !== prevCompletedBy) {
+					updates.push({ instanceId: tile.instanceId, progress: tile.progress, completed: tile.completed, completedBy: tile.completedBy ?? undefined });
 				}
 			}
 		}
@@ -1206,7 +1206,7 @@ export class BingoService {
 		this.session = session;
 		this.resetGameState();
 		this.resetSessionAccumulators();
-		this.opponentCompletedBoxes.clear();
+		this.opponentCompletedTiles.clear();
 		this.localPlayerIndex = session.localPlayerIndex;
 		this.log.info(`Bingo session started: ${session.board.id}, role: ${session.role}`);
 		this.sendBingoState();
@@ -1277,8 +1277,8 @@ export class BingoService {
 			sessionEggLays: this.sessionEggLays,
 			winStreak: this.winStreak,
 			characterWins: new Map(this.characterWins),
-			boxStates: new Map(
-				(this.session?.board.boxes ?? []).map(b => [
+			tileStates: new Map(
+				(this.session?.board.tiles ?? []).map(b => [
 					b.instanceId,
 					{ progress: b.progress, completed: b.completed, completedBy: b.completedBy },
 				])
@@ -1310,12 +1310,12 @@ export class BingoService {
 		this.winStreak = s.winStreak;
 		this.characterWins = new Map(s.characterWins);
 		if (this.session) {
-			for (const box of this.session.board.boxes) {
-				const saved = s.boxStates.get(box.instanceId);
+			for (const tile of this.session.board.tiles) {
+				const saved = s.tileStates.get(tile.instanceId);
 				if (!saved) continue;
-				box.progress = saved.progress;
-				box.completed = saved.completed;
-				box.completedBy = saved.completedBy;
+				tile.progress = saved.progress;
+				tile.completed = saved.completed;
+				tile.completedBy = saved.completedBy;
 			}
 		}
 	}
@@ -1358,11 +1358,11 @@ export class BingoService {
 
 	// ── Twitch vote system ────────────────────────────────────────────────────
 
-	private getWinBoxIndices(filter: (b: BingoBox) => boolean): Set<number> {
+	private getWinTileIndices(filter: (b: BingoTile) => boolean): Set<number> {
 		if (!this.session) return new Set();
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const size = this.session.board.size;
-		const done = new Set(boxes.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
+		const done = new Set(tiles.map((b, i) => (filter(b) ? i : -1)).filter(i => i >= 0));
 		const win = new Set<number>();
 		for (let r = 0; r < size; r++) {
 			const row = Array.from({ length: size }, (_, c) => r * size + c);
@@ -1381,16 +1381,16 @@ export class BingoService {
 
 	private computeWinState(): BingoWinState | null {
 		if (!this.session) return null;
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const size = this.session.board.size;
 		const wc = this.session.settings.winCondition;
 		const isSolo = this.session.role === 'solo';
 
-		const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
-		const oppFilter = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
+		const localFilter = (b: BingoTile) => b.completedBy === 'local' || b.completedBy === 'both';
+		const oppFilter = (b: BingoTile) => b.completedBy === 'opponent' || b.completedBy === 'both';
 
-		const getLineWinIndices = (filter: (b: BingoBox) => boolean): number[] => {
-			const done = new Set(boxes.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
+		const getLineWinIndices = (filter: (b: BingoTile) => boolean): number[] => {
+			const done = new Set(tiles.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
 			const win = new Set<number>();
 			for (let r = 0; r < size; r++) {
 				const row = Array.from({ length: size }, (_, c) => r * size + c);
@@ -1407,22 +1407,22 @@ export class BingoService {
 			return [...win];
 		};
 
-		const getControlledLines = (filter: (b: BingoBox) => boolean): { type: 'row' | 'col'; index: number }[] => {
+		const getControlledLines = (filter: (b: BingoTile) => boolean): { type: 'row' | 'col'; index: number }[] => {
 			const required = Math.floor(size / 2) + 1;
 			const lines: { type: 'row' | 'col'; index: number }[] = [];
 			for (let r = 0; r < size; r++) {
 				const line = Array.from({ length: size }, (_, c) => r * size + c);
-				if (line.filter(i => filter(boxes[i])).length >= required) lines.push({ type: 'row', index: r });
+				if (line.filter(i => filter(tiles[i])).length >= required) lines.push({ type: 'row', index: r });
 			}
 			for (let c = 0; c < size; c++) {
 				const line = Array.from({ length: size }, (_, r) => r * size + c);
-				if (line.filter(i => filter(boxes[i])).length >= required) lines.push({ type: 'col', index: c });
+				if (line.filter(i => filter(tiles[i])).length >= required) lines.push({ type: 'col', index: c });
 			}
 			return lines;
 		};
 
-		const countLines = (filter: (b: BingoBox) => boolean): number => {
-			const done = new Set(boxes.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
+		const countLines = (filter: (b: BingoTile) => boolean): number => {
+			const done = new Set(tiles.map((b, i) => filter(b) ? i : -1).filter(i => i >= 0));
 			let n = 0;
 			for (let r = 0; r < size; r++) {
 				if (Array.from({ length: size }, (_, c) => r * size + c).every(i => done.has(i))) n++;
@@ -1435,22 +1435,22 @@ export class BingoService {
 			return n;
 		};
 
-		const countControlled = (filter: (b: BingoBox) => boolean): number => {
+		const countControlled = (filter: (b: BingoTile) => boolean): number => {
 			const required = Math.floor(size / 2) + 1;
 			let n = 0;
 			for (let r = 0; r < size; r++) {
 				const line = Array.from({ length: size }, (_, c) => r * size + c);
-				if (line.filter(i => filter(boxes[i])).length >= required) n++;
+				if (line.filter(i => filter(tiles[i])).length >= required) n++;
 			}
 			for (let c = 0; c < size; c++) {
 				const line = Array.from({ length: size }, (_, r) => r * size + c);
-				if (line.filter(i => filter(boxes[i])).length >= required) n++;
+				if (line.filter(i => filter(tiles[i])).length >= required) n++;
 			}
 			return n;
 		};
 
-		let localWinBoxIndices: number[];
-		let oppWinBoxIndices: number[];
+		let localWinTileIndices: number[];
+		let oppWinTileIndices: number[];
 		let localScore: number;
 		let oppScore: number;
 		let scoreTarget: number;
@@ -1459,26 +1459,26 @@ export class BingoService {
 		let oppWinner: boolean;
 
 		if (wc === 'lockout') {
-			const total = boxes.length;
+			const total = tiles.length;
 			scoreTarget = Math.floor(total / 2) + 1;
 			scoreUnit = 'tiles';
-			localScore = boxes.filter(localFilter).length;
-			oppScore = boxes.filter(oppFilter).length;
+			localScore = tiles.filter(localFilter).length;
+			oppScore = tiles.filter(oppFilter).length;
 			localWinner = localScore >= scoreTarget;
 			oppWinner = oppScore >= scoreTarget;
-			localWinBoxIndices = localWinner ? boxes.map((_, i) => i).filter(i => localFilter(boxes[i])) : [];
-			oppWinBoxIndices = oppWinner ? boxes.map((_, i) => i).filter(i => oppFilter(boxes[i])) : [];
+			localWinTileIndices = localWinner ? tiles.map((_, i) => i).filter(i => localFilter(tiles[i])) : [];
+			oppWinTileIndices = oppWinner ? tiles.map((_, i) => i).filter(i => oppFilter(tiles[i])) : [];
 		} else if (wc === 'full') {
-			const total = boxes.length;
+			const total = tiles.length;
 			scoreTarget = total;
 			scoreUnit = 'tiles';
-			localScore = boxes.filter(localFilter).length;
-			oppScore = boxes.filter(oppFilter).length;
-			const allDone = boxes.every(b => b.completed);
+			localScore = tiles.filter(localFilter).length;
+			oppScore = tiles.filter(oppFilter).length;
+			const allDone = tiles.every(b => b.completed);
 			localWinner = allDone && localScore >= oppScore;
 			oppWinner = allDone && oppScore > localScore;
-			localWinBoxIndices = localWinner ? boxes.map((_, i) => i) : [];
-			oppWinBoxIndices = oppWinner ? boxes.map((_, i) => i) : [];
+			localWinTileIndices = localWinner ? tiles.map((_, i) => i) : [];
+			oppWinTileIndices = oppWinner ? tiles.map((_, i) => i) : [];
 		} else if (wc === 'rowcontrol') {
 			scoreTarget = 3;
 			scoreUnit = 'lines';
@@ -1486,8 +1486,8 @@ export class BingoService {
 			oppScore = countControlled(oppFilter);
 			localWinner = localScore >= 3;
 			oppWinner = oppScore >= 3;
-			localWinBoxIndices = [];
-			oppWinBoxIndices = [];
+			localWinTileIndices = [];
+			oppWinTileIndices = [];
 		} else {
 			const n = wc as number;
 			scoreTarget = n;
@@ -1496,13 +1496,13 @@ export class BingoService {
 			oppScore = countLines(oppFilter);
 			localWinner = localScore >= n;
 			oppWinner = oppScore >= n;
-			localWinBoxIndices = getLineWinIndices(localFilter);
-			oppWinBoxIndices = getLineWinIndices(oppFilter);
+			localWinTileIndices = getLineWinIndices(localFilter);
+			oppWinTileIndices = getLineWinIndices(oppFilter);
 		}
 
 		return {
-			localWinBoxIndices,
-			oppWinBoxIndices,
+			localWinTileIndices,
+			oppWinTileIndices,
 			...(wc === 'rowcontrol' ? {
 				localControlledLines: getControlledLines(localFilter),
 				oppControlledLines: getControlledLines(oppFilter),
@@ -1527,14 +1527,14 @@ export class BingoService {
 		if (!this.session) return new Set();
 		const wc = this.session.settings.winCondition;
 		if (wc === 'rowcontrol') {
-			const boxes = this.session.board.boxes;
+			const tiles = this.session.board.tiles;
 			const size = this.session.board.size;
 			const required = Math.floor(size / 2) + 1;
 			const locked = new Set<number>();
-			const localFilter = (b: BingoBox) => b.completedBy === 'local' || b.completedBy === 'both';
-			const oppFilter = (b: BingoBox) => b.completedBy === 'opponent' || b.completedBy === 'both';
-			const check = (line: number[], filter: (b: BingoBox) => boolean) => {
-				if (line.filter(i => filter(boxes[i])).length >= required) line.forEach(i => locked.add(i));
+			const localFilter = (b: BingoTile) => b.completedBy === 'local' || b.completedBy === 'both';
+			const oppFilter = (b: BingoTile) => b.completedBy === 'opponent' || b.completedBy === 'both';
+			const check = (line: number[], filter: (b: BingoTile) => boolean) => {
+				if (line.filter(i => filter(tiles[i])).length >= required) line.forEach(i => locked.add(i));
 			};
 			for (let r = 0; r < size; r++) {
 				const line = Array.from({ length: size }, (_, c) => r * size + c);
@@ -1546,8 +1546,8 @@ export class BingoService {
 			}
 			return locked;
 		}
-		const localWin = this.getWinBoxIndices(b => b.completedBy === 'local' || b.completedBy === 'both');
-		const oppWin = this.getWinBoxIndices(b => b.completedBy === 'opponent' || b.completedBy === 'both');
+		const localWin = this.getWinTileIndices(b => b.completedBy === 'local' || b.completedBy === 'both');
+		const oppWin = this.getWinTileIndices(b => b.completedBy === 'opponent' || b.completedBy === 'both');
 		return new Set([...localWin, ...oppWin]);
 	}
 
@@ -1561,7 +1561,7 @@ export class BingoService {
 	private tryStartVote() {
 		this.voteScheduleTimer = null;
 		if (!this.session?.settings.twitchEnabled) return;
-		const localCompleted = this.session.board.boxes.filter(
+		const localCompleted = this.session.board.tiles.filter(
 			b => b.completedBy === 'local' || b.completedBy === 'both'
 		).length;
 		if (localCompleted < 3) {
@@ -1573,12 +1573,12 @@ export class BingoService {
 
 	private countOpponentLines(simIdx?: number): number {
 		if (!this.session) return 0;
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const size = this.session.board.size;
 		const wc = this.session.settings.winCondition;
 		if (wc === 'lockout' || wc === 'full') return 0;
 		const oppAt = (i: number) =>
-			boxes[i].completedBy === 'opponent' || boxes[i].completedBy === 'both' || (simIdx !== undefined && i === simIdx);
+			tiles[i].completedBy === 'opponent' || tiles[i].completedBy === 'both' || (simIdx !== undefined && i === simIdx);
 		if (wc === 'rowcontrol') {
 			const required = Math.floor(size / 2) + 1;
 			let n = 0;
@@ -1593,7 +1593,7 @@ export class BingoService {
 			return n;
 		}
 		const done = new Set<number>();
-		for (let i = 0; i < boxes.length; i++) { if (oppAt(i)) done.add(i); }
+		for (let i = 0; i < tiles.length; i++) { if (oppAt(i)) done.add(i); }
 		let n = 0;
 		for (let r = 0; r < size; r++) {
 			if (Array.from({ length: size }, (_, c) => r * size + c).every(i => done.has(i))) n++;
@@ -1609,14 +1609,14 @@ export class BingoService {
 	private canFreeze(): boolean {
 		if (!this.session) return false;
 		const locked = this.getLockedBoxIndices();
-		const eligible = this.session.board.boxes.filter((b, i) => !b.frozen && !b.completed && !locked.has(i));
+		const eligible = this.session.board.tiles.filter((b, i) => !b.frozen && !b.completed && !locked.has(i));
 		return eligible.length >= 4;
 	}
 
 	private canSwap(): boolean {
 		if (!this.session) return false;
 		const locked = this.getLockedBoxIndices();
-		return this.session.board.boxes.filter((b, i) => !b.frozen && !locked.has(i)).length >= 2;
+		return this.session.board.tiles.filter((b, i) => !b.frozen && !locked.has(i)).length >= 2;
 	}
 
 	private buildAllOptions(): BingoVoteState['options'] {
@@ -1735,6 +1735,7 @@ export class BingoService {
 				this.messageHandler.sendMessage('BingoVoteActionExecuted', { action, channel: channelName });
 			}
 			// 3. Clear popup, then process next item
+			// 1500ms covers max shuffle animation (4 swaps × 280ms step + 250ms flip = ~1090ms)
 			setTimeout(() => {
 				this.sendVoteStates({ role, state: null });
 				this.actionQueueRunning = false;
@@ -1742,7 +1743,7 @@ export class BingoService {
 					this.scheduleNextVote();
 				}
 				this.processActionQueue();
-			}, 1000);
+			}, 1500);
 		}, 3000);
 	}
 
@@ -1758,9 +1759,9 @@ export class BingoService {
 
 	private executeRandomize(): string {
 		if (!this.session) return 'No active session';
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const locked = this.getLockedBoxIndices();
-		const eligible = boxes
+		const eligible = tiles
 			.map((b, i) => ({ b, i }))
 			.filter(({ b, i }) => !b.frozen && !b.completed && !locked.has(i));
 		if (!eligible.length) {
@@ -1769,26 +1770,45 @@ export class BingoService {
 		}
 		const count = Math.max(1, Math.min(5, Math.floor(eligible.length * 0.25)));
 		const targets = [...eligible].sort(() => Math.random() - 0.5).slice(0, count);
-		const usedIds = new Set(boxes.map(b => b.challengeId));
+		const usedIds = new Set(tiles.map(b => b.challengeId));
+		const ROLL_FRAMES = 6;
+		const ROLL_DELAY_MS = 75;
+		const rolls: Array<{ instanceId: string; frames: BingoTile[] }> = [];
 		for (const { b: target, i: targetIdx } of targets) {
 			usedIds.delete(target.challengeId);
-			const replacement = this.generateReplacementBox(usedIds, this.session.board.difficulty);
+			const replacement = this.generateReplacementTile(usedIds, this.session.board.difficulty);
 			if (!replacement) continue;
-			const newBox: BingoBox = { ...replacement, instanceId: target.instanceId };
-			boxes[targetIdx] = newBox;
-			usedIds.add(newBox.challengeId);
-			this.messageHandler.sendMessage('BingoTileReplaced', { instanceId: newBox.instanceId, box: newBox });
+			const newTile: BingoTile = { ...replacement, instanceId: target.instanceId };
+			tiles[targetIdx] = newTile;
+			usedIds.add(newTile.challengeId);
+			const frames: BingoTile[] = [];
+			for (let f = 0; f < ROLL_FRAMES - 1; f++) {
+				const interim = this.generateReplacementTile(new Set(), this.session.board.difficulty);
+				if (interim) frames.push({ ...interim, instanceId: target.instanceId });
+			}
+			frames.push(newTile);
+			rolls.push({ instanceId: target.instanceId, frames });
 		}
-		this.sendBoardToPeer(this.session.board);
-		this.sendBingoState();
+		if (rolls.length > 0) {
+			this.messageHandler.sendMessage('BingoTilesRolling', { rolls, delayMs: ROLL_DELAY_MS });
+			const totalMs = ROLL_FRAMES * ROLL_DELAY_MS + 100;
+			setTimeout(() => {
+				if (!this.session) return;
+				this.sendBoardToPeer(this.session.board);
+				this.sendBingoState();
+			}, totalMs);
+		} else {
+			this.sendBoardToPeer(this.session.board);
+			this.sendBingoState();
+		}
 		return `Randomized ${count} tile(s)`;
 	}
 
 	private executeFreeze(voteRole: 'host' | 'guest' = 'host'): string {
 		if (!this.session) return 'No active session';
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const locked = this.getLockedBoxIndices();
-		const eligible = boxes
+		const eligible = tiles
 			.map((b, i) => ({ b, i }))
 			.filter(({ b, i }) => !b.frozen && !b.completed && !locked.has(i));
 		if (eligible.length === 0) {
@@ -1806,14 +1826,14 @@ export class BingoService {
 			target.frozenForOpponent = frozenForOpponent;
 			const timer = setTimeout(() => {
 				if (!this.session) return;
-				const box = this.session.board.boxes.find(b => b.instanceId === target.instanceId);
-				if (!box) return;
-				box.frozen = false;
-				box.frozenUntil = undefined;
-				box.frozenForOpponent = undefined;
+				const tile = this.session.board.tiles.find(b => b.instanceId === target.instanceId);
+				if (!tile) return;
+				tile.frozen = false;
+				tile.frozenUntil = undefined;
+				tile.frozenForOpponent = undefined;
 				this.frozenTimers.delete(target.instanceId);
 				this.messageHandler.sendMessage('BingoChallengeUpdates', {
-					updates: [{ instanceId: box.instanceId, progress: box.progress, completed: box.completed, frozen: false, frozenUntil: undefined, frozenForOpponent: undefined }],
+					updates: [{ instanceId: tile.instanceId, progress: tile.progress, completed: tile.completed, frozen: false, frozenUntil: undefined, frozenForOpponent: undefined }],
 				});
 				this.sendBoardToPeer(this.session.board);
 				this.sendBingoState();
@@ -1829,13 +1849,13 @@ export class BingoService {
 
 	private executeSwap(): string {
 		if (!this.session) return 'No active session';
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const locked = this.getLockedBoxIndices();
 		// Pick one of the opponent's completed tiles and move it to a random uncompleted spot
-		const oppTiles = boxes
+		const oppTiles = tiles
 			.map((b, i) => ({ b, i }))
 			.filter(({ b, i }) => b.completedBy === 'opponent' && !b.frozen && !locked.has(i));
-		const openTiles = boxes
+		const openTiles = tiles
 			.map((b, i) => ({ b, i }))
 			.filter(({ b, i }) => !b.completed && !b.frozen && !locked.has(i));
 		let ai: number, bi: number;
@@ -1844,7 +1864,7 @@ export class BingoService {
 			const pool = openTiles.filter(({ i }) => i !== ai);
 			if (!pool.length) {
 				// Edge case: the only open tile is the opponent tile itself (shouldn't happen)
-				const fallback = boxes.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i) && i !== ai);
+				const fallback = tiles.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i) && i !== ai);
 				if (!fallback.length) return 'No tiles to swap with';
 				bi = fallback[Math.floor(Math.random() * fallback.length)].i;
 			} else {
@@ -1858,7 +1878,7 @@ export class BingoService {
 			}
 		} else {
 			// Fallback (solo or opponent hasn't completed anything): any 2 eligible tiles
-			const eligible = boxes.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i));
+			const eligible = tiles.map((b, i) => ({ b, i })).filter(({ b, i }) => !b.frozen && !locked.has(i));
 			if (eligible.length < 2) {
 				const msg = 'Not enough unprotected tiles to swap';
 				this.messageHandler.sendMessage('Notification', msg, NotificationType.Warning, 3000);
@@ -1868,9 +1888,9 @@ export class BingoService {
 			ai = shuffled[0].i;
 			bi = shuffled[1].i;
 		}
-		const temp = boxes[ai];
-		boxes[ai] = boxes[bi];
-		boxes[bi] = temp;
+		const temp = tiles[ai];
+		tiles[ai] = tiles[bi];
+		tiles[bi] = temp;
 		this.messageHandler.sendMessage('BingoTilesSwapped', { indexA: ai, indexB: bi });
 		this.sendBoardToPeer(this.session.board);
 		this.sendBingoState();
@@ -1880,25 +1900,25 @@ export class BingoService {
 	private canRandomize(): boolean {
 		if (!this.session) return false;
 		const locked = this.getLockedBoxIndices();
-		return this.session.board.boxes.some((b, i) => !b.frozen && !b.completed && !locked.has(i));
+		return this.session.board.tiles.some((b, i) => !b.frozen && !b.completed && !locked.has(i));
 	}
 
 	private canShuffle(): boolean {
 		if (!this.session) return false;
 		const locked = this.getLockedBoxIndices();
-		return this.session.board.boxes.filter((b, i) => !b.completed && !b.frozen && !locked.has(i)).length >= 2;
+		return this.session.board.tiles.filter((b, i) => !b.completed && !b.frozen && !locked.has(i)).length >= 2;
 	}
 
 	private executeShuffle(): string {
 		if (!this.session) return 'No active session';
-		const boxes = this.session.board.boxes;
+		const tiles = this.session.board.tiles;
 		const locked = this.getLockedBoxIndices();
-		const untouched = boxes
+		const untouched = tiles
 			.map((_, i) => i)
-			.filter(i => !boxes[i].completed && !boxes[i].frozen && !locked.has(i));
+			.filter(i => !tiles[i].completed && !tiles[i].frozen && !locked.has(i));
 		if (untouched.length < 2) return 'Not enough untouched tiles';
 		// Pick 30% of untouched positions to shuffle (min 2, max 5)
-		const count = Math.max(2, Math.min(5, Math.floor(untouched.length * 0.30)));
+		const count = Math.max(2, Math.min(5, Math.floor(untouched.length * 0.50)));
 		const selected = [...untouched].sort(() => Math.random() - 0.5).slice(0, count);
 		// Fisher-Yates shuffle of the selected positions
 		const positions = [...selected];
@@ -1906,19 +1926,19 @@ export class BingoService {
 			const j = Math.floor(Math.random() * (k + 1));
 			[positions[k], positions[j]] = [positions[j], positions[k]];
 		}
-		// newOrder[i] = original index of box now at position i
-		const newOrder = boxes.map((_, i) => i);
+		// newOrder[i] = original index of tile now at position i
+		const newOrder = tiles.map((_, i) => i);
 		selected.forEach((pos, k) => { newOrder[pos] = positions[k]; });
 		// Apply to board
-		const snapshot = [...boxes];
-		selected.forEach((pos, k) => { boxes[pos] = snapshot[positions[k]]; });
+		const snapshot = [...tiles];
+		selected.forEach((pos, k) => { tiles[pos] = snapshot[positions[k]]; });
 		this.messageHandler.sendMessage('BingoTilesShuffled', { newOrder });
 		this.sendBoardToPeer(this.session.board);
 		this.sendBingoState();
 		return `Shuffled ${selected.length} untouched tiles`;
 	}
 
-	private generateReplacementBox(excludeIds: Set<BingoChallengeId>, difficulty: BingoDifficulty): BingoBox | null {
+	private generateReplacementTile(excludeIds: Set<BingoChallengeId>, difficulty: BingoDifficulty): BingoTile | null {
 		const pool = CHALLENGE_DEFINITIONS.filter(d => {
 			if (d.availableDifficulties && !d.availableDifficulties.includes(difficulty)) return false;
 			return !excludeIds.has(d.id);
@@ -1926,7 +1946,7 @@ export class BingoService {
 		if (!pool.length) return null;
 		const def = pool[Math.floor(Math.random() * pool.length)];
 		const { target, percent } = resolveTarget(def, difficulty);
-		const params: BingoBox['params'] = { difficulty, target, ...(percent !== undefined ? { percent } : {}) };
+		const params: BingoTile['params'] = { difficulty, target, ...(percent !== undefined ? { percent } : {}) };
 		if (def.id === 'win_with_character') {
 			const charId = PLAYABLE_CHARACTER_IDS[Math.floor(Math.random() * PLAYABLE_CHARACTER_IDS.length)];
 			params.characterId = charId;

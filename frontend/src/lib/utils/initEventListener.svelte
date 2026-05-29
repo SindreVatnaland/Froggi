@@ -69,6 +69,8 @@
 	import { debounce, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
+	let voteActionNoticeTimer: ReturnType<typeof setTimeout> | null = null;
+
 	const debouncedSetGameFrame = debounce(
 		(value: Parameters<MessageEvents['GameFrame']>[0]) => {
 			gameFrame.set(value);
@@ -386,12 +388,12 @@
 					bingoSession.update((session) => {
 						if (!session) return session;
 						const map = new Map(value.updates.map(u => [u.instanceId, u]));
-						const boxes = session.board.boxes.map(box => {
-							const u = map.get(box.instanceId);
-							if (!u) return box;
-							return { ...box, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? box.completedBy, frozen: u.frozen ?? box.frozen, frozenUntil: u.frozenUntil !== undefined ? u.frozenUntil : box.frozenUntil, frozenForOpponent: u.frozenForOpponent !== undefined ? u.frozenForOpponent : box.frozenForOpponent };
+						const tiles = session.board.tiles.map(tile => {
+							const u = map.get(tile.instanceId);
+							if (!u) return tile;
+							return { ...tile, progress: u.progress, completed: u.completed, completedBy: u.completedBy ?? tile.completedBy, frozen: u.frozen ?? tile.frozen, frozenUntil: u.frozenUntil !== undefined ? u.frozenUntil : tile.frozenUntil, frozenForOpponent: u.frozenForOpponent !== undefined ? u.frozenForOpponent : tile.frozenForOpponent };
 						});
-						return { ...session, board: { ...session.board, boxes } };
+						return { ...session, board: { ...session.board, tiles } };
 					});
 				})();
 				break;
@@ -417,8 +419,9 @@
 			case 'BingoVoteActionExecuted':
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['BingoVoteActionExecuted']>[0];
+					if (voteActionNoticeTimer) clearTimeout(voteActionNoticeTimer);
 					bingoVoteActionNotice.set(value);
-					setTimeout(() => bingoVoteActionNotice.set(null), 4000);
+					voteActionNoticeTimer = setTimeout(() => { bingoVoteActionNotice.set(null); voteActionNoticeTimer = null; }, 4000);
 				})();
 				break;
 			case 'BingoTileReplaced':
@@ -427,9 +430,28 @@
 					if (!value) return;
 					bingoSession.update(session => {
 						if (!session) return session;
-						const boxes = session.board.boxes.map(b => b.instanceId === value.instanceId ? value.box : b);
-						return { ...session, board: { ...session.board, boxes } };
+						const tiles = session.board.tiles.map(b => b.instanceId === value.instanceId ? value.tile : b);
+						return { ...session, board: { ...session.board, tiles } };
 					});
+				})();
+				break;
+			case 'BingoTilesRolling':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['BingoTilesRolling']>[0];
+					if (!value) return;
+					for (const roll of value.rolls) {
+						roll.frames.forEach((frame, idx) => {
+							setTimeout(() => {
+								bingoSession.update(session => {
+									if (!session) return session;
+									const tiles = session.board.tiles.map(b =>
+										b.instanceId === frame.instanceId ? frame : b
+									);
+									return { ...session, board: { ...session.board, tiles } };
+								});
+							}, idx * value.delayMs);
+						});
+					}
 				})();
 				break;
 			case 'BingoTilesSwapped':
@@ -438,11 +460,11 @@
 					if (!value) return;
 					bingoSession.update(session => {
 						if (!session) return session;
-						const boxes = [...session.board.boxes];
-						const temp = boxes[value.indexA];
-						boxes[value.indexA] = boxes[value.indexB];
-						boxes[value.indexB] = temp;
-						return { ...session, board: { ...session.board, boxes } };
+						const tiles = [...session.board.tiles];
+						const temp = tiles[value.indexA];
+						tiles[value.indexA] = tiles[value.indexB];
+						tiles[value.indexB] = temp;
+						return { ...session, board: { ...session.board, tiles } };
 					});
 				})();
 				break;
@@ -453,7 +475,7 @@
 					const session = get(bingoSession);
 					if (session) {
 						// Decompose permutation into sequential swaps (selection-sort order)
-						const original = session.board.boxes;
+						const original = session.board.tiles;
 						const working = [...original];
 						const target = value.newOrder.map(i => original[i]);
 						const swaps: [number, number][] = [];
@@ -471,9 +493,9 @@
 							setTimeout(() => {
 								bingoSession.update(s => {
 									if (!s) return s;
-									const boxes = [...s.board.boxes];
-									[boxes[a], boxes[b]] = [boxes[b], boxes[a]];
-									return { ...s, board: { ...s.board, boxes } };
+									const tiles = [...s.board.tiles];
+									[tiles[a], tiles[b]] = [tiles[b], tiles[a]];
+									return { ...s, board: { ...s.board, tiles } };
 								});
 							}, idx * STEP_MS);
 						});
