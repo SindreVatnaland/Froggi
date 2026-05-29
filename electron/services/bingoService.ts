@@ -1571,10 +1571,46 @@ export class BingoService {
 		this.startVote();
 	}
 
+	private countOpponentLines(simIdx?: number): number {
+		if (!this.session) return 0;
+		const boxes = this.session.board.boxes;
+		const size = this.session.board.size;
+		const wc = this.session.settings.winCondition;
+		if (wc === 'lockout' || wc === 'full') return 0;
+		const oppAt = (i: number) =>
+			boxes[i].completedBy === 'opponent' || boxes[i].completedBy === 'both' || (simIdx !== undefined && i === simIdx);
+		if (wc === 'rowcontrol') {
+			const required = Math.floor(size / 2) + 1;
+			let n = 0;
+			for (let r = 0; r < size; r++) {
+				const line = Array.from({ length: size }, (_, c) => r * size + c);
+				if (line.filter(i => oppAt(i)).length >= required) n++;
+			}
+			for (let c = 0; c < size; c++) {
+				const line = Array.from({ length: size }, (_, r) => r * size + c);
+				if (line.filter(i => oppAt(i)).length >= required) n++;
+			}
+			return n;
+		}
+		const done = new Set<number>();
+		for (let i = 0; i < boxes.length; i++) { if (oppAt(i)) done.add(i); }
+		let n = 0;
+		for (let r = 0; r < size; r++) {
+			if (Array.from({ length: size }, (_, c) => r * size + c).every(i => done.has(i))) n++;
+		}
+		for (let c = 0; c < size; c++) {
+			if (Array.from({ length: size }, (_, r) => r * size + c).every(i => done.has(i))) n++;
+		}
+		if (Array.from({ length: size }, (_, i) => i * size + i).every(i => done.has(i))) n++;
+		if (Array.from({ length: size }, (_, i) => i * size + (size - 1 - i)).every(i => done.has(i))) n++;
+		return n;
+	}
+
 	private canFreeze(): boolean {
 		if (!this.session) return false;
 		const locked = this.getLockedBoxIndices();
-		return this.session.board.boxes.some((b, i) => !b.frozen && !b.completed && !locked.has(i));
+		const eligible = this.session.board.boxes.filter((b, i) => !b.frozen && !b.completed && !locked.has(i));
+		return eligible.length >= 4;
 	}
 
 	private canSwap(): boolean {
@@ -1812,7 +1848,13 @@ export class BingoService {
 				if (!fallback.length) return 'No tiles to swap with';
 				bi = fallback[Math.floor(Math.random() * fallback.length)].i;
 			} else {
-				bi = pool[Math.floor(Math.random() * pool.length)].i;
+				const currentLines = this.countOpponentLines();
+				const wc = this.session.settings.winCondition;
+				const winTarget = wc === 'rowcontrol' ? 3 : typeof wc === 'number' ? wc : Infinity;
+				const noLinePool = pool.filter(({ i }) => this.countOpponentLines(i) <= currentLines);
+				const noWinPool = pool.filter(({ i }) => this.countOpponentLines(i) < winTarget);
+				const biPool = noLinePool.length > 0 ? noLinePool : noWinPool.length > 0 ? noWinPool : pool;
+				bi = biPool[Math.floor(Math.random() * biPool.length)].i;
 			}
 		} else {
 			// Fallback (solo or opponent hasn't completed anything): any 2 eligible tiles
