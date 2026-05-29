@@ -4,7 +4,7 @@ import { Client, Presence } from 'discord-rpc';
 import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
 import type { FrameEntryType } from '@slippi/slippi-js/dist/types';
 import { GameStartType } from '@slippi/slippi-js';
-import type { BingoStatePayload, BingoSession } from '../../frontend/src/lib/models/types/bingo';
+import type { BingoStatePayload, BingoSession, BingoLobbyPayload } from '../../frontend/src/lib/models/types/bingo';
 import type { IronManStatePayload, IronManSession } from '../../frontend/src/lib/models/types/ironman';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { ElectronPlayersStore } from './store/storePlayers';
@@ -20,11 +20,14 @@ export class DiscordRpc {
 	rpc: Client = new Client({ transport: 'ipc' });
 	activity: Presence;
 	private activeBingoSession: BingoSession | null = null;
+	private activeBingoLobby: BingoLobbyPayload | null = null;
 	private activeIronManSession: IronManSession | null = null;
+	private remoteAccessUrl: string | undefined = undefined;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
+		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => ElectronPlayersStore)) private storePlayers: ElectronPlayersStore,
@@ -42,6 +45,17 @@ export class DiscordRpc {
 		this.rpc.on('ready', async () => {
 			this.setNonGameActivity('Menu');
 			this.initDiscordEvents();
+			try {
+				await (this.rpc as Client & { subscribe: (event: string, cb: (data: unknown) => void) => Promise<unknown> })
+					.subscribe('ACTIVITY_JOIN', (data: unknown) => {
+						const secret = (data as { secret?: string })?.secret;
+						this.log.info('Discord ACTIVITY_JOIN received, secret:', secret);
+						if (secret) this.clientEmitter.emit('BingoPeerConnect', secret);
+					});
+				this.log.info('Discord: subscribed to ACTIVITY_JOIN');
+			} catch (err) {
+				this.log.warn('Discord: ACTIVITY_JOIN subscription failed (likely needs OAuth):', err);
+			}
 		});
 	}
 
@@ -121,6 +135,19 @@ export class DiscordRpc {
 			this.updateActivity();
 		});
 
+		this.localEmitter.on('RemoteAccessStatus', (url: string | undefined) => {
+			this.remoteAccessUrl = url;
+		});
+
+		this.localEmitter.on('BingoLobbyState', (data: BingoLobbyPayload | null) => {
+			this.activeBingoLobby = data;
+			if (data) {
+				this.setLobbyActivity(data);
+			} else if (!this.activeBingoSession && !this.activeIronManSession) {
+				this.setNonGameActivity('Menu');
+			}
+		});
+
 		// ── Minigame presence ────────────────────────────────────────────────────
 
 		this.localEmitter.on('BingoState', debounce((data: BingoStatePayload) => {
@@ -144,6 +171,26 @@ export class DiscordRpc {
 		}, 2000, { trailing: true, maxWait: 5000 }));
 	};
 
+	private setLobbyActivity(lobby: BingoLobbyPayload) {
+		const joinUrl = !lobby.opponentConnected ? this.remoteAccessUrl?.replace(/\/$/, '') : undefined;
+		const state = lobby.opponentConnected
+			? `${lobby.opponentName ?? 'Opponent'} connected`
+			: 'Waiting for opponent...';
+		this.activity = {
+			...this.activity,
+			details: 'Bingo · Lobby',
+			state,
+			startTimestamp: undefined,
+			endTimestamp: undefined,
+			largeImageKey: 'menu',
+			largeImageText: 'Bingo Lobby',
+			smallImageKey: undefined,
+			buttons: joinUrl ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
+			joinSecret: joinUrl,
+		};
+		this.updateActivity();
+	}
+
 	private setBingoActivity(session: BingoSession) {
 		const { board, settings, localName, opponentName, role, startedAt, winState } = session;
 		const wc = winConditionLabel(settings.winCondition);
@@ -160,6 +207,7 @@ export class DiscordRpc {
 		const hasCountdown = settings.timer?.enabled && settings.timer.durationMinutes > 0;
 		const endTs = hasCountdown ? startedAt + settings.timer.durationMinutes * 60 * 1000 : undefined;
 
+		const joinUrl = role === 'host' ? this.remoteAccessUrl?.replace(/\/$/, '') : undefined;
 		this.activity = {
 			...this.activity,
 			details: `Bingo · ${board.size}×${board.size} · ${wc}`,
@@ -169,7 +217,8 @@ export class DiscordRpc {
 			largeImageKey: 'menu',
 			largeImageText: 'Bingo',
 			smallImageKey: undefined,
-			buttons: [{ label: 'Get Froggi', url: FROGGI_URL }],
+			buttons: joinUrl ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
+			joinSecret: joinUrl,
 		};
 		this.updateActivity();
 	}
@@ -221,6 +270,10 @@ export class DiscordRpc {
 			this.setBingoActivity(this.activeBingoSession);
 			return;
 		}
+		if (!state && this.activeBingoLobby) {
+			this.setLobbyActivity(this.activeBingoLobby);
+			return;
+		}
 		if (!state && this.activeIronManSession) {
 			this.setIronManActivity(this.activeIronManSession);
 			return;
@@ -231,6 +284,7 @@ export class DiscordRpc {
 			buttons: [{ label: 'Get Froggi', url: FROGGI_URL }],
 			details: menuActivity,
 			endTimestamp: undefined,
+			joinSecret: undefined,
 			largeImageKey: 'menu',
 			largeImageText: menuActivity,
 			smallImageKey: rankImageKey(currentPlayer?.rank?.current?.rank),
@@ -261,7 +315,8 @@ export class DiscordRpc {
 					small_image: a.smallImageKey,
 				};
 			}
-			if (a.buttons?.length) payload.buttons = a.buttons;
+			if (a.joinSecret) payload.secrets = { join: a.joinSecret };
+			else if (a.buttons?.length) payload.buttons = a.buttons;
 			(this.rpc as Client & { request: (cmd: string, args: unknown) => unknown }).request('SET_ACTIVITY', { pid: process.pid, activity: payload });
 		} catch (err) {
 			this.log.error(err);
