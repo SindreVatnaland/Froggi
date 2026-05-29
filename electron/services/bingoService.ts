@@ -1767,7 +1767,7 @@ export class BingoService {
 			this.messageHandler.sendMessage('Notification', 'Randomize: no eligible tiles', NotificationType.Warning, 3000);
 			return 'No eligible tiles';
 		}
-		const count = Math.max(1, Math.min(5, Math.floor(eligible.length * 0.20)));
+		const count = Math.max(1, Math.min(5, Math.floor(eligible.length * 0.25)));
 		const targets = [...eligible].sort(() => Math.random() - 0.5).slice(0, count);
 		const usedIds = new Set(boxes.map(b => b.challengeId));
 		for (const { b: target, i: targetIdx } of targets) {
