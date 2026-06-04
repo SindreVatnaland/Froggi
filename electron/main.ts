@@ -318,7 +318,18 @@ try {
 		mainWindow.on('close', async (event) => {
 			if (!isQuitting) {
 				event.preventDefault();
-				const { response } = await dialog.showMessageBox(mainWindow, {
+				const remembered = store.get('closeAction') as string | undefined;
+				if (remembered === 'minimize') {
+					mainWindow.hide();
+					backgroundNotification.show();
+					return;
+				}
+				if (remembered === 'quit') {
+					isQuitting = true;
+					app.quit();
+					return;
+				}
+				const { response, checkboxChecked } = await dialog.showMessageBox(mainWindow, {
 					type: 'question',
 					buttons: ['Minimize to tray', 'Quit'],
 					defaultId: 0,
@@ -326,7 +337,12 @@ try {
 					title: 'Close Froggi',
 					message: 'Froggi runs in the background to keep the server active.',
 					detail: 'Minimize to tray to keep the server running, or Quit to shut everything down.',
+					checkboxLabel: 'Remember my choice',
+					checkboxChecked: false,
 				});
+				if (checkboxChecked) {
+					store.set('closeAction', response === 1 ? 'quit' : 'minimize');
+				}
 				if (response === 1) {
 					isQuitting = true;
 					app.quit();

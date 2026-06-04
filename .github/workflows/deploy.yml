@@ -9,6 +9,10 @@ on:
             file:
                 required: true
                 type: string
+            tag:
+                required: false
+                type: string
+                default: ''
 
 jobs:
     deploy:
@@ -75,6 +79,6 @@ jobs:
               with:
                   files: ${{ inputs['file'] }}
                   draft: false
-                  tag_name: ${{ github.ref_name }}
-                  prerelease: ${{ contains(github.ref_name, 'beta') }}
+                  tag_name: ${{ inputs.tag != '' && inputs.tag || github.ref_name }}
+                  prerelease: ${{ contains(inputs.tag != '' && inputs.tag || github.ref_name, 'beta') }}
                   fail_on_unmatched_files: false

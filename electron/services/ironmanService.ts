@@ -241,7 +241,8 @@ export class IronManService {
 
 	private initEventListeners() {
 		this.localEmitter.on('CurrentPlayer', (player: any) => {
-			if (!this.session) this.localPlayerIndex = player?.playerIndex ?? null;
+			this.localPlayerIndex = player?.playerIndex ?? null;
+			if (this.session) this.session.localPlayerIndex = this.localPlayerIndex;
 		});
 
 		this.clientEmitter.on('IronManStartLobby', (settings: IronManSettings) => {
@@ -405,7 +406,7 @@ export class IronManService {
 		let localValid: boolean;
 		if (variant === 'full_roster' || variant === 'challenge') {
 			const activeSlot = this.session.localRoster.slots[this.session.localRoster.currentIndex];
-			localValid = activeSlot != null && activeSlot.characterId === charId;
+			localValid = activeSlot != null && !activeSlot.completed && activeSlot.characterId === charId;
 		} else {
 			localValid = this.session.localRoster.slots.some(s => s.characterId === charId && !s.depleted);
 		}
@@ -418,7 +419,7 @@ export class IronManService {
 			if (variant === 'full_roster') {
 				const oppRoster = this.session.opponentRoster;
 				const activeSlot = oppRoster.slots[oppRoster.currentIndex];
-				return activeSlot != null && activeSlot.characterId === oppCharId;
+				return activeSlot != null && !activeSlot.completed && activeSlot.characterId === oppCharId;
 			}
 			return this.session.opponentRoster.slots.some(s => s.characterId === oppCharId && !s.depleted);
 		}
@@ -527,12 +528,14 @@ export class IronManService {
 		if (this.session.role === 'local' && this.session.opponentRoster) {
 			const advanceRoster = didWin ? this.session.localRoster : this.session.opponentRoster;
 			const slot = advanceRoster.slots[advanceRoster.currentIndex];
-			if (!slot) return;
-			slot.completed = true;
-			advanceRoster.currentIndex++;
-			while (advanceRoster.currentIndex < advanceRoster.slots.length && advanceRoster.slots[advanceRoster.currentIndex].completed) {
+			if (slot) {
+				slot.completed = true;
 				advanceRoster.currentIndex++;
+				while (advanceRoster.currentIndex < advanceRoster.slots.length && advanceRoster.slots[advanceRoster.currentIndex].completed) {
+					advanceRoster.currentIndex++;
+				}
 			}
+			// Check winner regardless — currentIndex may already be past end if all slots completed
 			if (this.session.localRoster.slots.every(s => s.completed)) this.session.winner = 'local';
 			else if (this.session.opponentRoster.slots.every(s => s.completed)) this.session.winner = 'opponent';
 			return;
@@ -590,8 +593,7 @@ export class IronManService {
 	// ── Peer sync ─────────────────────────────────────────────────────────────
 
 	private syncWithPeer() {
-		if (!this.session || !this.peerSocket?.readyState === null) return;
-		if (this.peerSocket?.readyState !== WebSocket.OPEN) return;
+		if (!this.session || this.peerSocket?.readyState !== WebSocket.OPEN) return;
 
 		this.peerSocket.send(JSON.stringify({
 			type: 'IronManRosterUpdate',

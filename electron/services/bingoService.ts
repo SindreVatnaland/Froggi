@@ -144,6 +144,8 @@ export class BingoService {
 	private chatVotesByRole: Map<'host' | 'guest', Map<string, BingoVoteActionType>> = new Map([['host', new Map()], ['guest', new Map()]]);
 	private pendingActions: Array<{ action: BingoVoteActionType; description: string; channelName: string; role: 'host' | 'guest' }> = [];
 	private actionQueueRunning = false;
+	private actionQueueTimers: ReturnType<typeof setTimeout>[] = [];
+	private guestVoteDelayTimer: ReturnType<typeof setTimeout> | null = null;
 	private frozenTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 	constructor(
@@ -560,16 +562,13 @@ export class BingoService {
 						localName: this.localPlayerName,
 						opponentName: msg.playerName ?? null,
 					};
-					this.stopVote();
-					this.clearFrozenTimers();
-
-					this.opponentCompletedTiles.clear();
-					this.resetSessionAccumulators();
-					this.resetGameState();
-					this.session = session;
+					// Preserve the peer socket through startSession (same pattern as host restart)
+					const savedPeer = this.peerSocket;
+					this.peerSocket = null;
+					this.startSession(session);
+					this.peerSocket = savedPeer;
 					this.lobby = null;
 					this.messageHandler.sendMessage('BingoLobbyState', null);
-					this.sendBingoState();
 				} else if (msg.type === 'BingoComplete' && msg.instanceId) {
 					this.applyOpponentCompletion(msg.instanceId);
 				} else if (msg.type === 'BingoSync' && msg.board) {
@@ -1662,7 +1661,9 @@ export class BingoService {
 		this.startVoteForRole('host', hostOpts);
 		// Guest vote starts with a random 0–10s offset so bars are visually out of sync
 		const guestDelay = Math.floor(Math.random() * 10000);
-		setTimeout(() => {
+		if (this.guestVoteDelayTimer) clearTimeout(this.guestVoteDelayTimer);
+		this.guestVoteDelayTimer = setTimeout(() => {
+			this.guestVoteDelayTimer = null;
 			if (this.session) this.startVoteForRole('guest', guestOpts);
 		}, guestDelay);
 	}
@@ -1726,7 +1727,8 @@ export class BingoService {
 		};
 		this.sendVoteStates({ role, state: resultState });
 		// 2. After popup visible for 3s, execute action
-		setTimeout(() => {
+		const t1 = setTimeout(() => {
+			this.actionQueueTimers = this.actionQueueTimers.filter(t => t !== t1);
 			if (this.session) {
 				if (action === 'randomize_opponent_tile') this.executeRandomize();
 				else if (action === 'freeze_tile') this.executeFreeze(role);
@@ -1736,7 +1738,8 @@ export class BingoService {
 			}
 			// 3. Clear popup, then process next item
 			// 1500ms covers max shuffle animation (4 swaps × 280ms step + 250ms flip = ~1090ms)
-			setTimeout(() => {
+			const t2 = setTimeout(() => {
+				this.actionQueueTimers = this.actionQueueTimers.filter(t => t !== t2);
 				this.sendVoteStates({ role, state: null });
 				this.actionQueueRunning = false;
 				if (this.session?.settings.twitchEnabled && this.voteStates.size === 0 && this.pendingActions.length === 0) {
@@ -1744,7 +1747,9 @@ export class BingoService {
 				}
 				this.processActionQueue();
 			}, 1500);
+			this.actionQueueTimers.push(t2);
 		}, 3000);
+		this.actionQueueTimers.push(t1);
 	}
 
 	private sendVoteStates(override?: { role: 'host' | 'guest'; state: BingoVoteState | null }) {
@@ -1971,6 +1976,9 @@ export class BingoService {
 		for (const timer of this.voteTimers.values()) clearTimeout(timer);
 		this.voteTimers.clear();
 		if (this.voteScheduleTimer) { clearTimeout(this.voteScheduleTimer); this.voteScheduleTimer = null; }
+		if (this.guestVoteDelayTimer) { clearTimeout(this.guestVoteDelayTimer); this.guestVoteDelayTimer = null; }
+		for (const t of this.actionQueueTimers) clearTimeout(t);
+		this.actionQueueTimers = [];
 		this.voteStates.clear();
 		this.chatVotesByRole.get('host')?.clear();
 		this.chatVotesByRole.get('guest')?.clear();

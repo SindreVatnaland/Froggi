@@ -8,7 +8,7 @@ export class FrontendLogger {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 	) {
-		this.log.info('Initializing Auto Updater');
+		this.log.info('Initializing Frontend Logger');
 		this.initListeners();
 
 	}

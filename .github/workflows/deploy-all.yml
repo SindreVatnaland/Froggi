@@ -2,8 +2,13 @@ name: Build & Release
 
 on:
     workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Tag name to release (e.g. v2.0.0-beta.5)'
+                required: true
+                type: string
     push:
-        tags: ['v*']
+        tags: ['v*', '[0-9]*']
 
 permissions: write-all
 
@@ -14,10 +19,11 @@ jobs:
         with:
             file: |
                 ./dist/*.dmg
-                ./dist/*.zip 
-                ./dist/*.zip.blockmap 
+                ./dist/*.zip
+                ./dist/*.zip.blockmap
                 ./dist/latest-mac.yml
             runs-on: 'macos-latest'
+            tag: ${{ inputs.tag || '' }}
 
     deploy_linux:
         uses: ./.github/workflows/deploy.yml
@@ -27,6 +33,7 @@ jobs:
                 ./dist/*.AppImage
                 ./dist/latest-linux.yml
             runs-on: 'ubuntu-latest'
+            tag: ${{ inputs.tag || '' }}
 
     deploy_windows:
         uses: ./.github/workflows/deploy.yml
@@ -37,3 +44,4 @@ jobs:
                 ./dist/*.exe.blockmap
                 ./dist/latest.yml
             runs-on: 'windows-latest'
+            tag: ${{ inputs.tag || '' }}

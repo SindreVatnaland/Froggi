@@ -1,13 +1,13 @@
 import type { ElectronLog } from 'electron-log';
 import { ProgressInfo, UpdateDownloadedEvent, UpdateInfo, autoUpdater } from 'electron-updater';
-import { delay, inject, injectable } from 'tsyringe';
+import { delay, inject, singleton } from 'tsyringe';
 import { MessageHandler } from './messageHandler';
 import { AutoUpdaterStatus, NotificationType } from '../../frontend/src/lib/models/enum';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { App } from 'electron';
 import { ElectronFroggiStore } from './store/storeFroggi';
 
-@injectable()
+@singleton()
 export class AutoUpdater {
 	private status: AutoUpdaterStatus;
 	constructor(
@@ -30,11 +30,11 @@ export class AutoUpdater {
 			this.messageHandler.sendMessage('AutoUpdaterVersion', 'dev');
 			return;
 		}
+
+		// Configure before checkForUpdates so all settings are applied before the check fires
 		this.checkBetaOptIn();
-		autoUpdater.checkForUpdates();
 		autoUpdater.autoInstallOnAppQuit = true;
 		autoUpdater.autoRunAppAfterInstall = true;
-		autoUpdater.autoDownload = false;
 		autoUpdater.autoDownload = false;
 		autoUpdater.disableDifferentialDownload = true;
 		this.log.verbose('Current Version:', autoUpdater.currentVersion);
@@ -125,6 +125,9 @@ export class AutoUpdater {
 		this.localEmitter.on('AutoUpdaterStatus', (status) => {
 			this.status = status;
 		});
+
+		// All config and listeners registered — safe to start the check now
+		autoUpdater.checkForUpdates();
 	}
 
 	private handleUpdateNotAvailable() {

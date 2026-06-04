@@ -62,9 +62,13 @@ export class ElectronSettingsStore {
 	updateSlippiSettings(): SlippiLauncherSettings | undefined {
 		try {
 			const slippiPath = getAppDataPath('Slippi Launcher');
-			const rawData = fs.readFileSync(`${slippiPath}/Settings`, 'utf-8');
-			let settings = JSON.parse(rawData)?.settings as SlippiLauncherSettings;
+			const settingsPath = `${slippiPath}/Settings`;
+			const rawData = fs.readFileSync(settingsPath, 'utf-8');
+			const fullJson = JSON.parse(rawData);
+			let settings = (fullJson?.settings ?? {}) as SlippiLauncherSettings;
 			settings = this.verifyAndFixDefaultSettings(settings);
+			// Write back full JSON preserving all top-level keys (auth, user, etc.)
+			fs.writeFileSync(settingsPath, JSON.stringify({ ...fullJson, settings }));
 			this.setSlippiLauncherSettings(settings);
 			return settings;
 		} catch (err) {
@@ -88,10 +92,6 @@ export class ElectronSettingsStore {
 		if (settings?.appDataPath === undefined)
 			settings.appDataPath = getAppDataPath('Slippi Launcher');
 		settings.useMonthlySubfolders = true;
-		fs.writeFileSync(
-			`${getAppDataPath('Slippi Launcher')}/Settings`,
-			JSON.stringify({ settings: settings }),
-		);
 		return settings;
 	}
 
