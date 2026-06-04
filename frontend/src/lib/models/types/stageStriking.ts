@@ -45,6 +45,8 @@ export interface StrikeState {
 		p2: RpsChoice | null;
 		winner: 1 | 2 | null;
 	};
+	/** Epoch ms when the RPS countdown ends. Set once both players are connected. null = not started. */
+	rpsDeadline: number | null;
 
 	characters: {
 		p1: number | null;

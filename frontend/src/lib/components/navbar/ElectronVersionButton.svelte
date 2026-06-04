@@ -91,7 +91,7 @@
 			class="w-11 h-11 transition rounded-2xl z-50 cursor-pointer flex justify-center items-center bg-white"
 			on:click={installUpdate}
 		>
-			<div class={`${getAnimation($autoUpdater)} w-full h-full`} />
+			<div class={`${getAnimation($autoUpdater)} absolute inset-0 rounded-2xl`} />
 			<button
 				class={`w-full h-full bg-black bg-opacity-30 flex items-center justify-center rounded-2xl p-2`}
 				style={`${getStyle($autoUpdater)}`}

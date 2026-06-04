@@ -35,8 +35,13 @@ import {
 	type WebhookProfile,
 	type RankChangeDiff,
 	type BingoUpdatePayload,
+	type BingoBoardStatePayload,
+	type IronManUpdatePayload,
 } from '../../frontend/src/lib/models/types/webhook';
-import type { BingoChallengeUpdatePayload } from '../../frontend/src/lib/models/types/bingo';
+import type { BingoChallengeUpdatePayload, BingoStatePayload, BingoTile } from '../../frontend/src/lib/models/types/bingo';
+import type { IronManStatePayload } from '../../frontend/src/lib/models/types/ironman';
+import { IRONMAN_CHAR_NAMES } from '../../frontend/src/lib/models/types/ironman';
+import type { IronManCharSlotWebhook } from '../../frontend/src/lib/models/types/webhook';
 import type { StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 import type {
 	CurrentPlayer,
@@ -133,8 +138,33 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 	[WebhookEvent.BingoUpdate]: {
 		totalCheckedLocal: 3,
 		totalCheckedOpponent: 2,
-		latestUpdate: { instanceId: 'box-0', label: 'Win a game', completedBy: 'local', reverted: false },
+		latestUpdate: { instanceId: 'tile-0', label: 'Win a game', completedBy: 'local', reverted: false },
 	} satisfies BingoUpdatePayload,
+	[WebhookEvent.BingoBoardState]: {
+		size: 3,
+		tiles: Array.from({ length: 9 }, (_, i) => ({
+			index: i, row: Math.floor(i / 3), col: i % 3,
+			instanceId: `tile-${i}`, challengeId: 'win_games_total' as const,
+			label: `Challenge ${i + 1}`, description: '', params: { difficulty: 'medium', target: 1 },
+			completed: i < 2, completedBy: i < 2 ? (['local'] as ('local' | 'opponent')[]) : [],
+			progress: 0, target: 1, hasProgress: false,
+			states: i === 3 ? ['frozen'] : [],
+		})),
+		localScore: 1, oppScore: 0,
+		localName: 'Player 1', opponentName: 'Player 2',
+		winner: null, hasWon: false, winCondition: '3', role: 'host',
+	} satisfies BingoBoardStatePayload,
+	[WebhookEvent.IronManUpdate]: {
+		variant: 'standard', role: 'solo',
+		localName: 'Player 1', opponentName: null,
+		winner: null, pendingCarryStocks: null,
+		roster: [
+			{ characterId: 20, characterName: 'Falco', depleted: false, completed: false, stocksRemaining: 4, isActive: true },
+			{ characterId: 2, characterName: 'Fox', depleted: true, completed: false, stocksRemaining: 0, isActive: false },
+		],
+		currentCharacter: { characterId: 20, characterName: 'Falco', depleted: false, completed: false, stocksRemaining: 4 },
+		opponentRoster: null,
+	} satisfies IronManUpdatePayload,
 };
 
 const GAME_END_METHODS: Record<number, string> = {
@@ -147,15 +177,32 @@ const DEATH_DIRECTION_MAP: Record<number, PlayerStockDiff['deathDirection']> = {
 	6: 'up', 7: 'up', 8: 'up', 9: 'up', 10: 'up',
 };
 
-const DEBOUNCE_MS: Partial<Record<WebhookEvent, number>> = {
-	[WebhookEvent.PercentChange]: 300,
+// 0 = send instantly (no throttle). >0 = leading+trailing throttle: fires immediately,
+// buffers further events, then sends the latest value once at the end of the window.
+const THROTTLE_MS: Partial<Record<WebhookEvent, number>> = {
+	[WebhookEvent.GameStart]:   0,
+	[WebhookEvent.GameEnd]:     0,
+	[WebhookEvent.GameScore]:   0,
+	[WebhookEvent.RankChange]:  0,
 	[WebhookEvent.StockChange]: 0,
+	[WebhookEvent.BingoUpdate]: 0,
+	[WebhookEvent.PercentChange]:   300,
+	[WebhookEvent.StrikeState]:     200,
+	[WebhookEvent.PlayerInfo]:      500,
+	[WebhookEvent.BingoBoardState]: 200,
+	[WebhookEvent.IronManUpdate]:   200,
 };
+
+interface ThrottleState {
+	timer: ReturnType<typeof setTimeout> | null;
+	latestPayload: unknown;
+	hasPending: boolean;
+}
 
 @singleton()
 export class WebhookService {
 	private oauthCache = new Map<string, OAuthTokenCache>();
-	private sendTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	private throttleStates = new Map<string, ThrottleState>();
 	private lastGameSettingsId: string | null = null;
 	private prevFrameState = new Map<number, FrameState>();
 	private currentPlayerConnectCode: string | null = null;
@@ -270,6 +317,16 @@ export class WebhookService {
 		this.localEmitter.on('BingoChallengeUpdates', (data: BingoChallengeUpdatePayload) => {
 			if (!data.webhookData) return;
 			this.dispatch(WebhookEvent.BingoUpdate, data.webhookData);
+		});
+
+		this.localEmitter.on('BingoState', (data: BingoStatePayload) => {
+			if (!data?.session) return;
+			this.dispatch(WebhookEvent.BingoBoardState, WebhookService.stripBingoBoardState(data.session));
+		});
+
+		this.localEmitter.on('IronManState', (data: IronManStatePayload) => {
+			if (!data?.session) return;
+			this.dispatch(WebhookEvent.IronManUpdate, WebhookService.stripIronManUpdate(data.session));
 		});
 
 		this.clientEmitter.on('TestWebhookProfile', (profileId: string) => {
@@ -427,6 +484,67 @@ export class WebhookService {
 		};
 	}
 
+	static completedByArray(v: BingoTile['completedBy']): ('local' | 'opponent')[] {
+		if (v === 'both') return ['local', 'opponent'];
+		if (v === 'local') return ['local'];
+		if (v === 'opponent') return ['opponent'];
+		return [];
+	}
+
+	static tileStates(t: BingoTile): string[] {
+		const states: string[] = [];
+		if (t.frozen) states.push('frozen');
+		return states;
+	}
+
+	static stripBingoBoardState(session: NonNullable<BingoStatePayload['session']>): BingoBoardStatePayload {
+		const size = session.board.size;
+		const win = session.winState;
+		return {
+			size,
+			tiles: session.board.tiles.map((t, i) => {
+				const { completedBy, frozen, frozenUntil, frozenForOpponent, ...rest } = t;
+				return {
+					...rest,
+					index: i,
+					row: Math.floor(i / size),
+					col: i % size,
+					completedBy: WebhookService.completedByArray(completedBy),
+					states: WebhookService.tileStates(t),
+				};
+			}),
+			localScore: win?.localScore ?? 0,
+			oppScore: win?.oppScore ?? null,
+			localName: session.localName,
+			opponentName: session.opponentName ?? null,
+			winner: win?.localWinner ? 'local' : win?.oppWinner ? 'opponent' : null,
+			hasWon: win?.hasWon ?? false,
+			winCondition: String(session.settings.winCondition),
+			role: session.role,
+		};
+	}
+
+	static stripIronManUpdate(session: NonNullable<IronManStatePayload['session']>): IronManUpdatePayload {
+		const charName = (id: number) => IRONMAN_CHAR_NAMES[id] ?? CHARACTER_NAMES_BY_ID[id] ?? `Character ${id}`;
+		const mapSlots = (roster: typeof session.localRoster, activeIndex: number): IronManCharSlotWebhook[] =>
+			roster.slots.map((slot, i) => ({ ...slot, characterName: charName(slot.characterId), isActive: i === activeIndex }));
+		const local = session.localRoster;
+		const activeSlot = local.slots[local.currentIndex] ?? null;
+		return {
+			variant: session.settings.variant,
+			role: session.role,
+			localName: session.localName,
+			opponentName: session.opponentName ?? null,
+			winner: session.winner,
+			pendingCarryStocks: session.pendingCarryStocks,
+			roster: mapSlots(local, local.currentIndex),
+			currentCharacter: activeSlot ? { ...activeSlot, characterName: charName(activeSlot.characterId) } : null,
+			opponentRoster: session.opponentRoster
+				? mapSlots(session.opponentRoster, session.opponentRoster.currentIndex)
+				: null,
+		};
+	}
+
 	// ── Test / dispatch ───────────────────────────────────────────────────────
 
 	private async testProfile(profileId: string) {
@@ -441,19 +559,44 @@ export class WebhookService {
 
 	private dispatch<T>(eventName: WebhookEvent, payload: T) {
 		if (!this.webhookStore.getEnabled()) return;
+		const throttleMs = THROTTLE_MS[eventName] ?? 50;
 		const profiles = this.webhookStore
 			.getProfiles()
 			.filter((p) => p.enabled && p.events.includes(eventName));
+
 		for (const profile of profiles) {
 			const key = `${profile.id}:${eventName}`;
-			const existing = this.sendTimers.get(key);
-			if (existing) clearTimeout(existing);
-			this.sendTimers.set(key, setTimeout(() => {
-				this.sendTimers.delete(key);
-				this.send(profile, eventName, payload).catch((err: Error) => {
-					this.log.error(`Webhook "${profile.name}" (${eventName}) failed: ${err.message}`);
-				});
-			}, DEBOUNCE_MS[eventName] ?? 50));
+			const doSend = (p: T) => this.send(profile, eventName, p).catch((err: Error) => {
+				this.log.error(`Webhook "${profile.name}" (${eventName}) failed: ${err.message}`);
+			});
+
+			if (throttleMs === 0) {
+				doSend(payload);
+				continue;
+			}
+
+			let state = this.throttleStates.get(key);
+			if (!state) {
+				state = { timer: null, latestPayload: null, hasPending: false };
+				this.throttleStates.set(key, state);
+			}
+			state.latestPayload = payload;
+
+			if (!state.timer) {
+				// Leading edge — send immediately and open the throttle window
+				doSend(payload);
+				state.hasPending = false;
+				state.timer = setTimeout(() => {
+					state!.timer = null;
+					if (state!.hasPending) {
+						state!.hasPending = false;
+						doSend(state!.latestPayload as T);
+					}
+				}, throttleMs);
+			} else {
+				// Within window — mark latest as pending for trailing send
+				state.hasPending = true;
+			}
 		}
 	}
 

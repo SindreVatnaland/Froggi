@@ -28,6 +28,37 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: 22
+                  cache: 'npm'
+
+            - name: Cache node_modules
+              id: cache-deps
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      node_modules
+                      frontend/node_modules
+                  key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'frontend/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-deps-
+
+            - name: Cache Electron binaries (Linux/macOS)
+              if: runner.os != 'Windows'
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/electron
+                      ~/.cache/electron-builder
+                  key: ${{ runner.os }}-electron-${{ hashFiles('package.json') }}
+                  restore-keys: ${{ runner.os }}-electron-
+
+            - name: Cache Electron binaries (Windows)
+              if: runner.os == 'Windows'
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/AppData/Local/electron/Cache
+                      ~/AppData/Local/electron-builder/Cache
+                  key: ${{ runner.os }}-electron-${{ hashFiles('package.json') }}
+                  restore-keys: ${{ runner.os }}-electron-
 
             - name: Decode and import signing certificate
               if: runner.os == 'macOS'
@@ -59,9 +90,11 @@ jobs:
                   MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
 
             - name: install dependencies
+              if: steps.cache-deps.outputs.cache-hit != 'true'
               run: npm ci --legacy-peer-deps --no-audit && npm ci --legacy-peer-deps --no-audit --prefix ./frontend
 
             - name: Test
+              if: runner.os == 'Linux'
               run: npm run test
 
             - name: build

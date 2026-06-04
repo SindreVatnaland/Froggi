@@ -7,6 +7,7 @@
 	import PlayerRankIcon from '../../element/PlayerRankIcon.svelte';
 	import RankedCharacterIcon from '../../element/RankedCharacterIcon.svelte';
 	import TextElement from '../../element/TextElement.svelte';
+	import RankGraph from '../../element/RankGraph.svelte';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
@@ -180,4 +181,15 @@
 		characterNumber={2}
 		defaultPreviewId={Number(CHARACTERS['falco'])}
 	/>
+{:else if dataItem?.elementId === CustomElement.SlippiRankCurrentPlayerRatingGraph}
+	{@const seasons = $currentPlayer?.rank?.current?.seasons ?? []}
+	{@const pts = seasons.map(s => s.ratingOrdinal).filter(r => r > 0)}
+	{@const hasGames = ($currentPlayer?.rank?.current?.wins ?? 0) + ($currentPlayer?.rank?.current?.losses ?? 0) > 0}
+	{@const allPts = hasGames && $currentPlayer?.rank?.current?.rating ? [...pts, $currentPlayer.rank.current.rating] : pts}
+	<div class="w-full h-full {style.classValue}" style="{style.cssValue}; {dataItem?.data.advancedStyling ? dataItem?.data.css.customBox : ''}">
+		<RankGraph
+			points={allPts}
+			preview={defaultPreview || allPts.length < 2}
+		/>
+	</div>
 {/if}

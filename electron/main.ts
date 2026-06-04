@@ -315,10 +315,14 @@ try {
 			container.resolve(ElectronSettingsStore).notifyMissingSpectateConfig();
 		});
 
+		// Migrate legacy top-level closeAction key
+		const legacyClose = store.get('closeAction');
+		if (legacyClose) { store.set('settings.froggi.closeAction', legacyClose); store.delete('closeAction'); }
+
 		mainWindow.on('close', async (event) => {
 			if (!isQuitting) {
 				event.preventDefault();
-				const remembered = store.get('closeAction') as string | undefined;
+				const remembered = store.get('settings.froggi.closeAction') as string | undefined;
 				if (remembered === 'minimize') {
 					mainWindow.hide();
 					backgroundNotification.show();
@@ -341,7 +345,7 @@ try {
 					checkboxChecked: false,
 				});
 				if (checkboxChecked) {
-					store.set('closeAction', response === 1 ? 'quit' : 'minimize');
+					store.set('settings.froggi.closeAction', response === 1 ? 'quit' : 'minimize');
 				}
 				if (response === 1) {
 					isQuitting = true;

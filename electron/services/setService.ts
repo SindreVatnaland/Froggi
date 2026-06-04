@@ -9,6 +9,8 @@ import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
 
 const DEFAULT_STARTERS = [2, 8, 28, 31, 32];
 const DEFAULT_COUNTERPICKS = [3, 6, 7, 10, 11, 17, 22, 27];
+const RPS_DURATION_MS = 30000;
+const RPS_CHOICES: RpsChoice[] = ['rock', 'paper', 'scissors'];
 
 function makeLobbyState(): StrikeState {
 	return {
@@ -27,6 +29,7 @@ function makeLobbyState(): StrikeState {
 		strikeOrder: [],
 		strikeOrderIndex: 0,
 		rps: { p1: null, p2: null, winner: null },
+		rpsDeadline: null,
 		characters: { p1: null, p2: null },
 		dsrStages: { p1: [], p2: [] },
 		lastWinner: null,
@@ -49,6 +52,7 @@ function rpsResolve(p1: RpsChoice, p2: RpsChoice): 1 | 2 | null {
 @singleton()
 export class ElectronSetService {
 	private state: StrikeState = makeLobbyState();
+	private rpsTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -68,9 +72,60 @@ export class ElectronSetService {
 		this.strikeStore.setStrikeState(state);
 	}
 
+	private clearRpsTimer() {
+		if (this.rpsTimer) { clearTimeout(this.rpsTimer); this.rpsTimer = null; }
+	}
+
+	/** Start the 30s RPS countdown once both players are connected. No-op if already running or not in rps phase. */
+	private maybeStartRpsTimer(s: StrikeState) {
+		if (s.phase !== 'rps') return;
+		if (s.rpsDeadline !== null) return; // already running
+		const connected = s.connectedPlayers ?? [];
+		if (!connected.includes(1) || !connected.includes(2)) return;
+		s.rpsDeadline = Date.now() + RPS_DURATION_MS;
+		this.clearRpsTimer();
+		this.rpsTimer = setTimeout(() => this.onRpsTimeout(), RPS_DURATION_MS);
+	}
+
+	/** Auto-pick a random choice for any player who hasn't chosen, then resolve. */
+	private onRpsTimeout() {
+		this.rpsTimer = null;
+		const s = { ...this.state, rps: { ...this.state.rps } };
+		if (s.phase !== 'rps') return;
+		if (!s.rps.p1) s.rps.p1 = RPS_CHOICES[Math.floor(Math.random() * 3)];
+		if (!s.rps.p2) s.rps.p2 = RPS_CHOICES[Math.floor(Math.random() * 3)];
+		this.resolveRps(s);
+	}
+
+	/** Apply an RPS result. On a tie, reset choices and restart the countdown. Mutates and commits `s`. */
+	private resolveRps(s: StrikeState) {
+		if (!s.rps.p1 || !s.rps.p2) { this.setState(s); return; }
+		const winner = rpsResolve(s.rps.p1, s.rps.p2);
+		if (!winner) {
+			// Tie — fresh round, fresh 30s
+			s.rps = { p1: null, p2: null, winner: null };
+			s.rpsDeadline = Date.now() + RPS_DURATION_MS;
+			this.clearRpsTimer();
+			this.rpsTimer = setTimeout(() => this.onRpsTimeout(), RPS_DURATION_MS);
+		} else {
+			const second: 1 | 2 = winner === 1 ? 2 : 1;
+			s.rps = { ...s.rps, winner };
+			s.rpsDeadline = null;
+			this.clearRpsTimer();
+			s.strikeOrder = [[winner, 1], [second, 2], [winner, 1]];
+			s.strikeOrderIndex = 0;
+			s.currentStriker = winner;
+			s.stages = [...s.starters];
+			s.strikes = [];
+			s.phase = 'striking';
+		}
+		this.setState(s);
+	}
+
 	private initListeners() {
 		this.clientEmitter.on('StartSet', async (p1Name, p2Name, bestOf) => {
 			await this.storeGames.clearRecentGames();
+			this.clearRpsTimer();
 			const s: StrikeState = {
 				...makeLobbyState(),
 				p1Name: p1Name || 'Player 1',
@@ -79,6 +134,7 @@ export class ElectronSetService {
 				phase: 'rps',
 				connectedPlayers: this.state.connectedPlayers ?? [],
 			};
+			this.maybeStartRpsTimer(s); // both may already be connected
 			this.setState(s);
 			this.storeLiveStats.setStatsScene(LiveStatsScene.StrikePhase);
 			this.log.info(`Set started: ${p1Name} vs ${p2Name} BO${bestOf}`);
@@ -89,23 +145,7 @@ export class ElectronSetService {
 			if (s.phase !== 'rps') return;
 			if (player === 1) s.rps.p1 = choice;
 			else s.rps.p2 = choice;
-
-			if (s.rps.p1 && s.rps.p2) {
-				const winner = rpsResolve(s.rps.p1, s.rps.p2);
-				if (!winner) {
-					s.rps = { p1: null, p2: null, winner: null };
-				} else {
-					const second: 1 | 2 = winner === 1 ? 2 : 1;
-					s.rps = { ...s.rps, winner };
-					s.strikeOrder = [[winner, 1], [second, 2], [winner, 1]];
-					s.strikeOrderIndex = 0;
-					s.currentStriker = winner;
-					s.stages = [...s.starters];
-					s.strikes = [];
-					s.phase = 'striking';
-				}
-			}
-			this.setState(s);
+			this.resolveRps(s);
 		});
 
 		this.clientEmitter.on('StrikeStage', (stageId) => {
@@ -283,14 +323,19 @@ export class ElectronSetService {
 		});
 
 		this.clientEmitter.on('ResetSet', () => {
+			this.clearRpsTimer();
 			this.setState(makeLobbyState());
 		});
 
 		this.clientEmitter.on('StrikePlayerConnect', (player) => {
 			const s = { ...this.state };
 			const already = s.connectedPlayers ?? [];
-			if (already.includes(player)) return;
+			if (already.includes(player)) {
+				this.setState(s);
+				return;
+			}
 			s.connectedPlayers = [...already, player];
+			this.maybeStartRpsTimer(s); // starts the 30s clock once both are in
 			this.setState(s);
 		});
 	}

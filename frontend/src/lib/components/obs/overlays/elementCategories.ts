@@ -718,6 +718,7 @@ export const SLIPPIRANK_ELEMENTS = new Set<CustomElement>([
 	CustomElement.SlippiPlayer2RankChangePredictedWinRatingDifference,
 	CustomElement.SlippiPlayer2RankChangePredictedLossRatingDifference,
 	CustomElement.SlippiRankChangeRatingDifference,
+	CustomElement.SlippiRankCurrentPlayerRatingGraph,
 ]);
 
 export const BINGO_ELEMENTS = new Set<CustomElement>([

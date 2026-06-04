@@ -263,8 +263,11 @@
 	{:else if phase === 'charSelect'}
 	<div class="dash-card border-secondary">
 		<p class="dash-label">Character Select — Double Blind</p>
-		{#if s?.finalStageId !== null}
-		<p class="phase-hint">Stage: {stageName(s?.finalStageId ?? -1)}</p>
+		{#if s?.finalStageId != null}
+		<div class="stage-preview">
+			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
+		</div>
 		{/if}
 		<div class="char-status">
 			<div class="char-status-player">
@@ -283,8 +286,11 @@
 	{:else if phase === 'charLock'}
 	<div class="dash-card border-secondary">
 		<p class="dash-label">Character Lock — Game {s?.gameNum}</p>
-		{#if s?.finalStageId !== null}
-		<p class="phase-hint">Stage: {stageName(s?.finalStageId ?? -1)}</p>
+		{#if s?.finalStageId != null}
+		<div class="stage-preview">
+			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
+		</div>
 		{/if}
 		<p class="phase-hint">
 			{s?.lastWinner === 1 ? s?.p1Name : s?.p2Name} (winner) locks character
@@ -302,8 +308,11 @@
 	{:else if phase === 'charPick'}
 	<div class="dash-card border-secondary">
 		<p class="dash-label">Character Pick — Game {s?.gameNum}</p>
-		{#if s?.finalStageId !== null}
-		<p class="phase-hint">Stage: {stageName(s?.finalStageId ?? -1)}</p>
+		{#if s?.finalStageId != null}
+		<div class="stage-preview">
+			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
+		</div>
 		{/if}
 		<p class="phase-hint">
 			{s?.lastWinner === 1 ? s?.p1Name : s?.p2Name} locked:
@@ -520,6 +529,33 @@
 
 	.playing-stage { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
 	.stage-img-large { width: 120px; height: 68px; object-fit: cover; border-radius: 0.25rem; }
+
+	.stage-preview {
+		position: relative;
+		width: 100%;
+		margin: 0.5rem 0 0.25rem;
+		border-radius: 0.375rem;
+		overflow: hidden;
+	}
+	.stage-preview-img {
+		width: 100%;
+		height: 100px;
+		object-fit: cover;
+		display: block;
+		opacity: 0.85;
+	}
+	.stage-preview-name {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 0.3rem 0.6rem;
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		background: linear-gradient(transparent, rgba(0,0,0,0.65));
+		color: #fff;
+	}
 	.playing-chars { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; }
 	.playing-char { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; }
 	.playing-char--right { flex-direction: row-reverse; }

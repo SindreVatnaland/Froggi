@@ -87,9 +87,10 @@ function createUpdateWindow(log: ElectronLog): BrowserWindow {
   return updateWindow;
 }
 
-async function waitForUpdateConfirmation(log: ElectronLog, _updateWindow: BrowserWindow): Promise<void> {
+async function waitForUpdateConfirmation(log: ElectronLog, updateWindow: BrowserWindow): Promise<void> {
   return new Promise((resolve) => {
     let resolved = false;
+    let downloading = false;
 
     const done = () => {
       if (resolved) return;
@@ -106,15 +107,39 @@ async function waitForUpdateConfirmation(log: ElectronLog, _updateWindow: Browse
 
     const downloadHandler = () => {
       log.info('Downloading update');
+      downloading = true;
       autoUpdater.downloadUpdate();
     };
 
     ipcMain.on('autoUpdater:skipUpdate', skipHandler);
     ipcMain.on('autoUpdater:download', downloadHandler);
 
-    // Auto-close after brief "up to date" display
+    autoUpdater.on('download-progress', () => { downloading = true; });
+
     autoUpdater.on('update-not-available', () => setTimeout(done, 1500));
-    autoUpdater.on('error', () => setTimeout(done, 2500));
-    autoUpdater.on('update-cancelled', () => done());
+
+    autoUpdater.on('error', (err) => {
+      log.error('Update window error:', err);
+      if (downloading) {
+        // Download failed mid-flight — keep window open so user can retry
+        downloading = false;
+        if (!updateWindow.isDestroyed()) {
+          updateWindow.webContents.send('autoUpdater:status', 'download-error');
+        }
+      } else {
+        setTimeout(done, 2500);
+      }
+    });
+
+    autoUpdater.on('update-cancelled', () => {
+      if (downloading) {
+        downloading = false;
+        if (!updateWindow.isDestroyed()) {
+          updateWindow.webContents.send('autoUpdater:status', 'download-error');
+        }
+      } else {
+        done();
+      }
+    });
   });
 }

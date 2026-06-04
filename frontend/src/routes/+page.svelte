@@ -4,7 +4,7 @@
 </script>
 
 {#if !$navigating}
-<main class="background-primary-color">
+<main class="background-primary-color" style="height:100vh;overflow:hidden;">
 	<Home />
 </main>
 {/if}

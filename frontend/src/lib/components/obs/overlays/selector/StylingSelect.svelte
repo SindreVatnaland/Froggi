@@ -55,7 +55,9 @@
 		return (elementId >= 7000 && elementId < 8000) || elementId === CustomElement.CustomBox;
 	};
 	const isImageSettings = (elementId: number) => {
-		return (elementId >= 6000 && elementId < 7000) || elementId === CustomElement.CustomImage;
+		return (elementId >= 6000 && elementId < 7000)
+			|| elementId === CustomElement.CustomImage
+			|| elementId === CustomElement.SlippiRankCurrentPlayerRatingGraph;
 	};
 	const isCustomBoxSettings = (elementId: number) => {
 		return elementId >= 3000 && elementId < 4000;

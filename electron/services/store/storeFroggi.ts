@@ -48,6 +48,13 @@ export class ElectronFroggiStore {
             this.messageHandler.sendMessage("Notification", "Restart required to apply changes", NotificationType.Info, 3000);
             this.setFroggiBeta(optIn);
         });
+        this.clientEmitter.on('SetCloseAction', (action: 'minimize' | 'quit' | null) => {
+            if (action) {
+                this.store.set('settings.froggi.closeAction', action);
+            } else {
+                this.store.delete('settings.froggi.closeAction');
+            }
+        });
     }
 
 }

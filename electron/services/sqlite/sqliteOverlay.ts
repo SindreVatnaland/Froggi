@@ -44,11 +44,15 @@ export class SqliteOverlay {
 
     this.log.info("Add or updating overlay:", overlay.id);
 
-    const overlayEntity = this.overlayRepo.create(overlay);
-
     try {
-      const savedOverlay = await this.overlayRepo.save(overlayEntity);
-      return savedOverlay;
+      const existing = await this.overlayRepo.findOne({ where: { id: overlay.id } });
+      if (existing) {
+        // Merge into the loaded entity so TypeORM issues UPDATE, not INSERT
+        this.overlayRepo.merge(existing, overlay);
+        return await this.overlayRepo.save(existing);
+      }
+      const overlayEntity = this.overlayRepo.create(overlay);
+      return await this.overlayRepo.save(overlayEntity);
     } catch (error) {
       this.log.error("Error saving overlay:", error);
     }
@@ -90,13 +94,20 @@ export class SqliteOverlay {
   async addOrUpdateScene(scene: Scene): Promise<SceneEntity | null> {
     await this.sqlite.initializing;
     this.log.debug("Adding scene:", scene.id);
-    const sceneEntity = this.sceneRepo.create(scene);
     try {
+      if (scene.id) {
+        const existing = await this.sceneRepo.findOne({ where: { id: scene.id } });
+        if (existing) {
+          this.sceneRepo.merge(existing, scene);
+          return await this.sceneRepo.save(existing);
+        }
+      }
+      const sceneEntity = this.sceneRepo.create(scene);
       return await this.sceneRepo.save(sceneEntity);
     } catch (error) {
       this.log.error("Error saving scene:", error);
     }
-    return null
+    return null;
   }
 
   async deleteLayer(layerId: number) {

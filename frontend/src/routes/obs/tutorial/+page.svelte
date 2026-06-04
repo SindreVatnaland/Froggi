@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { Paintbrush, Plug, Gamepad2, Trophy, Webhook } from 'lucide-svelte';
 
+	import { Swords } from 'lucide-svelte';
+
 	const tutorials = [
 		{
 			title: 'Build an overlay',
@@ -26,6 +28,12 @@
 			description: 'Stage striking, player links, ngrok and Tailscale setup for online play.',
 			path: '/set/tutorial',
 			icon: Trophy,
+		},
+		{
+			title: 'Play minigames online',
+			description: 'Set up ngrok to play Bingo or Iron Man with a friend, or Tailscale for a permanent stable URL.',
+			path: '/obs/tutorial/minigames-online',
+			icon: Swords,
 		},
 		{
 			title: 'Webhooks',

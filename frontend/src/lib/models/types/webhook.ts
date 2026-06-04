@@ -1,4 +1,6 @@
 import type { RankedNetplayProfile } from './slippiData';
+import type { BingoTile } from './bingo';
+import type { IronManCharSlot, IronManSession } from './ironman';
 
 export enum WebhookEvent {
 	GameStart = 'GameStart',
@@ -10,6 +12,8 @@ export enum WebhookEvent {
 	StockChange = 'StockChange',
 	PlayerInfo = 'PlayerInfo',
 	BingoUpdate = 'BingoUpdate',
+	BingoBoardState = 'BingoBoardState',
+	IronManUpdate = 'IronManUpdate',
 }
 
 export type WebhookAuthType = 'none' | 'bearer' | 'oauth2';
@@ -174,6 +178,46 @@ export interface BingoUpdatePayload {
 		reverted: boolean;
 	} | null;
 }
+
+// BingoTile with the mutable fields replaced by normalized webhook versions.
+// New fields added to BingoTile automatically appear here.
+export type BingoBoardTileWebhook = Omit<BingoTile, 'completedBy' | 'frozen' | 'frozenUntil' | 'frozenForOpponent'> & {
+	index: number;
+	row: number;
+	col: number;
+	/** Players who completed this tile. Empty = uncompleted. 'both' is split into ['local','opponent']. */
+	completedBy: ('local' | 'opponent')[];
+	/** Active effects, e.g. ['frozen']. Extensible without changing this type. */
+	states: string[];
+};
+
+export interface BingoBoardStatePayload {
+	size: number;
+	tiles: BingoBoardTileWebhook[];
+	localScore: number;
+	oppScore: number | null;
+	localName: string;
+	opponentName: string | null;
+	winner: 'local' | 'opponent' | null;
+	hasWon: boolean;
+	winCondition: string;
+	role: string;
+}
+
+// IronManCharSlot extended with display name and active marker.
+// New fields added to IronManCharSlot automatically appear here.
+export type IronManCharSlotWebhook = IronManCharSlot & {
+	characterName: string;
+	isActive: boolean;
+};
+
+export type IronManUpdatePayload = Pick<IronManSession, 'winner' | 'pendingCarryStocks' | 'localName' | 'opponentName'> & {
+	variant: string;
+	role: string;
+	roster: IronManCharSlotWebhook[];
+	currentCharacter: (IronManCharSlot & { characterName: string }) | null;
+	opponentRoster: IronManCharSlotWebhook[] | null;
+};
 
 // ── Internal type used by storeCurrentPlayer ─────────────────────────────────
 

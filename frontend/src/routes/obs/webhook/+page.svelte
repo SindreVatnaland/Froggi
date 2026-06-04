@@ -12,6 +12,9 @@
 		[WebhookEvent.PercentChange]: 'Percent Change',
 		[WebhookEvent.StockChange]: 'Stock Change',
 		[WebhookEvent.PlayerInfo]: 'Player Info',
+		[WebhookEvent.BingoUpdate]: 'Bingo Update',
+		[WebhookEvent.BingoBoardState]: 'Bingo Board State',
+		[WebhookEvent.IronManUpdate]: 'Iron Man Update',
 	};
 
 	const RANK_PROFILE_OBJ = {
@@ -124,6 +127,60 @@
 				p1: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
 				p2: { playerIndex: 1, port: 2, characterId: 9, characterName: 'Marth', characterColor: 2, connectCode: 'XYZ#456', displayName: 'Player 2', rank: null },
 				currentPlayer: { playerIndex: 0, port: 1, characterId: 20, characterName: 'Falco', characterColor: 0, connectCode: 'ABC#123', displayName: 'Player 1', rank: RANK_PROFILE_OBJ },
+			},
+		},
+		[WebhookEvent.BingoUpdate]: {
+			eventName: 'BingoUpdate',
+			timestamp: '2026-01-01T00:00:00.000Z',
+			payload: {
+				totalCheckedLocal: 3,
+				totalCheckedOpponent: 2,
+				latestUpdate: { instanceId: 'tile-0', label: 'Win 3 games', completedBy: 'local', reverted: false },
+			},
+		},
+		[WebhookEvent.BingoBoardState]: {
+			eventName: 'BingoBoardState',
+			timestamp: '2026-01-01T00:00:00.000Z',
+			payload: {
+				size: 3,
+				tiles: [
+					{ index: 0, row: 0, col: 0, instanceId: 'tile-0', label: 'Win 3 games',    completed: true,  completedBy: ['local'],              progress: 3, target: 3,  states: [] },
+					{ index: 1, row: 0, col: 1, instanceId: 'tile-1', label: 'Win with Falco', completed: false, completedBy: [],                      progress: 0, target: 1,  states: [] },
+					{ index: 2, row: 0, col: 2, instanceId: 'tile-2', label: '4-stock a game', completed: false, completedBy: ['opponent'],            progress: 0, target: 1,  states: ['frozen'] },
+					{ index: 3, row: 1, col: 0, instanceId: 'tile-3', label: 'Win 5 games',    completed: false, completedBy: [],                      progress: 2, target: 5,  states: [] },
+					{ index: 4, row: 1, col: 1, instanceId: 'tile-4', label: 'Star KO',        completed: true,  completedBy: ['local', 'opponent'],   progress: 1, target: 1,  states: [] },
+					{ index: 5, row: 1, col: 2, instanceId: 'tile-5', label: 'Win off-stage',  completed: false, completedBy: [],                      progress: 0, target: 1,  states: [] },
+					{ index: 6, row: 2, col: 0, instanceId: 'tile-6', label: 'SD a game',      completed: false, completedBy: [],                      progress: 0, target: 1,  states: [] },
+					{ index: 7, row: 2, col: 1, instanceId: 'tile-7', label: 'Win on FD',      completed: false, completedBy: [],                      progress: 0, target: 1,  states: [] },
+					{ index: 8, row: 2, col: 2, instanceId: 'tile-8', label: 'Win 10 stocks',  completed: false, completedBy: [],                      progress: 4, target: 10, states: [] },
+				],
+				localScore: 1,
+				oppScore: 0,
+				localName: 'Player 1',
+				opponentName: 'Player 2',
+				winner: null,
+				hasWon: false,
+				winCondition: '3',
+				role: 'host',
+			},
+		},
+		[WebhookEvent.IronManUpdate]: {
+			eventName: 'IronManUpdate',
+			timestamp: '2026-01-01T00:00:00.000Z',
+			payload: {
+				variant: 'standard',
+				role: 'solo',
+				localName: 'Player 1',
+				opponentName: null,
+				winner: null,
+				pendingCarryStocks: null,
+				roster: [
+					{ characterId: 20, characterName: 'Falco', depleted: false, completed: false, stocksRemaining: 4, isActive: true },
+					{ characterId: 2, characterName: 'Fox', depleted: true, completed: false, stocksRemaining: 0, isActive: false },
+					{ characterId: 9, characterName: 'Marth', depleted: false, completed: false, stocksRemaining: 4, isActive: false },
+				],
+				currentCharacter: { characterId: 20, characterName: 'Falco', stocksRemaining: 4 },
+				opponentRoster: null,
 			},
 		},
 	};

@@ -165,4 +165,11 @@
 	>
 		3rd Most Played Character - Icon
 	</SelectOption>
+	<SelectOption
+		description="Current Player Rating History Graph — sparkline across all seasons"
+		value={CustomElement.SlippiRankCurrentPlayerRatingGraph}
+		on:select={select}
+	>
+		Rating History Graph
+	</SelectOption>
 </div>

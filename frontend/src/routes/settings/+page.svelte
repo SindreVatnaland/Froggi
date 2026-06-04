@@ -30,6 +30,12 @@
 	const saveLogs = () => $electronEmitter.emit('LogsSave');
 	const copyLogs = () => $electronEmitter.emit('LogsCopy');
 	const toggleBeta = () => $electronEmitter.emit('BetaOptIn', !$froggiSettings.betaOptIn);
+	const setCloseAction = (action: 'minimize' | 'quit' | null) => $electronEmitter.emit('SetCloseAction', action);
+	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
+		{ value: null, label: 'Ask' },
+		{ value: 'minimize', label: 'Minimize' },
+		{ value: 'quit', label: 'Quit' },
+	];
 
 	const refreshRemoteAccess = () => $electronEmitter.emit('RemoteAccessRefresh');
 	let tsCopied = false;
@@ -161,6 +167,21 @@
 				>
 					{$froggiSettings?.betaOptIn ? 'Opt out' : 'Opt in'}
 				</button>
+			</div>
+			<div class="flex items-start justify-between gap-4 mt-3">
+				<div>
+					<span class="text-sm text-secondary-color">Close behavior</span>
+					<p class="text-xs opacity-40 mt-0.5">What happens when you click the window's close button</p>
+				</div>
+				<div class="flex gap-1 shrink-0">
+					{#each closeActionOptions as opt}
+						<button
+							class="btn text-xs h-7 px-3 border-secondary rounded"
+							class:active-toggle={($froggiSettings?.closeAction ?? null) === opt.value}
+							on:click={() => setCloseAction(opt.value)}
+						>{opt.label}</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</section>

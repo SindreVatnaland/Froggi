@@ -29,7 +29,10 @@ window.electron.autoUpdater.onStatus((status) => {
 	if (status.startsWith('available:')) {
 		const version = status.slice('available:'.length);
 		setStatus(`v${version} is available`);
+		downloadBtn.textContent = 'Download';
 		downloadBtn.disabled = false;
+		closeBtn.disabled = false;
+		skipBtn.disabled = false;
 		return;
 	}
 
@@ -41,20 +44,32 @@ window.electron.autoUpdater.onStatus((status) => {
 			setStatus('Downloading update…');
 			skipBtn.disabled = true;
 			downloadBtn.disabled = true;
+			closeBtn.disabled = true;
 			break;
 		case 'up-to-date':
 			setStatus('Froggi is up to date ✓');
 			skipBtn.disabled = true;
 			downloadBtn.disabled = true;
+			closeBtn.disabled = false;
 			break;
 		case 'installing':
 			setStatus('Installing update…');
 			skipBtn.disabled = true;
 			downloadBtn.disabled = true;
+			closeBtn.disabled = true;
 			showProgress(100);
+			break;
+		case 'download-error':
+			setStatus('Download failed — try again?');
+			downloadBtn.textContent = 'Retry';
+			downloadBtn.disabled = false;
+			closeBtn.disabled = false;
+			skipBtn.disabled = false;
+			showProgress(0);
 			break;
 		case 'error':
 			setStatus('Update check failed');
+			closeBtn.disabled = false;
 			break;
 	}
 });

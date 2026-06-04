@@ -51,6 +51,7 @@ export interface MessageEvents {
 	AutoUpdaterInstall: () => void;
 	BestOfUpdate: (bestOf: BestOf) => void;
 	BetaOptIn: (optIn: boolean) => void;
+	SetCloseAction: (action: 'minimize' | 'quit' | null) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;

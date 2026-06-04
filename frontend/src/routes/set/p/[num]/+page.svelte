@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { strikeState, electronEmitter, isOverlayPage, urls } from '$lib/utils/store.svelte';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
 
@@ -54,34 +54,27 @@
 	$: myChar = playerNum === 1 ? s?.characters?.p1 : s?.characters?.p2;
 	$: oppChar = playerNum === 1 ? s?.characters?.p2 : s?.characters?.p1;
 
-	const RPS_CHOICES = ['rock', 'paper', 'scissors'] as const;
-	let rpsCountdown = 5;
-	let rpsTimerHandle: ReturnType<typeof setInterval> | null = null;
-
 	function rpsChoice(choice: 'rock' | 'paper' | 'scissors') {
 		if (myRps !== null && myRps !== undefined) return;
-		stopRpsTimer();
 		$electronEmitter.emit('RpsChoice', playerNum, choice);
 	}
 
-	function startRpsTimer() {
-		if (rpsTimerHandle) return;
-		rpsCountdown = 5;
-		rpsTimerHandle = setInterval(() => {
-			rpsCountdown -= 1;
-			if (rpsCountdown <= 0) {
-				stopRpsTimer();
-				if (!myRps) rpsChoice(RPS_CHOICES[Math.floor(Math.random() * 3)]);
-			}
-		}, 1000);
+	// Countdown derived from the backend's shared rpsDeadline so both phones stay in sync.
+	// The backend owns the timeout + auto-pick; this is display-only.
+	let nowTick = Date.now();
+	let rpsTickHandle: ReturnType<typeof setInterval> | null = null;
+
+	$: rpsDeadline = s?.rpsDeadline ?? null;
+	$: rpsCountdown = rpsDeadline ? Math.max(0, Math.ceil((rpsDeadline - nowTick) / 1000)) : null;
+
+	$: if (phase === 'rps' && rpsDeadline) {
+		if (!rpsTickHandle) rpsTickHandle = setInterval(() => (nowTick = Date.now()), 250);
+	} else if (rpsTickHandle) {
+		clearInterval(rpsTickHandle);
+		rpsTickHandle = null;
 	}
 
-	function stopRpsTimer() {
-		if (rpsTimerHandle) { clearInterval(rpsTimerHandle); rpsTimerHandle = null; }
-	}
-
-	$: if (phase === 'rps' && !myRps) startRpsTimer();
-	else stopRpsTimer();
+	onDestroy(() => { if (rpsTickHandle) clearInterval(rpsTickHandle); });
 
 	function strikeStage(stageId: number) {
 		$electronEmitter.emit('StrikeStage', stageId);
@@ -159,8 +152,15 @@
 			<p class="phase-title">Rock · Paper · Scissors</p>
 			{#if myRps}
 			<p class="phase-sub">You picked {RPS_EMOJI[myRps]} — waiting for opponent…</p>
+			{:else if rpsCountdown === null}
+			<p class="phase-sub">Waiting for both players to connect…</p>
+			<div class="rps-btns">
+				<button class="rps-btn" on:click={() => rpsChoice('rock')}>✊<span>Rock</span></button>
+				<button class="rps-btn" on:click={() => rpsChoice('paper')}>✋<span>Paper</span></button>
+				<button class="rps-btn" on:click={() => rpsChoice('scissors')}>✌️<span>Scissors</span></button>
+			</div>
 			{:else}
-			<div class="rps-countdown" class:rps-countdown--urgent={rpsCountdown <= 2}>{rpsCountdown}</div>
+			<div class="rps-countdown" class:rps-countdown--urgent={rpsCountdown <= 5}>{rpsCountdown}</div>
 			<div class="rps-btns">
 				<button class="rps-btn" on:click={() => rpsChoice('rock')}>✊<span>Rock</span></button>
 				<button class="rps-btn" on:click={() => rpsChoice('paper')}>✋<span>Paper</span></button>
