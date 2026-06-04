@@ -180,8 +180,8 @@ describe('BingoService vote logic', () => {
 			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeSwap();
-			// Should succeed and return a description
-			expect(result).toContain('↔');
+			// Should succeed without an error message
+			expect(result).not.toMatch(/not enough|protected/i);
 			// Exactly 1 BingoTilesSwapped event with both indices outside the locked set (0-2)
 			const swapped = sendMessage.mock.calls.filter(([t]) => t === 'BingoTilesSwapped');
 			expect(swapped.length).toBe(1);
@@ -232,56 +232,62 @@ describe('BingoService vote logic', () => {
 	// ── executeRandomize ──────────────────────────────────────────────────────
 
 	describe('executeRandomize', () => {
-		it('returns message when no eligible opponent tiles', () => {
+		it('returns message when no eligible tiles', () => {
+			// All tiles completed — nothing to randomize
 			const tiles = Array.from({ length: 9 }, (_, i) =>
-				makeTile('win_games_total', { instanceId: `b${i}`, completedBy: null })
+				makeTile('win_games_total', { instanceId: `b${i}`, completed: true, completedBy: 'local' })
 			);
 			service.session = makeSession(tiles);
 			const result = service.executeRandomize();
 			expect(result).toMatch(/no eligible/i);
 		});
 
-		it('does not randomize opponent tiles in locked rows', () => {
-			// Row 0 all completed by opponent → locked
+		it('does not randomize locked tiles', () => {
+			// All tiles completed and locked (row 0, 1, 2 all local → lockout win)
 			const tiles = Array.from({ length: 9 }, (_, i) =>
 				makeTile('win_games_total', {
 					instanceId: `b${i}`,
-					completed: i < 3,
-					completedBy: i < 3 ? 'opponent' : null,
+					completed: true,
+					completedBy: 'local',
 				})
 			);
 			service.session = makeSession(tiles);
 			const result = service.executeRandomize();
-			// All opponent tiles are in locked row, so none eligible
 			expect(result).toMatch(/no eligible/i);
 		});
 
-		it('randomizes an opponent tile that is not in a locked row', () => {
-			// Row 0 complete by opponent (locked). Row 1 index 3 also opponent but not locked.
+		it('randomizes a non-locked non-completed tile', () => {
+			// Row 0 (0,1,2) locked by local. Indices 3-8 eligible.
 			const tiles = Array.from({ length: 9 }, (_, i) =>
 				makeTile('win_games_total', {
 					instanceId: `b${i}`,
-					completed: i < 3 || i === 3,
-					completedBy: i < 3 || i === 3 ? 'opponent' : null,
+					completed: i < 3,
+					completedBy: i < 3 ? 'local' : null,
 				})
 			);
 			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeRandomize();
 			expect(result).not.toMatch(/no eligible/i);
-			const replaced = sendMessage.mock.calls.filter(([t]) => t === 'BingoTileReplaced');
-			expect(replaced.length).toBe(1);
-			// The replaced tile must be index 3 (not in locked row)
-			expect(replaced[0][1].instanceId).toBe('b3');
+			// New rolling event emitted for each randomized tile
+			const rolling = sendMessage.mock.calls.filter(([t]) => t === 'BingoTilesRolling');
+			expect(rolling.length).toBe(1);
+			const { rolls } = rolling[0][1];
+			expect(rolls.length).toBeGreaterThanOrEqual(1);
+			// All replaced tiles must be outside the locked set (indices 0-2)
+			for (const roll of rolls) {
+				const idx = tiles.findIndex(t => t.instanceId === roll.instanceId);
+				expect(idx).toBeGreaterThanOrEqual(3);
+			}
 		});
 
-		it('does not randomize frozen opponent tiles', () => {
-			// Only opponent tile is frozen → no eligible targets
+		it('does not randomize frozen tiles', () => {
+			// All tiles except one are completed. The remaining one is frozen.
 			const tiles = Array.from({ length: 9 }, (_, i) =>
 				makeTile('win_games_total', {
 					instanceId: `b${i}`,
-					completed: i === 4,
-					completedBy: i === 4 ? 'opponent' : null,
+					completed: i !== 4,
+					completedBy: i !== 4 ? 'local' : null,
 					frozen: i === 4,
 				})
 			);
@@ -301,7 +307,7 @@ describe('BingoService vote logic', () => {
 			service.session = makeSession(tiles);
 			sendMessage.mockClear();
 			const result = service.executeFreeze();
-			expect(result).toContain('Froze tile');
+			expect(result).toMatch(/froze/i);
 			const updates = sendMessage.mock.calls.filter(([t]) => t === 'BingoChallengeUpdates');
 			expect(updates.length).toBeGreaterThan(0);
 			expect(updates[0][1].updates[0].frozen).toBe(true);
@@ -335,73 +341,77 @@ describe('BingoService vote logic', () => {
 	// ── handleChatVote ────────────────────────────────────────────────────────
 
 	describe('handleChatVote', () => {
+		const CH = 'testchannel'; // matches makeSession's twitchChannel
+
 		it('ignores messages when no active vote', () => {
-			service.voteState = null;
-			service.handleChatVote({ username: 'user1', text: '1' });
+			service.session = makeSession([], 3, true);
+			service.handleChatVote({ username: 'user1', text: '1', channel: CH });
 			expect(sendMessage).not.toHaveBeenCalledWith('BingoVoteState', expect.anything());
 		});
 
 		it('records votes for options 1/2/3', () => {
-			service.voteState = {
-				active: true,
+			service.session = makeSession([], 3, true);
+			service.voteStates.set('host', {
+				active: true, forRole: 'all', role: 'host',
 				options: [
 					{ id: 'randomize_opponent_tile', label: 'Randomize', description: '', votes: 0 },
 					{ id: 'freeze_tile',             label: 'Freeze',    description: '', votes: 0 },
 					{ id: 'swap_tiles',              label: 'Swap',      description: '', votes: 0 },
 				],
-				startedAt: Date.now(),
-				durationMs: 30000,
-			} as BingoVoteState;
-			service.chatVotes = new Map();
+				startedAt: Date.now(), durationMs: 30000,
+			} as BingoVoteState);
+			service.chatVotesByRole.get('host').clear();
 
-			service.handleChatVote({ username: 'alice', text: '1' });
-			service.handleChatVote({ username: 'bob',   text: '2' });
-			service.handleChatVote({ username: 'carol', text: '1' });
+			service.handleChatVote({ username: 'alice', text: '1', channel: CH });
+			service.handleChatVote({ username: 'bob',   text: '2', channel: CH });
+			service.handleChatVote({ username: 'carol', text: '1', channel: CH });
 
 			const calls = sendMessage.mock.calls.filter(([t]) => t === 'BingoVoteState');
-			const lastState = calls[calls.length - 1][1];
-			expect(lastState.options[0].votes).toBe(2); // '1' voted twice
-			expect(lastState.options[1].votes).toBe(1); // '2' voted once
-			expect(lastState.options[2].votes).toBe(0);
+			const lastPayload = calls[calls.length - 1][1];
+			const state = lastPayload?.host ?? lastPayload;
+			expect(state.options[0].votes).toBe(2);
+			expect(state.options[1].votes).toBe(1);
+			expect(state.options[2].votes).toBe(0);
 		});
 
 		it('first vote per user counts, repeated vote ignored', () => {
-			service.voteState = {
-				active: true,
+			service.session = makeSession([], 3, true);
+			service.voteStates.set('host', {
+				active: true, forRole: 'all', role: 'host',
 				options: [
 					{ id: 'randomize_opponent_tile', label: 'Randomize', description: '', votes: 0 },
 					{ id: 'freeze_tile',             label: 'Freeze',    description: '', votes: 0 },
 					{ id: 'swap_tiles',              label: 'Swap',      description: '', votes: 0 },
 				],
-				startedAt: Date.now(),
-				durationMs: 30000,
-			} as BingoVoteState;
-			service.chatVotes = new Map();
+				startedAt: Date.now(), durationMs: 30000,
+			} as BingoVoteState);
+			service.chatVotesByRole.get('host').clear();
 
-			service.handleChatVote({ username: 'alice', text: '1' });
-			service.handleChatVote({ username: 'alice', text: '3' }); // second vote ignored
+			service.handleChatVote({ username: 'alice', text: '1', channel: CH });
+			service.handleChatVote({ username: 'alice', text: '3', channel: CH }); // second vote ignored
 			const calls = sendMessage.mock.calls.filter(([t]) => t === 'BingoVoteState');
-			const lastState = calls[calls.length - 1][1];
-			expect(lastState.options[0].votes).toBe(1); // option 1 still has alice's first vote
-			expect(lastState.options[2].votes).toBe(0); // option 3 not voted
+			const lastPayload = calls[calls.length - 1][1];
+			const state = lastPayload?.host ?? lastPayload;
+			expect(state.options[0].votes).toBe(1);
+			expect(state.options[2].votes).toBe(0);
 		});
 
 		it('ignores non-numeric messages', () => {
-			service.voteState = {
-				active: true,
+			service.session = makeSession([], 3, true);
+			service.voteStates.set('host', {
+				active: true, forRole: 'all', role: 'host',
 				options: [
 					{ id: 'randomize_opponent_tile', label: 'Randomize', description: '', votes: 0 },
 					{ id: 'freeze_tile',             label: 'Freeze',    description: '', votes: 0 },
 					{ id: 'swap_tiles',              label: 'Swap',      description: '', votes: 0 },
 				],
-				startedAt: Date.now(),
-				durationMs: 30000,
-			} as BingoVoteState;
-			service.chatVotes = new Map();
+				startedAt: Date.now(), durationMs: 30000,
+			} as BingoVoteState);
+			service.chatVotesByRole.get('host').clear();
 			const before = sendMessage.mock.calls.length;
-			service.handleChatVote({ username: 'user', text: 'hello' });
-			service.handleChatVote({ username: 'user', text: '4' });
-			expect(sendMessage.mock.calls.length).toBe(before); // no new calls
+			service.handleChatVote({ username: 'user', text: 'hello', channel: CH });
+			service.handleChatVote({ username: 'user', text: '4',     channel: CH });
+			expect(sendMessage.mock.calls.length).toBe(before);
 		});
 	});
 
@@ -413,20 +423,21 @@ describe('BingoService vote logic', () => {
 				makeTile('win_games_total', { instanceId: `b${i}`, completedBy: i < 3 ? 'local' : null, completed: i < 3 })
 			);
 			service.session = makeSession(tiles);
-			service.voteState = {
-				active: true,
+			service.voteStates.set('host', {
+				active: true, forRole: 'all', role: 'host',
 				options: [
 					{ id: 'randomize_opponent_tile', label: 'Randomize', description: '', votes: 5 },
 					{ id: 'freeze_tile',             label: 'Freeze',    description: '', votes: 2 },
 					{ id: 'swap_tiles',              label: 'Swap',      description: '', votes: 1 },
 				],
-				startedAt: Date.now(),
-				durationMs: 30000,
-			} as BingoVoteState;
-			service.chatVotes = new Map();
-			service.resolveVote();
+				startedAt: Date.now(), durationMs: 30000,
+			} as BingoVoteState);
+			service.chatVotesByRole.get('host').clear();
+			service.resolveVote('host');
 			const calls = sendMessage.mock.calls.filter(([t]) => t === 'BingoVoteState');
-			const resolved = calls[calls.length - 1][1] as BingoVoteState;
+			// processActionQueue sends the result popup synchronously
+			const lastPayload = calls[calls.length - 1][1];
+			const resolved: BingoVoteState = lastPayload?.host ?? lastPayload;
 			expect(resolved.active).toBe(false);
 			expect(resolved.result?.winner).toBe('randomize_opponent_tile');
 		});

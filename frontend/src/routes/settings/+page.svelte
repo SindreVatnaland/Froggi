@@ -171,7 +171,7 @@
 		<p class="section-label">Remote Access</p>
 		<div class="settings-card border-secondary mt-2">
 			<p class="text-xs opacity-40 mb-3 leading-relaxed">
-				Share your Froggi with players over the internet. Use Tailscale or ngrok to expose port <span class="font-mono">{port}</span>.
+				Expose Froggi on port <span class="font-mono">{port}</span> so it can be reached from outside your local network. Both options work — they serve different purposes.
 			</p>
 
 			<!-- Detected URLs -->
@@ -203,8 +203,11 @@
 			<div class="remote-option border-secondary">
 				<div class="flex items-center justify-between mb-2">
 					<span class="text-sm font-semibold text-secondary-color">Tailscale Funnel</span>
-					<span class="option-tag">Remote Access</span>
+					<span class="option-tag">Recommended</span>
 				</div>
+				<p class="text-xs opacity-40 mb-3 leading-relaxed">
+					Gives you a stable, permanent URL that never changes. Use it for remote OBS control, stage striking, and watching overlays from your phone — even when you're on a different network than your stream PC. Set it up once and forget it.
+				</p>
 
 				<!-- Step 1: Install -->
 				<div class="ts-step" class:ts-step--done={tsInstalled}>
@@ -260,8 +263,11 @@
 			<div class="remote-option border-secondary mt-3">
 				<div class="flex items-center justify-between mb-2">
 					<span class="text-sm font-semibold text-secondary-color">ngrok</span>
-					<span class="option-tag option-tag--strike">Stage Striking</span>
+					<span class="option-tag option-tag--strike">Online vs Friends</span>
 				</div>
+				<p class="text-xs opacity-40 mb-3 leading-relaxed">
+					Generates a temporary URL each time it starts. Share the connect code with a friend to play Bingo or Iron Man online — the URL expires when you stop it, so there's no persistent link to your machine between sessions.
+				</p>
 
 				<!-- Step 1: Install -->
 				<div class="ts-step" class:ts-step--done={ngrokInstalled}>

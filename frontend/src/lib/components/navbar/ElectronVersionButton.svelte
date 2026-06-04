@@ -93,10 +93,10 @@
 		>
 			<div class={`${getAnimation($autoUpdater)} w-full h-full`} />
 			<button
-				class={`w-full h-full bg-black bg-opacity-30 justify-center rounded-2xl col-auto p-2`}
+				class={`w-full h-full bg-black bg-opacity-30 flex items-center justify-center rounded-2xl p-2`}
 				style={`${getStyle($autoUpdater)}`}
 			>
-				<div class="max-h-2 w-full text-center">
+				<div class="w-full text-center">
 					{#key $autoUpdater}
 						<TextFitMulti>{`${getContent($autoUpdater)}`}</TextFitMulti>
 					{/key}
