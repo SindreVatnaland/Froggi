@@ -71,9 +71,28 @@ export class OverlayInjector {
 			return;
 		}
 
-		// Dynamic imports: only loaded on Windows after platform guard above
-		const { Overlay, defaultDllDir, percent } = await import('@asdf-overlay/core');
-		const { ElectronOverlaySurface } = await import('@asdf-overlay/electron/surface');
+		// Dynamic imports: only loaded on Windows after platform guard above.
+		// These are optionalDependencies with native binaries — if they fail to load
+		// (missing from the package, ABI mismatch, etc.) surface the real reason instead
+		// of dead-ending later with a generic "No game attached".
+		let Overlay: typeof import('@asdf-overlay/core').Overlay;
+		let defaultDllDir: typeof import('@asdf-overlay/core').defaultDllDir;
+		let percent: typeof import('@asdf-overlay/core').percent;
+		let ElectronOverlaySurface: typeof import('@asdf-overlay/electron/surface').ElectronOverlaySurface;
+		try {
+			const core = await import('@asdf-overlay/core');
+			const electron = await import('@asdf-overlay/electron/surface');
+			({ Overlay, defaultDllDir, percent } = core);
+			({ ElectronOverlaySurface } = electron);
+		} catch (err) {
+			this.log.error('Failed to load overlay injection module:', err);
+			this.messageHandler.sendMessage(
+				'Notification',
+				'Overlay injection unavailable — failed to load native module. See logs.',
+				NotificationType.Danger,
+			);
+			return;
+		}
 
 		this.log.info(`Found process: pid=${proc.Id} name=${proc.ProcessName}`);
 		this.messageHandler.sendMessage('Notification', 'Attaching overlay…', NotificationType.Info);
@@ -136,6 +155,13 @@ export class OverlayInjector {
 	};
 
 	private injectOverlay = async (overlayId: string) => {
+		// If the auto-attach on Dolphin connect didn't take (or hasn't run yet),
+		// try once more now before giving up — makes the Inject button self-healing.
+		if (!this.overlay) {
+			this.log.info('No overlay attached yet — attempting attach before injecting');
+			await this.injectIntoGame();
+		}
+
 		if (!this.overlay) {
 			this.log.warn('No game attached — connect Dolphin first');
 			this.messageHandler.sendMessage(

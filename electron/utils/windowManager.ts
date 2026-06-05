@@ -93,15 +93,31 @@ export function getProcessByName(name: string): Promise<ProcessInfo | null> {
             });
 
             ps.on("close", (code) => {
-                if (code === 0 && output) {
-                    try {
-                        const processInfo: ProcessInfo = JSON.parse(output.trim());
-                        resolve(processInfo);
-                    } catch (err) {
-                        reject("Failed to parse process info" + err);
+                if (code !== 0) {
+                    reject("Failed to query process. Code: " + code + " Output: " + output);
+                    return;
+                }
+                const trimmed = output.trim();
+                if (!trimmed) {
+                    // No matching process — not an error
+                    resolve(null);
+                    return;
+                }
+                try {
+                    // ConvertTo-Json returns an object for a single match and an array for
+                    // multiple. Normalize to an array, then prefer the process that owns a
+                    // visible window (the actual game), falling back to the first with a valid Id.
+                    const parsed = JSON.parse(trimmed);
+                    const candidates: ProcessInfo[] = (Array.isArray(parsed) ? parsed : [parsed])
+                        .filter((p): p is ProcessInfo => p != null && typeof p.Id === "number");
+                    if (!candidates.length) {
+                        resolve(null);
+                        return;
                     }
-                } else {
-                    reject("Failed to parse process info. Code: " + code + " Output: " + output);
+                    const withWindow = candidates.find(p => p.MainWindowTitle && p.MainWindowTitle.trim().length > 0);
+                    resolve(withWindow ?? candidates[0]);
+                } catch (err) {
+                    reject("Failed to parse process info: " + err + " Output: " + trimmed);
                 }
             });
 
