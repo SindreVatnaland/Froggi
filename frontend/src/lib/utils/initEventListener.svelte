@@ -48,6 +48,7 @@
 		twitchUsername,
 		ironManSession,
 		ironManLobby,
+		lobbyState,
 		ironManLeaderboard,
 		ironManCurrentChar,
 	} from '$lib/utils/store.svelte';
@@ -512,6 +513,12 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['IronManLobbyState']>[0];
 					ironManLobby.set(value ?? null);
+				})();
+				break;
+			case 'LobbyState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['LobbyState']>[0];
+					lobbyState.set(value ?? null);
 				})();
 				break;
 			case 'IronManState':

@@ -34,22 +34,38 @@ import { NgrokService } from './services/ngrokService';
 import { ElectronWebhookStore } from './services/store/storeWebhook';
 import { WebhookService } from './services/webhookService';
 import { ActionStateService } from './services/actionStateService';
+import { ErrorReporter, reportStartupError } from './services/errorReporter';
+import { BUILD_CRASH_WEBHOOK } from './services/crashWebhook';
 import { BingoService } from './services/bingoService';
 import { IronManService } from './services/ironmanService';
+import { LobbyService } from './services/lobbyService';
 import { TwitchChatService } from './services/twitchChatService';
 
 let mainLog: ElectronLog = log
 let isQuitting = false;
 
-function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
+function setLoggingPath(log: ElectronLog, appName: string, dev: boolean): ElectronLog {
 	try {
 		const appDataPath = getAppDataPath(appName);
-		log.transports.file.resolvePath = () =>
-			path.join(`${appDataPath}/main.log`
-			);
+		log.transports.file.resolvePath = () => path.join(`${appDataPath}/main.log`);
 
-		log.transports.file.level = "verbose"
+		// File: full detail in dev, trim verbose/debug noise in production.
+		log.transports.file.level = dev ? 'verbose' : 'info';
+		// Console: visible while developing, off in packaged builds.
+		log.transports.console.level = dev ? 'debug' : false;
 
+		// Scope label so every line shows which service emitted it.
+		// Padded to a fixed width so columns line up in the log file.
+		log.scope.labelPadding = 14;
+
+		// [HH:MM:SS.mmm] [level] [scope] message
+		const fileFormat = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {scope} {text}';
+		const consoleFormat = '{h}:{i}:{s}.{ms} {scope} {text}';
+		log.transports.file.format = fileFormat;
+		log.transports.console.format = consoleFormat;
+
+		// Keep the log file from growing without bound (5 MB → rotates to .old).
+		log.transports.file.maxSize = 5 * 1024 * 1024;
 	} catch (err) {
 		log.error(err);
 	}
@@ -60,7 +76,7 @@ function setLoggingPath(log: ElectronLog, appName: string): ElectronLog {
 try {
 	const dev = !app.isPackaged;
 	const appName = dev ? "Electron" : "froggi";
-	mainLog = setLoggingPath(log, appName);
+	mainLog = setLoggingPath(log, appName, dev);
 	mainLog.info('Starting app');
 	handleMultipleInstances();
 
@@ -289,6 +305,9 @@ try {
 			container.register<boolean>('Dev', { useValue: dev });
 			container.register<string>('Port', { useValue: port });
 
+			// Resolve first so its crash hooks are installed before any other service runs.
+			container.resolve(ErrorReporter);
+
 			container.resolve(ElectronCommandStore);
 
 			container.resolve(SqliteOverlay);
@@ -309,10 +328,31 @@ try {
 			container.resolve(TwitchChatService);
 			container.resolve(BingoService);
 			container.resolve(IronManService);
+			container.resolve(LobbyService);
 
 			// Notify the frontend of any missing spectate configuration now that
 			// MessageHandler is ready and listening for Notification events.
 			container.resolve(ElectronSettingsStore).notifyMissingSpectateConfig();
+
+			// First-run crash-report consent. Ask once on the very first launch (when no
+			// choice has been stored yet) regardless of whether a webhook is configured —
+			// this captures the user's preference up front. Actual sending is still gated
+			// on a webhook being present (see ErrorReporter).
+			const crashConsent = store.get('settings.froggi.crashReportsEnabled');
+			if (crashConsent === undefined) {
+				const { response } = await dialog.showMessageBox(mainWindow, {
+					type: 'question',
+					buttons: ['Allow', 'No thanks'],
+					defaultId: 0,
+					cancelId: 1,
+					title: 'Help improve Froggi',
+					message: 'Send anonymous crash reports?',
+					detail: 'If something crashes, Froggi can send the error and recent logs to the developer. '
+						+ 'Personal data (usernames, connect codes, IP addresses) is removed first. '
+						+ 'You can change this anytime in Settings.',
+				});
+				store.set('settings.froggi.crashReportsEnabled', response === 0);
+			}
 		});
 
 		// Migrate legacy top-level closeAction key
@@ -402,4 +442,10 @@ try {
 	});
 } catch (err) {
 	mainLog.error("Main application crashed", err);
+	// Bootstrap failed before the DI ErrorReporter existed — report directly.
+	try {
+		const webhook = process.env.DISCORD_USER_CRASH_REPORT_WEBHOOK?.trim() || BUILD_CRASH_WEBHOOK || undefined;
+		const consented = new Store().get('settings.froggi.crashReportsEnabled') === true;
+		reportStartupError(webhook, consented, err);
+	} catch { /* ignore */ }
 }

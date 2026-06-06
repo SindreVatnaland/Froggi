@@ -13,7 +13,28 @@ on:
 permissions: write-all
 
 jobs:
+    # Gate: the tag being released must match the version in package.json.
+    # A mismatch produces a release whose latest.yml points at the wrong version,
+    # which silently breaks auto-update for everyone. Fail fast before any build runs.
+    verify:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Verify tag matches package.json version
+              run: |
+                  TAG="${{ inputs.tag || github.ref_name }}"
+                  TAG_VERSION="${TAG#v}"
+                  PKG_VERSION=$(node -p "require('./package.json').version")
+                  echo "Releasing tag : $TAG_VERSION"
+                  echo "package.json  : $PKG_VERSION"
+                  if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+                    echo "::error::Tag '$TAG_VERSION' does not match package.json version '$PKG_VERSION'. Bump package.json or retag before releasing."
+                    exit 1
+                  fi
+                  echo "Versions match — proceeding."
+
     deploy_macos:
+        needs: verify
         uses: ./.github/workflows/deploy.yml
         secrets: inherit
         with:
@@ -26,6 +47,7 @@ jobs:
             tag: ${{ inputs.tag || '' }}
 
     deploy_linux:
+        needs: verify
         uses: ./.github/workflows/deploy.yml
         secrets: inherit
         with:
@@ -36,6 +58,7 @@ jobs:
             tag: ${{ inputs.tag || '' }}
 
     deploy_windows:
+        needs: verify
         uses: ./.github/workflows/deploy.yml
         secrets: inherit
         with:
@@ -45,3 +68,23 @@ jobs:
                 ./dist/latest.yml
             runs-on: 'windows-latest'
             tag: ${{ inputs.tag || '' }}
+
+    # Alert a Discord channel if the gate or any platform build fails.
+    # Requires repo secret DISCORD_GIT_CRASH_REPORT_WEBHOOK (a Discord channel webhook URL).
+    notify-failure:
+        needs: [verify, deploy_macos, deploy_linux, deploy_windows]
+        if: failure()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Notify Discord of build failure
+              env:
+                  WEBHOOK: ${{ secrets.DISCORD_GIT_CRASH_REPORT_WEBHOOK }}
+              run: |
+                  if [ -z "$WEBHOOK" ]; then
+                    echo "DISCORD_GIT_CRASH_REPORT_WEBHOOK not set — skipping notification."
+                    exit 0
+                  fi
+                  TAG="${{ inputs.tag || github.ref_name }}"
+                  RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  curl -sf -H "Content-Type: application/json" -X POST "$WEBHOOK" \
+                    -d "{\"username\":\"Froggi CI\",\"content\":\"🛑 **Release build failed** for \`$TAG\`\nSee logs: $RUN_URL\"}"

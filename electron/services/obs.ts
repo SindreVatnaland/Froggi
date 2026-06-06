@@ -8,6 +8,7 @@ import { ObsAuth, ObsInputs, ObsItem, ObsScenes } from '../../frontend/src/lib/m
 import { MessageHandler } from './messageHandler';
 import { NotificationType, ConnectionState } from '../../frontend/src/lib/models/enum';
 import { enableObsWebsocket, getObsWebsocketConfig, isObsRunning } from '../utils/obsProcess';
+import { scopedLog } from '../utils/logger';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 
@@ -24,6 +25,7 @@ export class ObsWebSocket {
 		@inject(ElectronObsStore) private storeObs: ElectronObsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
+		this.log = scopedLog(this.log, 'OBS');
 		this.log.info('Initializing OBS');
 		this.initObsWebSocket();
 		this.initEventListeners();

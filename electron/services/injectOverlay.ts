@@ -7,6 +7,7 @@ import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import { debounce } from 'lodash';
 import { getProcessByName } from '../utils/windowManager';
+import { scopedLog } from '../utils/logger';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
 // Type-only imports — erased at compile time, no runtime module load on macOS
 import type { Overlay, GpuLuid } from '@asdf-overlay/core';
@@ -27,6 +28,7 @@ export class OverlayInjector {
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
+		this.log = scopedLog(this.log, 'Injection');
 		this.log.info('Initializing Overlay Injection Service');
 		if (os.platform() !== 'win32') return;
 		this.initEventListeners();

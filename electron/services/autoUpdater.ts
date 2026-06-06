@@ -4,6 +4,7 @@ import { delay, inject, singleton } from 'tsyringe';
 import { MessageHandler } from './messageHandler';
 import { AutoUpdaterStatus, NotificationType } from '../../frontend/src/lib/models/enum';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import { App } from 'electron';
 import { ElectronFroggiStore } from './store/storeFroggi';
 
@@ -19,6 +20,7 @@ export class AutoUpdater {
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(ElectronFroggiStore) private storeFroggi: ElectronFroggiStore,
 	) {
+		this.log = scopedLog(this.log, 'AutoUpdater');
 		this.log.info('Initializing Auto Updater');
 		this.initListeners();
 

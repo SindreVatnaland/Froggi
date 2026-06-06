@@ -50,12 +50,16 @@ export class ElectronOverlayStore {
 	}
 
 	async setOverlay(value: Overlay) {
+		await this.persistOverlay(value);
+		await this.emitOverlayUpdate();
+	}
+
+	/** Save an overlay WITHOUT broadcasting. Use in bulk loops, then emit once at the end. */
+	private async persistOverlay(value: Overlay) {
 		if (!value) return;
-		const froggiConfig = this.froggiStore.getFroggiConfig();
-		const froggiVersion = froggiConfig.version ?? "0.0.0";
-		const overlay = { ...value, froggiVersion: froggiVersion } as Overlay
-		await this.sqliteOverlay.addOrUpdateOverlay(overlay)
-		await this.emitOverlayUpdate()
+		const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
+		const overlay = { ...value, froggiVersion } as Overlay;
+		await this.sqliteOverlay.addOrUpdateOverlay(overlay);
 	}
 
 	getScene(overlayId: string, statsScene: string): Scene {
@@ -187,10 +191,15 @@ export class ElectronOverlayStore {
 	}
 
 	async deleteOverlay(overlayId: string): Promise<void> {
+		await this.deleteOverlaySilent(overlayId);
+		setTimeout(this.emitOverlayUpdate.bind(this))
+	}
+
+	/** Delete an overlay WITHOUT broadcasting. Use in bulk loops, then emit once at the end. */
+	private async deleteOverlaySilent(overlayId: string): Promise<void> {
 		await this.sqliteOverlay.deleteOverlayById(overlayId)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		fs.rm(source, { recursive: true, force: true }, (err => { if (err) this.log.error(err) }))
-		setTimeout(this.emitOverlayUpdate.bind(this))
 	}
 
 	async copySceneLayerItem(overlayId: string, statsScene: LiveStatsScene, layerIndex: number, itemId: string) {
@@ -412,10 +421,21 @@ export class ElectronOverlayStore {
 
 	private async initDemoOverlays() {
 
-		const overlays = await this.getOverlays();
-
 		const currentFroggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0"
 
+		// Demos only change between app versions. Re-deleting and re-uploading every demo
+		// on every launch is a full cascade rewrite per overlay — skip when already synced.
+		// Demo authors can force a refresh with FROGGI_RESYNC_DEMOS=1.
+		const forceResync = process.env.FROGGI_RESYNC_DEMOS === '1';
+		if (!forceResync && this.froggiStore.getDemosSyncedVersion() === currentFroggiVersion) {
+			this.log.info('Demo overlays already synced for this version — skipping');
+			return;
+		}
+
+		const overlays = await this.getOverlays();
+
+		// Delete + re-upload silently, then broadcast once at the end — emitting per item
+		// re-reads every overlay's full graph and floods the renderer over IPC.
 		for (const overlay of Object.values(overlays)) {
 			if (!overlay.isDemo) continue;
 			if (!semver.valid(overlay.froggiVersion)) {
@@ -423,10 +443,8 @@ export class ElectronOverlayStore {
 				overlay.froggiVersion = "0.0.0";
 			}
 
-			if (
-				semver.satisfies(currentFroggiVersion, `>=${overlay.froggiVersion}`) || this.isDev
-			) {
-				await this.deleteOverlay(overlay.id);
+			if (semver.satisfies(currentFroggiVersion, `>=${overlay.froggiVersion}`) || this.isDev) {
+				await this.deleteOverlaySilent(overlay.id);
 			}
 		}
 		const overlayFiles = fs.readdirSync(path.join(__dirname, "/../../demo-overlays"));
@@ -435,11 +453,15 @@ export class ElectronOverlayStore {
 			try {
 				const overlayRaw = fs.readFileSync(path.join(__dirname, "/../../demo-overlays", file), 'utf8');
 				const overlay: Overlay = { ...JSON.parse(overlayRaw), isDemo: true } as Overlay;
-				await this.uploadOverlay(overlay, overlay.id);
+				overlay.id = overlay.id || newId();
+				this.clearOverlay(overlay);
+				await this.persistOverlay(overlay);
 			} catch (e) {
 				this.log.error(e)
 			}
 		}
+		this.froggiStore.setDemosSyncedVersion(currentFroggiVersion);
+		await this.emitOverlayUpdate();
 	}
 
 	private async migrateOverlays(): Promise<void> {
@@ -447,14 +469,21 @@ export class ElectronOverlayStore {
 		this.log.info("Migrating overlays");
 		const overlays = await this.getOverlays();
 
+		const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
+		let anyChanged = false;
 		for (const overlay of Object.values(overlays)) {
-			this.log.info("Migrating overlay", overlay.id, overlay.froggiVersion);
-			const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
+			// Only persist when something actually changed. Re-saving every overlay on
+			// every startup triggers a full cascade rewrite of all scenes/layers per
+			// overlay — slow, and pointless when the overlay is already current.
+			let needsSave = false;
+
 			if (!overlay.froggiVersion) {
 				overlay.froggiVersion = froggiVersion;
+				needsSave = true;
 			}
 			if (semver.gt("0.9.20-beta.1", overlay.froggiVersion)) {
 				this.reverseLayers(overlay);
+				needsSave = true;
 			}
 
 			// Add any scenes that didn't exist when this overlay was created.
@@ -466,12 +495,22 @@ export class ElectronOverlayStore {
 				if (!overlay[scene]) {
 					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					(overlay as any)[scene] = newOverlayTemplate[scene];
+					needsSave = true;
 				}
 			}
 
-			overlay.froggiVersion = froggiVersion;
-			await this.setOverlay(overlay);
+			if (overlay.froggiVersion !== froggiVersion) {
+				overlay.froggiVersion = froggiVersion;
+				needsSave = true;
+			}
+
+			if (!needsSave) continue;
+			this.log.info("Migrating overlay", overlay.id, overlay.froggiVersion);
+			await this.persistOverlay(overlay);
+			anyChanged = true;
 		}
+		// Broadcast once after the whole pass, not per overlay.
+		if (anyChanged) await this.emitOverlayUpdate();
 	}
 
 

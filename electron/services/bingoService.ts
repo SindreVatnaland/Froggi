@@ -7,6 +7,7 @@ import type { FrameEntryType, GameStartType } from '@slippi/slippi-js';
 import type { StatsType } from '@slippi/slippi-js/dist/stats/common';
 import WebSocket from 'ws';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import type {
@@ -157,6 +158,7 @@ export class BingoService {
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore,
 		@inject(delay(() => TwitchChatService)) private twitchChatService: TwitchChatService,
 	) {
+		this.log = scopedLog(this.log, 'Bingo');
 		this.log.info('Initializing Bingo Service');
 		this.initEventListeners();
 		this.initPeerServer();

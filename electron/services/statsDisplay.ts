@@ -44,6 +44,7 @@ import { MessageHandler } from './messageHandler';
 import path from 'path';
 import { PacketCapture } from './packetCapture';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
@@ -118,6 +119,7 @@ export class StatsDisplay {
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(PacketCapture) private packetCapture: PacketCapture,
 	) {
+		this.log = scopedLog(this.log, 'Stats');
 		this.initStatDisplay();
 		this.initListeners();
 	}
@@ -503,7 +505,7 @@ export class StatsDisplay {
 
 	private findGameFromSettings = async (settings: GameStartType | undefined): Promise<SlippiGame | undefined> => {
 		if (!settings) return;
-		this.log.debug("Finding game from settings:", settings)
+		this.log.debug(`Finding game: matchId=${settings.matchInfo?.matchId ?? 'none'} game=${settings.matchInfo?.gameNumber ?? '?'} seed=${settings.randomSeed ?? '?'}`);
 		const matchId = settings.matchInfo?.matchId;
 		const gameNumber = settings.matchInfo?.gameNumber;
 		const tiebreakerNumber = settings.matchInfo?.tiebreakerNumber ?? 0;

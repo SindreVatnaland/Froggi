@@ -15,6 +15,7 @@ import { ElectronDolphinStore } from './store/storeDolphin';
 import path from 'path';
 import { exec } from 'child_process';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import type { MessageEvents } from '../../frontend/src/lib/utils/customEventEmitter';
 import { Worker } from 'worker_threads';
 import { sendAuthenticatedMessage } from '../../frontend/src/lib/utils/websocketAuthentication';
@@ -48,6 +49,7 @@ export class MessageHandler {
 	private expressWsConnections: Map<string, WebSocket> = new Map();
 	readonly bingoPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
 	readonly ironManPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
+	readonly lobbyPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
 	lobbyGame: 'bingo' | 'ironman' | null = null;
 
 	constructor(
@@ -79,6 +81,7 @@ export class MessageHandler {
 		@inject(delay(() => BingoService)) private bingoService: BingoService,
 		@inject(delay(() => IronManService)) private ironManService: IronManService,
 	) {
+		this.log = scopedLog(this.log, 'MessageHandler');
 		this.log.info('Initializing Message Handler');
 		this.app.use(cors());
 		this.server = http.createServer(this.app);
@@ -125,7 +128,11 @@ export class MessageHandler {
 			}
 
 			this.server.on('upgrade', (req: http.IncomingMessage, socket: Duplex, head: Buffer) => {
-				if (req.url?.startsWith('/bingo-peer')) {
+				if (req.url?.startsWith('/peer')) {
+					this.lobbyPeerWss.handleUpgrade(req, socket, head, (ws) => {
+						this.lobbyPeerWss.emit('connection', ws);
+					});
+				} else if (req.url?.startsWith('/bingo-peer')) {
 					this.bingoPeerWss.handleUpgrade(req, socket, head, (ws) => {
 						this.bingoPeerWss.emit('connection', ws);
 					});
@@ -326,6 +333,10 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.tailscaleUrl, 'tailscale');
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.ngrokUrl, 'ngrok');
+		// TailscaleStatus is otherwise only broadcast on change — a client connecting after
+		// the startup detection would miss it and show "not installed". Send the last known
+		// status to every connecting client.
+		this.sendInitMessage(socketId, 'TailscaleStatus', this.tailscaleLastStatus ?? { installed: false, authenticated: false, funnelActive: false });
 		if (!socketId) {
 			this.detectTailscaleStatus();
 			this.detectRemoteAccess();

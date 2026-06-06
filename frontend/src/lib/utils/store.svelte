@@ -30,6 +30,7 @@
 	import type { TechniqueDetectedPayload, ActionStateHistoryEntry } from '$lib/models/types/actionState';
 	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState, BingoVoteStates, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSession, IronManLobbyPayload, IronManLeaderboard } from '$lib/models/types/ironman';
+	import type { LobbyState } from '$lib/models/types/lobby';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -128,4 +129,6 @@
 	export const ironManLobby = writable<IronManLobbyPayload | null>(null);
 	export const ironManLeaderboard = writable<IronManLeaderboard>({ currentVersion: '', records: [], fullRosterRecords: [], standardRecords: [] });
 	export const ironManCurrentChar = writable<{ localCharId: number | null; oppCharId: number | null }>({ localCharId: null, oppCharId: null });
+
+	export const lobbyState = writable<LobbyState | null>(null);
 </script>

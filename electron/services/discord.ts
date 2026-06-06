@@ -86,7 +86,15 @@ export class DiscordRpc {
 				largeImageKey: `stage_${settings.stageId}`,
 				largeImageText: StageConversion[settings.stageId ?? 2],
 				smallImageKey: rankImageKey(currentPlayer?.rank?.current?.rank),
+				smallImageText: currentPlayer?.rank?.current?.rank
+					? `${currentPlayer.rank.current.rank} · ${currentPlayer.rank.current.rating?.toFixed(0) ?? '?'}`
+					: undefined,
 				state: `${player1?.connectCode ?? 'Player1'} (${score?.at(0)} - ${score.at(1)}) ${player2?.connectCode ?? 'Player2'}`,
+				// Slippi game presence is not joinable — clear any minigame party/join.
+				joinSecret: undefined,
+				partyId: undefined,
+				partySize: undefined,
+				partyMax: undefined,
 			};
 			this.updateActivity();
 		});
@@ -171,22 +179,52 @@ export class DiscordRpc {
 		}, 2000, { trailing: true, maxWait: 5000 }));
 	};
 
+	/**
+	 * Party + join fields for a minigame presence.
+	 * - Discord only shows the "Join" button when secrets.join is paired with a party (id + size).
+	 * - joinSecret is set only for the host and only while there's room (party not full).
+	 * - The join secret is the remote-access URL; the guest receives it via ACTIVITY_JOIN
+	 *   and feeds it straight into BingoPeerConnect.
+	 * - Solo sessions get no party (nothing to join).
+	 */
+	private buildPartyJoin(
+		gameKey: string,
+		role: 'solo' | 'host' | 'guest' | 'local',
+		opponentConnected: boolean,
+	): Pick<Presence, 'partyId' | 'partySize' | 'partyMax' | 'joinSecret'> {
+		if (role === 'solo' || role === 'local') {
+			return { partyId: undefined, partySize: undefined, partyMax: undefined, joinSecret: undefined };
+		}
+		const hasRoom = !opponentConnected; // party is 2 max for now
+		const joinSecret = role === 'host' && hasRoom
+			? this.remoteAccessUrl?.replace(/\/$/, '')
+			: undefined;
+		return {
+			partyId: `froggi-${gameKey}`,
+			partySize: opponentConnected ? 2 : 1,
+			partyMax: 2,
+			joinSecret,
+		};
+	}
+
 	private setLobbyActivity(lobby: BingoLobbyPayload) {
-		const joinUrl = !lobby.opponentConnected ? this.remoteAccessUrl?.replace(/\/$/, '') : undefined;
+		// Only the host has a remote-access URL, so its presence is the joinable one.
+		const role = this.remoteAccessUrl ? 'host' : 'guest';
+		const party = this.buildPartyJoin('bingo-lobby', role, lobby.opponentConnected);
 		const state = lobby.opponentConnected
-			? `${lobby.opponentName ?? 'Opponent'} connected`
-			: 'Waiting for opponent...';
+			? `${shortName(lobby.opponentName)} connected`
+			: 'Waiting for opponent…';
 		this.activity = {
 			...this.activity,
 			details: 'Bingo · Lobby',
 			state,
 			startTimestamp: undefined,
 			endTimestamp: undefined,
-			largeImageKey: 'menu',
-			largeImageText: 'Bingo Lobby',
+			largeImageKey: 'froggi',
+			largeImageText: 'Lobby',
 			smallImageKey: undefined,
-			buttons: joinUrl ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
-			joinSecret: joinUrl,
+			buttons: party.joinSecret ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
+			...party,
 		};
 		this.updateActivity();
 	}
@@ -202,23 +240,23 @@ export class DiscordRpc {
 
 		const state = role === 'solo'
 			? `${localPct}% · ${settings.difficulty}`
-			: `${localName}: ${localPct}% · ${opponentName ?? 'Opponent'}: ${oppPct}%`;
+			: `${shortName(localName)} ${localPct}% · ${shortName(opponentName)} ${oppPct}%`;
 
 		const hasCountdown = settings.timer?.enabled && settings.timer.durationMinutes > 0;
 		const endTs = hasCountdown ? startedAt + settings.timer.durationMinutes * 60 * 1000 : undefined;
 
-		const joinUrl = role === 'host' ? this.remoteAccessUrl?.replace(/\/$/, '') : undefined;
+		const party = this.buildPartyJoin(`bingo-${board.id}`, role, session.opponentConnected);
 		this.activity = {
 			...this.activity,
 			details: `Bingo · ${board.size}×${board.size} · ${wc}`,
 			state: state.slice(0, 128),
 			startTimestamp: hasCountdown ? undefined : startedAt,
 			endTimestamp: endTs,
-			largeImageKey: 'menu',
+			largeImageKey: 'bingo',
 			largeImageText: 'Bingo',
 			smallImageKey: undefined,
-			buttons: joinUrl ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
-			joinSecret: joinUrl,
+			buttons: party.joinSecret ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
+			...party,
 		};
 		this.updateActivity();
 	}
@@ -235,7 +273,7 @@ export class DiscordRpc {
 
 		let state: string;
 		if (winner) {
-			state = winner === 'local' ? `${localName} wins!` : `${opponentName ?? 'Opponent'} wins!`;
+			state = winner === 'local' ? `${shortName(localName)} wins!` : `${shortName(opponentName)} wins!`;
 		} else if (role === 'solo') {
 			state = `${localProgress}/${total} · ${variantLabel}`;
 		} else {
@@ -244,19 +282,21 @@ export class DiscordRpc {
 					? opponentRoster.slots.filter(s => !s.depleted).length
 					: opponentRoster.slots.filter(s => s.completed).length)
 				: 0;
-			state = `${localName} ${localProgress}/${total} · ${opponentName ?? 'Opponent'} ${oppProgress}/${opponentRoster?.slots.length ?? total}`;
+			state = `${shortName(localName)} ${localProgress}/${total} · ${shortName(opponentName)} ${oppProgress}/${opponentRoster?.slots.length ?? total}`;
 		}
 
+		const party = this.buildPartyJoin(`ironman-${startedAt}`, role, session.opponentConnected);
 		this.activity = {
 			...this.activity,
 			details: `Iron Man · ${variantLabel} · ${total} chars`,
 			state: state.slice(0, 128),
 			startTimestamp: startedAt,
 			endTimestamp: undefined,
-			largeImageKey: 'menu',
+			largeImageKey: 'ironman',
 			largeImageText: 'Iron Man',
 			smallImageKey: undefined,
-			buttons: [{ label: 'Get Froggi', url: FROGGI_URL }],
+			buttons: party.joinSecret ? undefined : [{ label: 'Get Froggi', url: FROGGI_URL }],
+			...party,
 		};
 		this.updateActivity();
 	}
@@ -285,9 +325,15 @@ export class DiscordRpc {
 			details: menuActivity,
 			endTimestamp: undefined,
 			joinSecret: undefined,
+			partyId: undefined,
+			partySize: undefined,
+			partyMax: undefined,
 			largeImageKey: 'menu',
 			largeImageText: menuActivity,
 			smallImageKey: rankImageKey(currentPlayer?.rank?.current?.rank),
+			smallImageText: currentPlayer?.rank?.current?.rank
+				? `${currentPlayer.rank.current.rank} · ${currentPlayer.rank.current.rating?.toFixed(0) ?? '?'}`
+				: undefined,
 			state: state ?? `${currentPlayer?.rank?.current?.rank ?? 'No rank'} - ${currentPlayer?.rank?.current?.rating?.toFixed(1) ?? 'No rating'}`,
 		};
 		this.updateActivity();
@@ -313,9 +359,15 @@ export class DiscordRpc {
 					large_image: a.largeImageKey,
 					large_text: a.largeImageText,
 					small_image: a.smallImageKey,
+					small_text: a.smallImageText,
 				};
 			}
-			if (a.joinSecret) payload.secrets = { join: a.joinSecret };
+			// Party enables Discord's "X of Y" display and is required for the Join button.
+			if (a.partyId) {
+				payload.party = { id: a.partyId, size: [a.partySize ?? 1, a.partyMax ?? 2] };
+			}
+			// Join button only renders when secrets.join AND party are both present.
+			if (a.joinSecret && a.partyId) payload.secrets = { join: a.joinSecret };
 			else if (a.buttons?.length) payload.buttons = a.buttons;
 			(this.rpc as Client & { request: (cmd: string, args: unknown) => unknown }).request('SET_ACTIVITY', { pid: process.pid, activity: payload });
 		} catch (err) {
@@ -333,6 +385,12 @@ const futureTimerEpoch = (milliseconds: number) => {
 const rankImageKey = (rank: string | undefined): string | undefined => {
 	if (!rank) return undefined;
 	return rank.toLowerCase().replace(/ /g, '_');
+};
+
+// Keep names short so presence strings stay on one line (Discord best practice).
+const shortName = (name: string | null | undefined, max = 12): string => {
+	const n = (name ?? 'Player').trim();
+	return n.length > max ? `${n.slice(0, max - 1)}…` : n;
 };
 
 const winConditionLabel = (wc: import('../../frontend/src/lib/models/types/bingo').BingoWinCondition): string => {

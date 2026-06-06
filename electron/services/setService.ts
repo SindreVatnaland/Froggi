@@ -4,6 +4,7 @@ import { ElectronStrikeStore } from './store/storeStrike';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import type { GameRecord, RpsChoice, StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
 
@@ -61,6 +62,7 @@ export class ElectronSetService {
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 	) {
+		this.log = scopedLog(this.log, 'StageStriking');
 		this.log.info('Initializing Set Service');
 		const persisted = this.strikeStore.getStrikeState();
 		if (persisted) this.state = persisted;

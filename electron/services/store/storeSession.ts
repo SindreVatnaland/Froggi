@@ -46,13 +46,10 @@ export class ElectronSessionStore {
     }
 
     async checkAndResetSessionStats(): Promise<boolean> {
-        this.log.info("Checking Session Stats Reset");
         const session = await this.getSessionStats();
-        this.log.info("Current Session Stats", session);
         const hoursSinceLastUpdate = session && getHoursDifference(new Date(session?.latestUpdate), dateTimeNow());
-        this.log.info("Hours since last update", hoursSinceLastUpdate);
         if (!session || isNil(hoursSinceLastUpdate) || (hoursSinceLastUpdate >= 6)) {
-            this.log.info("Current Date Time");
+            this.log.info(`Resetting session stats (last update ${hoursSinceLastUpdate?.toFixed(1) ?? 'n/a'}h ago)`);
             await this.resetSessionStats();
             return true;
         }
@@ -60,7 +57,7 @@ export class ElectronSessionStore {
     }
 
     async updateSessionStats(rankStats: RankedNetplayProfile | undefined) {
-        this.log.info("Updating Session Stats", rankStats)
+        this.log.verbose(`Updating session stats: ${rankStats?.connectCode ?? 'unknown'} rating=${rankStats?.rating?.toFixed(1) ?? 'n/a'}`);
         if (await this.checkAndResetSessionStats()) return;
         if (!rankStats) return;
         const player = await this.storeCurrentPlayer.getCurrentPlayer();

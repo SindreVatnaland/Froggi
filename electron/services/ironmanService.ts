@@ -5,6 +5,7 @@ import type { App } from 'electron';
 import { GameEndMethod } from '@slippi/slippi-js';
 import WebSocket from 'ws';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { scopedLog } from '../utils/logger';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
 import type {
@@ -62,6 +63,7 @@ export class IronManService {
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ElectronSettingsStore)) private settingsStore: ElectronSettingsStore,
 	) {
+		this.log = scopedLog(this.log, 'IronMan');
 		this.initPeerServer();
 		this.initEventListeners();
 	}

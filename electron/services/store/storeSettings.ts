@@ -55,7 +55,7 @@ export class ElectronSettingsStore {
 	}
 
 	setSlippiLauncherSettings(config: SlippiLauncherSettings) {
-		this.log.info("Slippi Config: ", config)
+		this.log.info(`Slippi config: rootSlpPath=${config?.rootSlpPath} iso=${config?.isoPath ? 'set' : 'missing'} beta=${config?.useNetplayBeta}`);
 		this.store.set('settings.slippiLauncher', config);
 	}
 
@@ -112,7 +112,9 @@ export class ElectronSettingsStore {
 
 	setDolphinSettings(config: DolphinSettings | DolphinSettingsMainline | undefined) {
 		if (!config) return;
-		this.log.info("Dolphin settings: ", config)
+		// The full Dolphin.ini is hundreds of fields — log only what matters for debugging.
+		const port = 'Slippi' in config ? config.Slippi?.NetplayPort : config.Core?.SlippiNetplayPort;
+		this.log.info(`Dolphin settings loaded (netplay port=${port ?? 'unknown'})`);
 		this.store.set('settings.dolphin', config);
 	}
 

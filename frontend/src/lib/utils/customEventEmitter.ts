@@ -39,6 +39,7 @@ import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
 import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteStates, BingoVoteActionType, BingoTileReplacedPayload, BingoTilesRollingPayload } from '../models/types/bingo';
 import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
+import type { LobbyState, MinigameType, LobbyPlayer } from '../models/types/lobby';
 
 export interface MessageEvents {
 	Authorize: (isAuthorized: boolean) => void;
@@ -52,6 +53,7 @@ export interface MessageEvents {
 	BestOfUpdate: (bestOf: BestOf) => void;
 	BetaOptIn: (optIn: boolean) => void;
 	SetCloseAction: (action: 'minimize' | 'quit' | null) => void;
+	SetCrashReportsEnabled: (enabled: boolean) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;
@@ -226,6 +228,20 @@ export interface MessageEvents {
 	IronManChallengeWin: (data: { timeSeconds: number; rosterSize: number }) => void;
 	/** Fires when a new game starts — carries the char the local player queued with */
 	IronManCurrentChar: (data: { localCharId: number | null; oppCharId: number | null }) => void;
+
+	// ── Unified lobby (game-agnostic host/join, then pick a minigame) ──────────
+	StartLobby: () => void;
+	PeerConnect: (hostUrl: string) => void;
+	SelectMinigame: (game: MinigameType | null) => void;
+	KickPlayer: (playerId: string) => void;
+	LeaveLobby: () => void;
+	/** Host launches the currently selected minigame for everyone in the lobby. */
+	StartMinigame: () => void;
+	LobbyState: (state: LobbyState | null) => void;
+	/** Internal (Electron-only): lobby hands a started game off to its minigame service. */
+	LobbyStartMinigame: (data: { game: MinigameType; players: LobbyPlayer[] }) => void;
+	/** Internal (Electron-only): a minigame-scoped peer message routed to its service. */
+	LobbyPeerMessage: (msg: { scope: MinigameType; type: string; payload?: unknown; fromPlayerId: string | null }) => void;
 }
 
 export class TypedEmitter extends localEmitter {

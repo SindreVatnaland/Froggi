@@ -6,6 +6,7 @@ import http from 'http';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
+import { scopedLog } from '../utils/logger';
 import openurl from 'openurl';
 
 type NgrokStatus = {
@@ -38,6 +39,7 @@ export class NgrokService {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 	) {
+		this.log = scopedLog(this.log, 'Ngrok');
 		this.log.info('Initializing Ngrok Service');
 		this.initListeners();
 		this.detect();

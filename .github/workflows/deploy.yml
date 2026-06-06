@@ -105,6 +105,8 @@ jobs:
                   APPLE_ID: ${{ secrets.APPLE_ID }}
                   APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  # Baked into the app so users can opt into crash reports. Empty if unset.
+                  DISCORD_USER_CRASH_REPORT_WEBHOOK: ${{ secrets.DISCORD_USER_CRASH_REPORT_WEBHOOK }}
 
             - uses: softprops/action-gh-release@v1
               env:

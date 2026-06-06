@@ -130,7 +130,17 @@
       "WebFetch(domain:docs.discord.com)",
       "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:www.answeroverflow.com)",
-      "Bash(perl -i -pe ' *)"
+      "Bash(perl -i -pe ' *)",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(grep -vE \"\\\\`|'|\\\\\"\")",
+      "Bash(node scripts/inject-crash-webhook.js)",
+      "Bash(FROGGI_CRASH_WEBHOOK=\"https://discord.com/api/webhooks/123/abc\" node scripts/inject-crash-webhook.js)",
+      "Bash(node scripts/inject-crash-webhook.js --restore)",
+      "Bash(grep -iE \"\\\\.\\(png|jpg|jpeg|webp|svg\\)$\")",
+      "Bash(sed -n '35,40p' electron/services/store/storeOverlay.ts)",
+      "Bash(sed -n '/async uploadOverlay/,/^\\\\t}/p' electron/services/store/storeOverlay.ts)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

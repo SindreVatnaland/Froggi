@@ -30,6 +30,25 @@ export class ElectronFroggiStore {
         this.store.set("settings.froggi.betaOptIn", betaOptIn)
     }
 
+    getCrashReportsEnabled(): boolean {
+        return this.getFroggiConfig().crashReportsEnabled === true;
+    }
+
+    setCrashReportsEnabled(enabled: boolean) {
+        this.store.set("settings.froggi.crashReportsEnabled", enabled);
+    }
+
+    // App version the demo overlays were last synced for. Kept outside settings.froggi
+    // so it doesn't trigger FroggiSettings pushes. Lets startup skip the expensive
+    // demo delete+reupload when nothing changed.
+    getDemosSyncedVersion(): string | undefined {
+        return this.store.get("overlays.demosSyncedVersion") as string | undefined;
+    }
+
+    setDemosSyncedVersion(version: string) {
+        this.store.set("overlays.demosSyncedVersion", version);
+    }
+
     private initVersion() {
         const version = this.store.get("__internal__.migrations.version") as string;
         this.log.info("Froggi Version", version);
@@ -47,6 +66,9 @@ export class ElectronFroggiStore {
         this.clientEmitter.on('BetaOptIn', (optIn: boolean) => {
             this.messageHandler.sendMessage("Notification", "Restart required to apply changes", NotificationType.Info, 3000);
             this.setFroggiBeta(optIn);
+        });
+        this.clientEmitter.on('SetCrashReportsEnabled', (enabled: boolean) => {
+            this.setCrashReportsEnabled(enabled);
         });
         this.clientEmitter.on('SetCloseAction', (action: 'minimize' | 'quit' | null) => {
             if (action) {

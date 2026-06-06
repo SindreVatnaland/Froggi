@@ -31,6 +31,7 @@
 	const copyLogs = () => $electronEmitter.emit('LogsCopy');
 	const toggleBeta = () => $electronEmitter.emit('BetaOptIn', !$froggiSettings.betaOptIn);
 	const setCloseAction = (action: 'minimize' | 'quit' | null) => $electronEmitter.emit('SetCloseAction', action);
+	const toggleCrashReports = () => $electronEmitter.emit('SetCrashReportsEnabled', !($froggiSettings?.crashReportsEnabled === true));
 	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
 		{ value: null, label: 'Ask' },
 		{ value: 'minimize', label: 'Minimize' },
@@ -182,6 +183,19 @@
 						>{opt.label}</button>
 					{/each}
 				</div>
+			</div>
+			<div class="flex items-start justify-between gap-4 mt-3">
+				<div>
+					<span class="text-sm text-secondary-color">Crash reports</span>
+					<p class="text-xs opacity-40 mt-0.5">Send errors and recent logs to the developer (personal data removed)</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.crashReportsEnabled === true}
+					on:click={toggleCrashReports}
+				>
+					{$froggiSettings?.crashReportsEnabled === true ? 'On' : 'Off'}
+				</button>
 			</div>
 		</div>
 	</section>

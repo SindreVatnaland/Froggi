@@ -29,7 +29,8 @@ export class ElectronPlayersStore {
 
     setCurrentPlayers(newPlayers: (Player | PlayerType)[]) {
         this.players = newPlayers.filter(player => !isNil(player)).map(player => player as Player);
-        this.log.info("Setting current players", this.players);
+        const tags = this.players.map(p => p.connectCode || p.rank?.current?.connectCode || `port${p.port}`).join(' vs ');
+        this.log.info(`Setting current players: ${tags || '(none)'}`);
         this.players.forEach(player => {
             player.connectCode ||= player.rank?.current?.connectCode ?? "";
             player.displayName ||= player.rank?.current?.displayName ?? "";

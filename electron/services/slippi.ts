@@ -14,6 +14,7 @@ import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { Api } from './api';
 import { ElectronSettingsStore } from './store/storeSettings';
 import { findPlayKey } from '../utils/playkey';
+import { scopedLog } from '../utils/logger';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { MemoryRead } from './memoryRead';
 import { isDolphinRunning } from '../utils/dolphinProcess';
@@ -45,6 +46,7 @@ export class SlippiJs {
 	}
 
 	initSlippiJs() {
+		this.log = scopedLog(this.log, 'Slippi');
 		this.log.info('Initializing SlippiJs');
 		this.storeLiveStats.setStatsScene(LiveStatsScene.WaitingForDolphin);
 		this.startProcessSearchInterval();
@@ -119,7 +121,7 @@ export class SlippiJs {
 		if ((dateTimeNow().getTime() - new Date(rankedNetplayProfile?.timestamp ?? 0).getTime()) > (60 * 60 * 1000)) {
 			rankedNetplayProfile = await this.api.getPlayerRankStats(connectCode);
 		}
-		this.log.info("Logging in user ranked netplay profile:", rankedNetplayProfile)
+		this.log.info(`Logged in user: ${rankedNetplayProfile?.displayName ?? connectCode} rank=${rankedNetplayProfile?.rank ?? 'unranked'} rating=${rankedNetplayProfile?.rating?.toFixed(1) ?? 'n/a'}`);
 		await this.storeCurrentPlayer.setCurrentPlayerCurrentRankStats(rankedNetplayProfile);
 	}
 
