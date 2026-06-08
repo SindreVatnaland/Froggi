@@ -217,7 +217,10 @@ try {
 		const trayImage = nativeImage.createFromPath(trayImagePath).resize({ width: 16, height: 16 });
 		const dockImage = nativeImage.createFromPath(dockImagePath);
 		tray = new Tray(trayImage);
-		if (isMac) app.dock.setIcon(dockImage);
+		// In production the packaged .app already supplies the Dock icon (the properly sized
+		// bundle .icns). Overriding it with the raw full-bleed PNG makes it look oversized and
+		// square, so only set it in dev where there's no bundle icon (avoids the generic Electron one).
+		if (isMac && dev) app.dock.setIcon(dockImage);
 		tray.setToolTip('Froggi');
 
 		const contextMenu = Menu.buildFromTemplate([

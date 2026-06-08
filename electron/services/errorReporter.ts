@@ -189,7 +189,7 @@ export class ErrorReporter {
 		const loc = data.source ? ` @ ${data.source}` : '';
 		this.log.error(`Frontend ${data.kind} (${data.device})${loc}: ${data.message}${data.stack ? '\n' + data.stack : ''}`);
 
-		if (!isReportableFrontendError(data.message)) return;
+		if (!isReportableFrontendError(data.message, data.stack)) return;
 		const err = new Error(`[${data.device}] ${data.message}`);
 		if (data.stack) err.stack = data.stack;
 		void this.report(err, `Frontend ${data.kind}`);
@@ -250,7 +250,7 @@ export class ErrorReporter {
  * Filters out benign/expected frontend errors so they're logged but not reported.
  * Network blips, websocket disconnects, dev HMR, and browser noise aren't real bugs.
  */
-function isReportableFrontendError(message: string): boolean {
+function isReportableFrontendError(message: string, stack?: string): boolean {
 	const m = (message || '').toLowerCase();
 	if (!m) return false;
 	const ignore = [
@@ -260,7 +260,16 @@ function isReportableFrontendError(message: string): boolean {
 		'resizeobserver loop',          // benign browser warning
 		'aborterror', 'the operation was aborted', 'the user aborted',
 	];
-	return !ignore.some((s) => m.includes(s));
+	if (ignore.some((s) => m.includes(s))) return false;
+
+	const s = stack || '';
+	// Browser-extension-injected errors aren't app bugs.
+	if (/(chrome|moz|safari)-extension:\/\//.test(s)) return false;
+	// Real app errors have a stack referencing a bundled file (http(s):// or file://).
+	// Console-typed / eval'd errors only have <anonymous>/eval frames — don't report those.
+	if (!/(https?:|file:)\/\//.test(s)) return false;
+
+	return true;
 }
 
 /**

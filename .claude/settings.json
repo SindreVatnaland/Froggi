@@ -148,7 +148,15 @@
       "Bash(gh release *)",
       "Bash(gh auth *)",
       "Bash(git ls-remote *)",
-      "Bash(gh run *)"
+      "Bash(gh run *)",
+      "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha build/icon.png)",
+      "Bash([ -d \"node_modules/$lib\" ])",
+      "Bash([ -d \"frontend/node_modules/$lib\" ])",
+      "Bash(npm i *)",
+      "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha build/icon.macnew.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight build/icon.png)",
+      "Bash(git check-ignore *)",
+      "Bash(sips -g pixelWidth -g pixelHeight frontend/static/icon.png)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",
