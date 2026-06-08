@@ -242,6 +242,9 @@ export interface MessageEvents {
 	LobbyStartMinigame: (data: { game: MinigameType; players: LobbyPlayer[] }) => void;
 	/** Internal (Electron-only): a minigame-scoped peer message routed to its service. */
 	LobbyPeerMessage: (msg: { scope: MinigameType; type: string; payload?: unknown; fromPlayerId: string | null }) => void;
+
+	/** User-submitted feature request / bug report → developer Discord channel. */
+	SubmitFeedback: (data: { type: 'feature' | 'bug'; message: string; includeLogs: boolean }) => void;
 }
 
 export class TypedEmitter extends localEmitter {

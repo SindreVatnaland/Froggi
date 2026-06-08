@@ -29,6 +29,19 @@
 
 	const saveLogs = () => $electronEmitter.emit('LogsSave');
 	const copyLogs = () => $electronEmitter.emit('LogsCopy');
+
+	let feedbackType: 'feature' | 'bug' = 'feature';
+	let feedbackMessage = '';
+	let includeLogs = true;
+	const feedbackTypes: { value: 'feature' | 'bug'; label: string }[] = [
+		{ value: 'feature', label: 'Feature request' },
+		{ value: 'bug', label: 'Bug report' },
+	];
+	const submitFeedback = () => {
+		if (!feedbackMessage.trim()) return;
+		$electronEmitter.emit('SubmitFeedback', { type: feedbackType, message: feedbackMessage.trim(), includeLogs });
+		feedbackMessage = '';
+	};
 	const toggleBeta = () => $electronEmitter.emit('BetaOptIn', !$froggiSettings.betaOptIn);
 	const setCloseAction = (action: 'minimize' | 'quit' | null) => $electronEmitter.emit('SetCloseAction', action);
 	const toggleCrashReports = () => $electronEmitter.emit('SetCrashReportsEnabled', !($froggiSettings?.crashReportsEnabled === true));
@@ -394,6 +407,38 @@
 	{/if}
 
 	<!-- Diagnostics -->
+	<section class="mb-6">
+		<p class="section-label">Feedback</p>
+		<div class="settings-card border-secondary mt-2 flex flex-col gap-3">
+			<p class="text-xs opacity-40">Send a feature request or report a bug to the developer.</p>
+			<div class="flex gap-1">
+				{#each feedbackTypes as ft}
+					<button
+						class="btn text-xs h-7 px-3 border-secondary rounded"
+						class:active-toggle={feedbackType === ft.value}
+						on:click={() => (feedbackType = ft.value)}
+					>{ft.label}</button>
+				{/each}
+			</div>
+			<textarea
+				class="feedback-input border-secondary background-primary-color text-secondary-color"
+				rows="4"
+				maxlength="3500"
+				placeholder={feedbackType === 'bug' ? 'Describe what went wrong and how to reproduce it…' : 'Describe the feature you’d like…'}
+				bind:value={feedbackMessage}
+			></textarea>
+			<label class="flex items-center gap-2 text-xs opacity-70 cursor-pointer select-none">
+				<input type="checkbox" bind:checked={includeLogs} />
+				Include recent logs (personal data removed) — helps with debugging
+			</label>
+			<button
+				class="btn text-sm h-9 px-5 border-secondary rounded self-start disabled:opacity-40"
+				disabled={!feedbackMessage.trim()}
+				on:click={submitFeedback}
+			>Submit</button>
+		</div>
+	</section>
+
 	<section>
 		<p class="section-label">Diagnostics</p>
 		<div class="settings-card border-secondary mt-2">
@@ -423,6 +468,17 @@
 	.settings-card {
 		padding: 0.875rem 1rem;
 		border-radius: 0.25rem;
+	}
+
+	.feedback-input {
+		width: 100%;
+		padding: 0.5rem 0.65rem;
+		border-radius: 0.375rem;
+		font-size: 0.85rem;
+		line-height: 1.4;
+		resize: vertical;
+		outline: none;
+		font-family: inherit;
 	}
 
 	.status-pill {

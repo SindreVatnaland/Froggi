@@ -1,5 +1,5 @@
 import type { ElectronLog } from 'electron-log';
-import { inject, singleton } from 'tsyringe';
+import { delay, inject, singleton } from 'tsyringe';
 import type { App } from 'electron';
 import { app as electronApp } from 'electron';
 import type Store from 'electron-store';
@@ -7,6 +7,9 @@ import os from 'os';
 import fs from 'fs';
 import { scopedLog } from '../utils/logger';
 import { BUILD_CRASH_WEBHOOK } from './crashWebhook';
+import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { MessageHandler } from './messageHandler';
+import { NotificationType } from '../../frontend/src/lib/models/enum';
 
 /**
  * Sends unhandled errors and process crashes (plus recent logs) to a Discord channel.
@@ -34,10 +37,16 @@ export class ErrorReporter {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('App') private app: App,
 		@inject('ElectronStore') private store: Store,
+		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
+		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
 		this.rootLog = this.log;
 		this.log = scopedLog(this.log, 'ErrorReport');
 		this.webhook = process.env.DISCORD_USER_CRASH_REPORT_WEBHOOK?.trim() || BUILD_CRASH_WEBHOOK || undefined;
+
+		// User-initiated feedback works regardless of crash-report consent (it's an explicit
+		// action), so register it even when automatic crash hooks aren't installed.
+		this.clientEmitter.on('SubmitFeedback', (data) => void this.submitFeedback(data.type, data.message, data.includeLogs));
 
 		if (!this.webhook) {
 			this.log.info('Crash reporting unavailable (no webhook baked in or set)');
@@ -121,6 +130,54 @@ export class ErrorReporter {
 		} catch (postErr) {
 			// Never let the reporter throw — it must not become its own crash source.
 			this.log.warn('Failed to send crash report:', postErr);
+		}
+	}
+
+	/** User-submitted feature request or bug report. Always sends (explicit action) when a webhook exists. */
+	async submitFeedback(type: 'feature' | 'bug', message: string, includeLogs: boolean): Promise<void> {
+		const text = (message ?? '').trim();
+		if (!text) return;
+		if (!this.webhook) {
+			this.messageHandler.sendMessage('Notification', 'Feedback is unavailable in this build', NotificationType.Warning, 4000);
+			return;
+		}
+		try {
+			const isBug = type === 'bug';
+			const payload = {
+				username: 'Froggi Feedback',
+				embeds: [
+					{
+						title: isBug ? '🐛 Bug report' : '💡 Feature request',
+						description: text.slice(0, 3500),
+						color: isBug ? 15158332 : 3447003, // red / blue
+						fields: [
+							{ name: 'Version', value: this.app.getVersion(), inline: true },
+							{ name: 'OS', value: `${process.platform} ${os.release()}`, inline: true },
+						],
+						timestamp: new Date().toISOString(),
+					},
+				],
+			};
+
+			const form = new FormData();
+			form.append('payload_json', JSON.stringify(payload));
+			// Attach the recent (scrubbed) log tail when the user opts in — logs go as a file,
+			// so there's no message-length limit to worry about.
+			if (includeLogs) {
+				const logTail = this.readLogTail();
+				if (logTail) form.append('files[0]', new Blob([logTail], { type: 'text/plain' }), 'froggi-log.txt');
+			}
+
+			const res = await fetch(this.webhook, { method: 'POST', body: form });
+			if (res.ok) {
+				this.messageHandler.sendMessage('Notification', 'Thanks! Your feedback was sent.', NotificationType.Success, 4000);
+			} else {
+				this.messageHandler.sendMessage('Notification', 'Failed to send feedback', NotificationType.Danger, 4000);
+				this.log.warn(`Feedback POST failed: HTTP ${res.status}`);
+			}
+		} catch (err) {
+			this.log.warn('Failed to send feedback:', err);
+			this.messageHandler.sendMessage('Notification', 'Failed to send feedback', NotificationType.Danger, 4000);
 		}
 	}
 
