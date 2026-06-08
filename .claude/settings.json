@@ -140,7 +140,15 @@
       "Bash(sed -n '35,40p' electron/services/store/storeOverlay.ts)",
       "Bash(sed -n '/async uploadOverlay/,/^\\\\t}/p' electron/services/store/storeOverlay.ts)",
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(git push *)",
+      "Bash(node -p \"require\\('./package.json'\\).version\")",
+      "Bash(git commit *)",
+      "Bash(git tag *)",
+      "Bash(gh release *)",
+      "Bash(gh auth *)",
+      "Bash(git ls-remote *)",
+      "Bash(gh run *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",

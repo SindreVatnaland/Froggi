@@ -30,6 +30,13 @@ jobs:
                   node-version: 22
                   cache: 'npm'
 
+            # node-gyp (sqlite3 native build) imports distutils, removed from Python 3.12+.
+            # Runners now default to Python 3.14, breaking the build — pin 3.11 which has it.
+            - name: Setup Python (for node-gyp)
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.11'
+
             - name: Cache node_modules
               id: cache-deps
               uses: actions/cache@v4
@@ -37,8 +44,9 @@ jobs:
                   path: |
                       node_modules
                       frontend/node_modules
-                  key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'frontend/package-lock.json') }}
-                  restore-keys: ${{ runner.os }}-deps-
+                  # v2: bust caches from the failed beta.10 run that saved a partial node_modules
+                  key: ${{ runner.os }}-deps-v2-${{ hashFiles('package-lock.json', 'frontend/package-lock.json') }}
+                  restore-keys: ${{ runner.os }}-deps-v2-
 
             - name: Cache Electron binaries (Linux/macOS)
               if: runner.os != 'Windows'
