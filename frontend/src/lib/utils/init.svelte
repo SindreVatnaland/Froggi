@@ -7,6 +7,7 @@
 	export const initClient = async () => {
 		extendStringFormat();
 		await initLogging();
+		await initErrorReporting();
 		await initDevices();
 	};
 
@@ -18,6 +19,43 @@
 		console.error = (...message: [string]) => {
 			_electronEmitter.emit('Log', message.join(' '), 'error');
 		};
+	};
+
+	// Forward uncaught frontend errors + unhandled rejections to the backend, which
+	// logs them and (if they look like real issues) reports them. Works for both the
+	// desktop renderer and external devices via the same event transport.
+	const initErrorReporting = async () => {
+		const _electronEmitter = await getElectronEmitter();
+		const device: 'desktop' | 'browser' = window.electron ? 'desktop' : 'browser';
+		const send = (
+			kind: 'error' | 'unhandledrejection',
+			message: unknown,
+			stack?: string,
+			source?: string,
+		) => {
+			try {
+				_electronEmitter.emit('FrontendError', {
+					message: String(message ?? 'Unknown error').slice(0, 1000),
+					stack: stack?.slice(0, 4000),
+					source,
+					kind,
+					device,
+				});
+			} catch { /* never let the reporter throw */ }
+		};
+
+		window.addEventListener('error', (e) => {
+			send(
+				'error',
+				e.message || e.error?.message,
+				e.error?.stack,
+				e.filename ? `${e.filename}:${e.lineno}:${e.colno}` : undefined,
+			);
+		});
+		window.addEventListener('unhandledrejection', (e) => {
+			const reason = e.reason as { message?: string; stack?: string } | undefined;
+			send('unhandledrejection', reason?.message ?? reason, reason?.stack);
+		});
 	};
 
 	const initDevices = async () => {

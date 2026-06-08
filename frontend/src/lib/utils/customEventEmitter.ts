@@ -245,6 +245,8 @@ export interface MessageEvents {
 
 	/** User-submitted feature request / bug report → developer Discord channel. */
 	SubmitFeedback: (data: { type: 'feature' | 'bug'; message: string; includeLogs: boolean }) => void;
+	/** Uncaught frontend error / unhandled rejection (desktop renderer or external device). */
+	FrontendError: (data: { message: string; stack?: string; source?: string; kind: 'error' | 'unhandledrejection'; device: 'desktop' | 'browser' }) => void;
 }
 
 export class TypedEmitter extends localEmitter {

@@ -48,6 +48,9 @@ export class ErrorReporter {
 		// action), so register it even when automatic crash hooks aren't installed.
 		this.clientEmitter.on('SubmitFeedback', (data) => void this.submitFeedback(data.type, data.message, data.includeLogs));
 
+		// Frontend errors are always logged here; reporting is gated inside report().
+		this.clientEmitter.on('FrontendError', (data) => this.handleFrontendError(data));
+
 		if (!this.webhook) {
 			this.log.info('Crash reporting unavailable (no webhook baked in or set)');
 			return;
@@ -181,6 +184,17 @@ export class ErrorReporter {
 		}
 	}
 
+	/** Log a frontend error always; report it only if it looks like a real issue (not noise). */
+	private handleFrontendError(data: { message: string; stack?: string; source?: string; kind: string; device: string }) {
+		const loc = data.source ? ` @ ${data.source}` : '';
+		this.log.error(`Frontend ${data.kind} (${data.device})${loc}: ${data.message}${data.stack ? '\n' + data.stack : ''}`);
+
+		if (!isReportableFrontendError(data.message)) return;
+		const err = new Error(`[${data.device}] ${data.message}`);
+		if (data.stack) err.stack = data.stack;
+		void this.report(err, `Frontend ${data.kind}`);
+	}
+
 	/**
 	 * Logs for the current session — from the last "Starting app" marker to the end —
 	 * scrubbed. Reads a bounded window from the end of the file; if the session is larger
@@ -230,6 +244,23 @@ export class ErrorReporter {
 		out = out.replace(/\b(?!127\.0\.0\.1)\d{1,3}(?:\.\d{1,3}){3}\b/g, '<ip>');
 		return out;
 	}
+}
+
+/**
+ * Filters out benign/expected frontend errors so they're logged but not reported.
+ * Network blips, websocket disconnects, dev HMR, and browser noise aren't real bugs.
+ */
+function isReportableFrontendError(message: string): boolean {
+	const m = (message || '').toLowerCase();
+	if (!m) return false;
+	const ignore = [
+		'websocket', 'ws closed', 'connection closed', 'socket',
+		'network', 'failed to fetch', 'load failed', 'networkerror',
+		'dynamically imported module', // dev HMR
+		'resizeobserver loop',          // benign browser warning
+		'aborterror', 'the operation was aborted', 'the user aborted',
+	];
+	return !ignore.some((s) => m.includes(s));
 }
 
 /**
