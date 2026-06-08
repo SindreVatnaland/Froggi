@@ -55,7 +55,9 @@ jobs:
                   path: |
                       ~/.cache/electron
                       ~/.cache/electron-builder
-                  key: ${{ runner.os }}-electron-${{ hashFiles('package.json') }}
+                  # Keyed on the toolchain (electron/electron-builder versions), NOT the app
+                  # version — otherwise every release bump re-downloads the flaky GitHub binaries.
+                  key: ${{ runner.os }}-electron-v1
                   restore-keys: ${{ runner.os }}-electron-
 
             - name: Cache Electron binaries (Windows)
@@ -65,7 +67,7 @@ jobs:
                   path: |
                       ~/AppData/Local/electron/Cache
                       ~/AppData/Local/electron-builder/Cache
-                  key: ${{ runner.os }}-electron-${{ hashFiles('package.json') }}
+                  key: ${{ runner.os }}-electron-v1
                   restore-keys: ${{ runner.os }}-electron-
 
             - name: Decode and import signing certificate
