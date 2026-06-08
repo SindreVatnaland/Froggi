@@ -181,23 +181,39 @@ export class ErrorReporter {
 		}
 	}
 
-	/** Last ~12KB of the log file, scrubbed. Empty string if unavailable. */
+	/**
+	 * Logs for the current session — from the last "Starting app" marker to the end —
+	 * scrubbed. Reads a bounded window from the end of the file; if the session is larger
+	 * than the window the oldest lines are dropped. Empty string if unavailable.
+	 */
 	private readLogTail(): string {
 		try {
 			const path = this.rootLog.transports.file.getFile()?.path;
 			if (!path || !fs.existsSync(path)) return '';
 			const stat = fs.statSync(path);
-			const maxBytes = 12 * 1024;
+			const maxBytes = 256 * 1024; // bound memory + upload size; one session is usually well under this
 			const start = Math.max(0, stat.size - maxBytes);
 			const fd = fs.openSync(path, 'r');
+			let content: string;
 			try {
 				const len = stat.size - start;
 				const buf = Buffer.alloc(len);
 				fs.readSync(fd, buf, 0, len, start);
-				return this.scrub(buf.toString('utf8'));
+				content = buf.toString('utf8');
 			} finally {
 				fs.closeSync(fd);
 			}
+
+			// Crop to the current session: everything after the last "Starting app".
+			const marker = content.lastIndexOf('Starting app');
+			if (marker !== -1) {
+				content = content.slice(content.lastIndexOf('\n', marker) + 1);
+			} else if (start > 0) {
+				// Session start is beyond the window — drop the partial first line.
+				const nl = content.indexOf('\n');
+				if (nl !== -1) content = content.slice(nl + 1);
+			}
+			return this.scrub(content);
 		} catch {
 			return '';
 		}

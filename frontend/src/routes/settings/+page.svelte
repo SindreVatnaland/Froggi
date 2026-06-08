@@ -500,8 +500,12 @@
 		color: rgb(239, 68, 68);
 	}
 
+	/* Selected state: solid inverted chip so it reads as "selected", not "disabled". */
 	.active-toggle {
-		opacity: 0.6;
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
+		opacity: 1;
+		font-weight: 700;
 	}
 
 	.remote-option {
