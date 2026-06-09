@@ -67,17 +67,19 @@
 	} from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
 	import { get } from 'svelte/store';
-	import { debounce, isNil } from 'lodash';
+	import { throttle, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
 
 	let voteActionNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
-	const debouncedSetGameFrame = debounce(
+	// Throttle (not debounce) so frames update at a steady ~30fps instead of being
+	// dropped during continuous play — debounce could stall to maxWait (~6fps),
+	// which froze fast projectiles. Leading + trailing keeps the latest frame.
+	const throttledSetGameFrame = throttle(
 		(value: Parameters<MessageEvents['GameFrame']>[0]) => {
 			gameFrame.set(value);
 		},
-		2,
-		{ maxWait: 160 },
+		33,
 	);
 
 	async function messageDataHandler<J extends keyof MessageEvents>(
@@ -172,7 +174,7 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['GameFrame']>[0];
 					if (!value) return;
-					debouncedSetGameFrame(value);
+					throttledSetGameFrame(value);
 				})();
 				break;
 			case 'GameSettings':

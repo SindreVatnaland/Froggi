@@ -35,6 +35,10 @@ function aggregateActionCounts(counts: ActionCountsType[], playerIndex: number) 
             dair: s(a => a.attackCount.dair),
         },
         dashDanceCount: s(a => a.dashDanceCount),
+        edgeCancelCount: {
+            success: s(a => a.edgeCancelCount.success),
+            slow: s(a => a.edgeCancelCount.slow),
+        },
         grabCount: {
             success: s(a => a.grabCount.success),
             fail: s(a => a.grabCount.fail),

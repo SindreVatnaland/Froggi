@@ -4,7 +4,7 @@
 	import PlayerSpot from './PlayerSpot.svelte';
 	import StageRender from './StageRender.svelte';
 
-	export let dataItem: GridContentItem;
+	export let dataItem: GridContentItem | undefined = undefined;
 	export let defaultPreview: boolean = false;
 	export let style: GridContentItemStyle;
 	export let stageId: Stage | undefined | null;

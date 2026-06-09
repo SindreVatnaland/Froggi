@@ -6,6 +6,7 @@
 	import GameStage from '../../element/GameStage.svelte';
 	import TextElement from '../../element/TextElement.svelte';
 	import InGamePlayerRadar from '../../element/inGame/InGamePlayerRadar.svelte';
+	import InGamePlayerRadarAnimated from '../../element/inGame/InGamePlayerRadarAnimated.svelte';
 	import { GameStartTypeExtended } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
@@ -103,6 +104,16 @@
 			{defaultPreview}
 			stageId={gameSettings?.stageId}
 			fallbackStageId={Stage.BATTLEFIELD}
+		/>
+	{/key}
+{:else if dataItem?.elementId === CustomElement.InGamePlayerRadarAnimated}
+	{#key gameSettings}
+		<InGamePlayerRadarAnimated
+			{style}
+			{dataItem}
+			{defaultPreview}
+			settings={gameSettings}
+			frame={gameFrame}
 		/>
 	{/key}
 {/if}

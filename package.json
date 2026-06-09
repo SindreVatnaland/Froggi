@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "2.0.0-beta.16",
+	"version": "2.0.0-beta.17",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -46,11 +46,11 @@
 		"Chrome 89"
 	],
 	"dependencies": {
-		"@slippi/slippi-js": "github:SindreVatnaland/slippi-js#dist",
-		"call-bind-apply-helpers": "^1.0.2",
+		"@slippi/slippi-js": "^7.2.0",
 		"@types/lodash": "^4.14.202",
 		"appdata-path": "^1.0.0",
 		"axios": "^1.6.5",
+		"call-bind-apply-helpers": "^1.0.2",
 		"cors": "^2.8.5",
 		"discord-rpc": "^4.0.1",
 		"dolphin-memory-reader": "^0.6.7",

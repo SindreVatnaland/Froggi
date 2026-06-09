@@ -19,6 +19,13 @@
 		Player Radar
 	</SelectOption>
 	<SelectOption
+		description="Player Radar with live character animations (SlippiLab-style)"
+		value={CustomElement.InGamePlayerRadarAnimated}
+		on:select={select}
+	>
+		Player Radar (Animated)
+	</SelectOption>
+	<SelectOption
 		description="Image of the current stage"
 		value={CustomElement.InGameStage}
 		on:select={select}

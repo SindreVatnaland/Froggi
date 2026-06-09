@@ -7,6 +7,9 @@ export class MatchInfoEntity implements MatchInfoExtended {
   id: number;
 
   @Column({ type: "varchar", nullable: true })
+  sessionId: string | null;
+
+  @Column({ type: "varchar", nullable: true })
   matchId: string | null;
 
   @Column({ type: "integer", nullable: true })

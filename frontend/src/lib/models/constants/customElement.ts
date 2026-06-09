@@ -70,6 +70,7 @@ export enum CustomElement {
     InGamePlayer2ControllerAnalogStickR = 3165,
 
     InGamePlayerRadar = 3200,
+    InGamePlayerRadarAnimated = 3201,
 
     // String
     // Rank Data

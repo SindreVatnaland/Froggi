@@ -5,9 +5,66 @@
 	import { isNil } from 'lodash';
 
 	export let stageId: number;
+	/**
+	 * Frame to read dynamic stage state from (FoD platform heights, Randall).
+	 * Defaults to the live `gameFrame` store so the radar element keeps working
+	 * unchanged; the viewer passes its own (live or demo) frame.
+	 */
+	export let frame:
+		| {
+				frame?: number | null;
+				stageEvents?: { frame?: number | null; platform?: number | null; height?: number | null }[] | null;
+		  }
+		| null
+		| undefined = undefined;
 
-	const stage = STAGE_DATA[stageId];
-	const offStageZone = getOffStageZone(stageId);
+	$: stage = STAGE_DATA[stageId];
+	$: offStageZone = getOffStageZone(stageId);
+	$: effFrame = frame ?? $gameFrame;
+
+	// ── Fountain of Dreams moving platforms ─────────────────────────────
+	// stageEvents (FodPlatformType) are emitted only when a platform's height
+	// changes, so accumulate the latest height per side. Event platform: 0 =
+	// Right, 1 = Left. Render Y = gameHeight * 0.80625 (SlippiLab coefficient).
+	const FOD_STAGE_ID = 2;
+	const FOD_COEFF = 0.80625;
+	const FOD_INIT_LEFT_Y = 16.125; // 20.0    * 0.80625
+	const FOD_INIT_RIGHT_Y = 22.125; // 27.4419 * 0.80625
+	let fodLeftY = FOD_INIT_LEFT_Y;
+	let fodRightY = FOD_INIT_RIGHT_Y;
+	let lastFodFrame: number | null = null;
+
+	$: if (stageId === FOD_STAGE_ID && effFrame) {
+		const fn = effFrame.frame ?? 0;
+		// Reset on a new game / loop / backward scrub (accumulated heights would be stale).
+		if (lastFodFrame === null || fn < lastFodFrame) {
+			fodLeftY = FOD_INIT_LEFT_Y;
+			fodRightY = FOD_INIT_RIGHT_Y;
+		}
+		lastFodFrame = fn;
+		const events = (effFrame.stageEvents ?? []) as { platform?: number | null; height?: number | null }[];
+		for (const ev of events) {
+			if (ev && ev.height != null && ev.platform != null) {
+				const y = ev.height * FOD_COEFF;
+				if (ev.platform === 1) fodLeftY = y;
+				else if (ev.platform === 0) fodRightY = y;
+			}
+		}
+	}
+
+	function setPlatformY(platform: string[], y: number): string[] {
+		return platform.map((pt) => `${pt.split(',')[0].trim()}, ${y}`);
+	}
+
+	// FoD: override the two side-platform heights; top platform stays static.
+	$: platforms = (() => {
+		if (!stage?.platforms) return [];
+		if (stageId !== FOD_STAGE_ID) return stage.platforms;
+		const p = stage.platforms.map((pl) => [...pl]);
+		if (p[0]) p[0] = setPlatformY(stage.platforms[0], fodLeftY);
+		if (p[1]) p[1] = setPlatformY(stage.platforms[1], fodRightY);
+		return p;
+	})();
 </script>
 
 {#if !isNil(stage)}
@@ -18,11 +75,11 @@
 		height={stage.blastZones[1][1] - stage.blastZones[0][1]}
 	/>
 	<polyline points={stage.mainStage.join(' ')} />
-	{#each stage.platforms as platform}
+	{#each platforms as platform}
 		<polyline points={platform.join(' ')} />
 	{/each}
 	{#if stage.getRandallPosition}
-		<polyline points={stage?.getRandallPosition($gameFrame?.frame ?? 0)?.join(' ')} />
+		<polyline points={stage?.getRandallPosition(effFrame?.frame ?? 0)?.join(' ')} />
 	{/if}
 
 	{#if offStageZone}

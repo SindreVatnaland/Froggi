@@ -11,10 +11,11 @@
 	},
 	"dependencies": {
 		"@leveluptuts/svelte-fit": "^1.0.3",
-		"@slippi/slippi-js": "github:SindreVatnaland/slippi-js#dist",
+		"@slippi/slippi-js": "^7.2.0",
 		"@types/lodash": "^4.17.16",
 		"eventemitter2": "^6.4.9",
 		"events": "^3.3.0",
+		"fflate": "^0.8.3",
 		"froggi": "file:..",
 		"lodash": "^4.17.21",
 		"lucide-svelte": "^1.0.1",

@@ -116,6 +116,8 @@ export type GameStartTypeExtended = GameStartType & {
 export type GameStartMode = "ranked" | "unranked" | "direct" | "local";
 
 export type MatchInfoExtended = {
+    sessionId: string | null;
+    /** @deprecated since slippi-js 7.2.0 — use sessionId */
     matchId: string | null;
     gameNumber: number | null;
     tiebreakerNumber: number | null;

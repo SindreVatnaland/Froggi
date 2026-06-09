@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { BingoSession } from '$lib/models/types/bingo';
 	import BingoBoardGrid from '$lib/components/bingo/BingoBoardGrid.svelte';
@@ -19,6 +20,60 @@
 		completedBy: i % 3 === 0 ? ('local' as const) : null,
 		hasProgress: false,
 	}));
+
+	// ── Win tile-exit sweep ─────────────────────────────────────────────
+	// The full-page overlays own a richer win-screen state machine; the board
+	// element just needs the staggered tile exit so a win reads on-overlay.
+	let exitingBoxIndices = new Set<number>();
+	let isLocalWinner = false;
+	let winTriggered = false;
+	let prevBoardId: string | null = null;
+	let exitTimers: ReturnType<typeof setTimeout>[] = [];
+
+	function clearExitTimers() {
+		exitTimers.forEach(clearTimeout);
+		exitTimers = [];
+	}
+
+	function shuffleIndices(n: number): number[] {
+		const arr = Array.from({ length: n }, (_, i) => i);
+		for (let i = n - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[arr[i], arr[j]] = [arr[j], arr[i]];
+		}
+		return arr;
+	}
+
+	function triggerWinExit(count: number) {
+		const order = shuffleIndices(count);
+		order.forEach((idx, step) => {
+			exitTimers.push(
+				setTimeout(() => {
+					exitingBoxIndices = new Set([...exitingBoxIndices, idx]);
+				}, Math.floor((step / count) * 900)),
+			);
+		});
+	}
+
+	// Reset the sweep whenever the board changes (new game / restart / cleared).
+	$: {
+		const boardId = session?.board?.id ?? null;
+		if (boardId !== prevBoardId) {
+			prevBoardId = boardId;
+			clearExitTimers();
+			winTriggered = false;
+			exitingBoxIndices = new Set();
+		}
+	}
+
+	// Fire the exit sweep on win.
+	$: if (!defaultPreview && session?.board && !winTriggered && session.winState?.hasWon) {
+		winTriggered = true;
+		isLocalWinner = session.winState.localWinner;
+		triggerWinExit(session.board.tiles.length);
+	}
+
+	onDestroy(clearExitTimers);
 </script>
 
 <div class="bingo-wrap" style={style.cssValue}>
@@ -29,6 +84,8 @@
 			tiles={session.board.tiles}
 			size={session.board.size}
 			role={session.role}
+			{exitingBoxIndices}
+			{isLocalWinner}
 		/>
 	{:else}
 		<div class="bingo-idle">No active bingo session</div>

@@ -110,6 +110,7 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	// Stage & radar
 	CustomElement.InGameStage,
 	CustomElement.InGamePlayerRadar,
+	CustomElement.InGamePlayerRadarAnimated,
 	// Action state — Current Player
 	CustomElement.InGameCurrentPlayerActionStateName,
 	CustomElement.InGameCurrentPlayerActionStateId,
