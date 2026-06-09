@@ -39,7 +39,12 @@
 	];
 	const submitFeedback = () => {
 		if (!feedbackMessage.trim()) return;
-		$electronEmitter.emit('SubmitFeedback', { type: feedbackType, message: feedbackMessage.trim(), includeLogs });
+		// Logs only make sense for bug reports; never attach them to feature requests.
+		$electronEmitter.emit('SubmitFeedback', {
+			type: feedbackType,
+			message: feedbackMessage.trim(),
+			includeLogs: feedbackType === 'bug' && includeLogs,
+		});
 		feedbackMessage = '';
 	};
 	const toggleBeta = () => $electronEmitter.emit('BetaOptIn', !$froggiSettings.betaOptIn);
@@ -427,10 +432,12 @@
 				placeholder={feedbackType === 'bug' ? 'Describe what went wrong and how to reproduce it…' : 'Describe the feature you’d like…'}
 				bind:value={feedbackMessage}
 			></textarea>
-			<label class="flex items-center gap-2 text-xs opacity-70 cursor-pointer select-none">
-				<input type="checkbox" bind:checked={includeLogs} />
-				Include recent logs (personal data removed) — helps with debugging
-			</label>
+			{#if feedbackType === 'bug'}
+				<label class="flex items-center gap-2 text-xs opacity-70 cursor-pointer select-none">
+					<input type="checkbox" bind:checked={includeLogs} />
+					Include recent logs (personal data removed) — helps with debugging
+				</label>
+			{/if}
 			<button
 				class="btn text-sm h-9 px-5 border-secondary rounded self-start disabled:opacity-40"
 				disabled={!feedbackMessage.trim()}

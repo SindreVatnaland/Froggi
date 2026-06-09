@@ -35,7 +35,7 @@ import { ElectronWebhookStore } from './services/store/storeWebhook';
 import { WebhookService } from './services/webhookService';
 import { ActionStateService } from './services/actionStateService';
 import { ErrorReporter, reportStartupError } from './services/errorReporter';
-import { BUILD_CRASH_WEBHOOK } from './services/crashWebhook';
+import { BUILD_CRASH_WEBHOOK } from './services/reportWebhooks';
 import { BingoService } from './services/bingoService';
 import { IronManService } from './services/ironmanService';
 import { LobbyService } from './services/lobbyService';

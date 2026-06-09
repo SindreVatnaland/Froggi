@@ -6,7 +6,7 @@ import type Store from 'electron-store';
 import os from 'os';
 import fs from 'fs';
 import { scopedLog } from '../utils/logger';
-import { BUILD_CRASH_WEBHOOK } from './crashWebhook';
+import { BUILD_CRASH_WEBHOOK, BUILD_FEATURE_WEBHOOK } from './reportWebhooks';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { MessageHandler } from './messageHandler';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
@@ -25,7 +25,8 @@ import { NotificationType } from '../../frontend/src/lib/models/enum';
  */
 @singleton()
 export class ErrorReporter {
-	private readonly webhook: string | undefined;
+	private readonly webhook: string | undefined;        // crashes + bug reports
+	private readonly featureWebhook: string | undefined; // feature requests
 	private readonly sentSignatures = new Set<string>();
 	private sentCount = 0;
 	private readonly maxPerSession = 25;
@@ -43,6 +44,7 @@ export class ErrorReporter {
 		this.rootLog = this.log;
 		this.log = scopedLog(this.log, 'ErrorReport');
 		this.webhook = process.env.DISCORD_USER_CRASH_REPORT_WEBHOOK?.trim() || BUILD_CRASH_WEBHOOK || undefined;
+		this.featureWebhook = process.env.DISCORD_USER_FEATURE_REPORT_WEBHOOK?.trim() || BUILD_FEATURE_WEBHOOK || undefined;
 
 		// User-initiated feedback works regardless of crash-report consent (it's an explicit
 		// action), so register it even when automatic crash hooks aren't installed.
@@ -140,12 +142,15 @@ export class ErrorReporter {
 	async submitFeedback(type: 'feature' | 'bug', message: string, includeLogs: boolean): Promise<void> {
 		const text = (message ?? '').trim();
 		if (!text) return;
-		if (!this.webhook) {
+		const isBug = type === 'bug';
+		// Feature requests go to the feature webhook (falling back to the crash one if unset);
+		// bug reports go to the crash/bug webhook.
+		const webhook = isBug ? this.webhook : (this.featureWebhook || this.webhook);
+		if (!webhook) {
 			this.messageHandler.sendMessage('Notification', 'Feedback is unavailable in this build', NotificationType.Warning, 4000);
 			return;
 		}
 		try {
-			const isBug = type === 'bug';
 			const payload = {
 				username: 'Froggi Feedback',
 				embeds: [
@@ -164,14 +169,13 @@ export class ErrorReporter {
 
 			const form = new FormData();
 			form.append('payload_json', JSON.stringify(payload));
-			// Attach the recent (scrubbed) log tail when the user opts in — logs go as a file,
-			// so there's no message-length limit to worry about.
-			if (includeLogs) {
+			// Logs only attach to bug reports (and only when opted in) — never feature requests.
+			if (isBug && includeLogs) {
 				const logTail = this.readLogTail();
 				if (logTail) form.append('files[0]', new Blob([logTail], { type: 'text/plain' }), 'froggi-log.txt');
 			}
 
-			const res = await fetch(this.webhook, { method: 'POST', body: form });
+			const res = await fetch(webhook, { method: 'POST', body: form });
 			if (res.ok) {
 				this.messageHandler.sendMessage('Notification', 'Thanks! Your feedback was sent.', NotificationType.Success, 4000);
 			} else {

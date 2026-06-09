@@ -156,7 +156,9 @@
       "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha build/icon.macnew.png)",
       "Bash(sips -g pixelWidth -g pixelHeight build/icon.png)",
       "Bash(git check-ignore *)",
-      "Bash(sips -g pixelWidth -g pixelHeight frontend/static/icon.png)"
+      "Bash(sips -g pixelWidth -g pixelHeight frontend/static/icon.png)",
+      "Bash(DISCORD_USER_CRASH_REPORT_WEBHOOK=\"https://x/crash\" DISCORD_USER_FEATURE_REPORT_WEBHOOK=\"https://x/feat\" node scripts/inject-crash-webhook.js)",
+      "Bash(git mv *)"
     ],
     "additionalDirectories": [
       "/Users/sindrevatnaland/VSCode/Froggi/frontend/src/routes/set/p",
