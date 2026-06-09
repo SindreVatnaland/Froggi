@@ -374,6 +374,11 @@ export class MessageHandler {
 
 	private tailscaleUrl: string | undefined = undefined;
 	private ngrokUrl: string | undefined = undefined;
+
+	/** Public tunnel URL for remote clients, preferring Tailscale Funnel over ngrok. Undefined if neither is up. */
+	getRemoteAccessUrl(): string | undefined {
+		return this.tailscaleUrl ?? this.ngrokUrl;
+	}
 	private tailscaleBin: string | undefined = undefined;
 	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
 

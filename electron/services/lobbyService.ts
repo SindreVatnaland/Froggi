@@ -4,7 +4,10 @@ import type { App } from 'electron';
 import WebSocket from 'ws';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { MessageHandler } from './messageHandler';
-import { NotificationType } from '../../frontend/src/lib/models/enum';
+import { ElectronDolphinStore } from './store/storeDolphin';
+import { BUILD_PUBLIC_GAME_WEBHOOK } from './reportWebhooks';
+import { encryptUrl } from '../../frontend/src/lib/utils/urlCrypto';
+import { NotificationType, ConnectionState } from '../../frontend/src/lib/models/enum';
 import { scopedLog } from '../utils/logger';
 import { newId } from '../utils/functions';
 import type { CurrentPlayer } from '../../frontend/src/lib/models/types/slippiData';
@@ -25,11 +28,13 @@ export class LobbyService {
 	private readonly localPlayerId = newId();
 	private localPlayerName = 'Player';
 	private localConnectCode: string | undefined;
+	private localDolphinConnected = false;
 
 	private active = false;
 	private isHost = false;
 	private selectedGame: MinigameType | null = null;
 	private maxPlayers = 2;
+	private isPublic = false;
 
 	// Host side: connected guests by player id.
 	private guestSockets = new Map<string, WebSocket>();
@@ -39,12 +44,17 @@ export class LobbyService {
 	private hostSocket: WebSocket | null = null;
 	private myAssignedId: string | null = null;
 
+	// Public invite (Discord webhook). Posted on host open, deleted on start/stop.
+	private readonly inviteWebhook = process.env.DISCORD_PUBLIC_GAME_WEBHOOK?.trim() || BUILD_PUBLIC_GAME_WEBHOOK || '';
+	private inviteMessageId: string | null = null;
+
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('App') private app: App,
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => ElectronDolphinStore)) private dolphinStore: ElectronDolphinStore,
 	) {
 		this.log = scopedLog(this.log, 'Lobby');
 		this.log.info('Initializing Lobby Service');
@@ -60,12 +70,17 @@ export class LobbyService {
 			this.localConnectCode = player?.connectCode ?? this.localConnectCode;
 		});
 
+		this.localEmitter.on('DolphinConnectionState', (state: ConnectionState | undefined) => {
+			this.onDolphinState(state === ConnectionState.Connected);
+		});
+
 		this.clientEmitter.on('StartLobby', () => this.startLobby());
 		this.clientEmitter.on('PeerConnect', (hostUrl: string) => this.connectToHost(hostUrl));
 		this.clientEmitter.on('SelectMinigame', (game: MinigameType | null) => this.selectMinigame(game));
 		this.clientEmitter.on('KickPlayer', (playerId: string) => this.kickPlayer(playerId));
 		this.clientEmitter.on('LeaveLobby', () => this.leaveLobby());
 		this.clientEmitter.on('StartMinigame', () => this.startMinigame());
+		this.clientEmitter.on('SetLobbyPublic', (isPublic: boolean) => this.setPublic(isPublic));
 	}
 
 	// ── Host: accept incoming peers ────────────────────────────────────────────
@@ -100,7 +115,7 @@ export class LobbyService {
 						ws.close(1008, 'Version mismatch');
 						return;
 					}
-					const data = (msg.payload ?? {}) as { name?: string; connectCode?: string };
+					const data = (msg.payload ?? {}) as { name?: string; connectCode?: string; dolphinConnected?: boolean };
 					playerId = newId();
 					const player: LobbyPlayer = {
 						id: playerId,
@@ -108,6 +123,7 @@ export class LobbyService {
 						connectCode: data.connectCode,
 						isHost: false,
 						isLocal: false,
+						dolphinConnected: !!data.dolphinConnected,
 					};
 					this.players.push(player);
 					this.guestSockets.set(playerId, ws);
@@ -117,7 +133,20 @@ export class LobbyService {
 					} satisfies LobbyPeerMessage));
 					this.broadcastRoster();
 					this.emitState();
+					void this.updateInvite();
 					this.log.info(`Guest joined: ${player.name} (${this.players.length}/${this.maxPlayers})`);
+					return;
+				}
+
+				// A guest reporting its Dolphin connection state.
+				if (msg.scope === 'lobby' && msg.type === 'DolphinStatus' && playerId) {
+					const connected = !!(msg.payload as { connected?: boolean })?.connected;
+					const player = this.players.find(p => p.id === playerId);
+					if (player && player.dolphinConnected !== connected) {
+						player.dolphinConnected = connected;
+						this.broadcastRoster();
+						this.emitState();
+					}
 					return;
 				}
 
@@ -133,6 +162,7 @@ export class LobbyService {
 				this.players = this.players.filter(p => p.id !== playerId);
 				this.broadcastRoster();
 				this.emitState();
+				void this.updateInvite();
 				this.log.info(`Guest left (${this.players.length}/${this.maxPlayers})`);
 			});
 
@@ -142,20 +172,53 @@ export class LobbyService {
 
 	// ── Host actions ───────────────────────────────────────────────────────────
 
+	/** Read current Dolphin connection from the store so a lobby opened after Dolphin connected is accurate. */
+	private syncLocalDolphin() {
+		this.localDolphinConnected = this.dolphinStore.getDolphinConnectionState() === ConnectionState.Connected;
+	}
+
 	private startLobby() {
 		this.teardown();
+		this.syncLocalDolphin();
 		this.active = true;
 		this.isHost = true;
 		this.selectedGame = null;
+		this.isPublic = false;
 		this.players = [{
 			id: this.localPlayerId,
 			name: this.localPlayerName,
 			connectCode: this.localConnectCode,
 			isHost: true,
 			isLocal: true,
+			dolphinConnected: this.localDolphinConnected,
 		}];
 		this.log.info('Lobby opened (hosting)');
 		this.emitState();
+	}
+
+	/** Host toggles public hosting. On → post a Discord invite (anyone can join); off → remove it. */
+	private setPublic(isPublic: boolean) {
+		if (!this.isHost || !this.active) return;
+		if (isPublic === this.isPublic) return;
+		this.isPublic = isPublic;
+		if (isPublic) void this.postInvite();
+		else void this.deleteInvite();
+		this.emitState();
+	}
+
+	/** Local Dolphin connection changed — reflect it in the roster (host) or report it (guest). */
+	private onDolphinState(connected: boolean) {
+		if (connected === this.localDolphinConnected) return;
+		this.localDolphinConnected = connected;
+		if (!this.active) return;
+		if (this.isHost) {
+			const me = this.players.find(p => p.id === this.localPlayerId);
+			if (me) me.dolphinConnected = connected;
+			this.broadcastRoster();
+			this.emitState();
+		} else {
+			this.broadcast({ scope: 'lobby', type: 'DolphinStatus', payload: { connected } });
+		}
 	}
 
 	private selectMinigame(game: MinigameType | null) {
@@ -176,21 +239,98 @@ export class LobbyService {
 		this.players = this.players.filter(p => p.id !== playerId);
 		this.broadcastRoster();
 		this.emitState();
+		void this.updateInvite();
 		this.log.info(`Kicked player ${playerId}`);
 	}
 
 	private startMinigame() {
 		if (!this.isHost || !this.selectedGame) return;
+		void this.deleteInvite();
 		this.broadcast({ scope: 'lobby', type: 'Start', payload: { game: this.selectedGame } });
 		// Handoff to the minigame service (wired in steps 2-3).
 		this.localEmitter.emit('LobbyStartMinigame', { game: this.selectedGame, players: this.players });
 		this.log.info(`Starting minigame: ${this.selectedGame}`);
 	}
 
+	// ── Public invite (Discord webhook) ────────────────────────────────────────
+
+	/** Build the invite embed from current lobby state (host name, spots left, version, join link). */
+	private buildInviteEmbed() {
+		const remoteUrl = this.messageHandler.getRemoteAccessUrl();
+		const code = remoteUrl ? encryptUrl(remoteUrl, this.app.getVersion()) : '';
+		const deepLink = `froggi://join/${code}`;
+		const spots = Math.max(0, this.maxPlayers - this.players.length);
+		return {
+			title: '🐸 Froggi lobby open',
+			description:
+				`**${this.localPlayerName}** is hosting a lobby.\n\n` +
+				`**Spots:** ${spots} of ${this.maxPlayers} open\n` +
+				`**Version:** ${this.app.getVersion()}\n\n` +
+				`[Click here to join](${deepLink})\n` +
+				`or paste this code in Froggi → Minigames → Join:\n\`${code}\``,
+			color: spots > 0 ? 0x4ade80 : 0xf59e0b,
+		};
+	}
+
+	/** Post the public invite to the Discord channel. No-op without a webhook or active tunnel. */
+	private async postInvite() {
+		if (!this.inviteWebhook || this.inviteMessageId) return;
+		if (!this.messageHandler.getRemoteAccessUrl()) {
+			this.log.info('Public invite skipped — no remote tunnel active');
+			return;
+		}
+		try {
+			const res = await fetch(`${this.inviteWebhook}?wait=true`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ embeds: [this.buildInviteEmbed()] }),
+			});
+			if (!res.ok) {
+				this.log.warn(`Public invite POST failed: HTTP ${res.status}`);
+				return;
+			}
+			const json = (await res.json().catch(() => null)) as { id?: string } | null;
+			this.inviteMessageId = json?.id ?? null;
+			this.log.info('Public invite posted', this.inviteMessageId);
+		} catch (err) {
+			this.log.warn('Public invite POST error:', err);
+		}
+	}
+
+	/** Edit the live invite to reflect the current spot count. No-op unless public + already posted. */
+	private async updateInvite() {
+		if (!this.inviteWebhook || !this.isPublic || !this.inviteMessageId) return;
+		try {
+			const res = await fetch(`${this.inviteWebhook}/messages/${this.inviteMessageId}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ embeds: [this.buildInviteEmbed()] }),
+			});
+			if (!res.ok && res.status !== 404) this.log.warn(`Public invite edit failed: HTTP ${res.status}`);
+		} catch (err) {
+			this.log.warn('Public invite edit error:', err);
+		}
+	}
+
+	/** Delete the previously posted invite (on minigame start or lobby teardown). */
+	private async deleteInvite() {
+		const id = this.inviteMessageId;
+		this.inviteMessageId = null;
+		if (!this.inviteWebhook || !id) return;
+		try {
+			const res = await fetch(`${this.inviteWebhook}/messages/${id}`, { method: 'DELETE' });
+			if (!res.ok && res.status !== 404) this.log.warn(`Public invite delete failed: HTTP ${res.status}`);
+			else this.log.info('Public invite deleted');
+		} catch (err) {
+			this.log.warn('Public invite delete error:', err);
+		}
+	}
+
 	// ── Guest: connect to a host ───────────────────────────────────────────────
 
 	private connectToHost(hostUrl: string) {
 		this.teardown();
+		this.syncLocalDolphin();
 		const wsUrl = hostUrl.replace(/^http/, 'ws').replace(/\/$/, '') + '/peer';
 		this.log.info('Connecting to host lobby', wsUrl);
 
@@ -201,7 +341,7 @@ export class LobbyService {
 		ws.on('open', () => {
 			ws.send(JSON.stringify({
 				scope: 'lobby', type: 'Join', version: this.app.getVersion(),
-				payload: { name: this.localPlayerName, connectCode: this.localConnectCode },
+				payload: { name: this.localPlayerName, connectCode: this.localConnectCode, dolphinConnected: this.localDolphinConnected },
 			} satisfies LobbyPeerMessage));
 		});
 
@@ -228,7 +368,7 @@ export class LobbyService {
 					case 'Start':
 						if (p.game) {
 							this.selectedGame = p.game;
-							this.localEmitter.emit('LobbyStartMinigame', { game: p.game, players: this.players } as never);
+							this.localEmitter.emit('LobbyStartMinigame', { game: p.game, players: this.players });
 						}
 						break;
 					case 'Kick':
@@ -300,7 +440,7 @@ export class LobbyService {
 		if (!this.active) return null;
 		const myId = this.isHost ? this.localPlayerId : this.myAssignedId;
 		const players = this.players.map(p => ({ ...p, isLocal: p.id === myId }));
-		return { active: true, isHost: this.isHost, players, maxPlayers: this.maxPlayers, selectedGame: this.selectedGame };
+		return { active: true, isHost: this.isHost, players, maxPlayers: this.maxPlayers, selectedGame: this.selectedGame, isPublic: this.isPublic };
 	}
 
 	private emitState() {
@@ -308,6 +448,7 @@ export class LobbyService {
 	}
 
 	private teardown() {
+		void this.deleteInvite();
 		for (const ws of this.guestSockets.values()) {
 			try { ws.close(1000, 'Lobby closed'); } catch { /* ignore */ }
 		}
@@ -320,6 +461,7 @@ export class LobbyService {
 		this.active = false;
 		this.isHost = false;
 		this.selectedGame = null;
+		this.isPublic = false;
 		this.myAssignedId = null;
 	}
 }

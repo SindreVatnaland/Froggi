@@ -12,6 +12,7 @@ import { ElectronGamesStore } from './store/storeGames';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { debounce, throttle, startCase } from 'lodash';
+import { BUILD_DISCORD_CLIENT_ID } from './reportWebhooks';
 
 const FROGGI_URL = 'https://sindrevatnaland.github.io/Froggi/';
 
@@ -39,8 +40,13 @@ export class DiscordRpc {
 
 	initDiscordJs() {
 		this.log.info('Initializing Discord RPC');
+		const clientId = (BUILD_DISCORD_CLIENT_ID || process.env.DISCORD_FROGGI_CLIENT_ID || '').trim();
+		if (!clientId) {
+			this.log.warn('Discord RPC client id not set (BUILD_DISCORD_CLIENT_ID / DISCORD_FROGGI_CLIENT_ID) — skipping Rich Presence');
+			return;
+		}
 		this.rpc
-			.login({ clientId: '1143955754643112016' })
+			.login({ clientId })
 			.catch((err) => this.log.error('err', err));
 		this.rpc.on('ready', async () => {
 			this.setNonGameActivity('Menu');

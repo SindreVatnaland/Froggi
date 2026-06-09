@@ -237,6 +237,8 @@ export interface MessageEvents {
 	LeaveLobby: () => void;
 	/** Host launches the currently selected minigame for everyone in the lobby. */
 	StartMinigame: () => void;
+	/** Host toggles public hosting: when true, an invite is posted to the Discord channel (anyone can join). */
+	SetLobbyPublic: (isPublic: boolean) => void;
 	LobbyState: (state: LobbyState | null) => void;
 	/** Internal (Electron-only): lobby hands a started game off to its minigame service. */
 	LobbyStartMinigame: (data: { game: MinigameType; players: LobbyPlayer[] }) => void;

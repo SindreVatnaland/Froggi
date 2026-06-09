@@ -9,6 +9,8 @@ export interface LobbyPlayer {
 	isHost: boolean;
 	/** True for the player on this machine. */
 	isLocal: boolean;
+	/** Whether this player currently has Dolphin connected (readiness indicator). */
+	dolphinConnected: boolean;
 }
 
 export interface LobbyState {
@@ -21,6 +23,8 @@ export interface LobbyState {
 	maxPlayers: number;
 	/** Game the host has selected, or null while still choosing. */
 	selectedGame: MinigameType | null;
+	/** Host has posted a public invite to Discord (anyone with the link can join). */
+	isPublic: boolean;
 }
 
 /**

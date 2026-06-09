@@ -10,6 +10,7 @@ import windowStateManager from 'electron-window-state';
 import path from 'path';
 import os from 'os';
 import { TypedEmitter } from '../frontend/src/lib/utils/customEventEmitter';
+import { decryptUrl, isEncryptedHash } from '../frontend/src/lib/utils/urlCrypto';
 
 import { AutoUpdater } from './services/autoUpdater';
 import { MessageHandler } from './services/messageHandler';
@@ -102,8 +103,26 @@ try {
 	let tray: Tray;
 	let backgroundNotification: Notification;
 
+	// froggi:// deep-link state. A link may arrive before services are wired (cold start
+	// via the protocol on macOS), so queue it and flush once LobbyService is resolved.
+	let servicesReady = false;
+	let pendingDeepLink: string | null = null;
+
 	app.commandLine.appendSwitch("disable-background-timer-throttling")
 	app.commandLine.appendSwitch('disable-renderer-backgrounding')
+
+	// Register the froggi:// protocol so public-invite deep links open the app.
+	if (process.defaultApp && process.argv.length >= 2) {
+		app.setAsDefaultProtocolClient('froggi', process.execPath, [path.resolve(process.argv[1])]);
+	} else {
+		app.setAsDefaultProtocolClient('froggi');
+	}
+
+	// macOS delivers deep links via open-url (can fire before the app is ready).
+	app.on('open-url', (event, url) => {
+		event.preventDefault();
+		handleDeepLink(url);
+	});
 
 	powerSaveBlocker.start('prevent-display-sleep');
 
@@ -208,6 +227,38 @@ try {
 
 		if (!isOnlyInstance) {
 			app.quit();
+		}
+	}
+
+	/** Handle a froggi:// deep link. Currently only `froggi://join/<code>` (join a public lobby). */
+	function handleDeepLink(rawUrl: string | undefined) {
+		if (!rawUrl || !rawUrl.startsWith('froggi://')) return;
+		mainLog.info('Deep link received:', rawUrl);
+		let action: string;
+		let code: string;
+		try {
+			const u = new URL(rawUrl);
+			action = u.hostname;
+			code = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
+		} catch (err) {
+			mainLog.warn('Failed to parse deep link:', err);
+			return;
+		}
+		if (action !== 'join' || !code) {
+			mainLog.warn('Unsupported deep link:', rawUrl);
+			return;
+		}
+		// Services (LobbyService) may not be wired yet on a cold start — queue and flush later.
+		if (!servicesReady) {
+			pendingDeepLink = rawUrl;
+			return;
+		}
+		const hostUrl = isEncryptedHash(code) ? decryptUrl(code, app.getVersion()) : code;
+		clientEmitter.emit('PeerConnect', hostUrl);
+		if (mainWindow) {
+			if (mainWindow.isMinimized()) mainWindow.restore();
+			mainWindow.show();
+			mainWindow.focus();
 		}
 	}
 
@@ -333,6 +384,14 @@ try {
 			container.resolve(IronManService);
 			container.resolve(LobbyService);
 
+			// Deep links can now be acted on; flush any that arrived during cold start.
+			servicesReady = true;
+			if (pendingDeepLink) {
+				const link = pendingDeepLink;
+				pendingDeepLink = null;
+				handleDeepLink(link);
+			}
+
 			// Notify the frontend of any missing spectate configuration now that
 			// MessageHandler is ready and listening for Notification events.
 			container.resolve(ElectronSettingsStore).notifyMissingSpectateConfig();
@@ -415,9 +474,13 @@ try {
 	if (!gotTheLock) {
 		app.quit();
 	} else {
-		app.on('second-instance', () => {
+		app.on('second-instance', (_event, argv) => {
+			// Windows/Linux deliver the deep link as an argv entry on the second launch.
+			const link = argv.find((a) => a.startsWith('froggi://'));
+			if (link) handleDeepLink(link);
 			if (!mainWindow) return;
 			if (mainWindow.isMinimized()) mainWindow.restore();
+			mainWindow.show();
 			mainWindow.focus();
 		});
 	}
@@ -426,6 +489,9 @@ try {
 		if (!dev) await performUpdate(app, mainLog);
 		setPriority();
 		createMainWindow();
+		// Windows/Linux cold start via protocol: the link is in argv. Queue until services are ready.
+		const linkArg = process.argv.find((a) => a.startsWith('froggi://'));
+		if (linkArg) handleDeepLink(linkArg);
 	});
 
 	app.on('activate', () => {

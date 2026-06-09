@@ -118,6 +118,9 @@ jobs:
                   # Baked into the app so users can opt into crash reports / feedback. Empty if unset.
                   DISCORD_USER_CRASH_REPORT_WEBHOOK: ${{ secrets.DISCORD_USER_CRASH_REPORT_WEBHOOK }}
                   DISCORD_USER_FEATURE_REPORT_WEBHOOK: ${{ secrets.DISCORD_USER_FEATURE_REPORT_WEBHOOK }}
+                  # Public lobby invites + Discord Rich Presence app id. Empty if unset.
+                  DISCORD_PUBLIC_GAME_WEBHOOK: ${{ secrets.DISCORD_PUBLIC_GAME_WEBHOOK }}
+                  DISCORD_FROGGI_CLIENT_ID: ${{ secrets.DISCORD_FROGGI_CLIENT_ID }}
 
             - uses: softprops/action-gh-release@v1
               env:

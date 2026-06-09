@@ -5,6 +5,12 @@
 		"output": "dist"
 	},
 	"artifactName": "Froggi-${version}-${os}-${arch}.${ext}",
+	"protocols": [
+		{
+			"name": "Froggi",
+			"schemes": ["froggi"]
+		}
+	],
 	"win": {
 		"icon": "bin/static/favicon.ico",
 		"sign": false,
