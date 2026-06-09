@@ -6,7 +6,7 @@ import { GameEndMethod } from '@slippi/slippi-js';
 import type { FrameEntryType, GameStartType } from '@slippi/slippi-js';
 import type { StatsType } from '@slippi/slippi-js/dist/stats/common';
 import WebSocket from 'ws';
-import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { TypedEmitter, type MessageEvents } from '../../frontend/src/lib/utils/customEventEmitter';
 import { scopedLog } from '../utils/logger';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
@@ -67,7 +67,7 @@ interface ZeroDeathAttempt {
 }
 
 interface BingoPeerMessage {
-	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoRestart' | 'BingoComplete' | 'BingoPing' | 'BingoSync' | 'BingoSettingsUpdate';
+	type: 'BingoJoin' | 'BingoWelcome' | 'BingoStart' | 'BingoRestart' | 'BingoComplete' | 'BingoPing' | 'BingoSync' | 'BingoSettingsUpdate' | 'OpponentFrame';
 	version?: string;
 	board?: BingoSession['board'];
 	settings?: BingoSession['settings'];
@@ -75,6 +75,8 @@ interface BingoPeerMessage {
 	timestamp?: number;
 	playerName?: string;
 	twitchUsername?: string;
+	/** Watch-opponent: slimmed live game state streamed to the peer. */
+	opponent?: { settings: unknown; frame: unknown; score: number[] };
 }
 
 @singleton()
@@ -86,6 +88,11 @@ export class BingoService {
 	private localPlayerName: string = 'Player 1';
 	private pendingOpponentName: string | null = null;
 	private opponentTwitchUsername: string | null = null;
+
+	// Watch-opponent: latest local game settings/score + a throttle for streaming frames.
+	private latestGameSettings: GameStartType | null = null;
+	private latestGameScore: number[] = [0, 0];
+	private lastOpponentStreamAt = 0;
 
 	// Peer connection state
 	private peerSocket: WebSocket | null = null; // active peer WS (either as host or guest)
@@ -212,6 +219,8 @@ export class BingoService {
 						this.applyOpponentCompletion(msg.instanceId);
 					} else if (msg.type === 'BingoPing') {
 						ws.send(JSON.stringify({ type: 'BingoPing' }));
+					} else if (msg.type === 'OpponentFrame' && msg.opponent) {
+						this.messageHandler.sendMessage('OpponentGameState', msg.opponent as Parameters<MessageEvents['OpponentGameState']>[0]);
 					}
 				} catch (err) {
 					this.log.error('Bingo peer message error:', err);
@@ -240,7 +249,12 @@ export class BingoService {
 			if (player?.displayName) this.localPlayerName = player.displayName;
 		});
 
+		this.localEmitter.on('GameScore', (score: number[] | undefined) => {
+			if (score) this.latestGameScore = score;
+		});
+
 		this.localEmitter.on('GameSettings', (settings: GameStartType | undefined) => {
+			this.latestGameSettings = settings ?? null;
 			this.sessionSnapshot = this.takeSessionSnapshot();
 			this.resetGameState();
 			if (!settings || !settings.players?.length) return;
@@ -253,6 +267,9 @@ export class BingoService {
 		});
 
 		this.localEmitter.on('GameFrame', (frame: FrameEntryType | undefined | null) => {
+			// Stream a slimmed copy to the peer so they can watch — even from the lobby
+			// (before a bingo session). Independent of the bingo board processing below.
+			if (frame?.players) this.streamFrameToPeer(frame);
 			if (!this.session || !frame?.players) return;
 			this.processGameFrame(frame);
 		});
@@ -575,6 +592,8 @@ export class BingoService {
 					this.applyOpponentCompletion(msg.instanceId);
 				} else if (msg.type === 'BingoSync' && msg.board) {
 					this.applyHostBoard(msg.board);
+				} else if (msg.type === 'OpponentFrame' && msg.opponent) {
+					this.messageHandler.sendMessage('OpponentGameState', msg.opponent as Parameters<MessageEvents['OpponentGameState']>[0]);
 				}
 			} catch (err) {
 				this.log.error('Bingo peer message error:', err);
@@ -690,6 +709,71 @@ export class BingoService {
 		3: 'up', 4: 'star', 5: 'star',
 		6: 'screen_ko', 7: 'screen_ko', 8: 'screen_ko', 9: 'screen_ko', 10: 'screen_ko',
 	};
+
+	// ── Watch-opponent: stream a slimmed live game state to the peer ──────────────
+
+	/** Throttled (~30fps) stream of this player's game to the peer for live viewing. */
+	private streamFrameToPeer(frame: FrameEntryType) {
+		if (this.peerSocket?.readyState !== WebSocket.OPEN) return;
+		const now = Date.now();
+		if (now - this.lastOpponentStreamAt < 33) return;
+		this.lastOpponentStreamAt = now;
+		try {
+			this.peerSocket.send(JSON.stringify({
+				type: 'OpponentFrame',
+				opponent: {
+					settings: this.slimSettings(this.latestGameSettings),
+					frame: this.slimFrame(frame),
+					score: this.latestGameScore,
+				},
+			} satisfies BingoPeerMessage));
+		} catch { /* ignore */ }
+	}
+
+	/** Keep only the settings fields the live viewer needs. */
+	private slimSettings(s: GameStartType | null) {
+		if (!s) return null;
+		return {
+			stageId: s.stageId,
+			isTeams: s.isTeams ?? false,
+			startingTimerSeconds: s.startingTimerSeconds ?? 480,
+			players: (s.players ?? []).filter(Boolean).map((p) => ({
+				playerIndex: p.playerIndex, characterId: p.characterId, teamId: p.teamId ?? null,
+			})),
+		};
+	}
+
+	/** Strip the frame down to just what GameStateRender + LiveHud read, rounding floats. */
+	private slimFrame(frame: FrameEntryType) {
+		const r = (n: number | null | undefined) => (n == null ? n : Math.round(n * 100) / 100);
+		const players: Record<number, unknown> = {};
+		for (const [idx, p] of Object.entries(frame.players)) {
+			const post = p?.post;
+			if (!post) continue;
+			const pre = p?.pre;
+			players[Number(idx)] = {
+				post: {
+					playerIndex: post.playerIndex, internalCharacterId: post.internalCharacterId,
+					actionStateId: post.actionStateId, actionStateCounter: r(post.actionStateCounter),
+					positionX: r(post.positionX), positionY: r(post.positionY), facingDirection: post.facingDirection,
+					shieldSize: r(post.shieldSize), lCancelStatus: post.lCancelStatus,
+					hurtboxCollisionState: post.hurtboxCollisionState, percent: r(post.percent),
+					stocksRemaining: post.stocksRemaining,
+				},
+				pre: pre ? { joystickX: r(pre.joystickX), joystickY: r(pre.joystickY), trigger: r(pre.trigger) } : undefined,
+			};
+		}
+		const items = (frame.items ?? []).map((it) => ({
+			typeId: it.typeId, state: it.state, facingDirection: it.facingDirection,
+			velocityX: r(it.velocityX), velocityY: r(it.velocityY), positionX: r(it.positionX), positionY: r(it.positionY),
+			missileType: it.missileType, turnipFace: it.turnipFace, chargePower: it.chargePower, owner: it.owner, spawnId: it.spawnId,
+		}));
+		const stageEvents = (frame.stageEvents ?? [])
+			.map((e) => e as { platform?: number | null; height?: number | null })
+			.filter((e) => e && e.platform != null && e.height != null)
+			.map((e) => ({ platform: e.platform, height: r(e.height) }));
+		return { frame: frame.frame, players, items, stageEvents };
+	}
 
 	private processGameFrame(frame: FrameEntryType) {
 		const frameNum = frame.frame ?? 0;

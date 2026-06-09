@@ -32,6 +32,8 @@
 	export let camera: 'static' | 'live' = 'static';
 	/** Extra zoom multiplier applied on top of the live camera. */
 	export let zoom = 1;
+	/** 'contain' letterboxes to fit; 'cover' fills the container (crops overflow). */
+	export let fit: 'contain' | 'cover' = 'contain';
 
 	$: stageId = settings?.stageId ?? null;
 	$: stageData = stageId != null ? STAGE_DATA[stageId] : undefined;
@@ -155,7 +157,7 @@
 </script>
 
 {#if stageId != null}
-	<svg class="w-full h-full" {viewBox}>
+	<svg class="w-full h-full" {viewBox} preserveAspectRatio={fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'}>
 		<g class="-scale-y-100">
 			<g transform={cameraTransform}>
 			{#if showStage}
@@ -167,6 +169,7 @@
 			{#each renderDatas as rd (rd.playerState.playerIndex)}
 				{#if rd.path}
 					<path
+						class:char-invuln={rd.invulnerable}
 						transform={rd.transforms.join(' ')}
 						d={rd.path}
 						fill={rd.innerColor}
@@ -188,6 +191,13 @@
 {/if}
 
 <style>
+	/* Invulnerable / intangible (e.g. respawn platform) — vague opacity blink. */
+	.char-invuln { animation: invuln-blink 0.5s ease-in-out infinite; }
+	@keyframes invuln-blink {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.45; }
+	}
+
 	/* Stage rendered as thin outlines so the character renders read clearly. */
 	.viewer-stage :global(polyline) {
 		fill: none;

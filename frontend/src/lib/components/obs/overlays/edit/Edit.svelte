@@ -8,6 +8,8 @@
 		isOverlayPage,
 		overlays,
 		statsScene,
+		gameFrame,
+		gameSettings,
 	} from '$lib/utils/store.svelte';
 	import BoardEdit from '$lib/components/obs/overlays/edit/BoardEdit.svelte';
 	import {
@@ -15,6 +17,7 @@
 		notifyDisabledScene,
 	} from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
 	import Preview from './Preview.svelte';
+	import GameStateRender from '$lib/components/viewer/GameStateRender.svelte';
 	import ElementModal from '$lib/components/obs/overlays/edit/ElementModal.svelte';
 	import SelectedEditor from './SelectedEditor.svelte';
 	import type { Layer, Overlay, OverlayEditor } from '$lib/models/types/overlay';
@@ -27,7 +30,7 @@
 	import { newId } from '$lib/utils/helper';
 	import { isNil } from 'lodash';
 	import { LiveStatsScene } from '$lib/models/enum';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import ExternalPreviewSettings from '../preview/ExternalPreviewSettings.svelte';
 	import { goto } from '$app/navigation';
 	import { House } from 'lucide-svelte';
@@ -85,6 +88,19 @@
 	});
 
 	let tempBackgroundImage: string = '';
+
+	// Replay test mode: simulate the most recent replay (drives live data so the
+	// elements + preview update in realtime) and show that game as a live-camera
+	// backdrop behind the canvas + preview. One toggle for the whole testing flow.
+	let showDemo = false;
+	function toggleReplay() {
+		showDemo = !showDemo;
+		$electronEmitter.emit(showDemo ? 'SimulateGameStart' : 'SimulateGameEnd');
+	}
+	// Stop the simulation when leaving the editor so it doesn't keep running globally.
+	onDestroy(() => {
+		if (showDemo) $electronEmitter.emit('SimulateGameEnd');
+	});
 
 	let innerWidth: number;
 	let innerHeight: number;
@@ -157,6 +173,11 @@
 							background-size: cover;
 						"
 					>
+						{#if showDemo}
+							<div class="absolute inset-0 z-0 pointer-events-none">
+								<GameStateRender settings={$gameSettings} frame={$gameFrame} camera="live" fit="cover" />
+							</div>
+						{/if}
 						<Preview />
 						<button
 							class="absolute bottom-1.5 right-1.5 z-50 w-4 h-4 opacity-50 hover:opacity-100 transition-opacity"
@@ -165,17 +186,13 @@
 							<img src="/image/button-icons/popup.png" alt="popup" />
 						</button>
 					</div>
-					<!-- Simulate controls -->
-					<div class="flex gap-1 shrink-0">
-						<button
-							class="btn flex-1 text-xs h-7 border-secondary rounded whitespace-nowrap"
-							on:click={() => $electronEmitter.emit('SimulateGameStart')}
-						>▶ Start</button>
-						<button
-							class="btn flex-1 text-xs h-7 border-secondary rounded whitespace-nowrap"
-							on:click={() => $electronEmitter.emit('SimulateGameEnd')}
-						>■ End</button>
-					</div>
+					<!-- Replay test: simulate the recent replay (drives live data) + live-camera backdrop -->
+					<button
+						class="btn shrink-0 text-xs h-7 border-secondary rounded whitespace-nowrap"
+						class:active-toggle={showDemo}
+						title="Replay your most recent game so elements update with real data, with the game shown behind the canvas"
+						on:click={toggleReplay}
+					>{showDemo ? '■ Stop replay' : '▶ Run replay'}</button>
 					<!-- Background image -->
 					<div class="shrink-0">
 						<ExternalPreviewSettings bind:base64={tempBackgroundImage} />
@@ -222,7 +239,7 @@
 							background-image: url('{tempBackgroundImage}');
 						"
 					>
-						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} />
+						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} {showDemo} />
 					</div>
 				</div>
 
@@ -293,5 +310,10 @@
 
 	.toolbar-btn:active {
 		opacity: 0.5;
+	}
+
+	.active-toggle {
+		background: var(--secondary-color);
+		color: var(--primary-color);
 	}
 </style>

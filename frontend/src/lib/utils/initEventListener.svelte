@@ -12,6 +12,7 @@
 		statsScene,
 		urls,
 		gameFrame,
+		opponentGameState,
 		dolphinState,
 		gameState,
 		recentGames,
@@ -72,14 +73,14 @@
 
 	let voteActionNoticeTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// Throttle (not debounce) so frames update at a steady ~30fps instead of being
+	// Throttle (not debounce) so frames update at a steady ~60fps instead of being
 	// dropped during continuous play — debounce could stall to maxWait (~6fps),
 	// which froze fast projectiles. Leading + trailing keeps the latest frame.
 	const throttledSetGameFrame = throttle(
 		(value: Parameters<MessageEvents['GameFrame']>[0]) => {
 			gameFrame.set(value);
 		},
-		33,
+		16,
 	);
 
 	async function messageDataHandler<J extends keyof MessageEvents>(
@@ -182,6 +183,13 @@
 					const value = payload[0] as Parameters<MessageEvents['GameSettings']>[0];
 					if (!value) return;
 					gameSettings.set(value);
+				})();
+				break;
+			case 'OpponentGameState':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['OpponentGameState']>[0];
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					opponentGameState.set(value as any);
 				})();
 				break;
 			case 'GameScore':
@@ -615,16 +623,26 @@
 			);
 		};
 
+		// Keepalive: Tailscale Funnel / proxies drop idle WS after ~60s, causing the
+		// connect/disconnect churn. A periodic ping keeps the connection warm.
+		let keepAlive: ReturnType<typeof setInterval> | null = null;
+		const stopKeepAlive = () => { if (keepAlive) { clearInterval(keepAlive); keepAlive = null; } };
+
 		socket.onopen = async () => {
 			console.log('Websocket connected');
 			wsActive = true;
 			_electronEmitter.offAny(emitElectronMessage);
 			_electronEmitter.onAny(emitElectronMessage);
 			_electronEmitter.emit('Ping');
+			stopKeepAlive();
+			keepAlive = setInterval(() => {
+				if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ Ping: [] }));
+			}, 20000);
 		};
 
 		socket.onclose = () => {
 			wsActive = false;
+			stopKeepAlive();
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
@@ -633,6 +651,7 @@
 
 		return () => {
 			wsActive = false;
+			stopKeepAlive();
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();

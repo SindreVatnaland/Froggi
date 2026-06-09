@@ -37,8 +37,7 @@
 					<p class="modal-label">How to open</p>
 					{#if tab === 'remote' && tsUrl}
 						<ol class="mt-2 flex flex-col gap-1.5 text-xs opacity-75 list-decimal list-inside leading-relaxed">
-							<li>Install <strong>Tailscale</strong> on your phone and sign in</li>
-							<li>Scan the QR code with your phone camera</li>
+							<li>Scan the QR code with your phone camera — works on <strong>any network</strong>, nothing to install</li>
 							<li>Open the link in your browser</li>
 							<li>Tap <strong>Add to Home Screen</strong> for the best experience</li>
 						</ol>
@@ -54,10 +53,10 @@
 				<div class="mt-auto">
 					{#if tab === 'remote' && tsUrl}
 						<p class="text-xs opacity-35 leading-relaxed">
-							Tailscale keeps the URL stable — no need to re-scan if your IP changes.
+							Tailscale Funnel gives a stable public link — no re-scanning when your IP changes.
 						</p>
 						<p class="text-xs opacity-35 leading-relaxed mt-1">
-							⚠ Do not share this URL — it gives access to your Froggi instance.
+							⚠ This is a public URL — anyone with it can <strong>view</strong>. Sending commands still needs your password (Settings → Authorization).
 						</p>
 					{:else}
 						<p class="text-xs opacity-35 leading-relaxed">

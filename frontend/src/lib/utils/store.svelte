@@ -31,6 +31,7 @@
 	import type { BingoSession, BingoLobbyPayload, BingoLeaderboard, BingoVoteState, BingoVoteStates, BingoVoteActionType } from '$lib/models/types/bingo';
 	import type { IronManSession, IronManLobbyPayload, IronManLeaderboard } from '$lib/models/types/ironman';
 	import type { LobbyState } from '$lib/models/types/lobby';
+	import type { ViewerFrame, ViewerSettings } from '$lib/utils/viewer/renderData';
 
 	export const localEmitter = writable<TypedEmitter>(new TypedEmitter());
 	export const electronEmitter = writable<TypedEmitter>(new TypedEmitter());
@@ -76,6 +77,8 @@
 	export const dolphinState = writable<ConnectionState | undefined>(ConnectionState.None);
 	export const froggiSettings = writable<Froggi>({} as Froggi);
 	export const gameFrame = writable<FrameEntryType | null | undefined>({} as FrameEntryType);
+	// Another player's live game, streamed over the peer connection (watch-opponent).
+	export const opponentGameState = writable<{ settings: ViewerSettings | null; frame: ViewerFrame | null; score: number[] } | null>(null);
 	export const gameScore = writable<number[]>([0, 0]);
 	export const gameSettings = writable<GameStartTypeExtended>({} as GameStartTypeExtended);
 	export const gameState = writable<InGameState>(InGameState.Inactive);

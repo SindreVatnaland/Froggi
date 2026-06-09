@@ -37,7 +37,7 @@
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<main class="fixed h-screen w-screen background-primary-color text-secondary-color flex justify-center">
+<main class="h-screen w-full background-primary-color text-secondary-color flex justify-center">
 	<div class="w-full max-w-3xl h-full flex flex-col p-6 gap-0">
 
 		<!-- Header -->

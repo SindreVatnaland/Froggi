@@ -45,7 +45,9 @@ export class MessageHandler {
 	private webSocketWorker: Worker = new Worker(
 		path.join(__dirname, 'workers/websocketWorker.js'),
 	);
-	private expressWss: WebSocketServer = new WebSocketServer({ noServer: true });
+	// perMessageDeflate compresses frames — the repetitive ~2KB GameFrame JSON shrinks
+	// a lot over the wire, so remote viewers at 60fps cost far less bandwidth.
+	private expressWss: WebSocketServer = new WebSocketServer({ noServer: true, perMessageDeflate: true });
 	private expressWsConnections: Map<string, WebSocket> = new Map();
 	readonly bingoPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
 	readonly ironManPeerWss: WebSocketServer = new WebSocketServer({ noServer: true });
@@ -110,8 +112,15 @@ export class MessageHandler {
 
 			if (!this.dev) {
 				this.app.use('/', staticFrontendServe);
-				this.app.use('*', staticFrontendServe);
-				this.app.use((_req: express.Request, res: express.Response) => {
+				// SPA fallback: serve index.html ONLY for navigation requests. Asset/module
+				// requests (anything with a file extension, e.g. /_app/immutable/*.js) that
+				// aren't found must 404 — otherwise the browser receives index.html and fails
+				// with "Importing a module script failed" when it tries to import it as JS.
+				this.app.use((req: express.Request, res: express.Response) => {
+					if (req.method !== 'GET' || path.extname(req.path)) {
+						res.status(404).end();
+						return;
+					}
 					res.sendFile(path.join(this.rootDir, 'build', 'index.html'));
 				});
 			} else {
@@ -156,7 +165,18 @@ export class MessageHandler {
 	}
 
 	private initExpressWebSocket() {
+		// Cap concurrent remote viewers (shared /live, Tailscale/ngrok) so a flood of
+		// connections can't degrade the host's own experience. Local OBS uses port 3100.
+		const MAX_REMOTE_CLIENTS = 5;
 		this.expressWss.on('connection', (socket: WebSocket) => {
+			if (this.expressWsConnections.size >= MAX_REMOTE_CLIENTS) {
+				this.log.info('Express WS rejected — viewer limit reached');
+				try {
+					socket.send(JSON.stringify({ Notification: [`This Froggi stream is full (max ${MAX_REMOTE_CLIENTS} viewers).`, NotificationType.Warning] }));
+				} catch { /* ignore */ }
+				socket.close(1013, 'Stream full');
+				return;
+			}
 			const socketId = newId();
 			this.expressWsConnections.set(socketId, socket);
 			this.log.info('Express WS connected:', socketId);
@@ -170,7 +190,9 @@ export class MessageHandler {
 					const currentMatchId = this.storeLiveStats.getGameSettings()?.matchInfo?.matchId ?? null;
 					const gameMode = this.storeLiveStats.getGameMode();
 					const matchIdValid = Boolean(matchId && currentMatchId && matchId === currentMatchId && gameMode === 'ranked');
-					const keyValid = !serverKey || authKey === serverKey;
+					// A password MUST be set for remote commands — empty no longer means open.
+					const hasServerKey = Boolean(serverKey);
+					const keyValid = hasServerKey && authKey === serverKey;
 					const isAuthorized = matchIdValid || keyValid;
 					const allowUnauth = ['InitData', 'InitElectron', 'InitAuthentication', 'Ping'];
 
@@ -178,11 +200,10 @@ export class MessageHandler {
 						if (['AuthorizationKey', 'MatchId'].includes(key)) continue;
 						if (isAuthorized || allowUnauth.includes(key)) {
 							this.clientEmitter.emit(key as keyof MessageEvents, ...(value as any));
-						} else {
-							if (socket.readyState === WebSocket.OPEN) {
-								socket.send(JSON.stringify({ Notification: ['Unauthorized — enter the host key in Settings → Authorization', NotificationType.Danger] }));
-							}
 						}
+						// Unauthorized commands are dropped silently — clients get a passive
+						// "unauthorized" UI state (Settings → Authorization explains it). No popup
+						// on connect; active command feedback is handled client-side.
 					}
 					this.initData(socketId);
 					this.sendAuthorizedMessage(socketId, authKey, matchId);
@@ -266,8 +287,9 @@ export class MessageHandler {
 	}
 
 	private sendWebsocketMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
-		this.webSocketWorker.postMessage(JSON.stringify({ [topic]: payload }));
+		// Serialize once and reuse for the worker (3100) and every express (3200) client.
 		const msg = JSON.stringify({ [topic]: payload });
+		this.webSocketWorker.postMessage(msg);
 		this.expressWsConnections.forEach((socket) => {
 			if (socket.readyState === WebSocket.OPEN) socket.send(msg);
 		});
@@ -304,7 +326,6 @@ export class MessageHandler {
 	}
 
 	private async initData(socketId: string | undefined = undefined) {
-		console.log("Init Data", socketId)
 		this.sendInitMessage(socketId, 'CurrentPlayer', await this.storeCurrentPlayer.getCurrentPlayer());
 		this.sendInitMessage(socketId, 'CurrentPlayers', this.storePlayers.getCurrentPlayers());
 		this.sendInitMessage(
@@ -358,7 +379,7 @@ export class MessageHandler {
 		const currentMatchId = this.storeLiveStats.getGameSettings()?.matchInfo?.matchId ?? null;
 		const gameMode = this.storeLiveStats.getGameMode();
 		const matchIdValid = Boolean(clientMatchId && currentMatchId && clientMatchId === currentMatchId && gameMode === 'ranked');
-		const keyValid = !serverKey || clientKey === serverKey;
+		const keyValid = Boolean(serverKey) && clientKey === serverKey;
 		const isAuthorized = matchIdValid || keyValid;
 		this.sendInitMessage(socketId, 'Authorize', isAuthorized);
 	}

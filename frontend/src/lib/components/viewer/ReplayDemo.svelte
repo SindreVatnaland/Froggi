@@ -9,6 +9,7 @@
 	 */
 	import { onMount, onDestroy } from 'svelte';
 	import GameStateRender from './GameStateRender.svelte';
+	import LiveHud from './LiveHud.svelte';
 	import { prefetchAnimations } from '$lib/utils/viewer/animationCache';
 	import {
 		toViewerState,
@@ -23,6 +24,8 @@
 	export let loop = true;
 	export let controls = false;
 	export let camera: 'static' | 'live' = 'static';
+	/** Overlay the SlippiLab-style HUD (names, %, stocks, timer) over the gameplay. */
+	export let hud = false;
 
 	interface DemoData {
 		source: string;
@@ -108,6 +111,14 @@
 	<div class="replay-stage">
 		{#if data && current}
 			<GameStateRender settings={data.settings} frame={current} {getStateOnFrame} {camera} />
+			{#if hud}
+				<LiveHud
+					settings={data.settings}
+					frame={current}
+					p1Index={data.settings.players?.[0]?.playerIndex ?? 0}
+					p2Index={data.settings.players?.[1]?.playerIndex ?? 1}
+				/>
+			{/if}
 		{:else}
 			<div class="replay-loading">Loading demo…</div>
 		{/if}

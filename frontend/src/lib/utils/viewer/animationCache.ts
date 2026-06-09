@@ -88,7 +88,8 @@ export async function fetchAnimations(externalCharacterId: number): Promise<Char
 }
 
 async function load(url: string): Promise<CharacterAnimations> {
-	const response = await fetch(url);
+	// ngrok-skip-browser-warning so ngrok viewers get the zip, not the interstitial HTML.
+	const response = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } });
 	const buffer = new Uint8Array(await response.arrayBuffer());
 	const fileBuffers = unzipSync(buffer);
 	return Object.fromEntries(

@@ -9,6 +9,7 @@
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { goto } from '$app/navigation';
 	import ObsIntegration from '$lib/components/obs/ObsIntegration.svelte';
+	import LiveShareCard from '$lib/components/LiveShareCard.svelte';
 	import {
 		controller,
 		currentPlayers,
@@ -386,6 +387,13 @@
 			</div>
 		{/each}
 	</div>
+</div>
+{/if}
+
+<!-- ── Share live game ── -->
+{#if $isElectron}
+<div class="mb-3">
+	<LiveShareCard />
 </div>
 {/if}
 

@@ -27,6 +27,13 @@
 		notifications.success('Authorization key updated', 1500);
 	};
 
+	// Generate a readable random password (no ambiguous chars) and save it.
+	const generateKey = () => {
+		const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+		authKey = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+		updateKey();
+	};
+
 	const saveLogs = () => $electronEmitter.emit('LogsSave');
 	const copyLogs = () => $electronEmitter.emit('LogsCopy');
 
@@ -136,11 +143,21 @@
 			</div>
 			<p class="text-xs opacity-40 mb-3">
 				{#if $isElectron}
-					Set a key that client devices must enter to send commands.
+					This password protects Froggi when you share a link. Anyone can <em>view</em> your
+					overlays/live game, but only devices that enter this password can <em>send commands</em>
+					(switch scenes, run controls, start games). Share it only with people you trust to control
+					Froggi. Stage striking doesn't need it.
 				{:else}
-					Enter the key set on the host device to send commands.
+					Enter the host's password to send commands to their Froggi. You'll find it on the host
+					machine under <strong>Settings → Authorization</strong>. Without it you can still view, but
+					not control.
 				{/if}
 			</p>
+			{#if $isElectron && !authKey.trim()}
+				<p class="text-xs mb-3" style="color: #f59e0b;">
+					⚠ No password set — remote devices can't send commands yet. Set one to enable remote control.
+				</p>
+			{/if}
 			<div class="flex gap-2">
 				<input
 					class="flex-1 text-xs h-8 px-3 background-primary-color text-secondary-color border-secondary rounded"
@@ -150,6 +167,9 @@
 					disabled={!$isElectron && $isAuthorized}
 				/>
 				{#if $isElectron}
+					<button class="btn text-xs h-8 px-3 border-secondary rounded" on:click={generateKey} title="Generate a random password">
+						Generate
+					</button>
 					<button class="btn text-xs h-8 px-4 border-secondary rounded" on:click={updateKey}>
 						Save
 					</button>

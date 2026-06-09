@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthorized } from '$lib/utils/store.svelte';
-	import { Layers, Trophy, Settings, BookOpen, Send } from 'lucide-svelte';
+	import { Layers, Trophy, Settings, BookOpen, Send, PlugZap } from 'lucide-svelte';
 
 	const navItems = [
+		{
+			label: 'Connect OBS',
+			description: 'Get OBS connected — one-click auto setup.',
+			path: '/obs/setup',
+			icon: PlugZap,
+			requiresAuth: false,
+		},
 		{
 			label: 'Overlays',
 			description: 'Manage and preview stream overlays.',

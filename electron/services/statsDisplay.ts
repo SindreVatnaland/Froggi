@@ -664,13 +664,18 @@ export class StatsDisplay {
 
 	private waitWithCancel = (ms: number) => {
 		return new Promise((resolve, reject) => {
-			const timeout = setTimeout(resolve, ms);
-			if (this.abortController) {
-				this.abortController.signal.addEventListener("abort", () => {
-					clearTimeout(timeout);
-					reject(new Error("Simulation canceled"));
-				});
-			}
+			const signal = this.abortController?.signal;
+			const onAbort = () => {
+				clearTimeout(timeout);
+				reject(new Error('Simulation canceled'));
+			};
+			const timeout = setTimeout(() => {
+				// Remove the per-frame abort listener so it doesn't accumulate across
+				// the thousands of frames in a replay (MaxListenersExceededWarning).
+				signal?.removeEventListener('abort', onAbort);
+				resolve(undefined);
+			}, ms);
+			signal?.addEventListener('abort', onAbort, { once: true });
 		});
 	};
 

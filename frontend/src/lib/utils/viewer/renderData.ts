@@ -50,6 +50,8 @@ export interface MinimalPost {
 	shieldSize?: number | null;
 	lCancelStatus?: number | null;
 	hurtboxCollisionState?: number | null;
+	percent?: number | null;
+	stocksRemaining?: number | null;
 }
 /** Minimal pre-frame fields (processed stick + trigger). */
 export interface MinimalPre {
@@ -88,6 +90,7 @@ export interface ViewerFrame {
 export interface ViewerSettings {
 	stageId?: number | null;
 	isTeams?: boolean | null;
+	startingTimerSeconds?: number | null;
 	players: ({ playerIndex?: number | null; characterId?: number | null; teamId?: number | null } | null | undefined)[];
 }
 
@@ -125,6 +128,8 @@ export interface RenderData {
 	characterData: Character;
 	/** Translucent shield bubble while guarding; null otherwise. */
 	shield?: { cx: number; cy: number; r: number; color: string } | null;
+	/** True when invulnerable/intangible (hurtbox not vulnerable) — drives a blink. */
+	invulnerable?: boolean;
 }
 
 export interface RenderOptions {
@@ -212,6 +217,7 @@ export function computeRenderData(
 		],
 		animationName,
 		characterData,
+		invulnerable: state.hurtboxCollisionState !== 0,
 	};
 }
 

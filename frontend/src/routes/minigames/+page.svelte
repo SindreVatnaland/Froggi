@@ -356,6 +356,9 @@
 	$: tailscaleBase = $remoteAccess?.tailscale ?? $urls?.external ?? '';
 	$: _localOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/game-preview` : '';
 	$: localOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/game-preview` : _localOverlayUrl;
+	// Watch-opponent overlay (their live game streamed over the peer).
+	$: _opponentOverlayUrl = $urls?.local ? `${$urls.local.replace(/\/$/, '')}/obs/opponent` : '';
+	$: opponentOverlayUrl = tailscaleBase ? `${tailscaleBase.replace(/\/$/, '')}/obs/opponent` : _opponentOverlayUrl;
 
 	// Win ad (SlippiAd after 10s)
 	let showWinAd = false;
@@ -1157,6 +1160,11 @@
 		<!-- Bingo: OBS / device overlay row -->
 		{#if selectedGame === 'bingo' && localOverlayUrl}
 			<OverlayRow url={localOverlayUrl} qrUrl={localOverlayUrl} title="Game Preview" obsWidth={800} obsHeight={1100} popupWidth={800} popupHeight={1100} active={isActive} />
+		{/if}
+
+		<!-- Bingo: watch the opponent's live game (popup + add-to-OBS, 73:60) -->
+		{#if selectedGame === 'bingo' && opponentOverlayUrl && ($bingoLobby?.opponentConnected || (isActive && opponentConnected))}
+			<OverlayRow url={opponentOverlayUrl} qrUrl={opponentOverlayUrl} title="Watch opponent" obsWidth={730} obsHeight={600} popupWidth={730} popupHeight={600} active={isActive} />
 		{/if}
 
 		<!-- Bingo: guest waiting — OBS options + localhost URL -->

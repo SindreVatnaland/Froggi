@@ -34,6 +34,7 @@ const frames = game.getFrames();
 const minSettings = {
 	stageId: settings.stageId,
 	isTeams: settings.isTeams ?? false,
+	startingTimerSeconds: settings.startingTimerSeconds ?? 480,
 	players: settings.players.filter(Boolean).map((p) => ({
 		playerIndex: p.playerIndex,
 		characterId: p.characterId,
@@ -52,6 +53,8 @@ const minPost = (post) => ({
 	shieldSize: r(post.shieldSize),
 	lCancelStatus: post.lCancelStatus,
 	hurtboxCollisionState: post.hurtboxCollisionState,
+	percent: r(post.percent),
+	stocksRemaining: post.stocksRemaining,
 });
 const minPre = (pre) => ({ joystickX: r(pre.joystickX), joystickY: r(pre.joystickY), trigger: r(pre.trigger) });
 const minItem = (it) => ({

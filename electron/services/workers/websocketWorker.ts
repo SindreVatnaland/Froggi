@@ -3,9 +3,14 @@ import { WEBSOCKET_PORT } from '../../../frontend/src/lib/models/const';
 import type { MessageEvents } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { parentPort } from 'worker_threads';
 import { newId } from '../../utils/functions';
+import { NotificationType } from '../../../frontend/src/lib/models/enum';
 
-const webSocketServer = new WebSocketServer({ port: WEBSOCKET_PORT });
+const webSocketServer = new WebSocketServer({ port: WEBSOCKET_PORT, perMessageDeflate: true });
 const connections: Connection[] = [];
+
+// Local clients (OBS browser sources, same-network devices) get their own,
+// roomier limit than remote viewers — too many still degrades the host.
+const MAX_LOCAL_CLIENTS = 10;
 
 interface Connection {
     socket: WebSocket,
@@ -13,6 +18,14 @@ interface Connection {
 }
 
 webSocketServer.on('connection', (socket: WebSocket) => {
+    if (connections.length >= MAX_LOCAL_CLIENTS) {
+        console.log('Local WS rejected — connection limit reached');
+        try {
+            socket.send(JSON.stringify({ Notification: [`Froggi is at its local connection limit (${MAX_LOCAL_CLIENTS}).`, NotificationType.Warning] }));
+        } catch { /* ignore */ }
+        socket.close(1013, 'Connection limit');
+        return;
+    }
     console.log('New WebSocket Connection');
     const connection: Connection = { socket: socket, id: newId() }
     connections.push(connection);

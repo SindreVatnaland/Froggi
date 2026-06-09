@@ -5,6 +5,8 @@
 		electronEmitter,
 		overlays,
 		statsScene,
+		gameFrame,
+		gameSettings,
 	} from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import Grid from 'svelte-grid';
@@ -17,11 +19,12 @@
 	import { isNil } from 'lodash';
 	import { tick } from 'svelte';
 	import { LiveStatsScene } from '$lib/models/enum';
-	import ReplayDemo from '$lib/components/viewer/ReplayDemo.svelte';
+	import GameStateRender from '$lib/components/viewer/GameStateRender.svelte';
 
-	// Editing aid: play the demo game behind the canvas so elements can be
-	// positioned against live motion. Local-only, never saved to the overlay.
-	let showDemoBackdrop = false;
+	// Editing aid: show the live game (live camera) behind the canvas so elements can
+	// be positioned against real motion. Reads the same live stores the overlay
+	// elements do, so it stays in sync with whatever is playing (incl. a simulated replay).
+	export let showDemo = false;
 
 	const overlayId = $page.params.overlay;
 
@@ -137,19 +140,11 @@
 					style={`font-family: ${curOverlay?.[$statsScene]?.font?.family};`}
 					class="w-full h-full overflow-hidden relative"
 				>
-					{#if showDemoBackdrop}
-						<div class="absolute inset-0 z-0 pointer-events-none opacity-80">
-							<ReplayDemo />
+					{#if showDemo}
+						<div class="absolute inset-0 z-0 pointer-events-none">
+							<GameStateRender settings={$gameSettings} frame={$gameFrame} camera="live" fit="cover" />
 						</div>
 					{/if}
-					<button
-						class="demo-toggle"
-						class:demo-toggle--on={showDemoBackdrop}
-						title="Play a demo game behind the canvas (editing aid only)"
-						on:click={() => (showDemoBackdrop = !showDemoBackdrop)}
-					>
-						{showDemoBackdrop ? '◼ Demo' : '▶ Demo'}
-					</button>
 					<BoardGrid
 						rows={curOverlay.aspectRatio.height * 2}
 						cols={curOverlay.aspectRatio.width * 2}
@@ -193,24 +188,6 @@
 {/if}
 
 <style>
-	.demo-toggle {
-		position: absolute;
-		top: 0.4rem;
-		right: 0.4rem;
-		z-index: 10;
-		font-size: 0.7rem;
-		padding: 0.2rem 0.55rem;
-		border-radius: 0.25rem;
-		border: 1px solid var(--secondary-color);
-		background: rgba(0, 0, 0, 0.45);
-		color: var(--secondary-color);
-		opacity: 0.5;
-		cursor: pointer;
-		transition: opacity 0.12s;
-	}
-	.demo-toggle:hover { opacity: 1; }
-	.demo-toggle--on { opacity: 1; background: color-mix(in srgb, var(--secondary-color) 18%, rgba(0, 0, 0, 0.45)); }
-
 	.resizer {
 		position: absolute;
 		bottom: 0;

@@ -193,6 +193,18 @@ export interface MessageEvents {
 	StopBingo: () => void;
 	BingoLobbyState: (data: BingoLobbyPayload | null) => void;
 	BingoState: (data: BingoStatePayload) => void;
+	/**
+	 * Slimmed live game state of another player, streamed over the peer connection
+	 * so you can watch their game. Kept structural (no viewer-type import) so the
+	 * Electron build doesn't pull in frontend-only deps.
+	 */
+	OpponentGameState: (
+		data: {
+			settings: { stageId?: number | null; isTeams?: boolean | null; startingTimerSeconds?: number | null; players: unknown[] } | null;
+			frame: { frame?: number | null; players: Record<number, unknown>; items?: unknown[]; stageEvents?: unknown[] } | null;
+			score: number[];
+		} | null,
+	) => void;
 	BingoChallengeUpdates: (data: BingoChallengeUpdatePayload) => void;
 	BingoRevert: (message: string) => void;
 	BingoPeerConnect: (hostUrl: string) => void;

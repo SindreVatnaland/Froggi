@@ -12,8 +12,8 @@
 		obsConnection,
 	} from '$lib/utils/store.svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Mobile from '$lib/components/modal/electron/Mobile.svelte';
-	import BackButton from '$lib/components/navbar/BackButton.svelte';
 	import ConnectionStateButton from './ConnectionStateButton.svelte';
 	import ElectronVersionButton from './ElectronVersionButton.svelte';
 	import { tooltip } from 'svooltip';
@@ -71,7 +71,7 @@
 				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
 			>
 				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
-					<BackButton />
+					<!-- back handled by per-page buttons -->
 				</div>
 
 				<div class="flex flex-col gap-2 justify-center flex-1">
@@ -141,7 +141,7 @@
 				class="fixed top-0 left-0 h-screen w-16 m-0 flex flex-col border-r border-secondary-color justify-between py-4 items-center space-y-4 z-50 background-primary-color"
 			>
 				<div class="w-full flex flex-col gap-2 justify-start h-[20%]">
-					<BackButton />
+					<!-- back handled by per-page buttons -->
 				</div>
 				<div class="flex flex-col gap-2 justify-center flex-1">
 					<div class="h-12 w-12 bg-black bg-opacity-30 justify-center items-center rounded-2xl p-1">
@@ -245,32 +245,18 @@
 			</div>
 		{/if}
 	{:else}
-		<!-- Mobile / portrait: bottom bar -->
-		<div
-			in:fly={{ y: 100, duration: 150 }}
-			out:fly={{ y: 100, duration: 400 }}
-			class={`fixed grid justify-center w-screen h-16 m-0 background-primary-color bg-opacity-60 border-t border-secondary-color bottom-0 z-50 p-1 background-primary-color`}
-		>
-			<div
-				class={`flex justify-evenly content-center items-center w-screen ${
-					$isMobile ? 'max-w-lg' : 'max-w-xl'
-				}`}
+		<!-- Mobile / portrait: a single floating Home button. Everything else is
+		     reached from the home page's nav grid, so the bar no longer overlaps content. -->
+		{#if $page.url.pathname !== '/'}
+			<button
+				in:fly={{ y: 60, duration: 150 }}
+				class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center background-primary-color border-secondary text-secondary-color shadow-lg opacity-90 hover:opacity-100"
+				on:click={() => goto('/')}
+				aria-label="Home"
 			>
-				<NavButton click={() => goto('/')}>
-					<House size={22} strokeWidth={1.5} />
-				</NavButton>
-
-				<ConnectionStateButton
-					iconPath="/image/button-icons/obs.png"
-					connectionState={$obsConnection.state}
-					click={() => goto('/obs')}
-				/>
-
-				<NavButton click={() => goto('/settings')}>
-					<Settings size={22} strokeWidth={1.5} />
-				</NavButton>
-			</div>
-		</div>
+				<House size={24} strokeWidth={1.8} />
+			</button>
+		{/if}
 	{/if}
 {/if}
 
