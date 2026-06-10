@@ -134,7 +134,7 @@
 	{:else}
 		<header class="player-header" in:fade={{ duration: 300 }}>
 			<span class="waiting-dot"></span>
-			<span class="text-sm opacity-40">Waiting for Dolphin…</span>
+			<span class="text-sm opacity-40">{$isElectron ? 'Waiting for Dolphin…' : 'Waiting for the host to start a game…'}</span>
 		</header>
 	{/if}
 

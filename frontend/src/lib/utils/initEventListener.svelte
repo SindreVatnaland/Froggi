@@ -565,6 +565,11 @@
 
 	// When WebSocket is active in this window, suppress IPC forwarding to avoid duplicate sends
 	let wsActive = false;
+	// Reconnect backoff: a connection that closes almost immediately means we were rejected
+	// (stream full) or the host is unreachable — back off and give clearer feedback instead
+	// of spamming "Lost connection" every 3s.
+	let wsOpenedAt = 0;
+	let wsReconnectDelay = 3000;
 
 	export const initElectronEvents = async () => {
 		console.log('Initializing electron');
@@ -609,6 +614,7 @@
 			? `wss://${window.location.host}`
 			: `ws://${_page.url.hostname}:${WEBSOCKET_PORT}`;
 		const socket = new WebSocket(wsUrl);
+		wsOpenedAt = Date.now();
 
 		const handleWebSocketMessage = ({ data }: { data: any }) => {
 			const parse = JSON.parse(data);
@@ -657,7 +663,8 @@
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
-			setTimeout(handleClose, 1000);
+			const lifetime = Date.now() - wsOpenedAt;
+			setTimeout(() => handleClose(lifetime), 500);
 		};
 
 		return () => {
@@ -669,11 +676,17 @@
 		};
 	};
 
-	const handleClose = () => {
+	const handleClose = (lifetime: number) => {
 		console.log('Websocket closed');
-		notifications.danger('Lost connection to Froggi', 2000);
-		setTimeout(() => {
-			initWebSocket();
-		}, 3000);
+		if (lifetime < 2500) {
+			// Closed right after connecting → rejected (stream full) or host unreachable.
+			// Back off so we don't hammer it, and say what's actually happening.
+			wsReconnectDelay = Math.min(wsReconnectDelay * 2, 20000);
+			notifications.warning('Froggi stream is full or unavailable — retrying…', 4000);
+		} else {
+			wsReconnectDelay = 3000;
+			notifications.danger('Lost connection to Froggi', 2000);
+		}
+		setTimeout(() => initWebSocket(), wsReconnectDelay);
 	};
 </script>

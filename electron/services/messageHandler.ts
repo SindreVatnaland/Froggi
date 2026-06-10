@@ -178,6 +178,8 @@ export class MessageHandler {
 				return;
 			}
 			const socketId = newId();
+			(socket as WebSocket & { isAlive?: boolean }).isAlive = true;
+			socket.on('pong', () => { (socket as WebSocket & { isAlive?: boolean }).isAlive = true; });
 			this.expressWsConnections.set(socketId, socket);
 			this.log.info('Express WS connected:', socketId);
 
@@ -220,6 +222,22 @@ export class MessageHandler {
 			this.initData(socketId);
 			this.sendAuthorizedMessage(socketId, '');
 		});
+
+		// Heartbeat: mobile backgrounding / Tailscale Funnel drops often kill the socket
+		// without a clean close frame, so the slot would leak and the viewer cap fill up.
+		// Ping each viewer; terminate any that miss a pong (terminate fires 'close' → frees the slot).
+		setInterval(() => {
+			for (const [id, socket] of this.expressWsConnections) {
+				const s = socket as WebSocket & { isAlive?: boolean };
+				if (s.isAlive === false) {
+					this.log.info('Express WS heartbeat timeout — terminating', id);
+					socket.terminate();
+					continue;
+				}
+				s.isAlive = false;
+				try { socket.ping(); } catch { /* ignore */ }
+			}
+		}, 30000);
 	}
 
 	private tryCreatePublicDir(dir: string) {

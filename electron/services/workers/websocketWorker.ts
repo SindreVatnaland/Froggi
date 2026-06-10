@@ -27,13 +27,27 @@ webSocketServer.on('connection', (socket: WebSocket) => {
         return;
     }
     console.log('New WebSocket Connection');
-    const connection: Connection = { socket: socket, id: newId() }
+    const connection: Connection = { socket: socket, id: newId() };
+    (socket as WebSocket & { isAlive?: boolean }).isAlive = true;
+    socket.on('pong', () => { (socket as WebSocket & { isAlive?: boolean }).isAlive = true; });
     connections.push(connection);
     initSocket(socket);
     initData(connection.id);
     console.log("Websocket connections:", connections.length);
 
 });
+
+// Heartbeat: a device that drops without a clean close frame (sleep, network change)
+// would otherwise leak a slot and fill the local cap. Ping each; terminate dead ones
+// (terminate fires 'close' → the connection is spliced out).
+setInterval(() => {
+    for (const conn of [...connections]) {
+        const s = conn.socket as WebSocket & { isAlive?: boolean };
+        if (s.isAlive === false) { conn.socket.terminate(); continue; }
+        s.isAlive = false;
+        try { conn.socket.ping(); } catch { /* ignore */ }
+    }
+}, 30000);
 
 const initSocket = (socket: WebSocket) => {
     socket.addEventListener("message", (message: WebSocket.MessageEvent) => {
