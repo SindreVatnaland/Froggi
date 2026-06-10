@@ -101,7 +101,26 @@ jobs:
 
             - name: install dependencies
               if: steps.cache-deps.outputs.cache-hit != 'true'
-              run: npm ci --legacy-peer-deps --no-audit && npm ci --legacy-peer-deps --no-audit --prefix ./frontend
+              shell: bash
+              run: |
+                  # Harden against transient registry drops (ECONNRESET) seen on the runners.
+                  npm config set fetch-retries 5
+                  npm config set fetch-retry-factor 4
+                  npm config set fetch-retry-mintimeout 20000
+                  npm config set fetch-retry-maxtimeout 120000
+                  npm config set fetch-timeout 600000
+                  ci_retry() {
+                      dir="${1:-.}"
+                      for attempt in 1 2 3; do
+                          npm ci --legacy-peer-deps --no-audit --prefix "$dir" && return 0
+                          echo "npm ci ($dir) failed (attempt $attempt) — cleaning + retrying in 15s..."
+                          rm -rf "$dir/node_modules" 2>/dev/null || true
+                          sleep 15
+                      done
+                      return 1
+                  }
+                  ci_retry .
+                  ci_retry ./frontend
 
             - name: Test
               if: runner.os == 'Linux'
