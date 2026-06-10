@@ -11,6 +11,8 @@ import { ElectronPlayersStore } from './store/storePlayers';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
+import { encryptUrl } from '../../frontend/src/lib/utils/urlCrypto';
+import { app } from 'electron';
 import { debounce, throttle, startCase } from 'lodash';
 import { BUILD_DISCORD_CLIENT_ID } from './reportWebhooks';
 
@@ -23,7 +25,7 @@ export class DiscordRpc {
 	private activeBingoSession: BingoSession | null = null;
 	private activeBingoLobby: BingoLobbyPayload | null = null;
 	private activeIronManSession: IronManSession | null = null;
-	private remoteAccessUrl: string | undefined = undefined;
+	private ngrokUrl: string | undefined = undefined;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -149,8 +151,9 @@ export class DiscordRpc {
 			this.updateActivity();
 		});
 
-		this.localEmitter.on('RemoteAccessStatus', (url: string | undefined) => {
-			this.remoteAccessUrl = url;
+		this.localEmitter.on('RemoteAccessStatus', (url: string | undefined, provider: 'tailscale' | 'ngrok' | undefined) => {
+			// Lobby invites only use ngrok — the join secret is the encrypted ngrok connect code.
+			if (provider === 'ngrok') this.ngrokUrl = url || undefined;
 		});
 
 		this.localEmitter.on('BingoLobbyState', (data: BingoLobbyPayload | null) => {
@@ -189,8 +192,8 @@ export class DiscordRpc {
 	 * Party + join fields for a minigame presence.
 	 * - Discord only shows the "Join" button when secrets.join is paired with a party (id + size).
 	 * - joinSecret is set only for the host and only while there's room (party not full).
-	 * - The join secret is the remote-access URL; the guest receives it via ACTIVITY_JOIN
-	 *   and feeds it straight into BingoPeerConnect.
+	 * - The join secret is the encrypted ngrok connect code (no raw URL); the guest receives
+	 *   it via ACTIVITY_JOIN and feeds it into BingoPeerConnect, which decrypts and connects.
 	 * - Solo sessions get no party (nothing to join).
 	 */
 	private buildPartyJoin(
@@ -202,8 +205,8 @@ export class DiscordRpc {
 			return { partyId: undefined, partySize: undefined, partyMax: undefined, joinSecret: undefined };
 		}
 		const hasRoom = !opponentConnected; // party is 2 max for now
-		const joinSecret = role === 'host' && hasRoom
-			? this.remoteAccessUrl?.replace(/\/$/, '')
+		const joinSecret = role === 'host' && hasRoom && this.ngrokUrl
+			? encryptUrl(this.ngrokUrl.replace(/\/$/, ''), app.getVersion())
 			: undefined;
 		return {
 			partyId: `froggi-${gameKey}`,
@@ -214,8 +217,8 @@ export class DiscordRpc {
 	}
 
 	private setLobbyActivity(lobby: BingoLobbyPayload) {
-		// Only the host has a remote-access URL, so its presence is the joinable one.
-		const role = this.remoteAccessUrl ? 'host' : 'guest';
+		// Only the host has an ngrok URL, so its presence is the joinable one.
+		const role = this.ngrokUrl ? 'host' : 'guest';
 		const party = this.buildPartyJoin('bingo-lobby', role, lobby.opponentConnected);
 		const state = lobby.opponentConnected
 			? `${shortName(lobby.opponentName)} connected`

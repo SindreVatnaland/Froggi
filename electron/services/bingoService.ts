@@ -7,6 +7,7 @@ import type { FrameEntryType, GameStartType } from '@slippi/slippi-js';
 import type { StatsType } from '@slippi/slippi-js/dist/stats/common';
 import WebSocket from 'ws';
 import { TypedEmitter, type MessageEvents } from '../../frontend/src/lib/utils/customEventEmitter';
+import { decryptUrl, isEncryptedHash } from '../../frontend/src/lib/utils/urlCrypto';
 import { scopedLog } from '../utils/logger';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
@@ -387,7 +388,10 @@ export class BingoService {
 		});
 
 		this.clientEmitter.on('BingoPeerConnect', (hostUrl: string) => {
-			this.connectToHost(hostUrl);
+			// May be a raw URL (frontend already decrypted) or an encrypted connect code
+			// (Discord ACTIVITY_JOIN passes the code straight through) — decrypt the latter.
+			const url = isEncryptedHash(hostUrl) ? decryptUrl(hostUrl, this.app.getVersion()) : hostUrl;
+			this.connectToHost(url);
 		});
 
 		this.clientEmitter.on('BingoDevSimulate', (instanceId: string, player: 'local' | 'opponent') => {
