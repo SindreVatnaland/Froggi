@@ -15,6 +15,10 @@ import type { LobbyPlayer, LobbyState, MinigameType, LobbyPeerMessage } from '..
 import type { BingoLobbyPayload, BingoStatePayload } from '../../frontend/src/lib/models/types/bingo';
 import type { IronManLobbyPayload, IronManStatePayload } from '../../frontend/src/lib/models/types/ironman';
 
+// Static landing page (GitHub Pages). Its /join.html?code= bounces to the froggi://
+// deep link — Discord won't linkify froggi:// directly, so the invite points here.
+const FROGGI_LANDING = 'https://sindrevatnaland.github.io/Froggi/';
+
 /**
  * Game-agnostic lobby and peer transport.
  *
@@ -49,6 +53,8 @@ export class LobbyService {
 	// Public invite (Discord webhook). Posted on host open, deleted on start/stop.
 	private readonly inviteWebhook = process.env.DISCORD_PUBLIC_GAME_WEBHOOK?.trim() || BUILD_PUBLIC_GAME_WEBHOOK || '';
 	private inviteMessageId: string | null = null;
+	// Guards the async POST so rapid-fire lobby events can't post twice (orphaning a message).
+	private invitePosting = false;
 
 	// Bingo/Iron Man host lobby (hosting stays in those services — this only lets the
 	// public invite track a host lobby). gameActive = a session is running.
@@ -209,17 +215,14 @@ export class LobbyService {
 		this.emitState();
 	}
 
-	/** Host toggles public hosting. On → post a Discord invite (anyone can join); off → remove it. */
+	/** Host toggles public hosting. On → post a Discord invite (anyone can join); off → remove it.
+	 *  Posts immediately (the host has an ngrok tunnel + connect code even before picking a game);
+	 *  onMinigameLobby then keeps the spot count current. */
 	private setPublic(isPublic: boolean) {
 		if (isPublic === this.isPublic) return;
 		this.isPublic = isPublic;
-		// Post/delete now if a lobby is open; otherwise remember the intent — onMinigameLobby
-		// posts once the host picks a game and the lobby opens.
-		const hasLobby = (this.isHost && this.active) || (!!this.minigameHost && !this.minigameHost.gameActive);
-		if (hasLobby) {
-			if (isPublic) void this.postInvite();
-			else void this.deleteInvite();
-		}
+		if (isPublic) void this.postInvite();
+		else void this.deleteInvite();
 		this.emitState();
 	}
 
@@ -303,15 +306,18 @@ export class LobbyService {
 		// ngrok-only — keeps the connect code consistent with the RPC join secret.
 		const ngrok = this.messageHandler.getNgrokUrl();
 		const code = ngrok ? encryptUrl(ngrok.replace(/\/$/, ''), this.app.getVersion()) : '';
-		const deepLink = `froggi://join/${code}`;
+		// Discord won't linkify a froggi:// URL, so the clickable link points at a static
+		// landing page (https) that bounces to froggi://join/<code> + offers a download.
+		const joinLink = `${FROGGI_LANDING}join.html?code=${encodeURIComponent(code)}`;
 		const maxPlayers = this.minigameHost?.maxPlayers ?? this.maxPlayers;
-		const playerCount = this.minigameHost?.players ?? this.players.length;
+		// Default to 1 (the host) before a game/lobby exists, so a fresh post reads "1 of 2".
+		const playerCount = this.minigameHost?.players ?? (this.active ? this.players.length : 1);
 		const spots = Math.max(0, maxPlayers - playerCount);
 		const full = spots === 0 || !code;
 		// Drop the join link once the lobby is full so no one else clicks in.
 		const joinLines = full
 			? '**Lobby full** — no spots left.'
-			: `[Click here to join](${deepLink})\n` +
+			: `**[▶ Click here to join](${joinLink})**\n` +
 			  `or paste this code in Froggi → Minigames → Join:\n\`${code}\``;
 		return {
 			title: '🐸 Froggi lobby open',
@@ -324,13 +330,15 @@ export class LobbyService {
 		};
 	}
 
-	/** Post the public invite to the Discord channel. No-op without a webhook or active tunnel. */
+	/** Post the public invite to the Discord channel. No-op without a webhook or active tunnel.
+	 *  `invitePosting` prevents a second POST while the first is in flight (rapid lobby events). */
 	private async postInvite() {
-		if (!this.inviteWebhook || this.inviteMessageId) return;
+		if (!this.inviteWebhook || this.inviteMessageId || this.invitePosting) return;
 		if (!this.messageHandler.getNgrokUrl()) {
 			this.log.info('Public invite skipped — no ngrok tunnel active');
 			return;
 		}
+		this.invitePosting = true;
 		try {
 			const res = await fetch(`${this.inviteWebhook}?wait=true`, {
 				method: 'POST',
@@ -346,6 +354,8 @@ export class LobbyService {
 			this.log.info('Public invite posted', this.inviteMessageId);
 		} catch (err) {
 			this.log.warn('Public invite POST error:', err);
+		} finally {
+			this.invitePosting = false;
 		}
 	}
 

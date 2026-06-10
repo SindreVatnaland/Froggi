@@ -240,7 +240,9 @@ Two distinct host paths exist — do not conflate them:
 
 **Public invite (Discord channel).** `lobbyService` owns the webhook (`BUILD_PUBLIC_GAME_WEBHOOK` / `DISCORD_PUBLIC_GAME_WEBHOOK`) and the `postInvite`/`updateInvite`/`deleteInvite`/`buildInviteEmbed` lifecycle. It drives the post off the **minigame host lobby** by listening to `BingoLobbyState`/`IronManLobbyState` (post + update spots) and `BingoState`/`IronManState` (delete on game start, which also clears `isPublic`). `SetLobbyPublic` toggles it; toggling before a game is picked records the intent and posts once the lobby opens. The embed drops the join link when the lobby is full.
 
-**Join routing (unified).** A `froggi://join/<code>` deep link (`main.ts handleDeepLink`) and the Discord RPC Join (`ACTIVITY_JOIN`) both emit `JoinWithCode(code)` to the renderer → the minigames page runs the normal `joinGame(code)` (decrypts, fetches `/lobby-info`, connects to bingo **or** iron man). Host-side invite surfaces (clickable URL + Public toggle) live in `HostInviteRow.svelte`, rendered beside the Share Code in the minigames host blocks; the toggle state is owned by the page (`invitePublic`) so it survives the host→game remount.
+**Join routing (unified).** A `froggi://join/<code>` deep link (`main.ts handleDeepLink`) and the Discord RPC Join (`ACTIVITY_JOIN`) both emit `JoinWithCode(code)` to the renderer → the minigames page runs the normal `joinGame(code)` (decrypts, fetches `/lobby-info`, connects to bingo **or** iron man). `joinGame` blocks self-joins (code resolving to one of our own URLs). Host-side invite surfaces (clickable URL + Public toggle) live in `HostInviteRow.svelte`, rendered beside the Share Code in the minigames host blocks; the toggle state is owned by the page (`invitePublic`) so it survives the host→game remount.
+
+Discord **will not linkify `froggi://`**, so the channel-post embed's clickable link points at the static landing page `docs/join.html?code=<code>` (GitHub Pages), which bounces to `froggi://join/<code>` and offers a download fallback. `postInvite` is guarded by `invitePosting` against double-posting on rapid lobby events.
 
 ### Minigame standards
 

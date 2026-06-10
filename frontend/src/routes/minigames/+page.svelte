@@ -150,6 +150,15 @@
 			baseUrl = isEncryptedHash(raw) ? decryptUrl(raw, version) : raw;
 			baseUrl = baseUrl.replace(/\/$/, '');
 			console.log('[Froggi] Join decrypt — input:', raw, '→ url:', baseUrl);
+			// You can't join your own lobby — bail if the code resolves to one of our own URLs.
+			const ownBases = [$remoteAccess?.ngrok, $remoteAccess?.tailscale, $urls?.external, $urls?.local]
+				.filter((u): u is string => !!u)
+				.map((u) => u.replace(/\/$/, ''));
+			if (ownBases.includes(baseUrl)) {
+				joinError = "That's your own invite link — send it to someone else to join.";
+				joinConnecting = false;
+				return;
+			}
 			const res = await fetch(baseUrl + '/lobby-info', {
 				headers: { 'ngrok-skip-browser-warning': 'true' },
 			});

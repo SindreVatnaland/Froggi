@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join a Froggi lobby</title>
+  <link rel="icon" type="image/png" href="icon.png" />
+  <meta name="robots" content="noindex" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f4f5f7; --surface: #ffffff; --border: rgba(0,0,0,0.08);
+      --text: #111111; --muted: rgba(0,0,0,0.4); --accent: #40DCA5; --accent-dark: #2bb88a;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 0.6rem;
+      padding: 2rem 1.75rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      width: 100%; max-width: 420px; text-align: center;
+    }
+    .app-icon { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 1rem; }
+    h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+    p.sub { margin-top: 0.5rem; font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
+    .btn {
+      display: inline-block; margin-top: 1.25rem; background: var(--accent); color: #000;
+      font-weight: 700; font-size: 0.9rem; padding: 0.65rem 1.5rem; border-radius: 0.35rem;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-dark); }
+    .code-box {
+      margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--muted); line-height: 1.6;
+    }
+    code {
+      display: block; margin-top: 0.5rem; padding: 0.6rem 0.75rem;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 0.3rem;
+      font-size: 0.7rem; word-break: break-all; color: var(--text); user-select: all;
+    }
+    .download { margin-top: 1.25rem; font-size: 0.75rem; }
+    .download a { color: var(--accent-dark); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="app-icon" src="icon.png" alt="Froggi" />
+    <h1>Join a Froggi lobby</h1>
+    <p class="sub" id="status">Opening Froggi…</p>
+
+    <a class="btn" id="open-btn" href="#">Open Froggi</a>
+
+    <div class="code-box" id="code-box">
+      Froggi didn't open? Paste this code in <strong>Froggi → Minigames → Join</strong>:
+      <code id="code"></code>
+    </div>
+
+    <p class="download">
+      Don't have Froggi? <a href="https://sindrevatnaland.github.io/Froggi/">Download it here</a>.
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var code = new URLSearchParams(location.search).get('code') || '';
+      var deepLink = code ? 'froggi://join/' + code : '';
+      var openBtn = document.getElementById('open-btn');
+      var codeEl = document.getElementById('code');
+      var status = document.getElementById('status');
+
+      if (!code) {
+        status.textContent = 'This invite link is missing its code.';
+        openBtn.classList.add('hidden');
+        document.getElementById('code-box').classList.add('hidden');
+        return;
+      }
+
+      codeEl.textContent = code;
+      openBtn.href = deepLink;
+      // Try to open the desktop app automatically.
+      window.location.href = deepLink;
+    })();
+  </script>
+</body>
+</html>
