@@ -269,9 +269,9 @@
 	.dot-connected { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
 
 	/* ── Body ── */
-	.body { flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem; max-width: 720px; width: 100%; margin: 0 auto; }
+	.body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 1.25rem; max-width: 720px; width: 100%; margin: 0 auto; }
 	.section-label { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.3; font-weight: 600; margin-bottom: 0.6rem; }
-	.nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; }
+	.nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem; flex-shrink: 0; }
 	.nav-card {
 		display: flex; align-items: center; gap: 0.65rem;
 		padding: 0.85rem 0.9rem; border-radius: 0.4rem; cursor: pointer;
@@ -281,7 +281,7 @@
 	.nav-card:hover { background: color-mix(in srgb, var(--secondary-color) 8%, transparent); transform: translateY(-1px); }
 	.nav-label { font-size: 0.85rem; font-weight: 600; }
 	.nav-desc { font-size: 0.65rem; opacity: 0.38; }
-	.obs-status { display: flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.75rem; border-radius: 0.35rem; margin-top: 0.75rem; width: 100%; }
+	.obs-status { display: flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.75rem; border-radius: 0.35rem; margin-top: 0.75rem; width: 100%; flex-shrink: 0; }
 	.obs-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,0.2); }
 	.obs-ok { background: #4ade80; box-shadow: 0 0 5px #4ade80; }
 	.obs-lbl { font-size: 0.72rem; font-weight: 600; }
@@ -336,10 +336,10 @@
 	.live-explain { font-size: 0.75rem; opacity: 0.6; line-height: 1.45; }
 
 	/* ── Recent games feed (desktop) ── */
-	.empty-feed { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; gap: 0.4rem; opacity: 0.35; }
+	.empty-feed { display: flex; flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; gap: 0.4rem; opacity: 0.35; }
 	.empty-icon { font-size: 1.8rem; }
 	.empty-text { font-size: 0.78rem; text-align: center; }
-	.feed { display: flex; flex-direction: column; gap: 0.2rem; }
+	.feed { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; min-height: 0; overflow-y: auto; }
 	.feed-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.55rem; border-radius: 0.3rem; background: rgba(255,255,255,0.02); transition: background 0.1s; }
 	.feed-row:hover { background: rgba(255,255,255,0.05); }
 	.feed-win { border-left: 2px solid rgba(74, 222, 128, 0.4); }

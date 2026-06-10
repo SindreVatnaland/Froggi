@@ -400,6 +400,11 @@ export class MessageHandler {
 	getRemoteAccessUrl(): string | undefined {
 		return this.tailscaleUrl ?? this.ngrokUrl;
 	}
+
+	/** ngrok URL only — used for the public lobby invite / connect code (kept consistent with the RPC join secret). */
+	getNgrokUrl(): string | undefined {
+		return this.ngrokUrl;
+	}
 	private tailscaleBin: string | undefined = undefined;
 	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
 

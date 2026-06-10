@@ -52,7 +52,9 @@
 		lobbyState,
 		ironManLeaderboard,
 		ironManCurrentChar,
+		pendingJoinCode,
 	} from '$lib/utils/store.svelte';
+	import { goto } from '$app/navigation';
 	import {
 		getAuthorizationKey,
 		getElectronEmitter,
@@ -529,6 +531,15 @@
 				(() => {
 					const value = payload[0] as Parameters<MessageEvents['LobbyState']>[0];
 					lobbyState.set(value ?? null);
+				})();
+				break;
+			case 'JoinWithCode':
+				(() => {
+					const code = payload[0] as Parameters<MessageEvents['JoinWithCode']>[0];
+					if (!code) return;
+					// Hand off to the minigames page, which runs the normal connect-code join.
+					pendingJoinCode.set(code);
+					goto('/minigames');
 				})();
 				break;
 			case 'IronManState':

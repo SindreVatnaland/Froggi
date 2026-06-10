@@ -3,7 +3,7 @@
 		bingoSession, bingoLobby, electronEmitter, currentPlayer,
 		urls, remoteAccess, ngrokStatus, bingoRevertMessage, bingoLeaderboard,
 		ironManSession, ironManLobby, ironManLeaderboard, ironManCurrentChar,
-		froggiSettings, twitchUsername, bingoVoteState,
+		froggiSettings, twitchUsername, bingoVoteState, pendingJoinCode,
 	} from '$lib/utils/store.svelte';
 	import { encryptUrl, decryptUrl, isEncryptedHash } from '$lib/utils/urlCrypto';
 	import { fly } from 'svelte/transition';
@@ -20,6 +20,7 @@
 	import SlippiAd from '$lib/components/SlippiAd.svelte';
 	import OverlayRow from '$lib/components/OverlayRow.svelte';
 	import NgrokShareRow from '$lib/components/NgrokShareRow.svelte';
+	import HostInviteRow from '$lib/components/HostInviteRow.svelte';
 
 	type Game = 'bingo' | 'ironman';
 	type Mode = 'solo' | 'host' | 'guest';
@@ -38,6 +39,15 @@
 	let isPollingForHost = false;
 	let hostPollTimer: ReturnType<typeof setInterval> | null = null;
 	let showJoinView = false;
+	// Public-invite toggle state — owned here so it survives HostInviteRow's remount
+	// when the host picks a game (host entry → per-game block).
+	let invitePublic = false;
+
+	function resetInvite() {
+		if (!invitePublic) return;
+		invitePublic = false;
+		$electronEmitter.emit('SetLobbyPublic', false);
+	}
 
 	function enterHostMode() {
 		connMode = 'host';
@@ -47,6 +57,7 @@
 	function leaveHostMode() {
 		if (inLobby || isActive) { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
 		if (imInLobby || imIsActive) { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		resetInvite();
 		connMode = 'idle';
 		selectedGame = null;
 	}
@@ -65,6 +76,7 @@
 	function hostBackFromGame() {
 		if (selectedGame === 'bingo') { connecting = false; showingRestartSettings = false; $electronEmitter.emit('StopBingo'); }
 		else if (selectedGame === 'ironman') { imConnecting = false; $electronEmitter.emit('StopIronMan'); }
+		resetInvite();
 		selectedGame = null;
 	}
 
@@ -436,6 +448,19 @@
 		$electronEmitter.emit('GetIronManLeaderboard');
 		$electronEmitter.emit('GetTwitchUsername');
 	});
+
+	// A froggi://join/<code> deep link or Discord "Join" landed here — run the normal
+	// connect-code join (which detects bingo/ironman via /lobby-info).
+	$: if ($pendingJoinCode) acceptPendingJoin($pendingJoinCode);
+	function acceptPendingJoin(code: string) {
+		pendingJoinCode.set(null);
+		joinHash = code;
+		showJoinView = true;
+		void joinGame();
+	}
+
+	// Game start clears the public invite backend-side; keep the host UI toggle in sync.
+	$: if (isActive || imIsActive) invitePublic = false;
 
 	// ── Vote banner ──────────────────────────────────────────────────────────
 	$: vote = $bingoVoteState;
@@ -999,6 +1024,7 @@
 			{:else if connMode === 'host'}
 				<!-- Host: share code + game cards -->
 				<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
+				<HostInviteRow code={shareCode} bind:isPublic={invitePublic} />
 				<p class="conn-hint">Share the code with a friend, then pick a game below.</p>
 				<div class="game-grid">
 					<button class="game-card border-secondary" on:click={hostSelectBingo}>
@@ -1155,6 +1181,7 @@
 		<!-- Bingo: host share code -->
 		{#if selectedGame === 'bingo' && !isActive && connMode === 'host'}
 			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
+			<HostInviteRow code={shareCode} bind:isPublic={invitePublic} />
 		{/if}
 
 		<!-- Bingo: OBS / device overlay row -->
@@ -1403,6 +1430,7 @@
 		<!-- Iron Man: host share code (before char picker) -->
 		{#if selectedGame === 'ironman' && connMode === 'host' && !imIsActive}
 			<NgrokShareRow shareUrl={shareCode} label="Share Code" copyLabel="Copy Code" />
+			<HostInviteRow code={shareCode} bind:isPublic={invitePublic} />
 		{/if}
 
 		<!-- Iron Man: OBS / device overlay — under rules -->

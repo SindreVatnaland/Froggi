@@ -12,6 +12,8 @@ import { scopedLog } from '../utils/logger';
 import { newId } from '../utils/functions';
 import type { CurrentPlayer } from '../../frontend/src/lib/models/types/slippiData';
 import type { LobbyPlayer, LobbyState, MinigameType, LobbyPeerMessage } from '../../frontend/src/lib/models/types/lobby';
+import type { BingoLobbyPayload, BingoStatePayload } from '../../frontend/src/lib/models/types/bingo';
+import type { IronManLobbyPayload, IronManStatePayload } from '../../frontend/src/lib/models/types/ironman';
 
 /**
  * Game-agnostic lobby and peer transport.
@@ -48,6 +50,10 @@ export class LobbyService {
 	private readonly inviteWebhook = process.env.DISCORD_PUBLIC_GAME_WEBHOOK?.trim() || BUILD_PUBLIC_GAME_WEBHOOK || '';
 	private inviteMessageId: string | null = null;
 
+	// Bingo/Iron Man host lobby (hosting stays in those services — this only lets the
+	// public invite track a host lobby). gameActive = a session is running.
+	private minigameHost: { players: number; maxPlayers: number; gameActive: boolean } | null = null;
+
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('App') private app: App,
@@ -81,6 +87,13 @@ export class LobbyService {
 		this.clientEmitter.on('LeaveLobby', () => this.leaveLobby());
 		this.clientEmitter.on('StartMinigame', () => this.startMinigame());
 		this.clientEmitter.on('SetLobbyPublic', (isPublic: boolean) => this.setPublic(isPublic));
+
+		// The public invite also covers the bingo/ironman host lobby — those services
+		// own hosting, we just mirror their lobby/session state to drive the Discord post.
+		this.localEmitter.on('BingoLobbyState', (lobby: BingoLobbyPayload | null) => this.onMinigameLobby(lobby));
+		this.localEmitter.on('IronManLobbyState', (lobby: IronManLobbyPayload | null) => this.onMinigameLobby(lobby));
+		this.localEmitter.on('BingoState', (data: BingoStatePayload) => this.onMinigameSession(!!data?.session));
+		this.localEmitter.on('IronManState', (data: IronManStatePayload) => this.onMinigameSession(!!data?.session));
 	}
 
 	// ── Host: accept incoming peers ────────────────────────────────────────────
@@ -198,12 +211,43 @@ export class LobbyService {
 
 	/** Host toggles public hosting. On → post a Discord invite (anyone can join); off → remove it. */
 	private setPublic(isPublic: boolean) {
-		if (!this.isHost || !this.active) return;
 		if (isPublic === this.isPublic) return;
 		this.isPublic = isPublic;
-		if (isPublic) void this.postInvite();
-		else void this.deleteInvite();
+		// Post/delete now if a lobby is open; otherwise remember the intent — onMinigameLobby
+		// posts once the host picks a game and the lobby opens.
+		const hasLobby = (this.isHost && this.active) || (!!this.minigameHost && !this.minigameHost.gameActive);
+		if (hasLobby) {
+			if (isPublic) void this.postInvite();
+			else void this.deleteInvite();
+		}
 		this.emitState();
+	}
+
+	/** Mirror a bingo/ironman host lobby so the public invite tracks it (post/update/delete). */
+	private onMinigameLobby(lobby: BingoLobbyPayload | IronManLobbyPayload | null) {
+		if (!lobby) {
+			// Host stopped — tear down the invite and forget the lobby.
+			if (this.minigameHost) {
+				this.minigameHost = null;
+				this.isPublic = false;
+				void this.deleteInvite();
+			}
+			return;
+		}
+		this.minigameHost = { players: 1 + (lobby.opponentConnected ? 1 : 0), maxPlayers: 2, gameActive: false };
+		if (this.isPublic) {
+			if (this.inviteMessageId) void this.updateInvite();
+			else void this.postInvite();
+		}
+	}
+
+	/** A minigame session started/ended — pull the invite while a game is live. */
+	private onMinigameSession(active: boolean) {
+		if (!this.minigameHost) return;
+		this.minigameHost.gameActive = active;
+		// Game started: remove the post and reset public so it stays in sync with the
+		// host UI (which resets its toggle). Host can re-toggle public on the next lobby.
+		if (active) { this.isPublic = false; void this.deleteInvite(); }
 	}
 
 	/** Local Dolphin connection changed — reflect it in the roster (host) or report it (guest). */
@@ -256,27 +300,35 @@ export class LobbyService {
 
 	/** Build the invite embed from current lobby state (host name, spots left, version, join link). */
 	private buildInviteEmbed() {
-		const remoteUrl = this.messageHandler.getRemoteAccessUrl();
-		const code = remoteUrl ? encryptUrl(remoteUrl, this.app.getVersion()) : '';
+		// ngrok-only — keeps the connect code consistent with the RPC join secret.
+		const ngrok = this.messageHandler.getNgrokUrl();
+		const code = ngrok ? encryptUrl(ngrok.replace(/\/$/, ''), this.app.getVersion()) : '';
 		const deepLink = `froggi://join/${code}`;
-		const spots = Math.max(0, this.maxPlayers - this.players.length);
+		const maxPlayers = this.minigameHost?.maxPlayers ?? this.maxPlayers;
+		const playerCount = this.minigameHost?.players ?? this.players.length;
+		const spots = Math.max(0, maxPlayers - playerCount);
+		const full = spots === 0 || !code;
+		// Drop the join link once the lobby is full so no one else clicks in.
+		const joinLines = full
+			? '**Lobby full** — no spots left.'
+			: `[Click here to join](${deepLink})\n` +
+			  `or paste this code in Froggi → Minigames → Join:\n\`${code}\``;
 		return {
 			title: '🐸 Froggi lobby open',
 			description:
 				`**${this.localPlayerName}** is hosting a lobby.\n\n` +
-				`**Spots:** ${spots} of ${this.maxPlayers} open\n` +
+				`**Spots:** ${spots} of ${maxPlayers} open\n` +
 				`**Version:** ${this.app.getVersion()}\n\n` +
-				`[Click here to join](${deepLink})\n` +
-				`or paste this code in Froggi → Minigames → Join:\n\`${code}\``,
-			color: spots > 0 ? 0x4ade80 : 0xf59e0b,
+				joinLines,
+			color: full ? 0xf59e0b : 0x4ade80,
 		};
 	}
 
 	/** Post the public invite to the Discord channel. No-op without a webhook or active tunnel. */
 	private async postInvite() {
 		if (!this.inviteWebhook || this.inviteMessageId) return;
-		if (!this.messageHandler.getRemoteAccessUrl()) {
-			this.log.info('Public invite skipped — no remote tunnel active');
+		if (!this.messageHandler.getNgrokUrl()) {
+			this.log.info('Public invite skipped — no ngrok tunnel active');
 			return;
 		}
 		try {

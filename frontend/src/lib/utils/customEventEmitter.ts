@@ -254,6 +254,9 @@ export interface MessageEvents {
 	LobbyState: (state: LobbyState | null) => void;
 	/** Internal (Electron-only): lobby hands a started game off to its minigame service. */
 	LobbyStartMinigame: (data: { game: MinigameType; players: LobbyPlayer[] }) => void;
+	/** Electron → renderer: a froggi://join/<code> deep link or Discord "Join" was activated.
+	 *  The renderer routes it through the normal connect-code join (detects bingo/ironman). */
+	JoinWithCode: (code: string) => void;
 	/** Internal (Electron-only): a minigame-scoped peer message routed to its service. */
 	LobbyPeerMessage: (msg: { scope: MinigameType; type: string; payload?: unknown; fromPlayerId: string | null }) => void;
 

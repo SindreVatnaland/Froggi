@@ -10,7 +10,6 @@ import windowStateManager from 'electron-window-state';
 import path from 'path';
 import os from 'os';
 import { TypedEmitter } from '../frontend/src/lib/utils/customEventEmitter';
-import { decryptUrl, isEncryptedHash } from '../frontend/src/lib/utils/urlCrypto';
 
 import { AutoUpdater } from './services/autoUpdater';
 import { MessageHandler } from './services/messageHandler';
@@ -253,8 +252,9 @@ try {
 			pendingDeepLink = rawUrl;
 			return;
 		}
-		const hostUrl = isEncryptedHash(code) ? decryptUrl(code, app.getVersion()) : code;
-		clientEmitter.emit('PeerConnect', hostUrl);
+		// Route through the normal connect-code join so it lands in the right game
+		// (bingo/ironman, detected via /lobby-info) — same path as pasting the code.
+		container.resolve(MessageHandler).sendMessage('JoinWithCode', code);
 		if (mainWindow) {
 			if (mainWindow.isMinimized()) mainWindow.restore();
 			mainWindow.show();

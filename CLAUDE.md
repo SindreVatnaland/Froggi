@@ -228,7 +228,19 @@ No page-level transitions (`in:fade`, `out:fade`, `in:fly`, `out:fly` on `<main>
 
 ### Discord RPC
 
-`electron/services/discord.ts` — active in all modes (dev included). `updateActivity()` is throttled to 1 call/2s via lodash `throttle`. Bingo presence shows 2 buttons (one per player) with their progress percentage; both link to `FROGGI_URL`. Iron Man presence follows the same pattern.
+`electron/services/discord.ts` — active in all modes (dev included). `updateActivity()` is throttled to 1 call/2s via lodash `throttle`. While hosting a minigame lobby with a spot open, the presence carries a `joinSecret` (the encrypted **ngrok** connect code, built in `buildPartyJoin`) so Discord shows a native **Join** button; otherwise it shows a single **Get Froggi** button (`FROGGI_URL`). A friend clicking Join fires `ACTIVITY_JOIN` → `messageHandler.sendMessage('JoinWithCode', code)` (see Lobby & invites). Iron Man follows the same pattern.
+
+### Lobby & public invites
+
+Two distinct host paths exist — do not conflate them:
+- **Per-minigame host** (`bingoService` / `ironmanService`, events `BingoStartLobby` / `IronManStartLobby`): what the minigames page actually uses. Host owns all state; guests join by connect code and report their own progress. Each owns its own peer WebSocket.
+- **Generic lobby** (`lobbyService`, `StartLobby` + `/peer` transport): game-agnostic, reachable only from the unlinked `/lobby` route. Its `LobbyStartMinigame` handoff is **not** wired to the minigame services — today `lobbyService` matters as the **invite owner**, not an active hosting path.
+
+**Connect code** = `encryptUrl(ngrokUrl, app.getVersion())` — ngrok only, kept consistent across the Share Code, the `froggi://join` link, and the RPC join secret. Use `messageHandler.getNgrokUrl()` for invites; do **not** use `getRemoteAccessUrl()` (prefers Tailscale).
+
+**Public invite (Discord channel).** `lobbyService` owns the webhook (`BUILD_PUBLIC_GAME_WEBHOOK` / `DISCORD_PUBLIC_GAME_WEBHOOK`) and the `postInvite`/`updateInvite`/`deleteInvite`/`buildInviteEmbed` lifecycle. It drives the post off the **minigame host lobby** by listening to `BingoLobbyState`/`IronManLobbyState` (post + update spots) and `BingoState`/`IronManState` (delete on game start, which also clears `isPublic`). `SetLobbyPublic` toggles it; toggling before a game is picked records the intent and posts once the lobby opens. The embed drops the join link when the lobby is full.
+
+**Join routing (unified).** A `froggi://join/<code>` deep link (`main.ts handleDeepLink`) and the Discord RPC Join (`ACTIVITY_JOIN`) both emit `JoinWithCode(code)` to the renderer → the minigames page runs the normal `joinGame(code)` (decrypts, fetches `/lobby-info`, connects to bingo **or** iron man). Host-side invite surfaces (clickable URL + Public toggle) live in `HostInviteRow.svelte`, rendered beside the Share Code in the minigames host blocks; the toggle state is owned by the page (`invitePublic`) so it survives the host→game remount.
 
 ### Minigame standards
 

@@ -134,4 +134,8 @@
 	export const ironManCurrentChar = writable<{ localCharId: number | null; oppCharId: number | null }>({ localCharId: null, oppCharId: null });
 
 	export const lobbyState = writable<LobbyState | null>(null);
+
+	// A froggi://join/<code> deep link or Discord "Join" arrived — the minigames page
+	// consumes this, routes it through the normal connect-code join, then clears it.
+	export const pendingJoinCode = writable<string | null>(null);
 </script>

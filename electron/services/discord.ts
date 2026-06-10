@@ -12,6 +12,7 @@ import { ElectronGamesStore } from './store/storeGames';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { encryptUrl } from '../../frontend/src/lib/utils/urlCrypto';
+import { MessageHandler } from './messageHandler';
 import { app } from 'electron';
 import { debounce, throttle, startCase } from 'lodash';
 import { BUILD_DISCORD_CLIENT_ID } from './reportWebhooks';
@@ -30,12 +31,12 @@ export class DiscordRpc {
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
-		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => ElectronGamesStore)) private storeGames: ElectronGamesStore,
 		@inject(delay(() => ElectronLiveStatsStore)) private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => ElectronPlayersStore)) private storePlayers: ElectronPlayersStore,
 		@inject(delay(() => ElectronCurrentPlayerStore))
 		private storeCurrentPlayer: ElectronCurrentPlayerStore,
+		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 	) {
 		this.initDiscordJs();
 	}
@@ -58,7 +59,8 @@ export class DiscordRpc {
 					.subscribe('ACTIVITY_JOIN', (data: unknown) => {
 						const secret = (data as { secret?: string })?.secret;
 						this.log.info('Discord ACTIVITY_JOIN received, secret:', secret);
-						if (secret) this.clientEmitter.emit('BingoPeerConnect', secret);
+						// Route through the normal connect-code join (detects bingo/ironman via /lobby-info).
+						if (secret) this.messageHandler.sendMessage('JoinWithCode', secret);
 					});
 				this.log.info('Discord: subscribed to ACTIVITY_JOIN');
 			} catch (err) {
