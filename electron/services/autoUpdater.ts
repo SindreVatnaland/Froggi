@@ -116,12 +116,12 @@ export class AutoUpdater {
 
 		this.clientEmitter.on('AutoUpdaterCheckForUpdate', async () => {
 			if (this.status !== AutoUpdaterStatus.UpToDate) return;
-			autoUpdater.checkForUpdatesAndNotify();
+			this.safeCheckForUpdates(() => autoUpdater.checkForUpdatesAndNotify());
 		});
 
 		this.clientEmitter.on('AutoUpdaterDownloadUpdate', async () => {
 			if (this.status !== AutoUpdaterStatus.UpdateAvailable) return;
-			autoUpdater.downloadUpdate();
+			this.safeCheckForUpdates(() => autoUpdater.downloadUpdate());
 		});
 
 		this.localEmitter.on('AutoUpdaterStatus', (status) => {
@@ -129,7 +129,17 @@ export class AutoUpdater {
 		});
 
 		// All config and listeners registered — safe to start the check now
-		autoUpdater.checkForUpdates();
+		this.safeCheckForUpdates(() => autoUpdater.checkForUpdates());
+	}
+
+	// electron-updater's own 'error' event only fires for failures it recognizes internally —
+	// a rejected promise from these calls (e.g. a malformed response it can't even parse enough
+	// to emit 'error' for) would otherwise be an unhandled rejection with no attached .catch().
+	private safeCheckForUpdates(fn: () => Promise<unknown>) {
+		fn().catch((err) => {
+			this.log.error('Update check failed:', err);
+			this.handleUpdateNotAvailable();
+		});
 	}
 
 	private handleUpdateNotAvailable() {

@@ -48,7 +48,7 @@ export class SqliteOrm {
     const gameEntities = [GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, GameStatsEntity, MatchInfoEntity, PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity, GameInfoTypeEntity];
 
     this.AppDataSource = new DataSource({
-      type: 'sqlite',
+      type: 'better-sqlite3',
       database: dbPath,
       entities: [...overlayEntities, ...currentPlayerEntities, ...playerEntities, ...gameEntities],
       synchronize: true,
