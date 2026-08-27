@@ -79,6 +79,10 @@
 		);
 	};
 	$: setOverlayPage($page.url.pathname);
+	// Lets the local MCP server default overlay-write targeting to whatever the user is
+	// looking at. Desktop app only — window.electron only exists here, never in the
+	// external OBS browser-source/live-viewer pages.
+	$: if ($isElectron) window.electron.routeChange($page.url.pathname);
 
 	const initWakeLock = () => {
 		requestWakeLock();

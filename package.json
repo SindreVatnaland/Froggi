@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "2.0.0-beta.22",
+	"version": "2.0.0-beta.23",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -46,6 +46,7 @@
 		"Chrome 89"
 	],
 	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.30.0",
 		"@slippi/slippi-js": "^7.2.0",
 		"@types/lodash": "^4.14.202",
 		"appdata-path": "^1.0.0",
@@ -84,7 +85,8 @@
 		"tsyringe": "^4.8.0",
 		"typed-emitter": "^2.1.0",
 		"typeorm": "^0.3.20",
-		"ws": "^8.16.0"
+		"ws": "^8.16.0",
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.21.0",

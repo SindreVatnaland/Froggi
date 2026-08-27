@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { BACKEND_PORT } from '$lib/models/const';
+	import { BACKEND_PORT, MCP_SERVER_PORT } from '$lib/models/const';
 	import {
 		authorizationKey,
 		electronEmitter,
@@ -57,6 +57,15 @@
 	const toggleBeta = () => $electronEmitter.emit('BetaOptIn', !$froggiSettings.betaOptIn);
 	const setCloseAction = (action: 'minimize' | 'quit' | null) => $electronEmitter.emit('SetCloseAction', action);
 	const toggleCrashReports = () => $electronEmitter.emit('SetCrashReportsEnabled', !($froggiSettings?.crashReportsEnabled === true));
+	const toggleMcpRead = () => $electronEmitter.emit('SetMcpReadEnabled', !($froggiSettings?.mcpReadEnabled === true));
+	const toggleMcpWrite = () => $electronEmitter.emit('SetMcpWriteEnabled', !($froggiSettings?.mcpWriteEnabled === true));
+	const mcpUrl = `http://127.0.0.1:${MCP_SERVER_PORT}/mcp`;
+	let mcpUrlCopied = false;
+	const copyMcpUrl = async () => {
+		await navigator.clipboard.writeText(mcpUrl);
+		mcpUrlCopied = true;
+		setTimeout(() => (mcpUrlCopied = false), 2000);
+	};
 	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
 		{ value: null, label: 'Ask' },
 		{ value: 'minimize', label: 'Minimize' },
@@ -237,6 +246,51 @@
 			</div>
 		</div>
 	</section>
+
+	<!-- MCP Server (Electron only) -->
+	{#if $isElectron}
+	<section class="mb-6">
+		<p class="section-label">AI Assistant (MCP)</p>
+		<div class="settings-card border-secondary mt-2 flex flex-col gap-3">
+			<p class="text-xs opacity-40 leading-relaxed">
+				Lets a local MCP client (Claude Desktop, Claude Code) connect to this running Froggi instance to explain setup, diagnose problems, and — if you allow it — edit overlays and OBS automation for you. Local only, never exposed over Tailscale/ngrok.
+			</p>
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<span class="text-sm text-secondary-color">Read &amp; explain</span>
+					<p class="text-xs opacity-40 mt-0.5">Logs, app/OBS status, and setup guidance</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.mcpReadEnabled === true}
+					on:click={toggleMcpRead}
+				>
+					{$froggiSettings?.mcpReadEnabled === true ? 'On' : 'Off'}
+				</button>
+			</div>
+			<div class="flex items-start justify-between gap-4 mt-1">
+				<div>
+					<span class="text-sm text-secondary-color">Allow edits</span>
+					<p class="text-xs opacity-40 mt-0.5">Overlay elements, OBS pairing/sources, automation rules</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.mcpWriteEnabled === true}
+					on:click={toggleMcpWrite}
+				>
+					{$froggiSettings?.mcpWriteEnabled === true ? 'On' : 'Off'}
+				</button>
+			</div>
+			{#if $froggiSettings?.mcpReadEnabled === true || $froggiSettings?.mcpWriteEnabled === true}
+				<div class="tunnel-row mt-1">
+					<span class="tunnel-label">URL</span>
+					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
+					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
+				</div>
+			{/if}
+		</div>
+	</section>
+	{/if}
 
 	<!-- Remote Access (Electron only) -->
 	{#if $isElectron}

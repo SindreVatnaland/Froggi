@@ -1,5 +1,6 @@
 import Store from 'electron-store';
-import type { AspectRatio, GridContentItem, Layer, Overlay, OverlayEditor, Scene, SharedOverlay } from '../../../frontend/src/lib/models/types/overlay';
+import type { AspectRatio, ElementPayload, GridContentItem, Layer, Overlay, OverlayEditor, Scene, SharedOverlay } from '../../../frontend/src/lib/models/types/overlay';
+import type { CustomElement } from '../../../frontend/src/lib/models/constants/customElement';
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
@@ -9,9 +10,9 @@ import { BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { LiveStatsScene } from '../../../frontend/src/lib/models/enum';
-import { cloneDeep, isNil, kebabCase } from 'lodash';
+import { cloneDeep, isNil, kebabCase, merge } from 'lodash';
 import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
-import { COL } from '../../../frontend/src/lib/models/const';
+import { COL, MIN } from '../../../frontend/src/lib/models/const';
 import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
@@ -66,7 +67,7 @@ export class ElectronOverlayStore {
 		return this.store.get(`obs.layout.overlays.${overlayId}.${statsScene}`) as Scene
 	}
 
-	async setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene) {
+	async setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene): Promise<Scene | undefined> {
 		this.log.info("Update scene", overlayId, statsScene, scene.id);
 
 		for (const [index, layer] of scene.layers.entries()) {
@@ -78,6 +79,7 @@ export class ElectronOverlayStore {
 		const updatedScene = await this.sqliteOverlay.addOrUpdateScene(scene);
 		if (!updatedScene) return;
 		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, updatedScene);
+		return updatedScene;
 	}
 
 	async getOverlayById(overlayId: string): Promise<Overlay | undefined> {
@@ -240,6 +242,74 @@ export class ElectronOverlayStore {
 		layer.items.push(newItem);
 
 		this.setOverlay(overlay)
+	}
+
+	/** Adds a new element to a layer, auto-placed in the first free grid space. Used by MCP overlay-write tools. */
+	async addItemToLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		layerIndex: number,
+		elementId: CustomElement,
+		payload: ElementPayload,
+		itemId: string = newId(),
+	): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const layer = overlay?.[statsScene]?.layers[layerIndex];
+		if (isNil(overlay) || isNil(layer)) return;
+
+		const newItem: GridContentItem = {
+			[COL]: gridHelp.item({
+				w: 24,
+				h: 24,
+				x: 0,
+				y: 0,
+				min: { w: MIN, h: MIN },
+				max: { y: COL - MIN, h: COL + 1 },
+			}),
+			id: itemId,
+			elementId,
+			data: payload,
+		};
+		const findPosition = gridHelp.findSpace(newItem, layer.items, COL);
+		newItem[COL] = { ...newItem[COL], ...findPosition };
+
+		layer.items = [...layer.items, newItem];
+
+		return this.setScene(overlayId, statsScene, overlay[statsScene]);
+	}
+
+	/** Merges a partial payload patch into an existing element. Used by MCP overlay-write tools. */
+	async updateItemInLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		layerIndex: number,
+		itemId: string,
+		payloadPatch: Partial<ElementPayload>,
+	): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const layer = overlay?.[statsScene]?.layers[layerIndex];
+		const item = layer?.items.find((item) => item.id === itemId);
+		if (isNil(overlay) || isNil(layer) || isNil(item)) return;
+
+		item.data = merge({}, item.data, payloadPatch);
+
+		return this.setScene(overlayId, statsScene, overlay[statsScene]);
+	}
+
+	/** Removes an element from a layer. Used by MCP overlay-write tools. */
+	async deleteItemFromLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		layerIndex: number,
+		itemId: string,
+	): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const layer = overlay?.[statsScene]?.layers[layerIndex];
+		if (isNil(overlay) || isNil(layer)) return;
+
+		layer.items = layer.items.filter((item) => item.id !== itemId);
+
+		return this.setScene(overlayId, statsScene, overlay[statsScene]);
 	}
 
 	async duplicateSceneLayer(overlayId: string, statsScene: LiveStatsScene, layerIndex: number) {

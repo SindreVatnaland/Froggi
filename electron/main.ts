@@ -26,6 +26,9 @@ import { BACKEND_PORT, VITE_PORT } from '../frontend/src/lib/models/const';
 import { FrontendLogger } from './services/frontendLogger';
 import { createBackgroundNotification, createErrorNotification } from './utils/notifications';
 import { SqliteOverlay } from './services/sqlite/sqliteOverlay';
+import { SqliteOverlayHistory } from './services/sqlite/sqliteOverlayHistory';
+import { ElectronRouteStore } from './services/store/storeRoute';
+import { McpServerService } from './services/mcp/mcpServerService';
 import { PacketCapture } from './services/packetCapture';
 import { performUpdate } from './update/updateWindow';
 import { ElectronSettingsStore } from './services/store/storeSettings';
@@ -365,6 +368,9 @@ try {
 			container.resolve(ElectronCommandStore);
 
 			container.resolve(SqliteOverlay);
+			container.resolve(SqliteOverlayHistory);
+			container.resolve(ElectronRouteStore);
+			container.resolve(McpServerService);
 			container.resolve(DiscordRpc);
 			container.resolve(MessageHandler);
 			container.resolve(StatsDisplay);

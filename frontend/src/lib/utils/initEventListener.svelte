@@ -256,6 +256,7 @@
 					>;
 					if (isNil(overlayId) || isNil(liveStatsScene) || isNil(scene)) return;
 					overlays.update((prev: Record<string, Overlay>) => {
+						if (!prev[overlayId]) return prev;
 						prev[overlayId][liveStatsScene] = scene;
 						return prev;
 					});

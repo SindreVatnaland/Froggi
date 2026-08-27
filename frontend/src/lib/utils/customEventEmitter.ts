@@ -54,6 +54,8 @@ export interface MessageEvents {
 	BetaOptIn: (optIn: boolean) => void;
 	SetCloseAction: (action: 'minimize' | 'quit' | null) => void;
 	SetCrashReportsEnabled: (enabled: boolean) => void;
+	SetMcpReadEnabled: (enabled: boolean) => void;
+	SetMcpWriteEnabled: (enabled: boolean) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;

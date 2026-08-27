@@ -25,7 +25,7 @@
 
 	let search = '';
 
-	$: allOverlays = Object.values($overlays).sort((a, b) => a.title.localeCompare(b.title)) ?? [];
+	$: allOverlays = Object.values($overlays ?? {}).sort((a, b) => a.title.localeCompare(b.title));
 
 	$: customOverlays = allOverlays
 		.filter((o) => !o.isDemo)

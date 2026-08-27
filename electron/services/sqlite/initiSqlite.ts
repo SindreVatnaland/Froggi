@@ -6,6 +6,7 @@ import fs from 'fs';
 import { LayerEntity } from "./entities/overlay/layerEntity";
 import { OverlayEntity } from "./entities/overlay/overlayEntity";
 import { SceneEntity } from "./entities/overlay/sceneEntity";
+import { OverlayHistoryEntity } from "./entities/overlay/overlayHistoryEntity";
 import { PlayerTypeEntity } from "./entities/player/playerEntity";
 import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 import { GameSettingsEntity } from "./entities/game/gameSettingsEntity";
@@ -41,7 +42,7 @@ export class SqliteOrm {
       fs.mkdirSync(directory, { recursive: true });
     }
 
-    const overlayEntities = [OverlayEntity, SceneEntity, LayerEntity];
+    const overlayEntities = [OverlayEntity, SceneEntity, LayerEntity, OverlayHistoryEntity];
     const currentPlayerEntities = [CurrentPlayerEntity, CurrentPlayerRankEntity];
     const playerEntities = [PlayerTypeEntity];
     const gameEntities = [GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, GameStatsEntity, MatchInfoEntity, PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity, GameInfoTypeEntity];

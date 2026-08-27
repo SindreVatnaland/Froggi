@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('electron', {
 	},
 	message: (topic: string, payload: any) => ipcRenderer.invoke('message', topic, payload),
 
+	// Dedicated channel for the MCP server's route-awareness — deliberately bypasses the
+	// generic 'message'/clientEmitter pipeline (see storeRoute.ts for why).
+	routeChange: (path: string) => ipcRenderer.send('route-change', path),
+
 	autoUpdater: {
 		checkForUpdates: () => ipcRenderer.send('autoUpdater:check'),
 		downloadUpdate: () => ipcRenderer.send('autoUpdater:download'),

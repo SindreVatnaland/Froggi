@@ -83,7 +83,7 @@ export class ObsWebSocket {
 		}
 	};
 
-	private addBrowserSource = async (url: string, inputName: string, aspectRatio: AspectRatio) => {
+	addBrowserSource = async (url: string, inputName: string, aspectRatio: AspectRatio) => {
 		this.log.info(`Adding Browser Source: ${inputName}`);
 		try {
 			const programScene = await this.obs.call('GetCurrentProgramScene');
@@ -190,7 +190,7 @@ export class ObsWebSocket {
 		}
 	};
 
-	private searchForObs = async () => {
+	searchForObs = async () => {
 		clearTimeout(this.obsConnectionInterval);
 		this.storeObs.setConnectionState(ConnectionState.Searching);
 		const password = this.storeObs.getPassword();
@@ -204,7 +204,7 @@ export class ObsWebSocket {
 		}
 	};
 
-	private connectToObs = async (ipAddress: string, port: string, password: string) => {
+	connectToObs = async (ipAddress: string, port: string, password: string) => {
 		try {
 			await this.obs.connect(`ws://${ipAddress}:${port}`, password);
 		} catch {

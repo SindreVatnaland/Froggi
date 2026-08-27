@@ -25,13 +25,13 @@
 		const isElectron = await getIsElectron();
 		const url = isElectron ? urls?.localResource : urls?.externalResource;
 		await asyncForEach(Object.values(LiveStatsScene), async (statsScene: LiveStatsScene) => {
-			if (!overlay) return;
+			if (!overlay?.[statsScene]) return;
 			const items = [
 				...overlay[statsScene].layers?.map((layer: Layer) => layer.items).flat(),
 			];
 
 			const sceneFont = overlay[statsScene].font;
-			if (sceneFont.src) {
+			if (sceneFont?.src) {
 				const src = `${url}/public/custom/${overlay.id}/font/${sceneFont.src}`;
 				console.log('url', src);
 				await addFont(src, statsScene);

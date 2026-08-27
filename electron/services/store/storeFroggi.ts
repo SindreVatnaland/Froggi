@@ -38,6 +38,22 @@ export class ElectronFroggiStore {
         this.store.set("settings.froggi.crashReportsEnabled", enabled);
     }
 
+    getMcpReadEnabled(): boolean {
+        return this.getFroggiConfig().mcpReadEnabled === true;
+    }
+
+    setMcpReadEnabled(enabled: boolean) {
+        this.store.set("settings.froggi.mcpReadEnabled", enabled);
+    }
+
+    getMcpWriteEnabled(): boolean {
+        return this.getFroggiConfig().mcpWriteEnabled === true;
+    }
+
+    setMcpWriteEnabled(enabled: boolean) {
+        this.store.set("settings.froggi.mcpWriteEnabled", enabled);
+    }
+
     // App version the demo overlays were last synced for. Kept outside settings.froggi
     // so it doesn't trigger FroggiSettings pushes. Lets startup skip the expensive
     // demo delete+reupload when nothing changed.
@@ -69,6 +85,12 @@ export class ElectronFroggiStore {
         });
         this.clientEmitter.on('SetCrashReportsEnabled', (enabled: boolean) => {
             this.setCrashReportsEnabled(enabled);
+        });
+        this.clientEmitter.on('SetMcpReadEnabled', (enabled: boolean) => {
+            this.setMcpReadEnabled(enabled);
+        });
+        this.clientEmitter.on('SetMcpWriteEnabled', (enabled: boolean) => {
+            this.setMcpWriteEnabled(enabled);
         });
         this.clientEmitter.on('SetCloseAction', (action: 'minimize' | 'quit' | null) => {
             if (action) {

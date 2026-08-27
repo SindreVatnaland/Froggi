@@ -9,6 +9,7 @@ import { debounce } from 'lodash';
 import { getProcessByName } from '../utils/windowManager';
 import { scopedLog } from '../utils/logger';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
+import { ErrorReporter } from './errorReporter';
 // Type-only imports — erased at compile time, no runtime module load on macOS
 import type { Overlay, GpuLuid } from '@asdf-overlay/core';
 import type { ElectronOverlaySurface } from '@asdf-overlay/electron/surface';
@@ -27,6 +28,7 @@ export class OverlayInjector {
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => ErrorReporter)) private errorReporter: ErrorReporter,
 	) {
 		this.log = scopedLog(this.log, 'Injection');
 		this.log.info('Initializing Overlay Injection Service');
@@ -88,6 +90,7 @@ export class OverlayInjector {
 			({ ElectronOverlaySurface } = electron);
 		} catch (err) {
 			this.log.error('Failed to load overlay injection module:', err);
+			void this.errorReporter.report(err, 'Overlay injection module load');
 			this.messageHandler.sendMessage(
 				'Notification',
 				'Overlay injection unavailable — failed to load native module. See logs.',
@@ -105,6 +108,7 @@ export class OverlayInjector {
 			this.log.info('Overlay DLL attached to process');
 		} catch (err) {
 			this.log.error('Failed to attach overlay:', err);
+			void this.errorReporter.report(err, 'Overlay DLL attach');
 			this.messageHandler.sendMessage('Notification', 'Failed to attach overlay to game', NotificationType.Danger);
 			return;
 		}

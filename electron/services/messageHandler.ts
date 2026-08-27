@@ -423,6 +423,11 @@ export class MessageHandler {
 	getNgrokUrl(): string | undefined {
 		return this.ngrokUrl;
 	}
+
+	/** Last-known Tailscale status snapshot, or null before the first detection pass has run. */
+	getTailscaleStatus(): { installed: boolean; authenticated: boolean; funnelActive: boolean } | null {
+		return this.tailscaleLastStatus;
+	}
 	private tailscaleBin: string | undefined = undefined;
 	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
 

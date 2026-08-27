@@ -204,7 +204,8 @@ export class ErrorReporter {
 	 * scrubbed. Reads a bounded window from the end of the file; if the session is larger
 	 * than the window the oldest lines are dropped. Empty string if unavailable.
 	 */
-	private readLogTail(): string {
+	/** Bounded, scrubbed log tail for the current session. Public so MCP diagnostics tools can reuse it. */
+	readLogTail(): string {
 		try {
 			const path = this.rootLog.transports.file.getFile()?.path;
 			if (!path || !fs.existsSync(path)) return '';

@@ -127,7 +127,15 @@ export class StatsDisplay {
 	private async initStatDisplay() {
 		this.log.info('Initializing Dolphin Events');
 		this.slpStream.on(SlpStreamEvent.COMMAND, async (event: SlpRawEventPayload) => {
-			this.slpParser.handleCommand(event.command, event.payload);
+			try {
+				this.slpParser.handleCommand(event.command, event.payload);
+			} catch (err) {
+				// Frame/bookend commands can arrive before GAME_START if we connect mid-game
+				// (slippi-js's parser has no null-guard for that case) — drop the command and
+				// wait for the next GAME_START rather than crashing the process.
+				this.log.warn('Dropped Slippi command before GAME_START was seen:', err);
+				return;
+			}
 			if (event.command === Command.GAME_START) {
 				const gameSettings = this.slpParser.getSettings();
 				if (!gameSettings) return;
@@ -637,11 +645,17 @@ export class StatsDisplay {
 		await this.handleGameFrame(frames[0]);
 		await this.handleGameStart(settings);
 		const sortedKeys = Object.keys(frames).map(Number).sort((a, b) => a - b);
-		for (const key of sortedKeys) {
-			if (this.abortController.signal.aborted) return;
-			const frame = frames[key];
-			await this.handleGameFrame(frame);
-			await this.waitWithCancel(16);
+		try {
+			for (const key of sortedKeys) {
+				if (this.abortController.signal.aborted) return;
+				const frame = frames[key];
+				await this.handleGameFrame(frame);
+				await this.waitWithCancel(16);
+			}
+		} catch (err) {
+			// Cancellation is expected (a newer simulation/game start superseded this one).
+			if (err instanceof Error && err.message === 'Simulation canceled') return;
+			throw err;
 		}
 		const gameEnd = game.getGameEnd();
 		const latestFrame = game.getLatestFrame();
