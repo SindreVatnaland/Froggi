@@ -84,8 +84,13 @@ export class OverlayInjector {
 		let percent: typeof import('@asdf-overlay/core').percent;
 		let ElectronOverlaySurface: typeof import('@asdf-overlay/electron/surface').ElectronOverlaySurface;
 		try {
-			const core = await import('@asdf-overlay/core');
-			const electron = await import('@asdf-overlay/electron/surface');
+			// TS with module:commonjs rewrites `import()` to `require()`, which throws
+			// ERR_REQUIRE_ESM against @asdf-overlay's ESM. Force a real dynamic import.
+			const dynamicImport = new Function('m', 'return import(m)') as <T = unknown>(m: string) => Promise<T>;
+			const core = await dynamicImport<typeof import('@asdf-overlay/core')>('@asdf-overlay/core');
+			const electron = await dynamicImport<typeof import('@asdf-overlay/electron/surface')>(
+				'@asdf-overlay/electron/surface',
+			);
 			({ Overlay, defaultDllDir, percent } = core);
 			({ ElectronOverlaySurface } = electron);
 		} catch (err) {
