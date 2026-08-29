@@ -56,6 +56,9 @@ export interface MessageEvents {
 	SetCrashReportsEnabled: (enabled: boolean) => void;
 	SetMcpReadEnabled: (enabled: boolean) => void;
 	SetMcpWriteEnabled: (enabled: boolean) => void;
+	SetMcpTailscaleEnabled: (enabled: boolean) => void;
+	/** tailnet-only HTTPS URL for the MCP when Tailscale exposure is on; undefined when hidden/off */
+	McpTailscaleUrl: (url: string | undefined) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;

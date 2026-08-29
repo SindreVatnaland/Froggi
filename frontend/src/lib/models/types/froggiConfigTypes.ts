@@ -9,4 +9,6 @@ export interface Froggi {
   mcpReadEnabled: boolean | undefined;
   /** Lets a local MCP client mutate overlays, OBS, and automation rules */
   mcpWriteEnabled: boolean | undefined;
+  /** Exposes the MCP over the user's Tailscale (tailnet-only HTTPS, never funnel). Off by default. */
+  mcpTailscaleEnabled: boolean | undefined;
 }

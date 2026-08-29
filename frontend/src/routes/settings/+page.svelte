@@ -9,6 +9,7 @@
 		isElectron,
 		remoteAccess,
 		tailscaleStatus,
+		mcpTailscaleUrl,
 		ngrokStatus,
 	} from '$lib/utils/store.svelte';
 
@@ -65,6 +66,14 @@
 		await navigator.clipboard.writeText(mcpUrl);
 		mcpUrlCopied = true;
 		setTimeout(() => (mcpUrlCopied = false), 2000);
+	};
+	const toggleMcpTailscale = () => $electronEmitter.emit('SetMcpTailscaleEnabled', !($froggiSettings?.mcpTailscaleEnabled === true));
+	let mcpTsUrlCopied = false;
+	const copyMcpTsUrl = async () => {
+		if (!$mcpTailscaleUrl) return;
+		await navigator.clipboard.writeText($mcpTailscaleUrl);
+		mcpTsUrlCopied = true;
+		setTimeout(() => (mcpTsUrlCopied = false), 2000);
 	};
 	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
 		{ value: null, label: 'Ask' },
@@ -287,6 +296,30 @@
 					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
 					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
 				</div>
+				<!-- Tailscale exposure: only surfaces when MCP is on AND Tailscale is available, so
+				     it stays out of sight until intentionally needed. Off by default; tailnet-only. -->
+				{#if tsInstalled && tsAuthenticated}
+					<div class="flex items-start justify-between gap-4 mt-2">
+						<div>
+							<span class="text-sm text-secondary-color">Expose over Tailscale (HTTPS)</span>
+							<p class="text-xs opacity-40 mt-0.5">Reach the MCP from your own remote devices over TLS. Tailnet-only — never public.</p>
+						</div>
+						<button
+							class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+							class:active-toggle={$froggiSettings?.mcpTailscaleEnabled === true}
+							on:click={toggleMcpTailscale}
+						>
+							{$froggiSettings?.mcpTailscaleEnabled === true ? 'On' : 'Off'}
+						</button>
+					</div>
+					{#if $froggiSettings?.mcpTailscaleEnabled === true && $mcpTailscaleUrl}
+						<div class="tunnel-row mt-1">
+							<span class="tunnel-label">HTTPS URL</span>
+							<span class="url-value font-mono flex-1 truncate">{$mcpTailscaleUrl}</span>
+							<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpTsUrl}>{mcpTsUrlCopied ? 'Copied!' : 'Copy'}</button>
+						</div>
+					{/if}
+				{/if}
 			{/if}
 		</div>
 	</section>

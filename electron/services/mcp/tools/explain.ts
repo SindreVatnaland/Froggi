@@ -8,7 +8,7 @@ const error = (message: string) => ({ content: [{ type: 'text' as const, text: m
 export function registerExplainTools(server: McpServer) {
 	server.registerTool(
 		'list_explainer_topics',
-		{ description: 'List available Froggi topics you can explain to the user (OBS setup, overlay building, remote access, minigames, automation).', inputSchema: {} },
+		{ description: 'List available Froggi topics you can explain to the user (OBS setup, overlay building, remote access, minigames, automation, game-event webhooks + smart-home integration).', inputSchema: {} },
 		async () => text(ALL_TOPICS.map((t) => ({ id: t.id, title: t.title, category: t.category, summary: t.summary }))),
 	);
 

@@ -26,6 +26,7 @@ import { mcpContext } from './mcpContext';
 import { registerExplainTools } from './tools/explain';
 import { registerDiagnosticsTools } from './tools/diagnostics';
 import { registerOverlayReadTools } from './tools/overlayRead';
+import { registerOverlaySchemaTools } from './tools/overlaySchema';
 import { registerOverlayWriteTools } from './tools/overlayWrite';
 import { registerOverlayUndoTools } from './tools/overlayUndo';
 import { registerObsSetupTools } from './tools/obsSetup';
@@ -95,6 +96,7 @@ export class McpServerService {
 			registerExplainTools(server);
 			registerDiagnosticsTools(server);
 			registerOverlayReadTools(server);
+			registerOverlaySchemaTools(server);
 			registerAutomationReadTools(server);
 		}
 		if (this.froggiStore.getMcpWriteEnabled()) {
@@ -113,6 +115,8 @@ export class McpServerService {
 		const desired = this.froggiStore.getMcpReadEnabled() || this.froggiStore.getMcpWriteEnabled();
 		if (desired && !this.httpServer) await this.start();
 		if (!desired && this.httpServer) await this.stop();
+		// Reconcile the optional tailnet HTTPS exposure whenever read/write toggles change.
+		this.messageHandler.applyMcpTailscaleServe();
 	}
 
 	private async start() {

@@ -33,7 +33,7 @@ import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
 import { NgrokService } from './ngrokService';
 import { ElectronWebhookStore } from './store/storeWebhook';
-import { BACKEND_PORT, VITE_PORT } from '../../frontend/src/lib/models/const';
+import { BACKEND_PORT, VITE_PORT, MCP_SERVER_PORT } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 import { BingoService } from './bingoService';
 import { IronManService } from './ironmanService';
@@ -367,6 +367,13 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'PostGameStats', this.storeLiveStats.getGameStats());
 		this.sendInitMessage(socketId, 'RecentGames', recentGames);
 		this.sendInitMessage(socketId, 'Url', this.storeSettings.getLocalUrl());
+		this.sendInitMessage(
+			socketId,
+			'McpTailscaleUrl',
+			this.storeFroggi.getMcpTailscaleEnabled() && (this.storeFroggi.getMcpReadEnabled() || this.storeFroggi.getMcpWriteEnabled())
+				? this.getMcpTailscaleUrl()
+				: undefined,
+		);
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
@@ -427,6 +434,38 @@ export class MessageHandler {
 	/** Last-known Tailscale status snapshot, or null before the first detection pass has run. */
 	getTailscaleStatus(): { installed: boolean; authenticated: boolean; funnelActive: boolean } | null {
 		return this.tailscaleLastStatus;
+	}
+
+	/** tailnet-only HTTPS URL for the MCP server, when Tailscale is up. Never funnel/public. */
+	getMcpTailscaleUrl(): string | undefined {
+		return this.tailscaleUrl ? `${this.tailscaleUrl}/mcp` : undefined;
+	}
+
+	/**
+	 * Manage a tailnet `serve` rule that proxies https://<magicdns>/mcp → 127.0.0.1:MCP_SERVER_PORT
+	 * so the user's own remote Tailscale devices can reach the (write-capable) MCP over real TLS.
+	 * Deliberately tailnet-only — NEVER funnel; the MCP must not be public. Gated behind the explicit
+	 * mcpTailscaleEnabled permission AND MCP being on AND Tailscale being available. Broadcasts the
+	 * resulting URL (or undefined when hidden/off) so the settings page can show/hide it.
+	 * `expose` overrides the stored permission to dodge listener-ordering races on the toggle event.
+	 * ponytail: does not re-detect Tailscale; if the tunnel comes up after this runs, re-toggle MCP
+	 * or refresh remote access — detectRemoteAccess re-invokes this on URL change.
+	 */
+	applyMcpTailscaleServe(expose?: boolean) {
+		const bin = this.tailscaleBin;
+		const permitted = expose ?? this.storeFroggi.getMcpTailscaleEnabled();
+		const mcpOn = this.storeFroggi.getMcpReadEnabled() || this.storeFroggi.getMcpWriteEnabled();
+		const enable = permitted && mcpOn && !!bin && !!this.tailscaleUrl;
+		if (bin) {
+			const args = enable
+				? `serve --bg --https=443 --set-path=/mcp http://127.0.0.1:${MCP_SERVER_PORT}/mcp`
+				: `serve --https=443 --set-path=/mcp off`;
+			exec(`"${bin}" ${args}`, { timeout: 8000 }, (err, _stdout, stderr) => {
+				if (err) this.log.error('MCP tailscale serve error:', stderr?.trim() || err.message);
+				else this.log.info('MCP tailscale serve', { enable });
+			});
+		}
+		this.sendMessage('McpTailscaleUrl', enable ? this.getMcpTailscaleUrl() : undefined);
 	}
 	private tailscaleBin: string | undefined = undefined;
 	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
@@ -542,6 +581,8 @@ export class MessageHandler {
 			this.tailscaleUrl = tailscaleUrl;
 			this.log.info('detectRemoteAccess: tailscaleUrl=', tailscaleUrl);
 			this.sendMessage('RemoteAccessStatus', tailscaleUrl, 'tailscale');
+			// Tailscale (re)appeared/changed — reconcile the MCP serve rule + broadcast URL.
+			this.applyMcpTailscaleServe();
 		}
 	};
 
@@ -573,6 +614,10 @@ export class MessageHandler {
 		this.clientEmitter.on('RemoteAccessRefresh', async () => {
 			await this.detectRemoteAccess();
 			await this.detectTailscaleStatus();
+		});
+		this.clientEmitter.on('SetMcpTailscaleEnabled', (enabled: boolean) => {
+			// Use the event value directly — the storeFroggi persist listener may not have run yet.
+			this.applyMcpTailscaleServe(enabled);
 		});
 		this.clientEmitter.on('TailscaleFunnel', (enable: boolean) => {
 			const bin = this.tailscaleBin;

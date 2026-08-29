@@ -96,7 +96,7 @@
 	</div>
 {/if}
 
-{#if ready && $urls}
+{#if ready}
 	{#if !chromeless}<Navbar />{/if}
 	<GlobalModal />
 	<Toast />
@@ -104,8 +104,6 @@
 	<div class:nav-pad={!chromeless}>
 		<slot />
 	</div>
-{:else if ready}
-	<slot />
 {:else}
 	<!-- Initial connect (WS handshake / init data) — show progress instead of a blank screen. -->
 	<div class="app-loading background-primary-color text-secondary-color">

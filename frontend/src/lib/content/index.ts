@@ -5,6 +5,7 @@ import { overlayBasicsTopics } from './topics/overlayBasics';
 import { remoteAccessTopics } from './topics/remoteAccess';
 import { minigamesTopics } from './topics/minigames';
 import { automationTopics } from './topics/automation';
+import { webhookTopics } from './topics/webhooks';
 
 export const ALL_TOPICS: ContentTopic[] = [
 	...appTopics,
@@ -13,6 +14,7 @@ export const ALL_TOPICS: ContentTopic[] = [
 	...remoteAccessTopics,
 	...minigamesTopics,
 	...automationTopics,
+	...webhookTopics,
 ];
 
 export function getTopic(id: string): ContentTopic | undefined {

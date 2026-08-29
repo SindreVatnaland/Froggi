@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "2.0.0-beta.27",
+	"version": "2.0.0-beta.28",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -32,6 +32,7 @@
 		"compile": "npm run build:svelte && npm run compile:electron && tsc --p ./electron/tsconfig.json",
 		"compile:electron": "npm run && tsc --p ./electron/tsconfig.json && npm run copy",
 		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend",
+		"postinstall": "node scripts/rebuild-native.js",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles --forceExit",
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
 		"copy": "npm run overlay:copy && npm run update:copy",

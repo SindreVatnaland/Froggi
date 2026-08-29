@@ -273,3 +273,29 @@ These conventions apply to **all** minigames (Bingo, Iron Man, and any future ad
 ### Overlay injection
 
 `@asdf-overlay/core` and `@asdf-overlay/electron` handle overlay injection into the Dolphin game window. Windows-only. On Dolphin connect, `OverlayInjector.injectIntoGame()` calls `Overlay.attach(dllDir, pid)` which injects the DLL; once the game window is detected the `added` event fires and `ElectronOverlaySurface.connect()` pipes an offscreen `BrowserWindow` into the overlay via shared GPU texture. The package's native binaries must be in `app.asar.unpacked` — this is handled by the `asarUnpack` rule in `build.config.json`.
+
+### MCP server (local AI assistant)
+
+`electron/services/mcp/mcpServerService.ts` embeds an MCP server in Electron main, bound to `127.0.0.1:3300` (HTTP, loopback only — never HTTPS, never over Tailscale/ngrok). Stateless StreamableHTTP: a fresh `McpServer` + tool set is built per request from live settings, so toggling `mcpReadEnabled` / `mcpWriteEnabled` (Settings → AI Assistant, beta build) takes effect on the next call. Read tools register when read is on; write tools additionally when write is on (`buildMcpServer()`).
+
+Client configs (not in repo): Claude Code uses `~/.claude.json` `type: http`; Claude Desktop has no native HTTP transport so it bridges via `npx mcp-remote http://127.0.0.1:3300/mcp --transport http-only`.
+
+**Two surfaces, keep both truthful:**
+1. **Explainer topics** (knowledge) — `frontend/src/lib/content/topics/*.ts` as `ContentTopic[]` (categories `app | obs | overlays | remote-access | minigames | automation`). Shared with the in-app help UI; surfaced to Claude via `list_explainer_topics` / `explain_topic`. Adding knowledge = a new topic/block, no new code path.
+2. **Tools** (actions/reads) — `electron/services/mcp/tools/*.ts`, each registered in `buildMcpServer()`. Reads pull from stores/services; writes call the same services the UI does (e.g. feedback reuses `errorReporter.submitFeedback('feature'|'bug', …)`).
+
+**Sync contract — the MCP must never describe or drive the app in a way that no longer matches reality. When you change app behavior, update the matching MCP surface in the SAME change:**
+
+| Change to… | Update… |
+|---|---|
+| A user-facing feature / workflow / use case | the matching explainer topic in `content/topics/`, and any tool that reads/writes it |
+| The **settings page** (a toggle, field, or its meaning) | `content/topics/app.ts` (settings explainer) + the read tool that reports settings |
+| OBS setup / overlay building steps | `content/topics/obsIntegration.ts` + `obsSetup.ts` / `obsAddSource.ts` / `overlay*.ts` |
+| Remote access (Tailscale / ngrok) behavior | `content/topics/remoteAccess.ts` + `diagnostics.ts` status snapshot |
+| Automation (controller / scene commands) | `content/topics/automation.ts` + `automation*.ts` |
+| Minigames rules / modes | `content/topics/minigames.ts` |
+| Overlay element schema (kinds/conditions/animations/box-fit) | `overlaySchema.ts` |
+| Webhooks / bug + feature reporting / support + contact channels | the relevant explainer topic + the tool wrapping `errorReporter` |
+| Mobile use cases (remote stream control, custom-overlay viewer) | the mobile explainer topic |
+
+Rule of thumb: if a code change would make an existing `explain_topic` answer or tool description wrong, the doc/tool fix ships in the same commit. When adding a new app capability, add its explainer topic (and tool, if actionable) so Claude can discover and use it — an undocumented capability is invisible to the MCP.

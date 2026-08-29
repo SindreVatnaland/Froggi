@@ -18,4 +18,4 @@ pnpm-lock.yaml
 
 .DS_Store
 
-*.sqlite
+*.sqlite.playwright-mcp/

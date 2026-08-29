@@ -54,6 +54,14 @@ export class ElectronFroggiStore {
         this.store.set("settings.froggi.mcpWriteEnabled", enabled);
     }
 
+    getMcpTailscaleEnabled(): boolean {
+        return this.getFroggiConfig().mcpTailscaleEnabled === true;
+    }
+
+    setMcpTailscaleEnabled(enabled: boolean) {
+        this.store.set("settings.froggi.mcpTailscaleEnabled", enabled);
+    }
+
     // App version the demo overlays were last synced for. Kept outside settings.froggi
     // so it doesn't trigger FroggiSettings pushes. Lets startup skip the expensive
     // demo delete+reupload when nothing changed.
@@ -91,6 +99,9 @@ export class ElectronFroggiStore {
         });
         this.clientEmitter.on('SetMcpWriteEnabled', (enabled: boolean) => {
             this.setMcpWriteEnabled(enabled);
+        });
+        this.clientEmitter.on('SetMcpTailscaleEnabled', (enabled: boolean) => {
+            this.setMcpTailscaleEnabled(enabled);
         });
         this.clientEmitter.on('SetCloseAction', (action: 'minimize' | 'quit' | null) => {
             if (action) {

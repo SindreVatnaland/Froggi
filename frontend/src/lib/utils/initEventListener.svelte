@@ -32,6 +32,7 @@
 		injectedOverlays,
 		remoteAccess,
 		tailscaleStatus,
+		mcpTailscaleUrl,
 		ngrokStatus,
 		obsProcessStatus,
 		strikeState,
@@ -349,6 +350,9 @@
 				break;
 			case 'TailscaleStatus':
 				tailscaleStatus.set(payload[0] as Parameters<MessageEvents['TailscaleStatus']>[0]);
+				break;
+			case 'McpTailscaleUrl':
+				mcpTailscaleUrl.set(payload[0] as Parameters<MessageEvents['McpTailscaleUrl']>[0]);
 				break;
 			case 'NgrokStatus':
 				ngrokStatus.set(payload[0] as Parameters<MessageEvents['NgrokStatus']>[0]);
