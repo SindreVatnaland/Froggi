@@ -1,7 +1,9 @@
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
+import fs from 'fs';
+import path from 'path';
 import os from 'os';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { MessageHandler } from './messageHandler';
@@ -10,9 +12,13 @@ import { getProcessByName } from '../utils/windowManager';
 import { scopedLog } from '../utils/logger';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
 import { ErrorReporter } from './errorReporter';
+import { ElectronOverlayStore } from './store/storeOverlay';
+import type { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 // Type-only imports — erased at compile time, no runtime module load on macOS
-import type { Overlay, GpuLuid } from '@asdf-overlay/core';
+import type { Overlay, GpuLuid, length as lengthFn } from '@asdf-overlay/core';
 import type { ElectronOverlaySurface } from '@asdf-overlay/electron/surface';
+
+const DEFAULT_ASPECT_RATIO: AspectRatio = { width: 16, height: 9 };
 
 @singleton()
 export class OverlayInjector {
@@ -22,6 +28,9 @@ export class OverlayInjector {
 	private overlay: Overlay | null = null;
 	private surface: ElectronOverlaySurface | null = null;
 	private windowId: number | null = null;
+	private length: typeof lengthFn | null = null;
+	private gameWidth = 0;
+	private gameHeight = 0;
 
 	constructor(
 		@inject('Dev') private isDev: boolean,
@@ -29,6 +38,7 @@ export class OverlayInjector {
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ErrorReporter)) private errorReporter: ErrorReporter,
+		@inject(delay(() => ElectronOverlayStore)) private storeOverlay: ElectronOverlayStore,
 	) {
 		this.log = scopedLog(this.log, 'Injection');
 		this.log.info('Initializing Overlay Injection Service');
@@ -50,8 +60,52 @@ export class OverlayInjector {
 			this.window = null;
 		}
 		this.windowId = null;
+		this.gameWidth = 0;
+		this.gameHeight = 0;
 		this.injectedOverlayIds = [];
 		this.emitInjectedOverlays();
+	};
+
+	/** Aspect ratio driving the letterbox fit — the first currently-injected overlay's, or 16:9 if none. */
+	private getReferenceAspectRatio = async (): Promise<AspectRatio> => {
+		const overlayId = this.injectedOverlayIds[0];
+		if (overlayId) {
+			const overlay = await this.storeOverlay.getOverlayById(overlayId);
+			if (overlay?.aspectRatio?.width && overlay?.aspectRatio?.height) return overlay.aspectRatio;
+		}
+		return DEFAULT_ASPECT_RATIO;
+	};
+
+	/** Always fit the overlay's aspect ratio to the game window's full height, centered horizontally — width overflows/crops as needed. */
+	private computeFitRect = async (
+		gameWidth: number,
+		gameHeight: number,
+	): Promise<{ width: number; height: number; x: number; y: number }> => {
+		const aspect = await this.getReferenceAspectRatio();
+		const targetAspect = aspect.width / aspect.height;
+
+		const height = gameHeight;
+		const width = Math.round(height * targetAspect);
+
+		const x = Math.round((gameWidth - width) / 2);
+		const y = 0;
+		return { width, height, x, y };
+	};
+
+	/** Recompute the letterboxed fit for the current game window size and reposition/resize the injected window. */
+	private applyFit = async (): Promise<void> => {
+		if (!this.overlay || !this.window || this.window.isDestroyed() || this.windowId === null || !this.length) return;
+		if (!this.gameWidth || !this.gameHeight) return;
+
+		const fit = await this.computeFitRect(this.gameWidth, this.gameHeight);
+		this.log.info(
+			`Fit: game=${this.gameWidth}x${this.gameHeight} -> window=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`,
+		);
+		const [curWidth, curHeight] = this.window.getSize();
+		if (curWidth !== fit.width || curHeight !== fit.height) {
+			this.window.setSize(fit.width, fit.height);
+		}
+		await this.overlay.setPosition(this.windowId, this.length(fit.x), this.length(fit.y));
 	};
 
 	injectIntoGame = async (processName: string = 'dolphin'): Promise<void> => {
@@ -82,6 +136,7 @@ export class OverlayInjector {
 		let Overlay: typeof import('@asdf-overlay/core').Overlay;
 		let defaultDllDir: typeof import('@asdf-overlay/core').defaultDllDir;
 		let percent: typeof import('@asdf-overlay/core').percent;
+		let length: typeof import('@asdf-overlay/core').length;
 		let ElectronOverlaySurface: typeof import('@asdf-overlay/electron/surface').ElectronOverlaySurface;
 		try {
 			// TS with module:commonjs rewrites `import()` to `require()`, which throws
@@ -91,8 +146,9 @@ export class OverlayInjector {
 			const electron = await dynamicImport<typeof import('@asdf-overlay/electron/surface')>(
 				'@asdf-overlay/electron/surface',
 			);
-			({ Overlay, defaultDllDir, percent } = core);
+			({ Overlay, defaultDllDir, percent, length } = core);
 			({ ElectronOverlaySurface } = electron);
+			this.length = length;
 		} catch (err) {
 			this.log.error('Failed to load overlay injection module:', err);
 			void this.errorReporter.report(err, 'Overlay injection module load');
@@ -124,22 +180,41 @@ export class OverlayInjector {
 		this.overlay.event.once('added', async (id: number, width: number, height: number, luid: GpuLuid) => {
 			this.log.info(`Game window detected: id=${id} ${width}x${height}`);
 			this.windowId = id;
+			this.gameWidth = width;
+			this.gameHeight = height;
+
+			const fit = await this.computeFitRect(width, height);
+			this.log.info(
+				`Fit: game=${width}x${height} -> window=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`,
+			);
 
 			this.window = new BrowserWindow({
-				width,
-				height,
+				width: fit.width,
+				height: fit.height,
 				frame: false,
 				show: false,
 				transparent: true,
+				// Offscreen rendering needs an explicit fully-transparent hint — without it
+				// Chromium fills transparent regions of the shared texture with an opaque
+				// default regardless of page CSS, showing as a solid background in-game.
+				backgroundColor: '#00000000',
 				resizable: false,
 				webPreferences: {
 					backgroundThrottling: false,
 					offscreen: { useSharedTexture: true } as unknown as boolean,
 				},
 			});
+			// Force a transparent DOM background directly, rather than relying on the app's
+			// own store-driven CSS toggle — this re-applies on every navigation, including
+			// the reloads triggered by resize/fit changes.
+			this.window.webContents.on('dom-ready', () => {
+				void this.window?.webContents.insertCSS(
+					'html, body, #svelte, main { background: transparent !important; overflow: hidden !important; }',
+				);
+			});
 			this.window.loadURL(overlayUrl);
 
-			await this.overlay!.setPosition(id, percent(0), percent(0));
+			await this.overlay!.setPosition(id, length(fit.x), length(fit.y));
 			await this.overlay!.setAnchor(id, percent(0), percent(0));
 
 			this.surface = ElectronOverlaySurface.connect(
@@ -150,13 +225,22 @@ export class OverlayInjector {
 
 			this.log.info('Overlay surface connected');
 			this.messageHandler.sendMessage('Notification', 'Overlay attached to game', NotificationType.Success);
+
+			// TEMP DEBUG: dump what the offscreen page is actually rendering — remove once
+			// the background/render investigation is done.
+			setTimeout(() => void this.debugCapture(), 5000);
 		});
 
 		this.overlay.event.on('resized', debounce((id: number, width: number, height: number) => {
 			if (id !== this.windowId || !this.window || this.window.isDestroyed()) return;
 			this.log.info(`Game window resized: ${width}x${height}`);
-			this.window.setSize(width, height);
-			this.window.reload();
+			this.gameWidth = width;
+			this.gameHeight = height;
+			void this.applyFit().then(() => {
+				this.window?.reload();
+				// TEMP DEBUG: capture post-resize state once content has had time to resync.
+				setTimeout(() => void this.debugCapture(), 5000);
+			});
 		}, 200));
 
 		this.overlay.event.on('disconnected', () => {
@@ -192,7 +276,46 @@ export class OverlayInjector {
 			this.messageHandler.sendMessage('Notification', 'Overlay enabled', NotificationType.Success);
 		}
 
+		void this.applyFit();
 		this.emitInjectedOverlays();
+	};
+
+	// TEMP DEBUG: remove once the background/render investigation is done.
+	private debugCapture = async () => {
+		if (!this.window || this.window.isDestroyed()) return;
+		const image = await this.window.webContents.capturePage();
+		const outPath = path.join(app.getPath('userData'), 'overlay-debug.png');
+		fs.writeFileSync(outPath, image.toPNG());
+		this.log.info(`Debug screenshot saved to ${outPath}`);
+
+		try {
+			const info = await this.window.webContents.executeJavaScript(`(() => {
+				const cs = (el) => el ? getComputedStyle(el).backgroundColor : null;
+				const dims = (el) => el ? {
+					scrollW: el.scrollWidth, scrollH: el.scrollHeight,
+					clientW: el.clientWidth, clientH: el.clientHeight,
+					offsetW: el.offsetWidth, offsetH: el.offsetHeight,
+				} : null;
+				const board = document.querySelector('[id^="layer-"]')?.parentElement;
+				return JSON.stringify({
+					location: location.pathname,
+					isElectron: typeof window.electron,
+					innerWidth: window.innerWidth,
+					innerHeight: window.innerHeight,
+					devicePixelRatio: window.devicePixelRatio,
+					htmlBg: cs(document.documentElement),
+					bodyBg: cs(document.body),
+					htmlDims: dims(document.documentElement),
+					bodyDims: dims(document.body),
+					boardDims: dims(board),
+					boardInlineStyle: board?.getAttribute('style'),
+					injectedCount: document.querySelectorAll('[id^="layer-"]').length,
+				});
+			})()`);
+			this.log.info(`Debug page state: ${info}`);
+		} catch (err) {
+			this.log.error('Debug executeJavaScript failed:', err);
+		}
 	};
 
 	private closeOverlay = (overlayId: string) => {

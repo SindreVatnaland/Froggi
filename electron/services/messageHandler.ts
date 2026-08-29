@@ -430,6 +430,7 @@ export class MessageHandler {
 	}
 	private tailscaleBin: string | undefined = undefined;
 	private tailscaleLastStatus: { installed: boolean; authenticated: boolean; funnelActive: boolean } | null = null;
+	private tailscaleScanAttempted = false;
 
 	private readonly tailscaleCandidates = [
 		'tailscale',
@@ -439,17 +440,20 @@ export class MessageHandler {
 	];
 
 	private async detectTailscaleStatus(): Promise<void> {
-		// Re-scan candidates only if bin not yet found
+		// Re-scan candidates only if bin not yet found. Once not installed, this repeats
+		// every poll (bin never resolves) — only log the scan the first time, not every 10s.
 		if (!this.tailscaleBin) {
-			this.log.info('detectTailscaleStatus: scanning candidates');
+			const logScan = !this.tailscaleScanAttempted;
+			this.tailscaleScanAttempted = true;
+			if (logScan) this.log.info('detectTailscaleStatus: scanning candidates');
 			for (const candidate of this.tailscaleCandidates) {
 				const exists = await new Promise<boolean>((resolve) => {
 					exec(`"${candidate}" version`, { timeout: 2000 }, (err) => resolve(!err));
 				});
-				this.log.info(`  candidate ${candidate}: ${exists ? 'found' : 'not found'}`);
+				if (logScan) this.log.info(`  candidate ${candidate}: ${exists ? 'found' : 'not found'}`);
 				if (exists) { this.tailscaleBin = candidate; break; }
 			}
-			this.log.info('detectTailscaleStatus: bin=', this.tailscaleBin);
+			if (logScan) this.log.info('detectTailscaleStatus: bin=', this.tailscaleBin);
 		}
 
 		const bin = this.tailscaleBin;
