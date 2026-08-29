@@ -87,9 +87,11 @@ export class ElectronOverlayStore {
 		return overlays[overlayId]
 	}
 
-	async createOverlay(aspectRatio: AspectRatio): Promise<void> {
+	async createOverlay(aspectRatio: AspectRatio, title?: string): Promise<string> {
 		const overlay = getNewOverlay(aspectRatio);
-		this.setOverlay(overlay)
+		if (title) overlay.title = title;
+		await this.setOverlay(overlay);
+		return overlay.id;
 	}
 
 	removeDuplicateItems(): void {

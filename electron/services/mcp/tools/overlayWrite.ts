@@ -19,6 +19,29 @@ const partialPayloadSchema = z.record(z.string(), z.unknown()).optional();
 
 export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
+		'create_overlay',
+		{
+			description: 'Create a new, empty custom overlay and return its id. The overlay ships with all stats scenes (WaitingForDolphin, Menu, InGame, PostGame, PostSet, RankChange, StrikePhase), each with one empty layer (index 0). After creating, use add_overlay_element to design it (start with statsScene "inGame", layerIndex 0), then obs_add_overlay_browser_source to put it in OBS.',
+			inputSchema: {
+				title: z.string().optional().describe('Overlay name shown in Froggi. Defaults to an auto-generated name.'),
+				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Overlay aspect ratio, e.g. {width:16,height:9}. Defaults to 16:9.'),
+			},
+		},
+		async ({ title, aspectRatio }) => {
+			const aspect = aspectRatio ?? { width: 16, height: 9 };
+			const overlayId = await mcpContext.overlayStore!.createOverlay(aspect, title);
+			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			return text({
+				ok: true,
+				overlayId,
+				title: overlay?.title,
+				scenes: STATS_SCENES,
+				next: 'Use add_overlay_element with this overlayId (statsScene e.g. "inGame", layerIndex 0), then obs_add_overlay_browser_source.',
+			});
+		},
+	);
+
+	server.registerTool(
 		'add_overlay_element',
 		{
 			description: 'Add a new element to a layer, auto-placed in the first free grid space. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults.',

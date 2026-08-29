@@ -63,6 +63,40 @@ export const webhookTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'game-state-websocket',
+		title: 'Consume game state over WebSocket (live event stream)',
+		category: 'automation',
+		summary: 'Besides outbound webhooks, Froggi broadcasts every event over WebSocket. A client (e.g. a Home Assistant bridge) connects once and receives all game state live — including PercentChange — with no auth for read-only listeners.',
+		blocks: [
+			{
+				type: 'paragraph',
+				text: 'Two ways to get game state out of Froggi: (1) outbound webhooks — Froggi POSTs the events you pick to a URL; (2) the WebSocket stream — a client connects and receives EVERY event Froggi emits, live. Webhooks are best for an HA-native webhook trigger with no extra process; the WebSocket is best for a persistent homelab bridge that maps many events at once.',
+			},
+			{
+				type: 'list',
+				text: 'Connecting:',
+				items: [
+					'Local network: ws://<froggi-host>:3100 (the external-client port — same one OBS browser sources use)',
+					'Remote / over Tailscale: wss://<magicdns>.ts.net (Express upgrades WebSocket on port 3200; Tailscale terminates TLS)',
+					'Read-only listeners need NO authentication — you only send an AuthorizationKey if the client wants to send commands back',
+				],
+			},
+			{
+				type: 'list',
+				text: 'Message format — each message is a JSON object keyed by event name, value is the payload array:',
+				items: [
+					'{ "PercentChange": [ { "p1": {…}, "p2": {…}, "currentPlayer": { "current": 67.8, … } } ] }',
+					'{ "StockChange": [ { "currentPlayer": { "current": 3, "deathDirection": "left" }, … } ] }',
+					'Same event names and payload shapes as the webhooks (GameStart, GameEnd, PercentChange, StockChange, RankChange, …)',
+				],
+			},
+			{
+				type: 'note',
+				text: 'For lights-follow-percent via WebSocket: a small bridge (Node ws, Python websockets, or HA AppDaemon/pyscript) opens the socket, reads payload.currentPlayer.current on each PercentChange, and calls the Home Assistant light.turn_on service with a color scaled from the percent (see the smart-home topic for the hue/brightness curve). One persistent connection replaces per-event webhook config.',
+			},
+		],
+	},
+	{
 		id: 'webhooks-smart-home',
 		title: 'Drive smart-home lights from game events (Homey / Home Assistant)',
 		category: 'automation',
