@@ -20,7 +20,7 @@ export class SqliteCurrentPlayer {
 
   async initializeRepositories() {
     await this.sqlite.initializing;
-    this.currentPlayerRepo = this.sqlite.AppDataSource.getRepository(CurrentPlayerEntity);
+    this.currentPlayerRepo = this.sqlite.getRepository(CurrentPlayerEntity);
   }
 
   async getCurrentPlayer(connectCode: string): Promise<CurrentPlayer | null> {

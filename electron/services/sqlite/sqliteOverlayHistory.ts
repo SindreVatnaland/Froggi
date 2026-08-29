@@ -18,7 +18,7 @@ export class SqliteOverlayHistory {
 
   async initializeRepositories() {
     await this.sqlite.initializing;
-    this.historyRepo = this.sqlite.AppDataSource.getRepository(OverlayHistoryEntity);
+    this.historyRepo = this.sqlite.getRepository(OverlayHistoryEntity);
   }
 
   async recordEdit(overlayId: string, statsScene: LiveStatsScene, beforeScene: Scene, afterScene: Scene, label: string = ''): Promise<OverlayHistoryEntity | null> {

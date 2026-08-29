@@ -219,11 +219,22 @@ export class StatsDisplay {
 		}
 
 		const isFirstReplay = Boolean(isReplay && recentGames.filter(g => g.isReplay).length === 0);
-		const isNewMatchId = settings?.matchInfo?.matchId !== previousGameSettings?.matchInfo?.matchId;
+		// Local games have no live matchId; once persisted they carry a synthetic "local-*" id, so
+		// comparing the live "" against a persisted synthetic id would falsely flag every local game
+		// as a new set. Only treat it as a new match when a real (non-empty) live matchId changes.
+		const currentMatchId = settings?.matchInfo?.matchId ?? "";
+		const prevMatchId = previousGameSettings?.matchInfo?.matchId ?? "";
+		const isNewMatchId = currentMatchId ? currentMatchId !== prevMatchId : false;
 		const prevGame = recentGames.at(-1);
 		const bestOf = this.storeLiveStats.getBestOf();
 		const prevSetEnded = prevGame?.score?.some(score => score >= Math.ceil(bestOf / 2));
 		const isNewGame = Boolean(isNewMatchId || isFirstReplay || prevSetEnded);
+
+		// Offline/local play has no live matchId. Mint a synthetic per-set id so its games group
+		// under a unique id instead of piling under "" (the unbounded bucket that hung startup).
+		if (!currentMatchId && (isNewGame || !this.storeLiveStats.getLocalSetId())) {
+			this.storeLiveStats.setLocalSetId(`local-${crypto.randomUUID()}`);
+		}
 
 		this.storeLiveStats.setGameSettings(settings);
 		return { settings, isNewGame };
@@ -584,7 +595,9 @@ export class StatsDisplay {
 				matchInfo: {
 					...settings?.matchInfo,
 					mode: getGameMode(settings),
-					matchId: matchId ? matchId : "",
+					// Persist the synthetic local set id when Slippi gave no matchId, so local games
+					// group per set. getGameMode still reads "local" (the id doesn't match its regex).
+					matchId: matchId ? matchId : (this.storeLiveStats.getLocalSetId() ?? ""),
 					bestOf: this.storeLiveStats.getBestOf(),
 				},
 			},

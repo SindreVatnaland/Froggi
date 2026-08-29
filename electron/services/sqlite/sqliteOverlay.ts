@@ -20,8 +20,8 @@ export class SqliteOverlay {
 
   async initializeRepositories() {
     await this.sqlite.initializing;
-    this.overlayRepo = this.sqlite.AppDataSource.getRepository(OverlayEntity);
-    this.sceneRepo = this.sqlite.AppDataSource.getRepository(SceneEntity);
+    this.overlayRepo = this.sqlite.getRepository(OverlayEntity);
+    this.sceneRepo = this.sqlite.getRepository(SceneEntity);
   }
 
   async getOverlays() {

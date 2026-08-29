@@ -7,6 +7,9 @@ import { GameStatsEntity } from "./entities/game/gameStatsEntity";
 import { ElectronGamesStore } from "../../services/store/storeGames";
 import { MessageHandler } from "../../services/messageHandler";
 
+// A set is at most best-of-N (+ tiebreaks); 30 covers any real set with headroom.
+const MAX_RECENT_GAMES = 30;
+
 @singleton()
 export class SqliteGame {
   private gameStatsRepo!: Repository<GameStatsEntity>;
@@ -21,7 +24,7 @@ export class SqliteGame {
 
   async initializeRepositories() {
     await this.sqlite.initializing;
-    this.gameStatsRepo = this.sqlite.AppDataSource.getRepository(GameStatsEntity);
+    this.gameStatsRepo = this.sqlite.getRepository(GameStatsEntity);
   }
 
   async addGameStats(gameStats: GameStats): Promise<GameStats | null> {
@@ -65,8 +68,18 @@ export class SqliteGame {
     try {
       const query = { settings: { matchInfo: { matchId, mode } } } as FindOptionsWhere<GameStatsEntity>;
 
-      const games = await this.gameStatsRepo.find({ where: query, order: { timestamp: 'ASC' } });
-      return games || [];
+      // Cap the read: matchId "" is a catch-all bucket for every offline/local game, which
+      // grows unbounded. better-sqlite3 is synchronous, so an unbounded .find() blocks the
+      // main thread long enough for macOS to hang-kill the app on startup. A set is at most
+      // best-of-N, so MAX_RECENT_GAMES is never hit by a real set (order/behaviour unchanged
+      // for those) — it only caps the legacy "" bucket. Order stays ASC: `take` with eager
+      // relations doesn't preserve a DESC+reverse ordering across the join.
+      const games = await this.gameStatsRepo.find({
+        where: query,
+        order: { timestamp: 'ASC' },
+        take: MAX_RECENT_GAMES,
+      });
+      return games ?? [];
     } catch (error) {
       this.log.error("Error getting games by id:", error);
       return [];

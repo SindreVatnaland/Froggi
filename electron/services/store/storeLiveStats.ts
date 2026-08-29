@@ -23,6 +23,9 @@ export class ElectronLiveStatsStore {
 	private gameStats: GameStats | undefined;
 	private matchStats: MatchStats;
 	private liveStatsScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
+	// Synthetic id for the current offline/local set. Slippi gives local games no matchId,
+	// so without this they all collide under "" — one unbounded bucket. Minted per set.
+	private localSetId: string | undefined;
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -125,6 +128,14 @@ export class ElectronLiveStatsStore {
 
 	getBestOf(): BestOf {
 		return (this.gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3) as BestOf;
+	}
+
+	getLocalSetId(): string | undefined {
+		return this.localSetId;
+	}
+
+	setLocalSetId(id: string | undefined) {
+		this.localSetId = id;
 	}
 
 
