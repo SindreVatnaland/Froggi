@@ -60,7 +60,7 @@
 		const MIN = 100;
 		const xs: number[] = [];
 		const ys: number[] = [];
-		for (const p of Object.values(frame.players)) {
+		for (const p of Object.values(frame.players ?? {})) {
 			if (!p?.post) continue;
 			xs.push(p.post.positionX ?? 0);
 			ys.push(p.post.positionY ?? 0);
@@ -126,7 +126,7 @@
 
 	// Kick off animation loads for present players whenever the frame changes.
 	$: if (frame) {
-		for (const [idxStr, player] of Object.entries(frame.players)) {
+		for (const [idxStr, player] of Object.entries(frame.players ?? {})) {
 			if (!player?.post) continue;
 			ensureAnimations(Number(idxStr), player.post.internalCharacterId ?? 0, settingsExternalId(Number(idxStr)));
 		}
@@ -140,7 +140,7 @@
 	$: renderDatas = ((): RenderData[] => {
 		if (!frame) return [];
 		const out: RenderData[] = [];
-		for (const [idxStr, player] of Object.entries(frame.players)) {
+		for (const [idxStr, player] of Object.entries(frame.players ?? {})) {
 			if (!player?.post) continue;
 			const playerIndex = Number(idxStr);
 			const anims = animationsByPlayer[playerIndex];

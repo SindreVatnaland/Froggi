@@ -109,6 +109,34 @@ element PER stock, laid left→right. Gate each on that stock number via visibil
 **Percent** — just below each player's stock row (demo: P1 x≈114, P2 x≈291, y≈239). Default to the
 pre-animated Custom variant (see above). Reads 0 when that player is dead.
 
+**Separate layers** — put stock icons and percent on DIFFERENT layers when they're close enough to
+overlap. They animate independently (stock-loss vs percent punch), and overlapping items on one layer
+fight for grid space. General rule: overlapping or independently-animated elements → separate layers
+(add_overlay_layer / target a higher layerIndex).
+
+**Timer** — elements InGameTimerMinutes (4300), InGameTimerSeconds (4301), and the milliseconds/
+centisecond digits InGameTimerMilliseconds1/2/3 (4302/4303/4304). Placement differs by game:
+- **Melee**: timer CENTERED at the top, and INCLUDE the centisecond decimals (minutes:seconds + 2 ms
+  digits, e.g. 4302+4303).
+- **Ultimate**: timer TOP-RIGHT, NO decimals (minutes + seconds only).
+Gate timer digits on \`Game Running=True, Game Paused=False, Game Countdown=False, Game Ready=False,
+Game Go=False\` so they hide during the intro/countdown.
+
+**Player radar** (InGamePlayerRadar 3200, or InGamePlayerRadarAnimated 3201 = live character graphics):
+- **Melee**: NO radar. **Ultimate**: include the radar.
+- Default to the plain radar (3200); use the animated one (3201) when the user wants live character
+  graphics on it.
+- Visible only when a player is off stage: visibility \`Player 1 Off Stage\` / \`Player 2 Off Stage\`
+  (shown while either has been off stage a moment). Demo places it top area (x≈376, y≈8).
+
+**Countdown & end text** — the "3..2..1" and TIME/GAME callouts:
+- Countdown: InGameTimerSecondsCountdown (4305), centered, visible only the last ~5s via visibility
+  \`Game Countdown=True, Game Paused=False\`, with \`animationTrigger.in.type = "scale"\` so each number
+  pops as it counts.
+- Timer runs out → show a "Time" text element gated on visibility \`Game Time\`.
+- Game ends (by stocks) → show a "Game" text element gated on visibility \`Game End\`.
+- Intro Ready/Go use conditions \`Game Ready\` / \`Game Go\` (see the Ready/Go recipe).
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
   InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
