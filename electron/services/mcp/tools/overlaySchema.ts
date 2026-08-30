@@ -76,11 +76,25 @@ Both carry \`{ in: AnimationSettings, out: AnimationSettings, selectedOptions }\
 - AnimationSettings = { type: Animation, options: { delay, duration, easing, start, x, y } }.
   x/y are used by fly/slide. duration/delay in ms.
 
+## Player percent — which element to use
+There are two families of in-game percent element:
+- **Pre-animated ("Custom")** — InGamePlayer1PercentCustom (1008), InGamePlayer2PercentCustom (1009),
+  InGameCurrentPlayerPercentCustom (1007), + DecimalCustom (1010-1012). Renders per-digit with a
+  built-in punch animation on each number as damage rises, plus start→end color interpolation.
+  **Default to this** for a player's damage percent unless the user asks for a specific/different
+  animation.
+- **Vanilla** — InGamePlayer1Percent (1002), InGamePlayer2Percent (1003), InGameCurrentPlayerPercent
+  (1001), + Decimal (1004-1006). Plain text number with no built-in per-digit animation. Use this
+  when you want to drive a *different* animation yourself via \`animationTrigger\`.
+Both support \`percent.startColor\`/\`percent.endColor\`. Percent reads as 0 when the player is dead or
+not in game (the underlying value is null then).
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
-- **Percent reddens as damage rises**: use a percent element (e.g. InGamePlayer1Percent) and set
-  \`percent.startColor\`/\`percent.endColor\`. Built in by default.
-- **Percent flashes when that player takes damage**: set \`animationTrigger.in.type\` (e.g. \`scale\`)
-  and \`animationTrigger.selectedOptions["Player1 Percent Increase"] = true\`.
+- **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
+  InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
+- **Percent flashes when that player takes damage**: the Custom variant already animates per digit; to
+  add your own effect use the vanilla variant, set \`animationTrigger.in.type\` (e.g. \`scale\`) and
+  \`animationTrigger.selectedOptions["Player1 Percent Increase"] = true\`.
 - **Countdown / Ready / Go animate**: element with \`animationTrigger.in.type = "scale"\` and trigger
   \`"Game Countdown"\`; put Ready and Go on separate layers, each with its own in/out animation and a
   visibility condition (\`"Game Ready"\` / \`"Game Go"\`).
