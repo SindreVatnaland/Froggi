@@ -1,5 +1,6 @@
 import type { ElectronOverlayStore } from '../store/storeOverlay';
 import type { SqliteOverlayHistory } from '../sqlite/sqliteOverlayHistory';
+import type { SqliteOrm } from '../sqlite/initiSqlite';
 import type { ObsWebSocket } from '../obs';
 import type { ElectronObsStore } from '../store/storeObs';
 import type { ElectronCommandStore } from '../store/storeCommands';
@@ -24,6 +25,7 @@ import type { ErrorReporter } from '../errorReporter';
 export const mcpContext: {
 	overlayStore?: ElectronOverlayStore;
 	overlayHistory?: SqliteOverlayHistory;
+	sqliteOrm?: SqliteOrm;
 	obsWebSocket?: ObsWebSocket;
 	storeObs?: ElectronObsStore;
 	commandStore?: ElectronCommandStore;

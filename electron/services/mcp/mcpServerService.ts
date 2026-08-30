@@ -11,6 +11,7 @@ import { MessageHandler } from '../messageHandler';
 import { ElectronFroggiStore } from '../store/storeFroggi';
 import { ElectronOverlayStore } from '../store/storeOverlay';
 import { SqliteOverlayHistory } from '../sqlite/sqliteOverlayHistory';
+import { SqliteOrm } from '../sqlite/initiSqlite';
 import { ObsWebSocket } from '../obs';
 import { ElectronObsStore } from '../store/storeObs';
 import { ElectronCommandStore } from '../store/storeCommands';
@@ -67,6 +68,7 @@ export class McpServerService {
 		@inject(ElectronFroggiStore) private froggiStore: ElectronFroggiStore,
 		@inject(ElectronOverlayStore) private overlayStore: ElectronOverlayStore,
 		@inject(SqliteOverlayHistory) private overlayHistory: SqliteOverlayHistory,
+		@inject(SqliteOrm) private sqliteOrm: SqliteOrm,
 		@inject(ObsWebSocket) private obsWebSocket: ObsWebSocket,
 		@inject(ElectronObsStore) private storeObs: ElectronObsStore,
 		@inject(ElectronCommandStore) private commandStore: ElectronCommandStore,
@@ -83,6 +85,7 @@ export class McpServerService {
 
 		mcpContext.overlayStore = this.overlayStore;
 		mcpContext.overlayHistory = this.overlayHistory;
+		mcpContext.sqliteOrm = this.sqliteOrm;
 		mcpContext.obsWebSocket = this.obsWebSocket;
 		mcpContext.storeObs = this.storeObs;
 		mcpContext.commandStore = this.commandStore;

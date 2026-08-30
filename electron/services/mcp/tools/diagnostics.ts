@@ -44,6 +44,12 @@ export function registerDiagnosticsTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'get_sqlite_debug',
+		{ description: 'SQLite host health for debugging crashes: mode (utilityProcess vs in-process), whether the host is alive, restart/crash counts, the last exit (code + time), pending call count, and the last ~40 DB ops (kind/entity/method). The last op before an exit is the prime suspect for a native abort. Pair with read_recent_logs to see [dbHost stderr] lines.', inputSchema: {} },
+		async () => text(mcpContext.sqliteOrm!.getDebugInfo()),
+	);
+
+	server.registerTool(
 		'get_current_screen',
 		{ description: 'The route/page currently shown in the Froggi desktop window — use this to know what the user is looking at before assuming which overlay they mean.', inputSchema: {} },
 		async () => text({ route: mcpContext.routeStore!.getCurrentRoute() }),

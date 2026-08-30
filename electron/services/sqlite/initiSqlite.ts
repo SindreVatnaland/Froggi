@@ -29,6 +29,23 @@ export class SqliteOrm {
   private pending = new Map<number, Pending>();
   private restartCount = 0;
   private lastRestart = 0;
+  // Debug ring buffer of recent DB ops + last crash, surfaced via getDebugInfo() / the MCP debug tool.
+  private recentOps: { t: string; kind: string; entity?: string; method?: string; ms?: number }[] = [];
+  private lastExit: { t: string; code: number | null } | null = null;
+  private totalCrashes = 0;
+
+  /** Snapshot for the MCP get_sqlite_debug tool: host liveness, crash history, and the last DB ops. */
+  getDebugInfo() {
+    return {
+      mode: this.localDs ? 'in-process' : 'utilityProcess',
+      hostAlive: !!this.child,
+      restartCount: this.restartCount,
+      totalCrashes: this.totalCrashes,
+      lastExit: this.lastExit,
+      pendingCalls: this.pending.size,
+      recentOps: this.recentOps.slice(-40),
+    };
+  }
 
   constructor(
     @inject('AppDir') private appDir: string,
@@ -61,7 +78,15 @@ export class SqliteOrm {
 
     this.log.info("Initializing SqliteOrm (utilityProcess host)");
     const workerPath = path.join(__dirname, 'dbHost.js');
-    this.child = utilityProcess.fork(workerPath, [], { serviceName: 'froggi-sqlite' });
+    // stdio: 'pipe' so we can capture the host's stdout/stderr — a native better-sqlite3 abort prints
+    // its reason there and then exits (code 6), which is otherwise invisible in a packaged app.
+    this.child = utilityProcess.fork(workerPath, [], { serviceName: 'froggi-sqlite', stdio: 'pipe' });
+
+    this.child.stdout?.on('data', (d: Buffer) => this.log.info('[dbHost stdout]', d.toString().trim()));
+    this.child.stderr?.on('data', (d: Buffer) => {
+      const text = d.toString().trim();
+      if (text) this.log.error('[dbHost stderr]', text);
+    });
 
     this.child.on('message', (msg: { id: number; ok: boolean; result?: unknown; error?: string }) => {
       const p = this.pending.get(msg.id);
@@ -72,7 +97,10 @@ export class SqliteOrm {
     });
 
     this.child.on('exit', (code) => {
-      this.log.error(`SQLite host exited (code ${code}).`);
+      this.totalCrashes++;
+      this.lastExit = { t: new Date().toISOString(), code };
+      const lastOp = this.recentOps[this.recentOps.length - 1];
+      this.log.error(`SQLite host exited (code ${code}). Last DB op before exit:`, lastOp ?? '(none)');
       this.child = null;
       for (const [, p] of this.pending) p.reject(new Error('SQLite host exited'));
       this.pending.clear();
@@ -110,6 +138,14 @@ export class SqliteOrm {
   private async request(payload: Record<string, unknown>): Promise<unknown> {
     // If the host died between calls, wait for the in-flight restart to bring it back before sending.
     if (!this.child) await this.initializing;
+    // Debug trail: the last op recorded before a crash is the prime suspect for the native abort.
+    this.recentOps.push({
+      t: new Date().toISOString(),
+      kind: String(payload.kind),
+      entity: payload.entity as string | undefined,
+      method: payload.method as string | undefined,
+    });
+    if (this.recentOps.length > 60) this.recentOps.shift();
     const id = ++this.seq;
     return new Promise((resolve, reject) => {
       if (!this.child) return reject(new Error('SQLite host unavailable'));
