@@ -137,6 +137,13 @@ Game Go=False\` so they hide during the intro/countdown.
 - Game ends (by stocks) → show a "Game" text element gated on visibility \`Game End\`.
 - Intro Ready/Go use conditions \`Game Ready\` / \`Game Go\` (see the Ready/Go recipe).
 
+## Controller inputs
+Digital face buttons A/B/X/Y/Z (InGamePlayer1ControllerButtonA..Z, 3120-3125) ship outline+pressed
+art and render as buttons. The **L/R triggers are different**: use the ANALOG trigger elements —
+InGamePlayer1ControllerAnalogL/R (3152/3153), or current-player 3150/3151 — which render a fill bar
+by trigger depth and are what the built-in controller demos use. The DIGITAL ControllerButtonL/R
+(3126/3127) have NO art shipped and render blank, so don't use them for L/R; pick the Analog variants.
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
   InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
