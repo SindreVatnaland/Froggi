@@ -51,6 +51,14 @@ Every element lives in one cell of a square (1:1) CSS grid. The element fills it
   the box, so if the box only fits the current value the text will visibly resize as the value's
   length changes (e.g. percent 9% → 199%). Size the box for the max length up front.
 
+## Default placement for per-player elements (don't ask — use the common convention)
+When the user doesn't specify positions, use the standard Smash-broadcast layout instead of asking:
+**Player 1 on the LEFT, Player 2 on the RIGHT**, anchored to the BOTTOM by default (the current player,
+when used, goes wherever a single-player element makes sense — usually bottom-left). "In each corner"
+means P1 bottom-left, P2 bottom-right unless the user says top. On the 512x512 grid: bottom-left ≈
+{x:8,y:392,w:112,h:112}, bottom-right ≈ {x:392,y:392,w:112,h:112}, top-left ≈ {x:8,y:8,...},
+top-right ≈ {x:392,y:8,...}. Only ask if the request is genuinely ambiguous beyond left/right/corner.
+
 ## Payload shape (data)
 Pass a partial payload to add_overlay_element / update_overlay_element; omitted fields use defaults.
 - \`string\`: text content (for text elements).
