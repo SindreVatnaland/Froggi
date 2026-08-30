@@ -32,6 +32,31 @@ const clampGridPosition = (current: { x: number; y: number; w: number; h: number
 	return { x, y, w, h };
 };
 
+/**
+ * Builds a grid item. Uses `position` when given (clamped), otherwise auto-places in the first
+ * free grid space relative to `existingItems`. Shared by single and batch element adds.
+ */
+const buildGridItem = (
+	elementId: CustomElement,
+	payload: ElementPayload,
+	existingItems: GridContentItem[],
+	position?: GridPosition,
+	itemId: string = newId(),
+): GridContentItem => {
+	const item: GridContentItem = {
+		[COL]: gridHelp.item({ w: 24, h: 24, x: 0, y: 0, min: { w: MIN, h: MIN }, max: { y: COL - MIN, h: COL + 1 } }),
+		id: itemId,
+		elementId,
+		data: payload,
+	};
+	if (position) {
+		item[COL] = { ...item[COL], ...clampGridPosition(item[COL], position) };
+	} else {
+		item[COL] = { ...item[COL], ...gridHelp.findSpace(item, existingItems, COL) };
+	}
+	return item;
+};
+
 @singleton()
 export class ElectronOverlayStore {
 	constructor(
@@ -291,28 +316,40 @@ export class ElectronOverlayStore {
 		const layer = overlay?.[statsScene]?.layers[layerIndex];
 		if (isNil(overlay) || isNil(layer)) return;
 
-		const newItem: GridContentItem = {
-			[COL]: gridHelp.item({
-				w: 24,
-				h: 24,
-				x: 0,
-				y: 0,
-				min: { w: MIN, h: MIN },
-				max: { y: COL - MIN, h: COL + 1 },
-			}),
-			id: itemId,
-			elementId,
-			data: payload,
-		};
-		if (position) {
-			newItem[COL] = { ...newItem[COL], ...clampGridPosition(newItem[COL], position) };
-		} else {
-			newItem[COL] = { ...newItem[COL], ...gridHelp.findSpace(newItem, layer.items, COL) };
-		}
-
+		const newItem = buildGridItem(elementId, payload, layer.items, position, itemId);
 		layer.items = [...layer.items, newItem];
 
 		return this.setScene(overlayId, statsScene, overlay[statsScene]);
+	}
+
+	/**
+	 * Adds several elements to one scene in a single save (one persist + one broadcast), so a whole
+	 * HUD can be built in one MCP call. Each element auto-places unless it carries a `position`;
+	 * auto-placement accounts for elements added earlier in the same batch. Skips entries whose
+	 * layerIndex doesn't exist. Used by MCP overlay-write tools.
+	 */
+	async addItemsToScene(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		items: { layerIndex: number; elementId: CustomElement; payload: ElementPayload; position?: GridPosition }[],
+	): Promise<{ scene: Scene; addedIds: string[] } | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const sceneObj = overlay?.[statsScene];
+		if (isNil(overlay) || isNil(sceneObj)) return;
+
+		const addedIds: string[] = [];
+		for (const it of items) {
+			const layer = sceneObj.layers[it.layerIndex];
+			if (isNil(layer)) continue;
+			const id = newId();
+			const item = buildGridItem(it.elementId, it.payload, layer.items, it.position, id);
+			layer.items = [...layer.items, item];
+			addedIds.push(id);
+		}
+
+		const scene = await this.setScene(overlayId, statsScene, sceneObj);
+		if (!scene) return;
+		return { scene, addedIds };
 	}
 
 	/** Moves/resizes an existing element within its layer's grid. Used by MCP overlay-write tools. */

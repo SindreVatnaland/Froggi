@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, merge } from 'lodash';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
 import { LiveStatsScene } from '../../../../frontend/src/lib/models/enum';
@@ -69,12 +69,52 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 
-			const merged: ElementPayload = { ...getDefaultElementPayload(), ...(payload as Partial<ElementPayload> | undefined) };
+			// Deep-merge over defaults so a partial nested payload (e.g. animationTrigger with only
+			// `in`) can't clobber the rest of the structure and leave the editor with an undefined
+			// animation slot. Matches updateItemInLayer's merge semantics.
+			const merged: ElementPayload = merge(getDefaultElementPayload(), payload as Partial<ElementPayload> | undefined);
 			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, undefined, position);
 			if (!afterScene) return error('Failed to add element — see logs');
 
 			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${CustomElement[elementId as CustomElement]}`);
 			return text({ ok: true, addedItemId: afterScene.layers[layerIndex]?.items.at(-1)?.id });
+		},
+	);
+
+	server.registerTool(
+		'add_overlay_elements',
+		{
+			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512x512 grid; optional layerIndex (default 0). Elements without a position auto-place, accounting for others added earlier in the same batch.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				elements: z.array(z.object({
+					elementId: z.number().refine((v) => ELEMENT_TYPES.includes(v as CustomElement), 'Unknown elementId — see list_elements or the CustomElement enum'),
+					payload: partialPayloadSchema,
+					position: gridPositionSchema.optional(),
+					layerIndex: z.number().int().min(0).optional(),
+				})).min(1),
+			},
+		},
+		async ({ overlayId, statsScene, elements }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+
+			const items = elements.map((e) => ({
+				layerIndex: e.layerIndex ?? 0,
+				elementId: e.elementId as CustomElement,
+				payload: merge(getDefaultElementPayload(), e.payload as Partial<ElementPayload> | undefined),
+				position: e.position,
+			}));
+			const missing = items.find((it) => !sceneBefore.layers[it.layerIndex]);
+			if (missing) return error(`No layer at index ${missing.layerIndex} in "${statsScene}"`);
+
+			const result = await mcpContext.overlayStore!.addItemsToScene(overlayId, statsScene as LiveStatsScene, items);
+			if (!result) return error('Failed to add elements — see logs');
+
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(result.scene), `add ${result.addedIds.length} elements`);
+			return text({ ok: true, addedItemIds: result.addedIds });
 		},
 	);
 

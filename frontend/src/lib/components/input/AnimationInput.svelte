@@ -12,6 +12,7 @@
 	export let isSceneElementAnimation: boolean = false;
 
 	const fixAnimationInputDelay = () => {
+		if (!animation?.options) return;
 		if (animation?.options.duration > max) {
 			animation.options.duration = max;
 			notifications.warning(`Duration cannot exceed ${max}ms`, 3000);
