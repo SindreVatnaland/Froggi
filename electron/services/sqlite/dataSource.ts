@@ -34,4 +34,10 @@ export const createDataSource = (dbPath: string): DataSource =>
 		entities: ENTITIES,
 		synchronize: true,
 		logging: false,
+		// Load each relation with its own query instead of one big JOIN. OverlayEntity eager-loads 7
+		// OneToOne scenes, each eager-loading a OneToMany layers — a single joined query becomes a
+		// cartesian product of the per-scene layer counts (an overlay with a 15-layer inGame scene
+		// explodes into thousands of duplicated rows), which hung/aborted the better-sqlite3 host
+		// (~75s → exit code 6) and left overlays never loading. Per-query strategy avoids the blowup.
+		relationLoadStrategy: 'query',
 	});
