@@ -168,6 +168,21 @@ Conditions/triggers: \`Rank Stats Pre Update\` / \`Rank Stats Post Update\` gate
 changes. (A rolling numeric counter on the rating is planned but not built yet — today the value swaps
 old→new between the phases.)
 
+## Player state, techniques & frame (in-game live data)
+Froggi tracks each player's live action state and detects techniques from the action-state sequence
+(actionStateService). Overlay elements to surface them:
+- **Action state**: InGamePlayer1ActionStateName (8100) / …Player2 (8200) / …CurrentPlayer (8000) show
+  the human state name; ActionStateId (8101/8201/8001) the raw id; StateCategory (8115/8215/8015) the
+  grouping. Use these for a "player state" readout.
+- **Technique**: InGamePlayer1Technique (8116) / …Player2 (8216) / …CurrentPlayer (8016) show the most
+  recently detected technique. Detected techniques today (8): wavedash, waveland, ledgedash,
+  shield_drop, ground_tech ("Tech"), wall_tech ("Wall Tech"), l_cancel_success, l_cancel_miss.
+- Both are meant to be paired with an animation trigger that replays when the recent technique / state
+  changes (per-player and current-player). NOTE: those technique-change / state-change AnimationTrigger
+  conditions, and a dedicated frame-number element, are PLANNED but may not exist yet — check
+  list_overlay_conditions (kind:"trigger") and list_elements before assuming; don't invent condition or
+  element names.
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
   InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
