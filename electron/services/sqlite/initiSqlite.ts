@@ -18,7 +18,7 @@ import { createDataSource } from "./dataSource";
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void };
 
 // The repo methods our sqlite services actually use. Kept in sync with the call sites.
-const REPO_METHODS = ['find', 'findOne', 'save', 'remove', 'update', 'delete', 'count'] as const;
+const REPO_METHODS = ['find', 'findOne', 'findOneBy', 'save', 'remove', 'update', 'delete', 'count'] as const;
 
 @singleton()
 export class SqliteOrm {
@@ -101,8 +101,9 @@ export class SqliteOrm {
   /**
    * Returns a proxy that mimics a TypeORM Repository for the methods the services use. In-process
    * (test) mode returns the real repository. In host mode each call forwards to the utilityProcess;
-   * `create` is a synchronous passthrough — the host's `save` normalizes the plain object and
-   * applies column defaults, so there's no need to round-trip just to construct one.
+   * `create` and `merge` are synchronous, in-memory TypeORM helpers (no DB access), so they run
+   * locally instead of round-tripping — the host's `save` normalizes the plain object and applies
+   * column defaults. `create` passes the object through; `merge` assigns the sources onto the target.
    */
   getRepository<T extends ObjectLiteral>(entityClass: EntityTarget<T>): Repository<T> {
     if (this.localDs) return this.localDs.getRepository(entityClass);
@@ -110,6 +111,7 @@ export class SqliteOrm {
     const entity = typeof entityClass === 'function' ? entityClass.name : String((entityClass as { name?: string }).name ?? entityClass);
     const proxy: Record<string, unknown> = {
       create: (obj: unknown) => obj,
+      merge: (target: Record<string, unknown>, ...sources: unknown[]) => Object.assign(target ?? {}, ...sources),
     };
     for (const method of REPO_METHODS) {
       proxy[method] = (...args: unknown[]) => this.request({ kind: 'repo', entity, method, args });
