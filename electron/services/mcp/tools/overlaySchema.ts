@@ -84,8 +84,9 @@ Both carry \`{ in: AnimationSettings, out: AnimationSettings, selectedOptions }\
 - **Countdown / Ready / Go animate**: element with \`animationTrigger.in.type = "scale"\` and trigger
   \`"Game Countdown"\`; put Ready and Go on separate layers, each with its own in/out animation and a
   visibility condition (\`"Game Ready"\` / \`"Game Go"\`).
-- **Stocks drop out when lost**: stock element with \`animationTrigger.out\` (e.g. \`fly random\`) and
-  trigger \`"Player1 Stock Loss"\` (see demo hud.json elements 4314/4315).
+- **Stocks drop out when lost**: stock element with \`animationTrigger.out\` (e.g. \`fly random\`, shown
+  in the app as "Damage" — a hit-styled fly) and trigger \`"Player1 Stock Loss"\` (see demo hud.json
+  elements 4314/4315). Use \`fly random\` for any damage/hit-reaction effect.
 - **Show only while alive / on a given stock**: visibility \`selectedOptions\` with \`"Player 1 Alive"\`
   or \`"Player 1 Stock 3"\` set to 1.`;
 
