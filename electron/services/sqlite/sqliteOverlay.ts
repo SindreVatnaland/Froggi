@@ -6,6 +6,27 @@ import { SqliteOrm } from "./initiSqlite";
 import { Repository } from "typeorm";
 import { SceneEntity } from "./entities/overlay/sceneEntity";
 import { LiveStatsScene } from "../../../frontend/src/lib/models/enum";
+import type { FindManyOptions } from "typeorm";
+
+// Loading an overlay pulls its 7 OneToOne scenes, each with a OneToMany layers relation. TypeORM's
+// default 'join' strategy (and eager relations always use join) emits ONE query joining all 7 scenes'
+// layers → a CARTESIAN PRODUCT of the per-scene layer counts, which explodes into millions of rows and
+// OOMs the better-sqlite3 host (~4GB heap, exit code 6 — "no overlays" + Dolphin instability). Disable
+// eager loading and request the relations explicitly with the 'query' strategy so each loads via its
+// own small query instead. (relationLoadStrategy is ignored for EAGER relations, hence loadEagerRelations:false.)
+const OVERLAY_LOAD_OPTIONS: Pick<FindManyOptions<OverlayEntity>, 'loadEagerRelations' | 'relationLoadStrategy' | 'relations'> = {
+  loadEagerRelations: false,
+  relationLoadStrategy: 'query',
+  relations: {
+    waitingForDolphin: { layers: true },
+    menu: { layers: true },
+    inGame: { layers: true },
+    postGame: { layers: true },
+    postSet: { layers: true },
+    rankChange: { layers: true },
+    strikePhase: { layers: true },
+  },
+};
 
 @singleton()
 export class SqliteOverlay {
@@ -26,7 +47,7 @@ export class SqliteOverlay {
 
   async getOverlays() {
     await this.sqlite.initializing;
-    const overlays = await this.overlayRepo.find();
+    const overlays = await this.overlayRepo.find(OVERLAY_LOAD_OPTIONS);
     overlays.forEach(overlay => {
       overlay.waitingForDolphin?.layers.sort((a, b) => a.index - b.index);
       overlay.menu?.layers.sort((a, b) => a.index - b.index);
@@ -45,7 +66,7 @@ export class SqliteOverlay {
     this.log.info("Add or updating overlay:", overlay.id);
 
     try {
-      const existing = await this.overlayRepo.findOne({ where: { id: overlay.id } });
+      const existing = await this.overlayRepo.findOne({ where: { id: overlay.id }, ...OVERLAY_LOAD_OPTIONS });
       if (existing) {
         // Merge into the loaded entity so TypeORM issues UPDATE, not INSERT
         this.overlayRepo.merge(existing, overlay);
@@ -64,7 +85,7 @@ export class SqliteOverlay {
     this.log.info("Deleting overlay:", overlayId)
 
     try {
-      const overlay = await this.overlayRepo.findOne({ where: { id: overlayId } })
+      const overlay = await this.overlayRepo.findOne({ where: { id: overlayId }, ...OVERLAY_LOAD_OPTIONS })
       if (!overlay) return;
 
       for (const key of Object.keys(LiveStatsScene)) {
