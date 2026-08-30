@@ -98,6 +98,22 @@ export class ElectronOverlayStore {
 		return overlays[overlayId]
 	}
 
+	/** Patches a scene's `active`/`fallback` config (leaves layers/items untouched). Used by MCP overlay-write tools. */
+	async setSceneConfig(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		patch: { active?: boolean; fallback?: LiveStatsScene },
+	): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const scene = overlay?.[statsScene];
+		if (isNil(overlay) || isNil(scene)) return;
+
+		if (patch.active !== undefined) scene.active = patch.active;
+		if (patch.fallback !== undefined) scene.fallback = patch.fallback;
+
+		return this.setScene(overlayId, statsScene, scene);
+	}
+
 	async createOverlay(aspectRatio: AspectRatio, title?: string): Promise<string> {
 		const overlay = getNewOverlay(aspectRatio);
 		if (title) overlay.title = title;

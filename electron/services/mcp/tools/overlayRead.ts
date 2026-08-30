@@ -11,11 +11,16 @@ const error = (message: string) => ({ content: [{ type: 'text' as const, text: m
 const STATS_SCENES = Object.values(LiveStatsScene);
 
 function summarizeOverlay(overlay: Record<string, unknown> & { id: string; title: string; isDemo: boolean; aspectRatio: unknown }) {
-	const scenes: Record<string, { layers: number; items: number }> = {};
+	const scenes: Record<string, { layers: number; items: number; active: boolean; fallback?: string }> = {};
 	for (const statsScene of STATS_SCENES) {
-		const scene = overlay[statsScene] as { layers?: { items?: unknown[] }[] } | undefined;
+		const scene = overlay[statsScene] as { layers?: { items?: unknown[] }[]; active?: boolean; fallback?: string } | undefined;
 		const layers = scene?.layers ?? [];
-		scenes[statsScene] = { layers: layers.length, items: layers.reduce((sum, l) => sum + (l.items?.length ?? 0), 0) };
+		scenes[statsScene] = {
+			layers: layers.length,
+			items: layers.reduce((sum, l) => sum + (l.items?.length ?? 0), 0),
+			active: scene?.active ?? false,
+			fallback: scene?.fallback,
+		};
 	}
 	return { id: overlay.id, title: overlay.title, isDemo: overlay.isDemo, aspectRatio: overlay.aspectRatio, scenes };
 }

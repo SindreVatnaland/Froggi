@@ -106,6 +106,34 @@ export function registerOverlayWriteTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'configure_overlay_scene',
+		{
+			description: 'Enable/disable a scene and/or set its fallback. A disabled scene (active:false) is not shown; the overlay falls back to the fallback scene while that game state is active. Use this to keep an overlay visible only in some states, e.g. a controller overlay active in inGame + menu, every other scene disabled with fallback "menu". Records undo history.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				active: z.boolean().optional().describe('true = scene shown, false = disabled (falls back)'),
+				fallback: z.enum(STATS_SCENES as [string, ...string[]]).optional().describe('Scene to show instead while this one is disabled, e.g. "menu"'),
+			},
+		},
+		async ({ overlayId, statsScene, active, fallback }) => {
+			if (active === undefined && fallback === undefined) return error('Provide active and/or fallback.');
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+
+			const afterScene = await mcpContext.overlayStore!.setSceneConfig(overlayId, statsScene as LiveStatsScene, {
+				active,
+				fallback: fallback as LiveStatsScene | undefined,
+			});
+			if (!afterScene) return error('Failed to configure scene — see logs');
+
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `configure ${statsScene} (active=${active}, fallback=${fallback})`);
+			return text({ ok: true, statsScene, active: afterScene.active, fallback: afterScene.fallback });
+		},
+	);
+
+	server.registerTool(
 		'update_overlay_element',
 		{
 			description: 'Merge a partial payload patch into an existing element (styling, text, etc.) — sibling fields not mentioned are preserved. Records undo history.',
