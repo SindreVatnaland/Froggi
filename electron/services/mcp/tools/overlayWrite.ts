@@ -17,6 +17,15 @@ const ELEMENT_TYPES = Object.values(CustomElement).filter((v) => typeof v === 'n
 // getDefaultElementPayload() before use, so no field here needs to be required.
 const partialPayloadSchema = z.record(z.string(), z.unknown()).optional();
 
+// Grid placement. The overlay grid is 512x512 units; x/y is the top-left, w/h the size.
+// Right corner example: a 90x90 element at the top-right ≈ { x: 412, y: 10, w: 90, h: 90 }.
+const gridPositionSchema = z.object({
+	x: z.number().min(0).max(512).optional(),
+	y: z.number().min(0).max(512).optional(),
+	w: z.number().min(1).max(512).optional(),
+	h: z.number().min(1).max(512).optional(),
+});
+
 export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'create_overlay',
@@ -44,27 +53,55 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_element',
 		{
-			description: 'Add a new element to a layer, auto-placed in the first free grid space. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults.',
+			description: 'Add a new element to a layer. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults. Omit `position` to auto-place in the first free grid slot, or pass it to place at a specific grid coordinate/size (512x512 grid; e.g. top-right corner ≈ {x:412,y:10,w:90,h:90}).',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
 				layerIndex: z.number().int().min(0),
 				elementId: z.number().refine((v) => ELEMENT_TYPES.includes(v as CustomElement), 'Unknown elementId — see list_elements or the CustomElement enum'),
 				payload: partialPayloadSchema,
+				position: gridPositionSchema.optional(),
 			},
 		},
-		async ({ overlayId, statsScene, layerIndex, elementId, payload }) => {
+		async ({ overlayId, statsScene, layerIndex, elementId, payload, position }) => {
 			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 
 			const merged: ElementPayload = { ...getDefaultElementPayload(), ...(payload as Partial<ElementPayload> | undefined) };
-			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged);
+			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, undefined, position);
 			if (!afterScene) return error('Failed to add element — see logs');
 
 			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${CustomElement[elementId as CustomElement]}`);
 			return text({ ok: true, addedItemId: afterScene.layers[layerIndex]?.items.at(-1)?.id });
+		},
+	);
+
+	server.registerTool(
+		'move_overlay_element',
+		{
+			description: 'Move/resize an existing element within its layer\'s grid (512x512 units; x/y = top-left, w/h = size). Omitted fields keep their current value. Records undo history. Use after add_overlay_element to place things in a corner, e.g. top-right ≈ {x:412,y:10,w:90,h:90}.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				layerIndex: z.number().int().min(0),
+				itemId: z.string(),
+				position: gridPositionSchema,
+			},
+		},
+		async ({ overlayId, statsScene, layerIndex, itemId, position }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			const item = sceneBefore.layers[layerIndex]?.items.find((i) => i.id === itemId);
+			if (!item) return error(`No element "${itemId}" in layer ${layerIndex} of "${statsScene}"`);
+
+			const afterScene = await mcpContext.overlayStore!.moveItemInLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId, position);
+			if (!afterScene) return error('Failed to move element — see logs');
+
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `move ${itemId}`);
+			return text({ ok: true, movedItemId: itemId });
 		},
 	);
 

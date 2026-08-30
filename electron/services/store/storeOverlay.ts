@@ -20,6 +20,17 @@ import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
 import { getNewOverlay } from './../../utils/overlayHandler';
 
+/** Grid placement patch (grid is COL x COL units). Any omitted field keeps the item's current value. */
+export type GridPosition = { x?: number; y?: number; w?: number; h?: number };
+
+/** Clamps a placement patch to the grid so an element can't be positioned/sized off-canvas. */
+const clampGridPosition = (current: { x: number; y: number; w: number; h: number }, pos: GridPosition) => {
+	const w = Math.max(MIN, Math.min(COL, Math.round(pos.w ?? current.w)));
+	const h = Math.max(MIN, Math.min(COL, Math.round(pos.h ?? current.h)));
+	const x = Math.max(0, Math.min(COL - w, Math.round(pos.x ?? current.x)));
+	const y = Math.max(0, Math.min(COL - h, Math.round(pos.y ?? current.y)));
+	return { x, y, w, h };
+};
 
 @singleton()
 export class ElectronOverlayStore {
@@ -246,7 +257,11 @@ export class ElectronOverlayStore {
 		this.setOverlay(overlay)
 	}
 
-	/** Adds a new element to a layer, auto-placed in the first free grid space. Used by MCP overlay-write tools. */
+	/**
+	 * Adds a new element to a layer. Auto-places in the first free grid space unless `position`
+	 * is given, in which case it's placed at that grid coordinate/size (grid is COL x COL units).
+	 * Used by MCP overlay-write tools.
+	 */
 	async addItemToLayer(
 		overlayId: string,
 		statsScene: LiveStatsScene,
@@ -254,6 +269,7 @@ export class ElectronOverlayStore {
 		elementId: CustomElement,
 		payload: ElementPayload,
 		itemId: string = newId(),
+		position?: GridPosition,
 	): Promise<Scene | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		const layer = overlay?.[statsScene]?.layers[layerIndex];
@@ -272,10 +288,31 @@ export class ElectronOverlayStore {
 			elementId,
 			data: payload,
 		};
-		const findPosition = gridHelp.findSpace(newItem, layer.items, COL);
-		newItem[COL] = { ...newItem[COL], ...findPosition };
+		if (position) {
+			newItem[COL] = { ...newItem[COL], ...clampGridPosition(newItem[COL], position) };
+		} else {
+			newItem[COL] = { ...newItem[COL], ...gridHelp.findSpace(newItem, layer.items, COL) };
+		}
 
 		layer.items = [...layer.items, newItem];
+
+		return this.setScene(overlayId, statsScene, overlay[statsScene]);
+	}
+
+	/** Moves/resizes an existing element within its layer's grid. Used by MCP overlay-write tools. */
+	async moveItemInLayer(
+		overlayId: string,
+		statsScene: LiveStatsScene,
+		layerIndex: number,
+		itemId: string,
+		position: GridPosition,
+	): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const layer = overlay?.[statsScene]?.layers[layerIndex];
+		const item = layer?.items.find((item) => item.id === itemId);
+		if (isNil(overlay) || isNil(layer) || isNil(item)) return;
+
+		item[COL] = { ...item[COL], ...clampGridPosition(item[COL], position) };
 
 		return this.setScene(overlayId, statsScene, overlay[statsScene]);
 	}
