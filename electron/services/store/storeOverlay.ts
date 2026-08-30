@@ -685,6 +685,9 @@ export class ElectronOverlayStore {
 		const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
 		let anyChanged = false;
 		for (const overlay of Object.values(overlays)) {
+			// Demos are fully managed by initDemoOverlays (delete + re-upload from JSON). Re-persisting
+			// them here on every version bump was pointless AND piled up duplicate layers.
+			if (overlay.isDemo) continue;
 			// Only persist when something actually changed. Re-saving every overlay on
 			// every startup triggers a full cascade rewrite of all scenes/layers per
 			// overlay — slow, and pointless when the overlay is already current.
