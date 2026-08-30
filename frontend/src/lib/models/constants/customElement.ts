@@ -778,6 +778,7 @@ export enum CustomElement {
     InGameCurrentPlayerLCancel = 8014,
     InGameCurrentPlayerStateCategory = 8015,
     InGameCurrentPlayerTechnique = 8016,
+    InGameFrame = 8017,
 
     // Action State — Player 1
     InGamePlayer1ActionStateName = 8100,

@@ -40,3 +40,21 @@
 >
 	Character Change
 </SelectAnimationTriggerOption>
+
+<SelectAnimationTriggerOption
+	description="When Player 2's action state changes"
+	value={AnimationTrigger.InGamePlayer2StateChange}
+	bind:selected={selectedOption[AnimationTrigger.InGamePlayer2StateChange]}
+	on:select={select}
+>
+	State Change
+</SelectAnimationTriggerOption>
+
+<SelectAnimationTriggerOption
+	description="When Player 2 performs a new technique"
+	value={AnimationTrigger.InGamePlayer2TechniqueChange}
+	bind:selected={selectedOption[AnimationTrigger.InGamePlayer2TechniqueChange]}
+	on:select={select}
+>
+	Technique Change
+</SelectAnimationTriggerOption>

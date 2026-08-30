@@ -17,7 +17,11 @@
 		inGameStateTrigger,
 		player1InGameTrigger,
 		player2InGameTrigger,
+		techniqueChangeTrigger,
 	} from '$lib/components/obs/overlays/element/animations/animationTriggers/InGameStateTriggers';
+	import { AnimationTrigger } from '$lib/models/types/animationOption';
+	import { techniqueEvents } from '$lib/utils/store.svelte';
+	import type { TechniqueDetectedPayload } from '$lib/models/types/actionState';
 	import { rankStateTrigger } from '$lib/components/obs/overlays/element/animations/animationTriggers/RankChangeTriggers';
 	import { matchStateTrigger } from '$lib/components/obs/overlays/element/animations/animationTriggers/MatchChangeTriggers';
 	import type { FrameEntryType } from '@slippi/slippi-js';
@@ -49,6 +53,7 @@
 	let prevSettings: GameStartTypeExtended | undefined;
 	let prevSessionStats: SessionStats | undefined;
 	let prevStrikeState: StrikeState | undefined;
+	let prevTechniques: Record<number, TechniqueDetectedPayload | null> = {};
 	const updateKeyValue = (
 		gameFrame: FrameEntryType | undefined | null,
 		currentPlayer: CurrentPlayer,
@@ -71,6 +76,15 @@
 		if (player1InGameTrigger(option, currentPlayers?.at(0), gameFrame, prevGameFrame))
 			return Math.random();
 		if (player2InGameTrigger(option, currentPlayers?.at(1), gameFrame, prevGameFrame))
+			return Math.random();
+		const cpIdx = currentPlayer?.playerIndex ?? -1;
+		const p1Idx = currentPlayers?.at(0)?.playerIndex ?? -1;
+		const p2Idx = currentPlayers?.at(1)?.playerIndex ?? -1;
+		if (techniqueChangeTrigger(option, AnimationTrigger.InGameCurrentPlayerTechniqueChange, $techniqueEvents[cpIdx], prevTechniques[cpIdx]))
+			return Math.random();
+		if (techniqueChangeTrigger(option, AnimationTrigger.InGamePlayer1TechniqueChange, $techniqueEvents[p1Idx], prevTechniques[p1Idx]))
+			return Math.random();
+		if (techniqueChangeTrigger(option, AnimationTrigger.InGamePlayer2TechniqueChange, $techniqueEvents[p2Idx], prevTechniques[p2Idx]))
 			return Math.random();
 		if (
 			matchStateTrigger(
@@ -98,6 +112,8 @@
 		gameSettings: GameStartTypeExtended,
 		sessionStats: SessionStats | undefined | null,
 		gameScore: number[],
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		_techniqueEvents?: Record<number, TechniqueDetectedPayload | null>,
 	) => {
 		key = updateKeyValue(
 			gameFrame,
@@ -114,6 +130,7 @@
 		prevPlayers = { ...currentPlayers };
 		prevSessionStats = { ...(sessionStats ?? {}) } as SessionStats;
 		prevStrikeState = $strikeState ? { ...$strikeState } : undefined;
+		prevTechniques = { ...$techniqueEvents };
 	};
 
 	$: updateTriggerValues(
@@ -123,6 +140,7 @@
 		$gameSettings,
 		$sessionStats,
 		$gameScore,
+		$techniqueEvents,
 	);
 
 	onMount(() => {

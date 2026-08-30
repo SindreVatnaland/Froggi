@@ -16,7 +16,12 @@ export type TechniqueId =
 	| 'ledgedash'
 	| 'shield_drop'
 	| 'ground_tech'
+	| 'tech_roll'
 	| 'wall_tech'
+	| 'ceiling_tech'
+	| 'pivot'
+	| 'dashdance'
+	| 'moonwalk'
 	| 'l_cancel_success'
 	| 'l_cancel_miss';
 

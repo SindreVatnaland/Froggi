@@ -28,4 +28,5 @@
 	<SelectOption description="Current player L-cancel result — ✓ / ✗ / empty" value={CustomElement.InGameCurrentPlayerLCancel} on:select={select}>L-Cancel</SelectOption>
 	<SelectOption description="Current player high-level state category (Jumping, Attacking, Hitstun…)" value={CustomElement.InGameCurrentPlayerStateCategory} on:select={select}>State Category</SelectOption>
 	<SelectOption description="Current player last detected technique — clears after 3 seconds" value={CustomElement.InGameCurrentPlayerTechnique} on:select={select}>Technique</SelectOption>
+	<SelectOption description="Current game frame number" value={CustomElement.InGameFrame} on:select={select}>Frame</SelectOption>
 </div>

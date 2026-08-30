@@ -175,13 +175,15 @@ Froggi tracks each player's live action state and detects techniques from the ac
   the human state name; ActionStateId (8101/8201/8001) the raw id; StateCategory (8115/8215/8015) the
   grouping. Use these for a "player state" readout.
 - **Technique**: InGamePlayer1Technique (8116) / …Player2 (8216) / …CurrentPlayer (8016) show the most
-  recently detected technique. Detected techniques today (8): wavedash, waveland, ledgedash,
-  shield_drop, ground_tech ("Tech"), wall_tech ("Wall Tech"), l_cancel_success, l_cancel_miss.
-- Both are meant to be paired with an animation trigger that replays when the recent technique / state
-  changes (per-player and current-player). NOTE: those technique-change / state-change AnimationTrigger
-  conditions, and a dedicated frame-number element, are PLANNED but may not exist yet — check
-  list_overlay_conditions (kind:"trigger") and list_elements before assuming; don't invent condition or
-  element names.
+  recently detected technique. Detected techniques (13): wavedash, waveland, ledgedash, shield_drop,
+  ground_tech ("Tech"), tech_roll, wall_tech, ceiling_tech, pivot, dashdance, moonwalk,
+  l_cancel_success, l_cancel_miss. (pivot/dashdance/moonwalk are heuristic/best-effort.)
+- **Frame**: InGameFrame (8017) shows the current game frame number.
+- Animate on change with the AnimationTrigger conditions "Player1/Player2/Current Player State Change"
+  (action state changed) and "Player1/Player2/Current Player Technique Change" (a new technique fired) —
+  set on the element's animationTrigger.selectedOptions, e.g. put a scale on InGamePlayer1Technique with
+  "Player1 Technique Change" so it pops each time a technique lands. Verify names via
+  list_overlay_conditions (kind:"trigger") / list_elements.
 
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.

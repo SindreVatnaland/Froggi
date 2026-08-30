@@ -6,7 +6,12 @@ export const TECHNIQUE_LABELS: Record<TechniqueId, string> = {
 	ledgedash: 'Ledgedash',
 	shield_drop: 'Shield Drop',
 	ground_tech: 'Tech',
+	tech_roll: 'Tech Roll',
 	wall_tech: 'Wall Tech',
+	ceiling_tech: 'Ceiling Tech',
+	pivot: 'Pivot',
+	dashdance: 'Dash Dance',
+	moonwalk: 'Moonwalk',
 	l_cancel_success: 'L-Cancel ✓',
 	l_cancel_miss: 'L-Cancel ✗',
 };

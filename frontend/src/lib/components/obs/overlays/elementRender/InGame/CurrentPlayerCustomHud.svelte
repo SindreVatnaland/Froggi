@@ -127,4 +127,6 @@
 	{#key _cptechnique}
 		<TextElement {style} {dataItem}>{defaultPreview ? 'Wavedash' : (_cptechnique ? (TECHNIQUE_LABELS[_cptechnique] ?? _cptechnique) : '')}</TextElement>
 	{/key}
+{:else if dataItem?.elementId === CustomElement.InGameFrame}
+	<TextElement {style} {dataItem}>{defaultPreview ? '1234' : gameFrame?.frame ?? 0}</TextElement>
 {/if}

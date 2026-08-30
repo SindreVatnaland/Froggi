@@ -59,6 +59,11 @@ export const currentPlayerInGameTrigger = (
 			(prevGameFrame?.players?.[player.playerIndex]?.post
 				.internalCharacterId ?? 0) || trigger;
 
+	if (option[AnimationTrigger.InGameCurrentPlayerStateChange])
+		trigger =
+			gameFrame?.players?.[player.playerIndex]?.post.actionStateId !==
+			prevGameFrame?.players?.[player.playerIndex]?.post.actionStateId || trigger;
+
 	return trigger;
 };
 
@@ -91,6 +96,11 @@ export const player1InGameTrigger = (
 			trigger;
 	}
 
+	if (option[AnimationTrigger.InGamePlayer1StateChange])
+		trigger =
+			gameFrame?.players?.[player.playerIndex]?.post.actionStateId !==
+			prevGameFrame?.players?.[player.playerIndex]?.post.actionStateId || trigger;
+
 	return trigger;
 };
 
@@ -121,6 +131,22 @@ export const player2InGameTrigger = (
 			(prevGameFrame?.players?.[player.playerIndex]?.post.internalCharacterId ??
 				0) || trigger;
 
+	if (option[AnimationTrigger.InGamePlayer2StateChange])
+		trigger =
+			gameFrame?.players?.[player.playerIndex]?.post.actionStateId !==
+			prevGameFrame?.players?.[player.playerIndex]?.post.actionStateId || trigger;
 
 	return trigger;
+};
+
+// Technique-change trigger: fires when a newer technique was detected for the player (the store's
+// frame advanced). Threaded from AnimationLayer since techniques come from a separate event store.
+export const techniqueChangeTrigger = (
+	option: SelectedAnimationTriggerCondition,
+	trigger: AnimationTrigger,
+	current: { frame: number } | null | undefined,
+	prev: { frame: number } | null | undefined,
+) => {
+	if (!option[trigger] || !current) return false;
+	return (current.frame ?? -1) !== (prev?.frame ?? -1);
 };

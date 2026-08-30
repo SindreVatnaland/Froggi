@@ -129,6 +129,7 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGameCurrentPlayerLCancel,
 	CustomElement.InGameCurrentPlayerStateCategory,
 	CustomElement.InGameCurrentPlayerTechnique,
+	CustomElement.InGameFrame,
 	// Action state — Player 1
 	CustomElement.InGamePlayer1ActionStateName,
 	CustomElement.InGamePlayer1ActionStateId,

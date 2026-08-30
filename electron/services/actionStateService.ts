@@ -1,6 +1,6 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
-import type { FrameEntryType, GameStartType, PostFrameUpdateType } from '@slippi/slippi-js';
+import type { FrameEntryType, GameStartType, PostFrameUpdateType, PreFrameUpdateType } from '@slippi/slippi-js';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import {
 	getActionStateName,
@@ -24,10 +24,18 @@ const STATE_JUMP_SQUAT = 24;
 const STATE_JUMP_F = 25;
 const STATE_JUMP_B = 26;
 const STATE_PASS = 244;
+const STATE_TURN = 18;
+const STATE_TURN_RUN = 19;
+const STATE_DASH = 20;
+const STATE_DASH_END = 23; // Dash/Run/RunDirect/RunBrake
 const LEDGE_WINDOW = 45;
 const AIRDODGE_WINDOW = 12;
+const DASHDANCE_WINDOW = 22;
 const BUFFER_SIZE = 120;
 const HISTORY_SIZE = 10;
+
+const isDashState = (s: number) => s >= STATE_DASH && s <= STATE_DASH_END;
+const isTurnState = (s: number) => s === STATE_TURN || s === STATE_TURN_RUN;
 
 function getStateCategory(stateId: number): string {
 	if (stateId <= 10) return 'Dead';
@@ -94,7 +102,7 @@ export class ActionStateService {
 			for (const [idxStr, player] of Object.entries(frame.players)) {
 				const playerIndex = Number(idxStr);
 				if (!player?.post) continue;
-				this.processFrame(playerIndex, frame.frame ?? 0, player.post);
+				this.processFrame(playerIndex, frame.frame ?? 0, player.post, player.pre ?? undefined);
 			}
 		});
 	}
@@ -111,6 +119,7 @@ export class ActionStateService {
 		playerIndex: number,
 		frame: number,
 		post: PostFrameUpdateType,
+		pre?: PreFrameUpdateType,
 	) {
 		if (!post) return;
 
@@ -123,8 +132,8 @@ export class ActionStateService {
 			airX: post.selfInducedSpeeds?.airX ?? 0,
 			jumpsRemaining: post.jumpsRemaining ?? 0,
 			lCancelStatus: post.lCancelStatus ?? null,
-			joystickX: 0,
-			joystickY: 0,
+			joystickX: pre?.joystickX ?? 0,
+			joystickY: pre?.joystickY ?? 0,
 		};
 
 		if (!this.frameBuffers.has(playerIndex)) {
@@ -165,13 +174,45 @@ export class ActionStateService {
 			return;
 		}
 
-		if (stateId >= STATE_TECH_START && stateId <= STATE_TECH_START + 2) {
+		// Tech states 199-204: in-place, roll F/B, wall, wall-jump, ceiling.
+		if (stateId === STATE_TECH_START) {
 			this.emitTechnique(playerIndex, frame, 'ground_tech');
 			return;
 		}
-
+		if (stateId === STATE_TECH_START + 1 || stateId === STATE_TECH_START + 2) {
+			this.emitTechnique(playerIndex, frame, 'tech_roll');
+			return;
+		}
 		if (stateId === STATE_TECH_START + 3 || stateId === STATE_TECH_START + 4) {
 			this.emitTechnique(playerIndex, frame, 'wall_tech');
+			return;
+		}
+		if (stateId === STATE_TECH_START + 5) {
+			this.emitTechnique(playerIndex, frame, 'ceiling_tech');
+			return;
+		}
+
+		// Pivot: entering a Turn from a dash. best-effort: prev snapshot was a dash state.
+		if (isTurnState(stateId)) {
+			const prev = buffer[buffer.length - 2];
+			if (prev && isDashState(prev.actionStateId)) {
+				this.emitTechnique(playerIndex, frame, 'pivot');
+			}
+			return;
+		}
+
+		// Dash dance: entering Dash with a recent Dash→Turn→Dash pattern in the window.
+		// Moonwalk (best-effort): entering Dash while the stick points opposite the slide direction.
+		if (stateId === STATE_DASH) {
+			const window = buffer.slice(-DASHDANCE_WINDOW);
+			const hadTurn = window.some((s) => isTurnState(s.actionStateId));
+			const hadEarlierDash = window.slice(0, -1).some((s) => isDashState(s.actionStateId));
+			if (hadTurn && hadEarlierDash) {
+				this.emitTechnique(playerIndex, frame, 'dashdance');
+			} else if (current.joystickX !== 0 && Math.abs(current.groundX) >= 0.5 && Math.sign(current.joystickX) !== Math.sign(current.groundX)) {
+				// ponytail: heuristic moonwalk — stick one way, sliding the other. Needs replay validation.
+				this.emitTechnique(playerIndex, frame, 'moonwalk');
+			}
 			return;
 		}
 
