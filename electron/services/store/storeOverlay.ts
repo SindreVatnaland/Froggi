@@ -124,6 +124,50 @@ export class ElectronOverlayStore {
 	}
 
 	/**
+	 * Downloads a font file from a URL and saves it under the overlay's font dir, returning the saved
+	 * filename to use as `font.src`. https only; accepts only real font files (.ttf/.otf/.woff/.woff2
+	 * by extension or content-type), capped at 5MB. Used by MCP overlay-write tools.
+	 */
+	async downloadFont(overlayId: string, url: string, fileName?: string): Promise<{ fileName: string } | { error: string }> {
+		const overlay = await this.getOverlayById(overlayId);
+		if (isNil(overlay)) return { error: `No overlay with id "${overlayId}"` };
+
+		let u: URL;
+		try { u = new URL(url); } catch { return { error: 'Invalid URL' }; }
+		if (u.protocol !== 'https:') return { error: 'Font URL must be https' };
+
+		const FONT_EXT_BY_CT: Record<string, string> = {
+			'font/ttf': '.ttf', 'application/x-font-ttf': '.ttf', 'application/font-sfnt': '.ttf',
+			'font/otf': '.otf', 'application/x-font-otf': '.otf',
+			'font/woff': '.woff', 'application/font-woff': '.woff',
+			'font/woff2': '.woff2', 'application/font-woff2': '.woff2',
+		};
+		const ALLOWED = ['.ttf', '.otf', '.woff', '.woff2'];
+		const urlExt = path.extname(u.pathname).toLowerCase();
+
+		let res: Response;
+		try { res = await fetch(url); } catch (e) { return { error: `Download failed: ${(e as Error).message}` }; }
+		if (!res.ok) return { error: `Download failed: HTTP ${res.status}` };
+
+		const ct = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+		const ext = ALLOWED.includes(urlExt) ? urlExt : FONT_EXT_BY_CT[ct];
+		if (!ext) return { error: 'Not a font file — expected .ttf/.otf/.woff/.woff2 (by URL extension or content-type)' };
+
+		const buf = Buffer.from(await res.arrayBuffer());
+		if (buf.length > 5 * 1024 * 1024) return { error: 'Font too large (>5MB)' };
+		if (buf.length === 0) return { error: 'Downloaded font is empty' };
+
+		const rawBase = fileName ?? path.basename(u.pathname, urlExt);
+		const base = rawBase.replace(/\.[^.]*$/, '').replace(/[^a-zA-Z0-9_-]/g, '') || 'font';
+		const saveDir = path.join(this.appDir, 'public', 'custom', overlayId, 'font');
+		fs.mkdirSync(saveDir, { recursive: true });
+		const finalName = `${base}${ext}`;
+		fs.writeFileSync(path.join(saveDir, finalName), buf);
+		this.log.info('Downloaded overlay font', overlayId, finalName, `${buf.length}b`);
+		return { fileName: finalName };
+	}
+
+	/**
 	 * Patches a scene's config (active/fallback/font/background/scene-switch animation), leaving
 	 * layers/items untouched. font/background/animation are deep-merged so a partial patch keeps the
 	 * rest of the structure. Used by MCP overlay-write tools.

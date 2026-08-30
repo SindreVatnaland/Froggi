@@ -203,6 +203,27 @@ export function registerOverlayWriteTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'add_overlay_font',
+		{
+			description: 'Download a font from a URL and add it to an overlay so it can be used as a custom font. Pass a DIRECT font-file URL (.ttf/.otf/.woff/.woff2 — e.g. a Google Fonts fonts.gstatic.com file). Returns the saved filename; then apply it with configure_overlay_scene font:{ family:"<name>", src:"<filename>" } for the scene default, or set an element payload data.font:{ family, src }. https only, font files only, 5MB cap.',
+			inputSchema: {
+				overlayId: z.string(),
+				url: z.string().url().describe('Direct https URL to a .ttf/.otf/.woff/.woff2 file'),
+				fileName: z.string().optional().describe('Base name to save as (no extension); defaults to the URL filename'),
+			},
+		},
+		async ({ overlayId, url, fileName }) => {
+			const result = await mcpContext.overlayStore!.downloadFont(overlayId, url, fileName);
+			if ('error' in result) return error(result.error);
+			return text({
+				ok: true,
+				fileName: result.fileName,
+				apply: 'Set this as a custom font: configure_overlay_scene with font:{ family:"<a name>", src:"' + result.fileName + '" } for the whole scene, or set an element\'s data.font:{ family, src } to use it on just that element.',
+			});
+		},
+	);
+
+	server.registerTool(
 		'update_overlay_element',
 		{
 			description: 'Merge a partial payload patch into an existing element (styling, text, etc.) — sibling fields not mentioned are preserved. Records undo history.',
