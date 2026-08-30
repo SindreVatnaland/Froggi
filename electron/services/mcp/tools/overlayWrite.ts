@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { cloneDeep, merge } from 'lodash';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
-import { LiveStatsScene } from '../../../../frontend/src/lib/models/enum';
+import { Animation, LiveStatsScene, SceneBackground } from '../../../../frontend/src/lib/models/enum';
 import { CustomElement } from '../../../../frontend/src/lib/models/constants/customElement';
-import type { ElementPayload } from '../../../../frontend/src/lib/models/types/overlay';
+import type { ElementPayload, Scene } from '../../../../frontend/src/lib/models/types/overlay';
 import { getDefaultElementPayload } from '../../../../frontend/src/lib/utils/overlayElementDefaults';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
@@ -12,6 +12,15 @@ const error = (message: string) => ({ content: [{ type: 'text' as const, text: m
 
 const STATS_SCENES = Object.values(LiveStatsScene);
 const ELEMENT_TYPES = Object.values(CustomElement).filter((v) => typeof v === 'number') as CustomElement[];
+const ANIMATION_TYPES = Object.values(Animation) as [string, ...string[]];
+const BACKGROUND_TYPES = Object.values(SceneBackground) as [string, ...string[]];
+
+// Scene switch (transition) animation. `fly automatic` is the recommended automatic scene-switch
+// animation — it slides the whole scene in/out on its own. `type` values match list_overlay_animations.
+const animSettingsSchema = z.object({
+	type: z.enum(ANIMATION_TYPES),
+	options: z.object({ delay: z.number(), duration: z.number(), easing: z.string(), start: z.number(), x: z.number(), y: z.number() }).partial().optional(),
+});
 
 // Loose passthrough — MCP tool callers supply a partial payload; the shape is merged over
 // getDefaultElementPayload() before use, so no field here needs to be required.
@@ -148,16 +157,33 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'configure_overlay_scene',
 		{
-			description: 'Enable/disable a scene and/or set its fallback. A disabled scene (active:false) is not shown; the overlay falls back to the fallback scene while that game state is active. Use this to keep an overlay visible only in some states, e.g. a controller overlay active in inGame + menu, every other scene disabled with fallback "menu". Records undo history.',
+			description: 'Configure a whole scene (not individual elements): enable/disable + fallback, the scene default font, the background, and the scene-switch (transition) animation. All fields optional and merged over current values. Examples: keep a controller overlay only in inGame+menu (disable others, fallback "menu"); set a default font for every text element in the scene; give a scene a colored/None background; use "fly automatic" as the automatic scene-switch animation (recommended default). Records undo history.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
 				active: z.boolean().optional().describe('true = scene shown, false = disabled (falls back)'),
 				fallback: z.enum(STATS_SCENES as [string, ...string[]]).optional().describe('Scene to show instead while this one is disabled, e.g. "menu"'),
+				font: z.object({
+					family: z.string().optional().describe('"default" for the app default font, or a custom family name'),
+					src: z.string().optional().describe('Custom font filename uploaded under the overlay; omit/empty for the default font'),
+				}).optional().describe('Scene default font — applies to text elements that use the scene font'),
+				background: z.object({
+					type: z.enum(BACKGROUND_TYPES).optional().describe('None | Color | Image | Custom Image | In Game Stage Image | Post Game Stage Image'),
+					color: z.string().optional().describe('CSS color, used when type=Color'),
+					opacity: z.number().min(0).max(100).optional(),
+				}).optional(),
+				animation: z.object({
+					in: animSettingsSchema.optional(),
+					out: animSettingsSchema.optional(),
+					duration: z.number().optional(),
+					layerRenderDelay: z.number().optional(),
+				}).optional().describe('Scene-switch transition. "fly automatic" is the recommended automatic in/out.'),
 			},
 		},
-		async ({ overlayId, statsScene, active, fallback }) => {
-			if (active === undefined && fallback === undefined) return error('Provide active and/or fallback.');
+		async ({ overlayId, statsScene, active, fallback, font, background, animation }) => {
+			if (active === undefined && fallback === undefined && !font && !background && !animation) {
+				return error('Provide at least one of active, fallback, font, background, animation.');
+			}
 			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
@@ -165,11 +191,14 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const afterScene = await mcpContext.overlayStore!.setSceneConfig(overlayId, statsScene as LiveStatsScene, {
 				active,
 				fallback: fallback as LiveStatsScene | undefined,
+				font: font as Scene['font'] | undefined,
+				background: background as Partial<Scene['background']> as Scene['background'] | undefined,
+				animation: animation as Partial<Scene['animation']> as Scene['animation'] | undefined,
 			});
 			if (!afterScene) return error('Failed to configure scene — see logs');
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `configure ${statsScene} (active=${active}, fallback=${fallback})`);
-			return text({ ok: true, statsScene, active: afterScene.active, fallback: afterScene.fallback });
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `configure scene ${statsScene}`);
+			return text({ ok: true, statsScene, active: afterScene.active, fallback: afterScene.fallback, font: afterScene.font, background: { type: afterScene.background?.type }, animation: { in: afterScene.animation?.in?.type, out: afterScene.animation?.out?.type } });
 		},
 	);
 

@@ -123,11 +123,15 @@ export class ElectronOverlayStore {
 		return overlays[overlayId]
 	}
 
-	/** Patches a scene's `active`/`fallback` config (leaves layers/items untouched). Used by MCP overlay-write tools. */
+	/**
+	 * Patches a scene's config (active/fallback/font/background/scene-switch animation), leaving
+	 * layers/items untouched. font/background/animation are deep-merged so a partial patch keeps the
+	 * rest of the structure. Used by MCP overlay-write tools.
+	 */
 	async setSceneConfig(
 		overlayId: string,
 		statsScene: LiveStatsScene,
-		patch: { active?: boolean; fallback?: LiveStatsScene },
+		patch: Partial<Pick<Scene, 'active' | 'fallback' | 'font' | 'background' | 'animation'>>,
 	): Promise<Scene | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		const scene = overlay?.[statsScene];
@@ -135,6 +139,9 @@ export class ElectronOverlayStore {
 
 		if (patch.active !== undefined) scene.active = patch.active;
 		if (patch.fallback !== undefined) scene.fallback = patch.fallback;
+		if (patch.font) scene.font = merge({}, scene.font, patch.font);
+		if (patch.background) scene.background = merge({}, scene.background, patch.background);
+		if (patch.animation) scene.animation = merge({}, scene.animation, patch.animation);
 
 		return this.setScene(overlayId, statsScene, scene);
 	}
