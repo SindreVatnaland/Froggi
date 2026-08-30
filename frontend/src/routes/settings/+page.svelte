@@ -68,6 +68,7 @@
 		setTimeout(() => (mcpUrlCopied = false), 2000);
 	};
 	const toggleMcpTailscale = () => $electronEmitter.emit('SetMcpTailscaleEnabled', !($froggiSettings?.mcpTailscaleEnabled === true));
+	const toggleAutoInject = () => $electronEmitter.emit('SetAutoInjectEnabled', !($froggiSettings?.autoInjectEnabled === true));
 	let mcpTsUrlCopied = false;
 	const copyMcpTsUrl = async () => {
 		if (!$mcpTailscaleUrl) return;
@@ -321,6 +322,32 @@
 					{/if}
 				{/if}
 			{/if}
+		</div>
+	</section>
+	{/if}
+
+	<!-- Overlay injection (Electron only) -->
+	{#if $isElectron}
+	<section class="mb-6">
+		<p class="section-label">Overlay Injection</p>
+		<div class="settings-card border-secondary mt-2 flex flex-col gap-3">
+			<p class="text-xs opacity-40 leading-relaxed">
+				Inject your overlays directly into the Dolphin game window (Windows only). Toggle an overlay's
+				<strong>Inject</strong> button on its preview to add it to the set.
+			</p>
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<span class="text-sm text-secondary-color">Auto-inject on connect</span>
+					<p class="text-xs opacity-40 mt-0.5">Automatically inject your toggled overlays whenever Dolphin connects</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.autoInjectEnabled === true}
+					on:click={toggleAutoInject}
+				>
+					{$froggiSettings?.autoInjectEnabled === true ? 'On' : 'Off'}
+				</button>
+			</div>
 		</div>
 	</section>
 	{/if}

@@ -34,6 +34,7 @@ import { registerObsAddSourceTools } from './tools/obsAddSource';
 import { registerAutomationReadTools } from './tools/automationRead';
 import { registerAutomationComboTools } from './tools/automationCombo';
 import { registerAutomationSceneTriggerTools } from './tools/automationSceneTrigger';
+import { registerInjectionWriteTools } from './tools/injectionWrite';
 
 /**
  * Embeds an MCP server inside Electron main so a local MCP client (Claude Desktop/Code)
@@ -106,6 +107,7 @@ export class McpServerService {
 			registerObsAddSourceTools(server);
 			registerAutomationComboTools(server);
 			registerAutomationSceneTriggerTools(server);
+			registerInjectionWriteTools(server);
 		}
 
 		return server;

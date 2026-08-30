@@ -59,6 +59,9 @@ export interface MessageEvents {
 	SetMcpTailscaleEnabled: (enabled: boolean) => void;
 	/** tailnet-only HTTPS URL for the MCP when Tailscale exposure is on; undefined when hidden/off */
 	McpTailscaleUrl: (url: string | undefined) => void;
+	SetAutoInjectEnabled: (enabled: boolean) => void;
+	/** The persisted set of overlays toggled for injection (auto-injected on Dolphin connect). */
+	AutoInjectOverlays: (overlayIds: string[]) => void;
 	CurrentPlayer: (player: CurrentPlayer | undefined) => void;
 	CurrentPlayers: (player: Player[] | undefined) => void;
 	CurrentMatch: (matchStats: MatchStats) => void;

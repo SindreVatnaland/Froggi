@@ -11,4 +11,6 @@ export interface Froggi {
   mcpWriteEnabled: boolean | undefined;
   /** Exposes the MCP over the user's Tailscale (tailnet-only HTTPS, never funnel). Off by default. */
   mcpTailscaleEnabled: boolean | undefined;
+  /** Auto-inject the toggled overlay set into Dolphin when it connects. undefined = not yet asked. */
+  autoInjectEnabled: boolean | undefined;
 }

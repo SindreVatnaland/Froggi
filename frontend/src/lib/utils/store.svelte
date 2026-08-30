@@ -109,6 +109,7 @@
 	export const remoteAccess = writable<{ tailscale?: string; ngrok?: string }>({});
 	export const tailscaleStatus = writable<{ installed: boolean; authenticated: boolean; funnelActive: boolean } | undefined>(undefined);
 	export const mcpTailscaleUrl = writable<string | undefined>(undefined);
+	export const autoInjectOverlays = writable<string[]>([]);
 	export const ngrokStatus = writable<{ installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string } | undefined>(undefined);
 	export const obsProcessStatus = writable<{ running: boolean; websocketEnabled?: boolean; port?: string; password?: string } | null>(null);
 	export const strikeState = writable<StrikeState | undefined>(undefined);

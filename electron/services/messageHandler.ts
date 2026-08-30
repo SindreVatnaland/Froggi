@@ -377,6 +377,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'SessionStats', await this.storeSession.getSessionStats());
 		this.sendInitMessage(socketId, 'FroggiSettings', this.storeFroggi.getFroggiConfig());
 		this.sendInitMessage(socketId, 'InjectedOverlays', this.overlayInjector.injectedOverlayIds);
+		this.sendInitMessage(socketId, 'AutoInjectOverlays', this.storeFroggi.getAutoInjectOverlayIds());
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.tailscaleUrl, 'tailscale');
 		this.sendInitMessage(socketId, 'RemoteAccessStatus', this.ngrokUrl, 'ngrok');
 		// TailscaleStatus is otherwise only broadcast on change — a client connecting after

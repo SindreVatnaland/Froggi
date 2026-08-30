@@ -30,6 +30,7 @@
 		controller,
 		froggiSettings,
 		injectedOverlays,
+		autoInjectOverlays,
 		remoteAccess,
 		tailscaleStatus,
 		mcpTailscaleUrl,
@@ -214,6 +215,13 @@
 					const value = payload[0] as Parameters<MessageEvents['InjectedOverlays']>[0];
 					if (!value) return;
 					injectedOverlays.set(value);
+				})();
+				break;
+			case 'AutoInjectOverlays':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['AutoInjectOverlays']>[0];
+					if (!value) return;
+					autoInjectOverlays.set(value);
 				})();
 				break;
 			case 'Notification':

@@ -7,6 +7,8 @@
 		electronEmitter,
 		dolphinState,
 		injectedOverlays,
+		autoInjectOverlays,
+		froggiSettings,
 	} from '$lib/utils/store.svelte';
 	import SceneSelect from './selector/SceneSelect.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -32,6 +34,9 @@
 	let nameInput: HTMLInputElement;
 
 	$: isInjected = $injectedOverlays.includes(overlay?.id ?? '');
+	// "Toggled to inject" = in the persisted auto-inject set (survives Dolphin disconnect).
+	$: isInjectToggled = $autoInjectOverlays.includes(overlay?.id ?? '');
+	let autoInjectPromptOpen = false;
 	$: if (overlay && !editingName) draftName = overlay.title ?? '';
 	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 1);
 	$: arW = overlay?.aspectRatio?.width ?? 16;
@@ -52,7 +57,20 @@
 
 	const injectOverlay = (overlayId: string | undefined) => {
 		if (!overlayId) return;
+		// First time the user toggles an overlay ON, ask whether to auto-inject going forward.
+		const turningOn = !$autoInjectOverlays.includes(overlayId);
+		const neverAsked = $froggiSettings?.autoInjectEnabled === undefined;
+		if (turningOn && neverAsked) {
+			autoInjectPromptOpen = true;
+			return;
+		}
 		$electronEmitter.emit('InjectOverlay', overlayId);
+	};
+
+	const resolveAutoInjectPrompt = (enable: boolean) => {
+		$electronEmitter.emit('SetAutoInjectEnabled', enable);
+		autoInjectPromptOpen = false;
+		if (overlay?.id) $electronEmitter.emit('InjectOverlay', overlay.id);
 	};
 
 	const handleDelete = () => {
@@ -157,12 +175,19 @@
 			{#if $isElectron}
 				<button
 					class={availableClass}
-					style={isInjected ? 'border: 2px solid green' : ''}
-					disabled={$dolphinState !== ConnectionState.Connected}
+					style={isInjectToggled ? 'border: 2px solid green' : ''}
 					on:click={() => injectOverlay(overlay?.id)}
-					use:tooltip={$dolphinState === ConnectionState.Connected
-						? { content: `<p>Inject overlay to dolphin</p>`, html: true, placement: 'top', delay: [250, 0], offset: 25 }
-						: { content: `<p>Dolphin needs to be running</p>`, html: true, placement: 'top', delay: [250, 0], offset: 25 }}
+					use:tooltip={{
+						content: isInjectToggled
+							? `<p>Toggled to inject — click to turn off</p>`
+							: $dolphinState === ConnectionState.Connected
+								? `<p>Inject overlay to Dolphin</p>`
+								: `<p>Toggle to inject — auto-injects when Dolphin connects</p>`,
+						html: true,
+						placement: 'top',
+						delay: [250, 0],
+						offset: 25,
+					}}
 				>
 					Inject
 				</button>
@@ -205,6 +230,25 @@
 			{/if}
 		</div>
 	</div>
+	<Modal bind:open={autoInjectPromptOpen} on:close={() => (autoInjectPromptOpen = false)}>
+		<div class="confirm-box background-primary-color border-secondary text-secondary-color">
+			<p class="confirm-title">Auto-inject overlays?</p>
+			<p class="confirm-body">
+				Automatically inject your toggled overlays into Dolphin whenever it connects, so you don't
+				have to inject them each session. You can turn this off any time in
+				<strong>Settings → Overlay injection</strong>.
+			</p>
+			<div class="confirm-actions">
+				<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => resolveAutoInjectPrompt(false)}>
+					No, just this time
+				</button>
+				<button class="btn text-sm h-9 px-5 border-secondary rounded confirm-ok" on:click={() => resolveAutoInjectPrompt(true)}>
+					Yes, auto-inject
+				</button>
+			</div>
+		</div>
+	</Modal>
+
 	<ConfirmModal bind:open={deleteOverlayModalOpen} on:confirm={handleDelete}>
 		Delete Overlay?
 	</ConfirmModal>
@@ -214,6 +258,34 @@
 <style>
 	.modal-box {
 		background-color: var(--primary-color);
+	}
+
+	.confirm-box {
+		padding: 1.25rem 1.5rem;
+		min-width: 260px;
+		max-width: 400px;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		border-radius: 0.25rem;
+	}
+	.confirm-title {
+		font-size: 1rem;
+		font-weight: 600;
+	}
+	.confirm-body {
+		font-size: 0.85rem;
+		line-height: 1.5;
+		opacity: 0.85;
+	}
+	.confirm-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
+	}
+	.confirm-ok {
+		background-color: var(--secondary-color);
+		color: var(--primary-color);
 	}
 
 	.preview-wrap {

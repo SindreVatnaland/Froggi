@@ -31,6 +31,19 @@ export function registerDiagnosticsTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'get_injection_status',
+		{ description: 'Overlay-injection state: whether injection is supported (Windows only), if Dolphin is connected, whether auto-inject-on-connect is enabled, the overlays currently injected, and the persisted set toggled to auto-inject.', inputSchema: {} },
+		async () => text({
+			supported: process.platform === 'win32',
+			platform: process.platform,
+			dolphinConnected: mcpContext.storeDolphin!.getDolphinConnectionState(),
+			autoInjectEnabled: mcpContext.froggiStore!.getAutoInjectEnabled(),
+			injectedOverlayIds: mcpContext.overlayInjector!.injectedOverlayIds,
+			autoInjectOverlayIds: mcpContext.froggiStore!.getAutoInjectOverlayIds(),
+		}),
+	);
+
+	server.registerTool(
 		'get_current_screen',
 		{ description: 'The route/page currently shown in the Froggi desktop window — use this to know what the user is looking at before assuming which overlay they mean.', inputSchema: {} },
 		async () => text({ route: mcpContext.routeStore!.getCurrentRoute() }),

@@ -13,6 +13,8 @@ import { scopedLog } from '../utils/logger';
 import { BACKEND_PORT } from '../../frontend/src/lib/models/const';
 import { ErrorReporter } from './errorReporter';
 import { ElectronOverlayStore } from './store/storeOverlay';
+import { ElectronFroggiStore } from './store/storeFroggi';
+import { ConnectionState } from '../../frontend/src/lib/models/enum';
 import type { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 // Type-only imports — erased at compile time, no runtime module load on macOS
 import type { Overlay, GpuLuid, length as lengthFn } from '@asdf-overlay/core';
@@ -36,13 +38,16 @@ export class OverlayInjector {
 		@inject('Dev') private isDev: boolean,
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
+		@inject('LocalEmitter') private localEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(delay(() => ErrorReporter)) private errorReporter: ErrorReporter,
 		@inject(delay(() => ElectronOverlayStore)) private storeOverlay: ElectronOverlayStore,
+		@inject(delay(() => ElectronFroggiStore)) private storeFroggi: ElectronFroggiStore,
 	) {
 		this.log = scopedLog(this.log, 'Injection');
 		this.log.info('Initializing Overlay Injection Service');
-		if (os.platform() !== 'win32') return;
+		// Listeners run on every platform so the inject TOGGLE + auto-inject setting persist and
+		// broadcast even on macOS/Linux — the actual DLL injection stays win32-guarded further down.
 		this.initEventListeners();
 	}
 
@@ -249,36 +254,69 @@ export class OverlayInjector {
 		});
 	};
 
+	// Toggles an overlay in the persisted inject set (source of truth for "toggled to inject"), then
+	// injects/removes it now if a game is attached. Persisting works on every platform so the toggle
+	// "stays on" and auto-injects on the next Dolphin connect (win32).
 	private injectOverlay = async (overlayId: string) => {
-		// If the auto-attach on Dolphin connect didn't take (or hasn't run yet),
-		// try once more now before giving up — makes the Inject button self-healing.
+		const persisted = this.storeFroggi.getAutoInjectOverlayIds();
+		const isToggled = persisted.includes(overlayId);
+
+		if (isToggled) {
+			this.storeFroggi.setAutoInjectOverlayIds(persisted.filter((id) => id !== overlayId));
+			this.emitAutoInjectOverlays();
+			if (this.injectedOverlayIds.includes(overlayId)) {
+				this.closeOverlay(overlayId);
+				void this.applyFit();
+				this.emitInjectedOverlays();
+			}
+			this.messageHandler.sendMessage('Notification', 'Overlay injection disabled', NotificationType.Warning);
+			return;
+		}
+
+		this.storeFroggi.setAutoInjectOverlayIds([...persisted, overlayId]);
+		this.emitAutoInjectOverlays();
+
+		if (os.platform() !== 'win32') {
+			this.messageHandler.sendMessage('Notification', 'Overlay injection is Windows-only', NotificationType.Info);
+			return;
+		}
+		await this.injectNow(overlayId);
+	};
+
+	// Injects a single overlay into the attached game right now (win32). If no game is attached it
+	// attempts to attach first; if still none, the toggle stays on and it'll auto-inject on connect.
+	private injectNow = async (overlayId: string) => {
+		if (os.platform() !== 'win32') return;
 		if (!this.overlay) {
 			this.log.info('No overlay attached yet — attempting attach before injecting');
 			await this.injectIntoGame();
 		}
-
 		if (!this.overlay) {
-			this.log.warn('No game attached — connect Dolphin first');
 			this.messageHandler.sendMessage(
 				'Notification',
-				'No game attached. Connect Dolphin first.',
-				NotificationType.Danger,
+				'Toggled on — will inject when Dolphin connects.',
+				NotificationType.Info,
 			);
 			return;
 		}
-
-		if (this.injectedOverlayIds.includes(overlayId)) {
-			this.messageHandler.sendMessage('Notification', 'Overlay disabled', NotificationType.Warning);
-			this.closeOverlay(overlayId);
-		} else {
+		if (!this.injectedOverlayIds.includes(overlayId)) {
 			this.log.info(`Enabling overlay: ${overlayId}`);
 			this.injectedOverlayIds.push(overlayId);
 			this.messageHandler.sendMessage('Notification', 'Overlay enabled', NotificationType.Success);
 		}
-
 		void this.applyFit();
 		this.emitInjectedOverlays();
 	};
+
+	// Auto-inject the persisted toggle set when Dolphin connects, if the setting is on.
+	private autoInjectOnConnect = debounce(async () => {
+		if (os.platform() !== 'win32') return;
+		if (!this.storeFroggi.getAutoInjectEnabled()) return;
+		const ids = this.storeFroggi.getAutoInjectOverlayIds();
+		if (!ids.length) return;
+		this.log.info('Auto-injecting overlays on Dolphin connect:', ids);
+		for (const id of ids) await this.injectNow(id);
+	}, 500);
 
 	// TEMP DEBUG: remove once the background/render investigation is done.
 	private debugCapture = async () => {
@@ -327,13 +365,28 @@ export class OverlayInjector {
 		this.emitInjectedOverlays();
 	};
 
+	/** Public toggle for the MCP: add/remove an overlay from the persisted inject set (and inject/close now if applicable). */
+	setOverlayInjection = async (overlayId: string, enabled: boolean) => {
+		const inSet = this.storeFroggi.getAutoInjectOverlayIds().includes(overlayId);
+		if (enabled !== inSet) await this.injectOverlay(overlayId);
+		return this.storeFroggi.getAutoInjectOverlayIds();
+	};
+
 	private emitInjectedOverlays = () => {
 		this.messageHandler.sendMessage('InjectedOverlays', this.injectedOverlayIds);
+	};
+
+	private emitAutoInjectOverlays = () => {
+		this.messageHandler.sendMessage('AutoInjectOverlays', this.storeFroggi.getAutoInjectOverlayIds());
 	};
 
 	private initEventListeners() {
 		this.clientEmitter.on('InjectOverlay', this.injectOverlay.bind(this));
 		this.clientEmitter.on('CloseAllInjectedOverlays', this.closeAllOverlays.bind(this));
 		this.clientEmitter.on('CloseInjectedOverlay', this.closeOverlay.bind(this));
+		// Auto-inject the toggled set when Dolphin connects (localEmitter mirrors sendMessage events).
+		this.localEmitter.on('DolphinConnectionState', (state: ConnectionState | undefined) => {
+			if (state === ConnectionState.Connected) void this.autoInjectOnConnect();
+		});
 	}
 }

@@ -62,6 +62,29 @@ export class ElectronFroggiStore {
         this.store.set("settings.froggi.mcpTailscaleEnabled", enabled);
     }
 
+    // undefined = never asked (so the inject prompt can fire once); true/false once decided.
+    getAutoInjectEnabled(): boolean {
+        return this.getFroggiConfig().autoInjectEnabled === true;
+    }
+
+    isAutoInjectDecided(): boolean {
+        return this.getFroggiConfig().autoInjectEnabled !== undefined;
+    }
+
+    setAutoInjectEnabled(enabled: boolean) {
+        this.store.set("settings.froggi.autoInjectEnabled", enabled);
+    }
+
+    // Persisted set of overlays toggled for injection — kept outside settings.froggi so it doesn't
+    // churn FroggiSettings; survives Dolphin disconnect so the toggle "stays on".
+    getAutoInjectOverlayIds(): string[] {
+        return (this.store.get("injection.overlayIds") as string[] | undefined) ?? [];
+    }
+
+    setAutoInjectOverlayIds(ids: string[]) {
+        this.store.set("injection.overlayIds", Array.from(new Set(ids)));
+    }
+
     // App version the demo overlays were last synced for. Kept outside settings.froggi
     // so it doesn't trigger FroggiSettings pushes. Lets startup skip the expensive
     // demo delete+reupload when nothing changed.
@@ -102,6 +125,9 @@ export class ElectronFroggiStore {
         });
         this.clientEmitter.on('SetMcpTailscaleEnabled', (enabled: boolean) => {
             this.setMcpTailscaleEnabled(enabled);
+        });
+        this.clientEmitter.on('SetAutoInjectEnabled', (enabled: boolean) => {
+            this.setAutoInjectEnabled(enabled);
         });
         this.clientEmitter.on('SetCloseAction', (action: 'minimize' | 'quit' | null) => {
             if (action) {
