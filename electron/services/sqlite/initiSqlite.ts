@@ -27,6 +27,8 @@ export class SqliteOrm {
   private localDs: DataSource | null = null;
   private seq = 0;
   private pending = new Map<number, Pending>();
+  private restartCount = 0;
+  private lastRestart = 0;
 
   constructor(
     @inject('AppDir') private appDir: string,
@@ -70,9 +72,25 @@ export class SqliteOrm {
     });
 
     this.child.on('exit', (code) => {
-      this.log.error(`SQLite host exited (code ${code}). Pending DB calls will reject.`);
+      this.log.error(`SQLite host exited (code ${code}).`);
+      this.child = null;
       for (const [, p] of this.pending) p.reject(new Error('SQLite host exited'));
       this.pending.clear();
+
+      // Self-heal: a native better-sqlite3 abort kills the host process — respawn it so DB-backed
+      // features (stats, overlays, history) keep working instead of failing forever. Guard against a
+      // crash loop: at most a few restarts per minute.
+      const now = Date.now();
+      if (now - this.lastRestart > 60_000) this.restartCount = 0;
+      if (this.restartCount >= 5) {
+        this.log.error('SQLite host is crash-looping — not restarting again this minute.');
+        return;
+      }
+      this.restartCount++;
+      this.lastRestart = now;
+      this.log.info(`Restarting SQLite host (attempt ${this.restartCount})`);
+      // Swallow so `await initializing` never throws unhandled; request() surfaces failures catchably.
+      this.initializing = this.boot().catch((e) => this.log.error('SQLite host restart failed:', e));
     });
 
     return new Promise<void>((resolve, reject) => {
@@ -89,10 +107,12 @@ export class SqliteOrm {
     });
   }
 
-  private request(payload: Record<string, unknown>): Promise<unknown> {
+  private async request(payload: Record<string, unknown>): Promise<unknown> {
+    // If the host died between calls, wait for the in-flight restart to bring it back before sending.
+    if (!this.child) await this.initializing;
     const id = ++this.seq;
     return new Promise((resolve, reject) => {
-      if (!this.child) return reject(new Error('SQLite host not started'));
+      if (!this.child) return reject(new Error('SQLite host unavailable'));
       this.pending.set(id, { resolve, reject });
       this.child.postMessage({ id, ...payload });
     });
