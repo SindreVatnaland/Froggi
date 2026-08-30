@@ -128,9 +128,14 @@ export function registerOverlaySchemaTools(server: McpServer) {
 		},
 		async () => text({
 			types: Object.values(Animation),
+			// Human-facing meanings — the stored `type` value stays the enum string (kept stable so
+			// existing overlays don't break); only the label shown to users is friendlier.
+			labels: {
+				[Animation.FlyRandom]: 'Damage — a randomized fly that looks like the element getting knocked by a hit. Use this for damage/stock-loss effects.',
+			},
 			usesXY: [Animation.Fly, Animation.FlyRandom, Animation.FlyAutomatic, Animation.Slide],
 			options: { delay: 'ms before start', duration: 'ms', easing: 'CSS/svelte easing name, e.g. cubicOut', start: 'scale/blur start value', x: 'fly/slide x offset', y: 'fly/slide y offset' },
-			note: 'in plays on appear/trigger, out on hide. Set on both visibility (condition-gated) and animationTrigger (event-gated).',
+			note: 'in plays on appear/trigger, out on hide. Set on both visibility (condition-gated) and animationTrigger (event-gated). "fly random" is shown in the app as "Damage".',
 		}),
 	);
 

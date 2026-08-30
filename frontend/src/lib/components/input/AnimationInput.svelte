@@ -47,7 +47,7 @@
 					<option value={Animation.Fade}>Fade</option>
 					<option value={Animation.Fly}>Fly</option>
 					<option value={Animation.Scale}>Scale</option>
-					<option value={Animation.FlyRandom}>Fly Random</option>
+					<option value={Animation.FlyRandom}>Damage</option>
 					{#if isSceneElementAnimation}
 						<option value={Animation.FlyAutomatic}>Fly Automatic</option>
 					{/if}
