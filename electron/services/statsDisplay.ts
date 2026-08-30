@@ -662,8 +662,11 @@ export class StatsDisplay {
 			for (const key of sortedKeys) {
 				if (this.abortController.signal.aborted) return;
 				const frame = frames[key];
+				// Pace to a ~16ms period (≈60fps) rather than adding a flat 16ms on top of the
+				// per-frame processing time — otherwise the replay preview drifts toward 30fps.
+				const t0 = Date.now();
 				await this.handleGameFrame(frame);
-				await this.waitWithCancel(16);
+				await this.waitWithCancel(Math.max(0, 16 - (Date.now() - t0)));
 			}
 		} catch (err) {
 			// Cancellation is expected (a newer simulation/game start superseded this one).
