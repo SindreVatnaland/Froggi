@@ -150,7 +150,16 @@ Digital face buttons A/B/X/Y/Z (InGamePlayer1ControllerButtonA..Z, 3120-3125) sh
 art and render as buttons. The **L/R triggers are different**: use the ANALOG trigger elements —
 InGamePlayer1ControllerAnalogL/R (3152/3153), or current-player 3150/3151 — which render a fill bar
 by trigger depth and are what the built-in controller demos use. The DIGITAL ControllerButtonL/R
-(3126/3127) have NO art shipped and render blank, so don't use them for L/R; pick the Analog variants.
+(3126/3127) have NO art shipped and render blank, so NEVER use them; always pick the Analog variants.
+
+**Layout (physical GameCube arrangement — L is LEFT, R is RIGHT).** Don't guess sides; read the demo
+overlay "Player1 Controller" with get_overlay for exact coords, but the arrangement is:
+- AnalogL top-LEFT (demo x≈50,y≈10), AnalogR top-RIGHT (demo x≈331,y≈10) — L on the left, R on the right.
+- A is the big button center-right; B just left of A; X to the right of A; Y above A; Z upper-left area;
+  analog stick left, C-stick lower-right, D-pad lower-left.
+Getting L and R swapped (R on the left) is wrong — L is always the LEFT trigger, R the RIGHT.
+For a "simple controller in a corner" you can use the whole demo controller as the reference and scale
+it into the corner; don't hand-place a broken subset.
 
 ## Rank change scene (how the rating-update animation works)
 When a RANKED set ends (the best-of is decided), Froggi switches to the \`rankChange\` scene and runs a
