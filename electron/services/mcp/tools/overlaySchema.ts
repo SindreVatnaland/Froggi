@@ -29,8 +29,16 @@ const labelFor = (id: number) => RANGE_LABELS.find((r) => id >= r.min && id <= r
 
 /** { id, name, kind } for every CustomElement, from the enum reverse map. `kind` (text|image|box)
  *  is the render/styling class the editor uses — it tells you which payload options apply. */
+// Digital controller L/R buttons ship no artwork (render blank) — hide them from the catalog so the
+// model can't pick them; the Analog L/R elements are the supported way to show triggers.
+const HIDDEN_ELEMENT_IDS = new Set<number>([
+	CustomElement.InGameCurrentPlayerControllerButtonL, CustomElement.InGameCurrentPlayerControllerButtonR,
+	CustomElement.InGamePlayer1ControllerButtonL, CustomElement.InGamePlayer1ControllerButtonR,
+	CustomElement.InGamePlayer2ControllerButtonL, CustomElement.InGamePlayer2ControllerButtonR,
+]);
 const ALL_ELEMENTS = Object.entries(CustomElement)
 	.filter(([, v]) => typeof v === 'number')
+	.filter(([, v]) => !HIDDEN_ELEMENT_IDS.has(v as number))
 	.map(([name, id]) => ({ id: id as number, name, kind: getElementKind(id as number), category: labelFor(id as number) }));
 
 const AUTHORING_GUIDE = `# Froggi overlay element authoring
