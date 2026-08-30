@@ -144,6 +144,30 @@ InGamePlayer1ControllerAnalogL/R (3152/3153), or current-player 3150/3151 — wh
 by trigger depth and are what the built-in controller demos use. The DIGITAL ControllerButtonL/R
 (3126/3127) have NO art shipped and render blank, so don't use them for L/R; pick the Analog variants.
 
+## Rank change scene (how the rating-update animation works)
+When a RANKED set ends (the best-of is decided), Froggi switches to the \`rankChange\` scene and runs a
+TWO-PHASE update so the rating change can be shown/animated (logic in statsDisplay handlePostGame /
+handlePredictedRank):
+1. **Pre-update phase** — the player's OLD rank + rating are shown first (condition
+   \`Rank Stats Pre Update\`).
+2. ~2s later Froggi applies the NEW rank stats — from the Slippi API, or a local estimate via
+   predictNewRating (predictedRating.win/loss) shown immediately while the API confirms — and the scene
+   enters the **post-update phase** (condition \`Rank Stats Post Update\`), where the rating element now
+   holds the NEW value.
+The same rating element's value going old→new between the two phases is what produces the "rating
+updating" effect; the rating-difference element shows the +/- delta.
+
+Elements (see the demo "Rank - Inject.json", \`rankChange\` scene, read it with get_overlay):
+- SlippiRankCurrentPlayerRankIcon (6000), SlippiRankCurrentPlayerRankText (4006),
+  SlippiRankCurrentPlayerRating (4009), SlippiRankCurrentPlayerConnectCode (4012),
+  SlippiRankCurrentPlayerTag (4000) — badge/name/rating, animated in/out with \`fly\`.
+- SlippiRankChangeRatingDifference (4140) — the +/- rating delta, gated visible on BOTH
+  \`Rank Stats Pre Update\` and \`Rank Stats Post Update\`.
+Conditions/triggers: \`Rank Stats Pre Update\` / \`Rank Stats Post Update\` gate each phase;
+\`Player 1 Rating Change\` / \`Slippi Stats Rating Change\` are triggers to animate on when the rating
+changes. (A rolling numeric counter on the rating is planned but not built yet — today the value swaps
+old→new between the phases.)
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
   InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
