@@ -76,6 +76,26 @@
 		mcpTsUrlCopied = true;
 		setTimeout(() => (mcpTsUrlCopied = false), 2000);
 	};
+	// Paste-to-an-LLM setup instructions for wiring Claude Code / Desktop to this Froggi MCP.
+	$: mcpSetupInstructions = `Help me connect Claude to my running Froggi app via its local MCP server.
+
+Froggi's MCP server: ${mcpUrl} (HTTP, localhost only).${$mcpTailscaleUrl ? `\nFor a remote device over HTTPS use: ${$mcpTailscaleUrl} (works only on my Tailscale network).` : ''}
+
+Claude Code — add to ~/.claude.json, under the current project's "mcpServers":
+  "froggi": { "type": "http", "url": "${mcpUrl}" }
+Then restart Claude Code and run /mcp to confirm it connected.
+
+Claude Desktop — it has no native HTTP transport, so bridge via mcp-remote in claude_desktop_config.json under "mcpServers":
+  "froggi": { "command": "npx", "args": ["-y", "mcp-remote", "${mcpUrl}", "--transport", "http-only"] }
+Then fully quit Claude Desktop (Cmd/Ctrl+Q) and reopen it. Don't use the "Add custom connector" URL box — that expects OAuth and won't work.
+
+Requirements: Froggi must be running with the AI Assistant toggles enabled in its Settings. Once connected, ask Froggi to explain setup, check OBS/Dolphin status, or build an overlay.`;
+	let mcpSetupCopied = false;
+	const copyMcpSetup = async () => {
+		await navigator.clipboard.writeText(mcpSetupInstructions);
+		mcpSetupCopied = true;
+		setTimeout(() => (mcpSetupCopied = false), 2000);
+	};
 	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
 		{ value: null, label: 'Ask' },
 		{ value: 'minimize', label: 'Minimize' },
@@ -256,75 +276,6 @@
 			</div>
 		</div>
 	</section>
-
-	<!-- MCP Server (Electron only) -->
-	{#if $isElectron}
-	<section class="mb-6">
-		<p class="section-label">AI Assistant (MCP)</p>
-		<div class="settings-card border-secondary mt-2 flex flex-col gap-3">
-			<p class="text-xs opacity-40 leading-relaxed">
-				Lets a local MCP client (Claude Desktop, Claude Code) connect to this running Froggi instance to explain setup, diagnose problems, and — if you allow it — edit overlays and OBS automation for you. Local only, never exposed over Tailscale/ngrok.
-			</p>
-			<div class="flex items-start justify-between gap-4">
-				<div>
-					<span class="text-sm text-secondary-color">Read &amp; explain</span>
-					<p class="text-xs opacity-40 mt-0.5">Logs, app/OBS status, and setup guidance</p>
-				</div>
-				<button
-					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
-					class:active-toggle={$froggiSettings?.mcpReadEnabled === true}
-					on:click={toggleMcpRead}
-				>
-					{$froggiSettings?.mcpReadEnabled === true ? 'On' : 'Off'}
-				</button>
-			</div>
-			<div class="flex items-start justify-between gap-4 mt-1">
-				<div>
-					<span class="text-sm text-secondary-color">Allow edits</span>
-					<p class="text-xs opacity-40 mt-0.5">Overlay elements, OBS pairing/sources, automation rules</p>
-				</div>
-				<button
-					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
-					class:active-toggle={$froggiSettings?.mcpWriteEnabled === true}
-					on:click={toggleMcpWrite}
-				>
-					{$froggiSettings?.mcpWriteEnabled === true ? 'On' : 'Off'}
-				</button>
-			</div>
-			{#if $froggiSettings?.mcpReadEnabled === true || $froggiSettings?.mcpWriteEnabled === true}
-				<div class="tunnel-row mt-1">
-					<span class="tunnel-label">URL</span>
-					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
-					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
-				</div>
-				<!-- Tailscale exposure: only surfaces when MCP is on AND Tailscale is available, so
-				     it stays out of sight until intentionally needed. Off by default; tailnet-only. -->
-				{#if tsInstalled && tsAuthenticated}
-					<div class="flex items-start justify-between gap-4 mt-2">
-						<div>
-							<span class="text-sm text-secondary-color">Expose over Tailscale (HTTPS)</span>
-							<p class="text-xs opacity-40 mt-0.5">Reach the MCP from your own remote devices over TLS. Tailnet-only — never public.</p>
-						</div>
-						<button
-							class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
-							class:active-toggle={$froggiSettings?.mcpTailscaleEnabled === true}
-							on:click={toggleMcpTailscale}
-						>
-							{$froggiSettings?.mcpTailscaleEnabled === true ? 'On' : 'Off'}
-						</button>
-					</div>
-					{#if $froggiSettings?.mcpTailscaleEnabled === true && $mcpTailscaleUrl}
-						<div class="tunnel-row mt-1">
-							<span class="tunnel-label">HTTPS URL</span>
-							<span class="url-value font-mono flex-1 truncate">{$mcpTailscaleUrl}</span>
-							<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpTsUrl}>{mcpTsUrlCopied ? 'Copied!' : 'Copy'}</button>
-						</div>
-					{/if}
-				{/if}
-			{/if}
-		</div>
-	</section>
-	{/if}
 
 	<!-- Overlay injection (Electron only) -->
 	{#if $isElectron}
@@ -541,6 +492,88 @@
 					{/if}
 				</div>
 			</div>
+		</div>
+	</section>
+	{/if}
+
+	<!-- AI Assistant (MCP) — kept near the bottom, below Remote Access, above Feedback -->
+	{#if $isElectron}
+	<section class="mb-6">
+		<p class="section-label">AI Assistant (MCP)</p>
+		<div class="settings-card border-secondary mt-2 flex flex-col gap-3">
+			<p class="text-xs opacity-40 leading-relaxed">
+				Lets a local MCP client (Claude Desktop, Claude Code) connect to this running Froggi instance to explain setup, diagnose problems, and — if you allow it — edit overlays and OBS automation for you. Local only unless you expose it over Tailscale below.
+			</p>
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<span class="text-sm text-secondary-color">Read &amp; explain</span>
+					<p class="text-xs opacity-40 mt-0.5">Logs, app/OBS status, and setup guidance</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.mcpReadEnabled === true}
+					on:click={toggleMcpRead}
+				>
+					{$froggiSettings?.mcpReadEnabled === true ? 'On' : 'Off'}
+				</button>
+			</div>
+			<div class="flex items-start justify-between gap-4 mt-1">
+				<div>
+					<span class="text-sm text-secondary-color">Allow edits</span>
+					<p class="text-xs opacity-40 mt-0.5">Overlay elements, OBS pairing/sources, automation rules</p>
+				</div>
+				<button
+					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+					class:active-toggle={$froggiSettings?.mcpWriteEnabled === true}
+					on:click={toggleMcpWrite}
+				>
+					{$froggiSettings?.mcpWriteEnabled === true ? 'On' : 'Off'}
+				</button>
+			</div>
+			{#if $froggiSettings?.mcpReadEnabled === true || $froggiSettings?.mcpWriteEnabled === true}
+				<div class="tunnel-row mt-1">
+					<span class="tunnel-label">URL</span>
+					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
+					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
+				</div>
+				<!-- Paste-to-an-LLM setup instructions — one-click copy, no preview. -->
+				<div class="flex items-center justify-between gap-4 mt-1">
+					<div>
+						<span class="text-sm text-secondary-color">Setup instructions</span>
+						<p class="text-xs opacity-40 mt-0.5">Copy and paste into Claude to wire up the connection for you</p>
+					</div>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded shrink-0" on:click={copyMcpSetup}>
+						{mcpSetupCopied ? 'Copied!' : 'Copy for LLM'}
+					</button>
+				</div>
+				<!-- Tailscale exposure surfaces only when Tailscale is ready; otherwise guide the user to it. -->
+				{#if tsInstalled && tsAuthenticated}
+					<div class="flex items-start justify-between gap-4 mt-2">
+						<div>
+							<span class="text-sm text-secondary-color">Expose over Tailscale (HTTPS)</span>
+							<p class="text-xs opacity-40 mt-0.5">Reach the MCP from your own remote devices over TLS. Tailnet-only — never public.</p>
+						</div>
+						<button
+							class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
+							class:active-toggle={$froggiSettings?.mcpTailscaleEnabled === true}
+							on:click={toggleMcpTailscale}
+						>
+							{$froggiSettings?.mcpTailscaleEnabled === true ? 'On' : 'Off'}
+						</button>
+					</div>
+					{#if $froggiSettings?.mcpTailscaleEnabled === true && $mcpTailscaleUrl}
+						<div class="tunnel-row mt-1">
+							<span class="tunnel-label">HTTPS URL</span>
+							<span class="url-value font-mono flex-1 truncate">{$mcpTailscaleUrl}</span>
+							<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpTsUrl}>{mcpTsUrlCopied ? 'Copied!' : 'Copy'}</button>
+						</div>
+					{/if}
+				{:else}
+					<p class="text-xs opacity-40 mt-1 leading-relaxed">
+						Need HTTPS for a remote device? Install <strong>Tailscale</strong> in <strong>Remote Access</strong> above — it's a one-click install and you just log in. Once connected, an "Expose over Tailscale (HTTPS)" toggle appears here.
+					</p>
+				{/if}
+			{/if}
 		</div>
 	</section>
 	{/if}

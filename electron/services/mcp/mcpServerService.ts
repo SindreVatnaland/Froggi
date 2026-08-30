@@ -44,6 +44,17 @@ import { registerInjectionWriteTools } from './tools/injectionWrite';
  * which also means the registered tool set is recomputed from live settings on every
  * call — toggling mcpReadEnabled/mcpWriteEnabled takes effect on the very next request.
  */
+const MCP_INSTRUCTIONS = `You are connected to a running Froggi instance — a Slippi (Melee) → OBS overlay app. Be proactively helpful.
+
+When you build or edit an overlay, first read the overlay authoring guide tool, and prefer the shipped demo overlays as references (list_overlays / get_overlay).
+
+Before suggesting how to DISPLAY an overlay, check what's actually available and make the user aware of the options:
+- Call get_obs_status: if OBS is connected or connectable, offer to add the overlay as an OBS browser source (obs_enable_and_connect, then obs_add_overlay_browser_source).
+- Call get_injection_status: on Windows you can ALSO inject overlays directly into the Dolphin game window — offer this (set_overlay_injection to toggle one, set_auto_inject to auto-inject on Dolphin connect). Overlay injection is WINDOWS-ONLY; on macOS/Linux only OBS is available, so don't offer injection there.
+- When both are available, tell the user about both and which is possible right now.
+
+Ask before destructive edits (deleting overlays/elements). Keep changes reversible (undo/revert tools exist).`;
+
 @singleton()
 export class McpServerService {
 	private httpServer: Server | null = null;
@@ -91,7 +102,10 @@ export class McpServerService {
 	}
 
 	private buildMcpServer(): McpServer {
-		const server = new McpServer({ name: 'froggi', version: this.froggiStore.getFroggiConfig().version ?? '0.0.0' });
+		const server = new McpServer(
+			{ name: 'froggi', version: this.froggiStore.getFroggiConfig().version ?? '0.0.0' },
+			{ instructions: MCP_INSTRUCTIONS },
+		);
 
 		if (this.froggiStore.getMcpReadEnabled()) {
 			registerExplainTools(server);
