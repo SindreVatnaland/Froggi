@@ -89,6 +89,26 @@ There are two families of in-game percent element:
 Both support \`percent.startColor\`/\`percent.endColor\`. Percent reads as 0 when the player is dead or
 not in game (the underlying value is null then).
 
+## Default Smash HUD layout (Melee & modern Ultimate)
+Standard bottom HUD: **Player 1 bottom-LEFT, Player 2 bottom-RIGHT**. Each side = a row of character
+stock icons with that player's damage percent just below. Same for Melee and Ultimate (Ultimate usually
+adds the player name above the stocks; Melee uses the port-colored panel) — the stock ORDER rule is
+identical for both.
+
+**Stock icons** — use InGamePlayer1CharacterIcon (6220) / InGamePlayer2CharacterIcon (6230), one
+element PER stock, laid left→right. Gate each on that stock number via visibility
+\`selectedOptions [{ "Player N Stock K": 1 }]\`:
+- LEFTMOST icon → "Player N Stock 1", next → "Player N Stock 2", … RIGHTMOST → "Player N Stock <max>".
+- "Player N Stock K" is true while the player has AT LEAST K stocks, so icons drop from the RIGHT as
+  stocks are lost and the **last remaining stock stays on the LEFT**.
+- Use the SAME left→right = 1→max order for BOTH players — P2 is NOT mirrored. (Getting this backwards,
+  with the last stock on the right, is the common mistake.)
+- Demo hud.json reference: P1 icons x≈119/136/153/170, P2 x≈295/312/329/346, all y≈215, gated Stock
+  1→4 left→right.
+
+**Percent** — just below each player's stock row (demo: P1 x≈114, P2 x≈291, y≈239). Default to the
+pre-animated Custom variant (see above). Reads 0 when that player is dead.
+
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
   InGamePlayer1PercentCustom) and set \`percent.startColor\`/\`percent.endColor\`. Built in by default.
