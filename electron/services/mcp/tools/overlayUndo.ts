@@ -38,4 +38,30 @@ export function registerOverlayUndoTools(server: McpServer) {
 			return text({ ok: true, undone: entry.label });
 		},
 	);
+
+	server.registerTool(
+		'revert_overlay_to_edit',
+		{
+			description: 'Revert an overlay scene to how it was BEFORE a specific edit (from list_overlay_edit_history). Restores that edit\'s before-state and marks it plus every newer edit as undone. Use this to jump back multiple steps at once instead of calling undo repeatedly.',
+			inputSchema: { overlayId: z.string(), statsScene: z.enum(STATS_SCENES as [string, ...string[]]), historyId: z.number().int() },
+		},
+		async ({ overlayId, statsScene, historyId }) => {
+			const target = await mcpContext.overlayHistory!.getById(historyId);
+			if (!target || target.overlayId !== overlayId || target.statsScene !== statsScene) {
+				return error(`No edit ${historyId} on "${statsScene}" for overlay "${overlayId}" — see list_overlay_edit_history.`);
+			}
+
+			const restored = await mcpContext.overlayStore!.setScene(overlayId, statsScene as LiveStatsScene, target.beforeScene);
+			if (!restored) return error('Failed to restore the scene — see logs');
+
+			// Reverting to before `target` also undoes every later edit. Filter in JS (ids are
+			// monotonic) to avoid passing a TypeORM FindOperator across the sqlite IPC boundary.
+			// ponytail: scans the last 50 edits; a scene with >50 newer AI edits would miss some.
+			const recent = await mcpContext.overlayHistory!.listRecent(overlayId, statsScene as LiveStatsScene, 50);
+			const toUndo = recent.filter((e) => e.id >= historyId && !e.undoneAt);
+			for (const e of toUndo) await mcpContext.overlayHistory!.markUndone(e.id);
+
+			return text({ ok: true, revertedToBefore: target.label, undoneCount: toUndo.length });
+		},
+	);
 }

@@ -46,6 +46,16 @@ export class SqliteOverlayHistory {
     }
   }
 
+  async getById(id: number): Promise<OverlayHistoryEntity | null> {
+    await this.sqlite.initializing;
+    try {
+      return await this.historyRepo.findOne({ where: { id } });
+    } catch (error) {
+      this.log.error("Error reading overlay history entry:", error);
+      return null;
+    }
+  }
+
   async markUndone(id: number): Promise<void> {
     await this.sqlite.initializing;
     try {
