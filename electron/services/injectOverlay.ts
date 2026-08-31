@@ -33,6 +33,7 @@ export class OverlayInjector {
 	private length: typeof lengthFn | null = null;
 	private gameWidth = 0;
 	private gameHeight = 0;
+	private attaching = false;
 
 	constructor(
 		@inject('Dev') private isDev: boolean,
@@ -120,7 +121,16 @@ export class OverlayInjector {
 			this.log.info('Overlay already attached, skipping');
 			return;
 		}
+		// Guard against overlapping attaches: attaching two overlays (or a reconnect firing mid-attach)
+		// would call Overlay.attach twice on the same process before this.overlay is set → the second
+		// hits ERROR_PIPE_BUSY (os error 231). Only one attach may be in flight at a time.
+		if (this.attaching) {
+			this.log.info('Overlay attach already in progress, skipping');
+			return;
+		}
+		this.attaching = true;
 
+		try {
 		this.log.info(`Searching for game process: ${processName}`);
 
 		const proc = await getProcessByName(processName.split('.')[0]).catch((e) => {
@@ -252,6 +262,9 @@ export class OverlayInjector {
 			this.log.info('Overlay disconnected from process');
 			void this.stopInjection();
 		});
+		} finally {
+			this.attaching = false;
+		}
 	};
 
 	// Toggles an overlay in the persisted inject set (source of truth for "toggled to inject"), then
