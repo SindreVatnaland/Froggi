@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
-	import { BACKEND_PORT, MCP_SERVER_PORT } from '$lib/models/const';
+	import { BACKEND_PORT, MCP_SERVER_PORT, MCP_SERVER_PATH } from '$lib/models/const';
 	import {
 		authorizationKey,
 		electronEmitter,
@@ -60,7 +60,7 @@
 	const toggleCrashReports = () => $electronEmitter.emit('SetCrashReportsEnabled', !($froggiSettings?.crashReportsEnabled === true));
 	const toggleMcpRead = () => $electronEmitter.emit('SetMcpReadEnabled', !($froggiSettings?.mcpReadEnabled === true));
 	const toggleMcpWrite = () => $electronEmitter.emit('SetMcpWriteEnabled', !($froggiSettings?.mcpWriteEnabled === true));
-	const mcpUrl = `http://127.0.0.1:${MCP_SERVER_PORT}/mcp`;
+	const mcpUrl = `http://127.0.0.1:${MCP_SERVER_PORT}${MCP_SERVER_PATH}`;
 	let mcpUrlCopied = false;
 	const copyMcpUrl = async () => {
 		await navigator.clipboard.writeText(mcpUrl);

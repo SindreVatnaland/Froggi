@@ -276,9 +276,9 @@ These conventions apply to **all** minigames (Bingo, Iron Man, and any future ad
 
 ### MCP server (local AI assistant)
 
-`electron/services/mcp/mcpServerService.ts` embeds an MCP server in Electron main, bound to `127.0.0.1:3300` (HTTP, loopback only — never HTTPS, never over Tailscale/ngrok). Stateless StreamableHTTP: a fresh `McpServer` + tool set is built per request from live settings, so toggling `mcpReadEnabled` / `mcpWriteEnabled` (Settings → AI Assistant, beta build) takes effect on the next call. Read tools register when read is on; write tools additionally when write is on (`buildMcpServer()`).
+`electron/services/mcp/mcpServerService.ts` embeds an MCP server in Electron main, bound to `127.0.0.1:3300` (plain HTTP, loopback only). The path is `/froggi/mcp` (namespaced so it can coexist with other local MCP servers on the port); legacy `/mcp` is still served as an alias. Both are defined by `MCP_SERVER_PATH` in `frontend/src/lib/models/const.ts`. Stateless StreamableHTTP: a fresh `McpServer` + tool set is built per request from live settings, so toggling `mcpReadEnabled` / `mcpWriteEnabled` (Settings → AI Assistant, beta build) takes effect on the next call. Read tools register when read is on; write tools additionally when write is on (`buildMcpServer()`). Optionally exposed over the user's own Tailscale as tailnet-only HTTPS (`mcpTailscaleEnabled`, off by default, `tailscale serve --set-path=/froggi/mcp` → the loopback port; never funnel/public).
 
-Client configs (not in repo): Claude Code uses `~/.claude.json` `type: http`; Claude Desktop has no native HTTP transport so it bridges via `npx mcp-remote http://127.0.0.1:3300/mcp --transport http-only`.
+Client configs (not in repo): Claude Code uses `~/.claude.json` `type: http`, `url: http://127.0.0.1:3300/froggi/mcp`; Claude Desktop has no native HTTP transport so it bridges via `npx mcp-remote http://127.0.0.1:3300/froggi/mcp --transport http-only`.
 
 **Two surfaces, keep both truthful:**
 1. **Explainer topics** (knowledge) — `frontend/src/lib/content/topics/*.ts` as `ContentTopic[]` (categories `app | obs | overlays | remote-access | minigames | automation`). Shared with the in-app help UI; surfaced to Claude via `list_explainer_topics` / `explain_topic`. Adding knowledge = a new topic/block, no new code path.

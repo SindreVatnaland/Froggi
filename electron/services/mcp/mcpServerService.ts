@@ -22,7 +22,7 @@ import { ElectronRouteStore } from '../store/storeRoute';
 import { NgrokService } from '../ngrokService';
 import { OverlayInjector } from '../injectOverlay';
 import { ErrorReporter } from '../errorReporter';
-import { MCP_SERVER_PORT } from '../../../frontend/src/lib/models/const';
+import { MCP_SERVER_PORT, MCP_SERVER_PATH } from '../../../frontend/src/lib/models/const';
 import { mcpContext } from './mcpContext';
 import { registerExplainTools } from './tools/explain';
 import { registerDiagnosticsTools } from './tools/diagnostics';
@@ -144,7 +144,7 @@ export class McpServerService {
 			const app = express();
 			app.use(express.json());
 
-			app.post('/mcp', async (req, res) => {
+			const handlePost = async (req: express.Request, res: express.Response) => {
 				try {
 					const server = this.buildMcpServer();
 					const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
@@ -160,12 +160,16 @@ export class McpServerService {
 						res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal error' }, id: null });
 					}
 				}
-			});
+			};
 			const methodNotAllowed = (_req: express.Request, res: express.Response) => {
 				res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
 			};
-			app.get('/mcp', methodNotAllowed);
-			app.delete('/mcp', methodNotAllowed);
+			// Primary namespaced path + legacy "/mcp" alias so existing client configs keep working.
+			for (const p of [MCP_SERVER_PATH, '/mcp']) {
+				app.post(p, handlePost);
+				app.get(p, methodNotAllowed);
+				app.delete(p, methodNotAllowed);
+			}
 
 			await new Promise<void>((resolve, reject) => {
 				const server = http.createServer(app);
@@ -173,7 +177,7 @@ export class McpServerService {
 				server.listen(MCP_SERVER_PORT, '127.0.0.1', () => {
 					server.off('error', reject);
 					this.httpServer = server;
-					this.log.info(`MCP server listening on http://127.0.0.1:${MCP_SERVER_PORT}/mcp`);
+					this.log.info(`MCP server listening on http://127.0.0.1:${MCP_SERVER_PORT}${MCP_SERVER_PATH} (alias /mcp)`);
 					resolve();
 				});
 			});

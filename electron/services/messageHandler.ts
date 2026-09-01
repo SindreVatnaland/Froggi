@@ -33,7 +33,7 @@ import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
 import { NgrokService } from './ngrokService';
 import { ElectronWebhookStore } from './store/storeWebhook';
-import { BACKEND_PORT, VITE_PORT, MCP_SERVER_PORT } from '../../frontend/src/lib/models/const';
+import { BACKEND_PORT, VITE_PORT, MCP_SERVER_PORT, MCP_SERVER_PATH } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
 import { BingoService } from './bingoService';
 import { IronManService } from './ironmanService';
@@ -439,7 +439,7 @@ export class MessageHandler {
 
 	/** tailnet-only HTTPS URL for the MCP server, when Tailscale is up. Never funnel/public. */
 	getMcpTailscaleUrl(): string | undefined {
-		return this.tailscaleUrl ? `${this.tailscaleUrl}/mcp` : undefined;
+		return this.tailscaleUrl ? `${this.tailscaleUrl}${MCP_SERVER_PATH}` : undefined;
 	}
 
 	/**
@@ -459,8 +459,8 @@ export class MessageHandler {
 		const enable = permitted && mcpOn && !!bin && !!this.tailscaleUrl;
 		if (bin) {
 			const args = enable
-				? `serve --bg --https=443 --set-path=/mcp http://127.0.0.1:${MCP_SERVER_PORT}/mcp`
-				: `serve --https=443 --set-path=/mcp off`;
+				? `serve --bg --https=443 --set-path=${MCP_SERVER_PATH} http://127.0.0.1:${MCP_SERVER_PORT}${MCP_SERVER_PATH}`
+				: `serve --https=443 --set-path=${MCP_SERVER_PATH} off`;
 			exec(`"${bin}" ${args}`, { timeout: 8000 }, (err, _stdout, stderr) => {
 				if (err) this.log.error('MCP tailscale serve error:', stderr?.trim() || err.message);
 				else this.log.info('MCP tailscale serve', { enable });
