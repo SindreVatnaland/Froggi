@@ -84,8 +84,13 @@ export function registerOverlayReadTools(server: McpServer) {
 			if (!overlay) return error(`No overlay with id "${overlayId}"`);
 			const route = `/obs/overlay/${overlay.id}`;
 			const local = mcpContext.storeSettings!.getLocalUrl();
-			const ngrok = mcpContext.ngrokService!.getStatus?.().url ?? mcpContext.messageHandler!.getNgrokUrl?.();
 			const ts = mcpContext.messageHandler!.getTailscaleStatus?.();
+			const ngrok = mcpContext.ngrokService!.getStatus?.().url ?? mcpContext.messageHandler!.getNgrokUrl?.();
+			// Tailscale Funnel serves the app/overlay port (BACKEND_PORT) publicly over real HTTPS with
+			// no interstitial — the preferred embed source. Tailnet-only serve does NOT map this port.
+			const tailscaleFunnelUrl = ts?.funnelActive ? mcpContext.messageHandler!.getTailscaleUrl?.() : undefined;
+			const ngrokUrl = ngrok ? `${ngrok}${route}` : undefined;
+			const tsUrl = tailscaleFunnelUrl ? `${tailscaleFunnelUrl}${route}` : undefined;
 			return text({
 				overlayId: overlay.id,
 				title: overlay.title,
@@ -93,11 +98,17 @@ export function registerOverlayReadTools(server: McpServer) {
 				aspectRatioCss: overlay.aspectRatio ? `${overlay.aspectRatio.width}/${overlay.aspectRatio.height}` : '16/9',
 				localUrl: `${local.local}${route}`,
 				localNetworkUrl: `${local.external}${route}`,
-				publicUrl: ngrok ? `${ngrok}${route}` : undefined,
+				// Prefer Tailscale Funnel for embedding: HTTPS, no warning page. ngrok works but its
+				// free-tier interstitial can't be clicked through inside an iframe.
+				publicUrl: tsUrl ?? ngrokUrl,
+				tailscaleFunnelUrl: tsUrl,
+				ngrokUrl,
 				tailscaleFunnelActive: ts?.funnelActive ?? false,
-				note: ngrok
-					? 'publicUrl (ngrok) is externally reachable — usable for an external viewer or iframe. localhost/tailnet URLs are not.'
-					: 'No public tunnel is up. Enable ngrok, or Tailscale Funnel (tailnet-only serve is NOT public), to get an externally reachable URL. Otherwise open localUrl in a browser on this machine or add it to OBS.',
+				note: tsUrl
+					? 'publicUrl is the Tailscale Funnel URL — HTTPS, no interstitial, best for an in-chat iframe.'
+					: ngrokUrl
+						? 'Only ngrok is public. It works but its free-tier browser-warning page blocks iframe embeds (you cannot click through inside the chat). Enable Tailscale Funnel (Settings → Remote Access) for a clean, interstitial-free HTTPS URL.'
+						: 'No public tunnel is up. Enable Tailscale Funnel (recommended, Settings → Remote Access) or ngrok. Tailnet-only Tailscale serve does NOT expose the overlay port. Otherwise open localUrl on this machine or add it to OBS.',
 			});
 		},
 	);

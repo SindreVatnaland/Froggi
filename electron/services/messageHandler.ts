@@ -432,6 +432,11 @@ export class MessageHandler {
 		return this.ngrokUrl;
 	}
 
+	/** Tailscale base URL only (MagicDNS, https). Serves the app/overlay port only when Funnel is on. */
+	getTailscaleUrl(): string | undefined {
+		return this.tailscaleUrl;
+	}
+
 	/** Last-known Tailscale status snapshot, or null before the first detection pass has run. */
 	getTailscaleStatus(): { installed: boolean; authenticated: boolean; funnelActive: boolean } | null {
 		return this.tailscaleLastStatus;
