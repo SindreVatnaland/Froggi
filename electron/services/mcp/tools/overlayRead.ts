@@ -89,6 +89,8 @@ export function registerOverlayReadTools(server: McpServer) {
 			return text({
 				overlayId: overlay.id,
 				title: overlay.title,
+				aspectRatio: overlay.aspectRatio,
+				aspectRatioCss: overlay.aspectRatio ? `${overlay.aspectRatio.width}/${overlay.aspectRatio.height}` : '16/9',
 				localUrl: `${local.local}${route}`,
 				localNetworkUrl: `${local.external}${route}`,
 				publicUrl: ngrok ? `${ngrok}${route}` : undefined,
