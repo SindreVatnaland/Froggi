@@ -154,17 +154,26 @@ Game Go=False\` so they hide during the intro/countdown.
 - Intro Ready/Go use conditions \`Game Ready\` / \`Game Go\` (see the Ready/Go recipe).
 
 ## Controller inputs
-Digital face buttons A/B/X/Y/Z (InGamePlayer1ControllerButtonA..Z, 3120-3125) ship outline+pressed
-art and render as buttons. The **L/R triggers are different**: use the ANALOG trigger elements —
-InGamePlayer1ControllerAnalogL/R (3152/3153), or current-player 3150/3151 — which render a fill bar
-by trigger depth and are what the built-in controller demos use. The DIGITAL ControllerButtonL/R
-(3126/3127) have NO art shipped and render blank, so NEVER use them; always pick the Analog variants.
+**Controller elements are SELF-DRIVING — no triggers, no conditions.** Each button/stick/trigger
+element renders its own live state from the game's controller input automatically: buttons show their
+pressed art when held, sticks move, triggers fill by depth. In the demos EVERY controller element has
+animationTrigger.in = none and NO visibility conditions. Just place the element — do NOT add an
+animationTrigger or a "pressed" visibility condition; that's already built in.
 
-**Layout (physical GameCube arrangement — L is LEFT, R is RIGHT).** Don't guess sides; read the demo
-overlay "Player1 Controller" with get_overlay for exact coords, but the arrangement is:
-- AnalogL top-LEFT (demo x≈50,y≈10), AnalogR top-RIGHT (demo x≈331,y≈10) — L on the left, R on the right.
-- A is the big button center-right; B just left of A; X to the right of A; Y above A; Z upper-left area;
-  analog stick left, C-stick lower-right, D-pad lower-left.
+**Elements.** Per player there's Player1 (3120-…), Player2, and CurrentPlayer variants. Current player:
+A 3100, B 3101, X 3102, Y 3103, DPad 3104, main analog stick 3160, C-stick 3161, Z 3108, Analog trigger
+L 3150 / R 3151. (Player1: A/B/X/Y 3120-3123, Z 3124, DPad 3128, sticks 3160.., Analog L/R 3152/3153.)
+There is no Start-button element. For L/R ALWAYS use the Analog trigger elements (a fill bar) — the
+digital ControllerButtonL/R ship no art and are hidden from the catalog.
+
+**Layout (physical GameCube arrangement).** Read the demo "Current Player Controller" (or "Player1
+Controller") with get_overlay for exact coords — replicate that relative arrangement. From the demo
+(512 grid): AnalogL top-LEFT (x≈50,y≈10) / AnalogR top-RIGHT (x≈331,y≈10) — L left, R right; Z top-right
+(x≈466,y≈10); main stick left (x≈66,y≈67); A big center-right (x≈367,y≈71); B lower-left of A
+(x≈324,y≈124); X right of A (x≈442,y≈49); Y above A (x≈345,y≈36); C-stick lower-middle (x≈283,y≈185);
+D-pad lower-left (x≈132,y≈185). To fill the window, scale the whole set UNIFORMLY (same factor on
+x/y/w/h) about the center so the buttons keep their shape and relative positions — never distort
+individual elements. Drop the D-pad/other buttons by simply not adding those elements.
 Getting L and R swapped (R on the left) is wrong — L is always the LEFT trigger, R the RIGHT.
 For a "simple controller in a corner" you can use the whole demo controller as the reference and scale
 it into the corner; don't hand-place a broken subset.

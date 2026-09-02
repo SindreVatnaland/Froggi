@@ -72,4 +72,31 @@ export function registerOverlayReadTools(server: McpServer) {
 			return text(elements);
 		},
 	);
+
+	server.registerTool(
+		'get_overlay_preview_url',
+		{
+			description: 'The URL(s) that render a custom overlay live (the same page OBS loads as a browser source). Returns the local URL, and a public URL when a tunnel is up. The overlay is a square 1:1 page that shows the current game state; with Dolphin idle it shows idle/empty art. Use the local URL for an OBS browser source or a browser on this machine; the public URL (ngrok, or Tailscale only if Funnel is on) is the one an external viewer or an in-chat iframe could load — a tailnet-only Tailscale URL and a localhost URL are NOT reachable from outside this machine.',
+			inputSchema: { overlayId: z.string() },
+		},
+		async ({ overlayId }) => {
+			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!overlay) return error(`No overlay with id "${overlayId}"`);
+			const route = `/obs/overlay/${overlay.id}`;
+			const local = mcpContext.storeSettings!.getLocalUrl();
+			const ngrok = mcpContext.ngrokService!.getStatus?.().url ?? mcpContext.messageHandler!.getNgrokUrl?.();
+			const ts = mcpContext.messageHandler!.getTailscaleStatus?.();
+			return text({
+				overlayId: overlay.id,
+				title: overlay.title,
+				localUrl: `${local.local}${route}`,
+				localNetworkUrl: `${local.external}${route}`,
+				publicUrl: ngrok ? `${ngrok}${route}` : undefined,
+				tailscaleFunnelActive: ts?.funnelActive ?? false,
+				note: ngrok
+					? 'publicUrl (ngrok) is externally reachable — usable for an external viewer or iframe. localhost/tailnet URLs are not.'
+					: 'No public tunnel is up. Enable ngrok, or Tailscale Funnel (tailnet-only serve is NOT public), to get an externally reachable URL. Otherwise open localUrl in a browser on this machine or add it to OBS.',
+			});
+		},
+	);
 }
