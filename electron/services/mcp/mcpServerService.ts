@@ -5,6 +5,8 @@ import http from 'node:http';
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { FroggiOAuthProvider } from './mcpOAuth';
 import { scopedLog } from '../../utils/logger';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { MessageHandler } from '../messageHandler';
@@ -60,6 +62,7 @@ Ask before destructive edits (deleting overlays/elements). Keep changes reversib
 export class McpServerService {
 	private httpServer: Server | null = null;
 	private starting: Promise<void> | null = null;
+	private readonly oauthProvider = new FroggiOAuthProvider();
 
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
@@ -143,6 +146,24 @@ export class McpServerService {
 		this.starting = (async () => {
 			const app = express();
 			app.use(express.json());
+
+			// OAuth endpoints (metadata / dynamic client registration / authorize / token) so Claude
+			// Desktop's "Add connector" UI, which mandates the MCP Authorization flow, can connect. The
+			// provider auto-approves — loopback is the real boundary. Mounted at root; the MCP endpoint
+			// below is deliberately left open so token-less clients (mcp-remote http-only, Claude Code
+			// type:http) keep working. Issuer/resource use the loopback origin, so add the connector
+			// with the http://127.0.0.1:3300/froggi/mcp URL (all these endpoints live on :3300).
+			try {
+				const base = `http://127.0.0.1:${MCP_SERVER_PORT}`;
+				app.use(mcpAuthRouter({
+					provider: this.oauthProvider,
+					issuerUrl: new URL(base),
+					resourceServerUrl: new URL(`${base}${MCP_SERVER_PATH}`),
+					resourceName: 'Froggi',
+				}));
+			} catch (err) {
+				this.log.error('Failed to mount MCP OAuth router:', err);
+			}
 
 			const handlePost = async (req: express.Request, res: express.Response) => {
 				try {
