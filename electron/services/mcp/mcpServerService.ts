@@ -56,6 +56,11 @@ Before suggesting how to DISPLAY an overlay, check what's actually available and
 - Call get_injection_status: on Windows you can ALSO inject overlays directly into the Dolphin game window — offer this (set_overlay_injection to toggle one, set_auto_inject to auto-inject on Dolphin connect). Overlay injection is WINDOWS-ONLY; on macOS/Linux only OBS is available, so don't offer injection there.
 - When both are available, tell the user about both and which is possible right now.
 
+After you build or meaningfully change an overlay, ASK the user if they'd like to see a live preview. If yes, call get_overlay_preview_url:
+- If it returns a publicUrl (a tunnel is up), that page is live and reachable from this chat. If your client can render HTML/artifacts, show it inline as a SQUARE iframe (overlays are 1:1): an <iframe src="<publicUrl>"> in a container with aspect-ratio 1/1, width ~100%, no border. Always also give the plain publicUrl as a clickable link as a fallback. Tell the user it's live — it reflects the current game state, so with Dolphin idle it shows idle/empty art, and lights up during a game.
+- If there's no publicUrl (no tunnel), tell them a live in-chat preview needs a public tunnel (enable ngrok, or Tailscale Funnel — tailnet-only serve is not public), and otherwise offer the localUrl for a browser on their machine or adding it to OBS.
+Don't force the preview — only when the user wants it.
+
 Ask before destructive edits (deleting overlays/elements). Keep changes reversible (undo/revert tools exist).`;
 
 @singleton()
