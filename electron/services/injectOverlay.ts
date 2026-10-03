@@ -17,7 +17,7 @@ import { ElectronFroggiStore } from './store/storeFroggi';
 import { ConnectionState } from '../../frontend/src/lib/models/enum';
 import type { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 // Type-only imports — erased at compile time, no runtime module load on macOS
-import type { Overlay, GpuLuid, length as lengthFn } from '@asdf-overlay/core';
+import type { Overlay, GpuLuid, length as lengthFn, percent as percentFn } from '@asdf-overlay/core';
 import type { ElectronOverlaySurface } from '@asdf-overlay/electron/surface';
 
 const DEFAULT_ASPECT_RATIO: AspectRatio = { width: 16, height: 9 };
@@ -31,6 +31,10 @@ export class OverlayInjector {
 	private surface: ElectronOverlaySurface | null = null;
 	private windowId: number | null = null;
 	private length: typeof lengthFn | null = null;
+	private percent: typeof percentFn | null = null;
+	// Physical texture px per BrowserWindow DIP, measured from the first paint (Windows display
+	// scaling makes the offscreen texture DIP × scaleFactor). Window DIP size = fit / textureScale.
+	private textureScale = 1;
 	private gameWidth = 0;
 	private gameHeight = 0;
 	private attaching = false;
@@ -82,7 +86,7 @@ export class OverlayInjector {
 		return DEFAULT_ASPECT_RATIO;
 	};
 
-	/** Always fit the overlay's aspect ratio to the game window's full height, centered horizontally — width overflows/crops as needed. */
+	/** Fit the overlay's aspect ratio to the game window's full height; width overflows/crops as needed. x/y are informational (logs) — positioning is centre-anchored in centerSurface. */
 	private computeFitRect = async (
 		gameWidth: number,
 		gameHeight: number,
@@ -107,11 +111,44 @@ export class OverlayInjector {
 		this.log.info(
 			`Fit: game=${this.gameWidth}x${this.gameHeight} -> window=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`,
 		);
+		const dipW = Math.round(fit.width / this.textureScale);
+		const dipH = Math.round(fit.height / this.textureScale);
 		const [curWidth, curHeight] = this.window.getSize();
-		if (curWidth !== fit.width || curHeight !== fit.height) {
-			this.window.setSize(fit.width, fit.height);
+		if (curWidth !== dipW || curHeight !== dipH) {
+			this.window.setSize(dipW, dipH);
 		}
-		await this.overlay.setPosition(this.windowId, this.length(fit.x), this.length(fit.y));
+		await this.centerSurface(this.windowId);
+	};
+
+	/**
+	 * Centre the surface on the game window: anchor the surface's own centre to the window's centre.
+	 * asdf then centres using the real painted texture size, so any overflow (overlay wider/taller
+	 * than the window) crops symmetrically — no negative pixel offsets, and still centred even if
+	 * the texture size doesn't exactly match the computed fit.
+	 */
+	private centerSurface = async (id: number): Promise<void> => {
+		if (!this.overlay || !this.percent) return;
+		await this.overlay.setPosition(id, this.percent(50), this.percent(50));
+		await this.overlay.setAnchor(id, this.percent(50), this.percent(50));
+	};
+
+	/**
+	 * Measure physical texture px per window DIP from a paint. With Windows display scaling the
+	 * offscreen texture is DIP × scaleFactor, so a window sized to the game's physical px paints too
+	 * large and spills past the game window. Re-fit once the real ratio is known.
+	 */
+	private calibrateTextureScale = (e: Electron.Event) => {
+		// Electron 32 typings omit the shared-texture field on paint events (present at runtime).
+		const coded = (e as unknown as { texture?: { textureInfo?: { codedSize?: { width: number } } } })
+			.texture?.textureInfo?.codedSize?.width;
+		if (!coded || !this.window || this.window.isDestroyed()) return;
+		const [dipW] = this.window.getSize();
+		if (!dipW) return;
+		const scale = coded / dipW;
+		if (Math.abs(scale - this.textureScale) < 0.01) return;
+		this.log.info(`Texture scale calibrated: ${coded}px / ${dipW}dip = ${scale.toFixed(3)} (was ${this.textureScale})`);
+		this.textureScale = scale;
+		void this.applyFit();
 	};
 
 	injectIntoGame = async (processName: string = 'dolphin'): Promise<void> => {
@@ -164,6 +201,7 @@ export class OverlayInjector {
 			({ Overlay, defaultDllDir, percent, length } = core);
 			({ ElectronOverlaySurface } = electron);
 			this.length = length;
+			this.percent = percent;
 		} catch (err) {
 			this.log.error('Failed to load overlay injection module:', err);
 			void this.errorReporter.report(err, 'Overlay injection module load');
@@ -204,8 +242,8 @@ export class OverlayInjector {
 			);
 
 			this.window = new BrowserWindow({
-				width: fit.width,
-				height: fit.height,
+				width: Math.round(fit.width / this.textureScale),
+				height: Math.round(fit.height / this.textureScale),
 				frame: false,
 				show: false,
 				transparent: true,
@@ -229,8 +267,8 @@ export class OverlayInjector {
 			});
 			this.window.loadURL(overlayUrl);
 
-			await this.overlay!.setPosition(id, length(fit.x), length(fit.y));
-			await this.overlay!.setAnchor(id, percent(0), percent(0));
+			await this.centerSurface(id);
+			this.window.webContents.on('paint', this.calibrateTextureScale);
 
 			this.surface = ElectronOverlaySurface.connect(
 				{ id, overlay: this.overlay! },
