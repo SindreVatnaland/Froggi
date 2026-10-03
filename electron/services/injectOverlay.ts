@@ -17,7 +17,7 @@ import { ElectronFroggiStore } from './store/storeFroggi';
 import { ConnectionState } from '../../frontend/src/lib/models/enum';
 import type { AspectRatio } from '../../frontend/src/lib/models/types/overlay';
 // Type-only imports — erased at compile time, no runtime module load on macOS
-import type { Overlay, GpuLuid, length as lengthFn, percent as percentFn } from '@asdf-overlay/core';
+import type { Overlay, SurfaceInfo } from '@asdf-overlay/core';
 import type { ElectronOverlaySurface } from '@asdf-overlay/electron/surface';
 
 const DEFAULT_ASPECT_RATIO: AspectRatio = { width: 16, height: 9 };
@@ -29,15 +29,17 @@ export class OverlayInjector {
 	private window: BrowserWindow | null = null;
 	private overlay: Overlay | null = null;
 	private surface: ElectronOverlaySurface | null = null;
-	private windowId: number | null = null;
-	private length: typeof lengthFn | null = null;
-	private percent: typeof percentFn | null = null;
+	// The game's render surface (swapchain) we draw onto. Re-created by the game on fullscreen
+	// toggles / backend switches — we follow surface_destroyed → surface_added.
+	private surfaceId: bigint | null = null;
 	// Physical texture px per BrowserWindow DIP, measured from the first paint (Windows display
 	// scaling makes the offscreen texture DIP × scaleFactor). Window DIP size = fit / textureScale.
 	private textureScale = 1;
 	private gameWidth = 0;
 	private gameHeight = 0;
-	private attaching = false;
+	// In-flight attach, shared so concurrent callers (Dolphin connect + auto-inject) wait for it
+	// instead of skipping — two parallel Overlay.attach calls hit ERROR_PIPE_BUSY (os error 231).
+	private attachPromise: Promise<void> | null = null;
 
 	constructor(
 		@inject('Dev') private isDev: boolean,
@@ -57,23 +59,29 @@ export class OverlayInjector {
 	}
 
 	stopInjection = async () => {
-		if (this.surface) {
-			await this.surface.disconnect().catch((e: unknown) => this.log.error('Surface disconnect error:', e));
-			this.surface = null;
-		}
+		await this.disconnectSurface();
 		if (this.overlay) {
-			this.overlay.destroy();
+			try {
+				this.overlay.detach();
+			} catch {
+				// already detached
+			}
 			this.overlay = null;
 		}
-		if (this.window && !this.window.isDestroyed()) {
-			this.window.close();
-			this.window = null;
-		}
-		this.windowId = null;
 		this.gameWidth = 0;
 		this.gameHeight = 0;
 		this.injectedOverlayIds = [];
 		this.emitInjectedOverlays();
+	};
+
+	/** Drop the current game surface and its offscreen window (the game destroyed it, or we're stopping). */
+	private disconnectSurface = async () => {
+		const surface = this.surface;
+		this.surface = null;
+		this.surfaceId = null;
+		if (surface) await surface.disconnect().catch((e: unknown) => this.log.warn('Surface disconnect:', e));
+		if (this.window && !this.window.isDestroyed()) this.window.close();
+		this.window = null;
 	};
 
 	/** Aspect ratio driving the letterbox fit — the first currently-injected overlay's, or 16:9 if none. */
@@ -86,50 +94,31 @@ export class OverlayInjector {
 		return DEFAULT_ASPECT_RATIO;
 	};
 
-	/** Fit the overlay's aspect ratio to the game window's full height; width overflows/crops as needed. x/y are informational (logs) — positioning is centre-anchored in centerSurface. */
+	/** Fit the overlay's aspect ratio to the game's full height, centred; width overflows/crops as needed. */
 	private computeFitRect = async (
 		gameWidth: number,
 		gameHeight: number,
 	): Promise<{ width: number; height: number; x: number; y: number }> => {
 		const aspect = await this.getReferenceAspectRatio();
-		const targetAspect = aspect.width / aspect.height;
-
 		const height = gameHeight;
-		const width = Math.round(height * targetAspect);
-
-		const x = Math.round((gameWidth - width) / 2);
-		const y = 0;
-		return { width, height, x, y };
+		const width = Math.round(height * (aspect.width / aspect.height));
+		return { width, height, x: Math.round((gameWidth - width) / 2), y: 0 };
 	};
 
-	/** Recompute the letterboxed fit for the current game window size and reposition/resize the injected window. */
+	/** Resize the offscreen window to the fit and centre it on the game surface (physical px offset). */
 	private applyFit = async (): Promise<void> => {
-		if (!this.overlay || !this.window || this.window.isDestroyed() || this.windowId === null || !this.length) return;
+		const { overlay, window, surfaceId } = this;
+		if (!overlay || !window || window.isDestroyed() || surfaceId === null) return;
 		if (!this.gameWidth || !this.gameHeight) return;
 
 		const fit = await this.computeFitRect(this.gameWidth, this.gameHeight);
-		this.log.info(
-			`Fit: game=${this.gameWidth}x${this.gameHeight} -> window=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`,
-		);
+		if (window.isDestroyed() || surfaceId !== this.surfaceId) return; // torn down while awaiting
+		this.log.info(`Fit: game=${this.gameWidth}x${this.gameHeight} -> overlay=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`);
 		const dipW = Math.round(fit.width / this.textureScale);
 		const dipH = Math.round(fit.height / this.textureScale);
-		const [curWidth, curHeight] = this.window.getSize();
-		if (curWidth !== dipW || curHeight !== dipH) {
-			this.window.setSize(dipW, dipH);
-		}
-		await this.centerSurface(this.windowId);
-	};
-
-	/**
-	 * Centre the surface on the game window: anchor the surface's own centre to the window's centre.
-	 * asdf then centres using the real painted texture size, so any overflow (overlay wider/taller
-	 * than the window) crops symmetrically — no negative pixel offsets, and still centred even if
-	 * the texture size doesn't exactly match the computed fit.
-	 */
-	private centerSurface = async (id: number): Promise<void> => {
-		if (!this.overlay || !this.percent) return;
-		await this.overlay.setPosition(id, this.percent(50), this.percent(50));
-		await this.overlay.setAnchor(id, this.percent(50), this.percent(50));
+		const [curWidth, curHeight] = window.getSize();
+		if (curWidth !== dipW || curHeight !== dipH) window.setSize(dipW, dipH);
+		await overlay.setPosition(surfaceId, fit.x, fit.y).catch((e: unknown) => this.log.warn('setPosition failed:', e));
 	};
 
 	/**
@@ -138,7 +127,6 @@ export class OverlayInjector {
 	 * large and spills past the game window. Re-fit once the real ratio is known.
 	 */
 	private calibrateTextureScale = (e: Electron.Event) => {
-		// Electron 32 typings omit the shared-texture field on paint events (present at runtime).
 		const coded = (e as unknown as { texture?: { textureInfo?: { codedSize?: { width: number } } } })
 			.texture?.textureInfo?.codedSize?.width;
 		if (!coded || !this.window || this.window.isDestroyed()) return;
@@ -151,23 +139,15 @@ export class OverlayInjector {
 		void this.applyFit();
 	};
 
-	injectIntoGame = async (processName: string = 'dolphin'): Promise<void> => {
-		if (os.platform() !== 'win32') return;
+	injectIntoGame = (processName: string = 'dolphin'): Promise<void> => {
+		if (os.platform() !== 'win32' || this.overlay) return Promise.resolve();
+		this.attachPromise ??= this.attach(processName).finally(() => {
+			this.attachPromise = null;
+		});
+		return this.attachPromise;
+	};
 
-		if (this.overlay) {
-			this.log.info('Overlay already attached, skipping');
-			return;
-		}
-		// Guard against overlapping attaches: attaching two overlays (or a reconnect firing mid-attach)
-		// would call Overlay.attach twice on the same process before this.overlay is set → the second
-		// hits ERROR_PIPE_BUSY (os error 231). Only one attach may be in flight at a time.
-		if (this.attaching) {
-			this.log.info('Overlay attach already in progress, skipping');
-			return;
-		}
-		this.attaching = true;
-
-		try {
+	private attach = async (processName: string): Promise<void> => {
 		this.log.info(`Searching for game process: ${processName}`);
 
 		const proc = await getProcessByName(processName.split('.')[0]).catch((e) => {
@@ -185,23 +165,16 @@ export class OverlayInjector {
 		// These are optionalDependencies with native binaries — if they fail to load
 		// (missing from the package, ABI mismatch, etc.) surface the real reason instead
 		// of dead-ending later with a generic "No game attached".
-		let Overlay: typeof import('@asdf-overlay/core').Overlay;
-		let defaultDllDir: typeof import('@asdf-overlay/core').defaultDllDir;
-		let percent: typeof import('@asdf-overlay/core').percent;
-		let length: typeof import('@asdf-overlay/core').length;
+		let core: typeof import('@asdf-overlay/core');
 		let ElectronOverlaySurface: typeof import('@asdf-overlay/electron/surface').ElectronOverlaySurface;
 		try {
 			// TS with module:commonjs rewrites `import()` to `require()`, which throws
-			// ERR_REQUIRE_ESM against @asdf-overlay's ESM. Force a real dynamic import.
+			// ERR_REQUIRE_ESM against @asdf-overlay/electron's ESM. Force a real dynamic import.
 			const dynamicImport = new Function('m', 'return import(m)') as <T = unknown>(m: string) => Promise<T>;
-			const core = await dynamicImport<typeof import('@asdf-overlay/core')>('@asdf-overlay/core');
-			const electron = await dynamicImport<typeof import('@asdf-overlay/electron/surface')>(
+			core = await dynamicImport<typeof import('@asdf-overlay/core')>('@asdf-overlay/core');
+			({ ElectronOverlaySurface } = await dynamicImport<typeof import('@asdf-overlay/electron/surface')>(
 				'@asdf-overlay/electron/surface',
-			);
-			({ Overlay, defaultDllDir, percent, length } = core);
-			({ ElectronOverlaySurface } = electron);
-			this.length = length;
-			this.percent = percent;
+			));
 		} catch (err) {
 			this.log.error('Failed to load overlay injection module:', err);
 			void this.errorReporter.report(err, 'Overlay injection module load');
@@ -216,9 +189,10 @@ export class OverlayInjector {
 		this.log.info(`Found process: pid=${proc.Id} name=${proc.ProcessName}`);
 		this.messageHandler.sendMessage('Notification', 'Attaching overlay…', NotificationType.Info);
 
+		let overlay: Overlay;
 		try {
-			const dllDir = defaultDllDir().replace('app.asar', 'app.asar.unpacked');
-			this.overlay = await Overlay.attach(dllDir, proc.Id, 15000);
+			const dllDir = core.defaultDllDir().replace('app.asar', 'app.asar.unpacked');
+			overlay = await core.Overlay.attach(dllDir, proc.Id, 15000);
 			this.log.info('Overlay DLL attached to process');
 		} catch (err) {
 			this.log.error('Failed to attach overlay:', err);
@@ -226,22 +200,19 @@ export class OverlayInjector {
 			this.messageHandler.sendMessage('Notification', 'Failed to attach overlay to game', NotificationType.Danger);
 			return;
 		}
+		this.overlay = overlay;
 
 		const port = this.isDev ? '5173' : `${BACKEND_PORT}`;
 		const overlayUrl = `http://localhost:${port}/obs/overlay/inject`;
 
-		this.overlay.event.once('added', async (id: number, width: number, height: number, luid: GpuLuid) => {
-			this.log.info(`Game window detected: id=${id} ${width}x${height}`);
-			this.windowId = id;
+		const connectSurface = async (id: bigint, width: number, height: number, info: SurfaceInfo) => {
+			this.log.info(`Game surface detected: id=${id} ${width}x${height} type=${info.ty.type} keyedMutex=${info.keyedMutex}`);
+			this.surfaceId = id;
 			this.gameWidth = width;
 			this.gameHeight = height;
 
 			const fit = await this.computeFitRect(width, height);
-			this.log.info(
-				`Fit: game=${width}x${height} -> window=${fit.width}x${fit.height} pos=(${fit.x},${fit.y})`,
-			);
-
-			this.window = new BrowserWindow({
+			const window = new BrowserWindow({
 				width: Math.round(fit.width / this.textureScale),
 				height: Math.round(fit.height / this.textureScale),
 				frame: false,
@@ -254,27 +225,25 @@ export class OverlayInjector {
 				resizable: false,
 				webPreferences: {
 					backgroundThrottling: false,
-					offscreen: { useSharedTexture: true } as unknown as boolean,
+					offscreen: { useSharedTexture: true },
 				},
 			});
+			this.window = window;
 			// Force a transparent DOM background directly, rather than relying on the app's
 			// own store-driven CSS toggle — this re-applies on every navigation, including
 			// the reloads triggered by resize/fit changes.
-			this.window.webContents.on('dom-ready', () => {
-				void this.window?.webContents.insertCSS(
+			window.webContents.on('dom-ready', () => {
+				void window.webContents.insertCSS(
 					'html, body, #svelte, main { background: transparent !important; overflow: hidden !important; }',
 				);
 			});
-			this.window.loadURL(overlayUrl);
+			window.webContents.on('paint', this.calibrateTextureScale);
+			void window.loadURL(overlayUrl);
 
-			await this.centerSurface(id);
-			this.window.webContents.on('paint', this.calibrateTextureScale);
-
-			this.surface = ElectronOverlaySurface.connect(
-				{ id, overlay: this.overlay! },
-				luid,
-				this.window.webContents,
-			);
+			const surface = ElectronOverlaySurface.connect({ overlay, id, info }, window.webContents);
+			surface.events.on('error', (e: unknown) => this.log.error('Overlay surface copy failed:', e));
+			this.surface = surface;
+			await this.applyFit();
 
 			this.log.info('Overlay surface connected');
 			this.messageHandler.sendMessage('Notification', 'Overlay attached to game', NotificationType.Success);
@@ -282,11 +251,19 @@ export class OverlayInjector {
 			// TEMP DEBUG: dump what the offscreen page is actually rendering — remove once
 			// the background/render investigation is done.
 			setTimeout(() => void this.debugCapture(), 5000);
+		};
+
+		overlay.event.on('surface_added', (id, width, height, info) => {
+			if (this.surfaceId !== null) {
+				this.log.info(`Ignoring extra surface id=${id} type=${info.ty.type} (already drawing on ${this.surfaceId})`);
+				return;
+			}
+			void connectSurface(id, width, height, info).catch((e: unknown) => this.log.error('Surface connect failed:', e));
 		});
 
-		this.overlay.event.on('resized', debounce((id: number, width: number, height: number) => {
-			if (id !== this.windowId || !this.window || this.window.isDestroyed()) return;
-			this.log.info(`Game window resized: ${width}x${height}`);
+		overlay.event.on('surface_resized', debounce((id: bigint, width: number, height: number) => {
+			if (id !== this.surfaceId || !this.window || this.window.isDestroyed()) return;
+			this.log.info(`Game surface resized: ${width}x${height}`);
 			this.gameWidth = width;
 			this.gameHeight = height;
 			void this.applyFit().then(() => {
@@ -296,13 +273,21 @@ export class OverlayInjector {
 			});
 		}, 200));
 
-		this.overlay.event.on('disconnected', () => {
+		// Fullscreen toggles / backend switches recreate the swapchain: drop ours, the next
+		// surface_added reconnects.
+		overlay.event.on('surface_destroyed', (id) => {
+			if (id !== this.surfaceId) return;
+			this.log.info(`Game surface destroyed: id=${id}`);
+			this.surface = null; // its target is gone — nothing to clear
+			void this.disconnectSurface();
+		});
+
+		overlay.event.on('error', (err) => this.log.error('Overlay IPC error:', err));
+
+		overlay.event.on('disconnected', () => {
 			this.log.info('Overlay disconnected from process');
 			void this.stopInjection();
 		});
-		} finally {
-			this.attaching = false;
-		}
 	};
 
 	// Toggles an overlay in the persisted inject set (source of truth for "toggled to inject"), then

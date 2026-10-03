@@ -30,6 +30,7 @@ import { STAGE_DATA } from '../../frontend/src/lib/models/constants/stageData';
 import { isDamaged } from '../../frontend/src/lib/models/constants/actionStates';
 import { InGameState, LiveStatsScene, NotificationType } from '../../frontend/src/lib/models/enum';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import { ElectronGamesStore } from './store/storeGames';
 import { ElectronLiveStatsStore } from './store/storeLiveStats';
 import { ElectronCurrentPlayerStore } from './store/storeCurrentPlayer';
@@ -457,7 +458,12 @@ export class StatsDisplay {
 		const slippiSettings = this.storeSettings.getSlippiLauncherSettings();
 		this.log.debug('Settings:', slippiSettings);
 
-		if (!slippiSettings?.rootSlpPath) return;
+		const rootSlpPath = this.storeSettings.getReplayRootPath();
+		if (!slippiSettings || !rootSlpPath) return;
+		if (!existsSync(rootSlpPath)) {
+			this.log.warn(`Replay folder not found: ${rootSlpPath} — set the replay folder in Slippi Launcher → Settings → Replays`);
+			return;
+		}
 
 		const isBeta = slippiSettings?.useNetplayBeta;
 		const mainlineRegex = /\b(Mainline|beta)\b/i;
@@ -465,7 +471,7 @@ export class StatsDisplay {
 
 
 		const subFolder = slippiSettings.useMonthlySubfolders
-			? (await fs.readdir(slippiSettings.rootSlpPath, { withFileTypes: true }))
+			? (await fs.readdir(rootSlpPath, { withFileTypes: true }))
 				.filter((dirent) => dirent.isDirectory())
 				.map((dirent) => dirent.name)
 				.filter((dirname) => (isBeta ? mainlineRegex.test(dirname) : dirname))
@@ -474,7 +480,7 @@ export class StatsDisplay {
 				.at(0) ?? './'
 			: './';
 
-		const replaysDirContent = await this.getReplayDirs(slippiSettings, subFolder);
+		const replaysDirContent = await this.getReplayDirs({ ...slippiSettings, rootSlpPath }, subFolder);
 
 		const replayFiles = replaysDirContent
 			.filter((f: string) => re.test(f))

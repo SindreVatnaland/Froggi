@@ -274,7 +274,7 @@ try {
 		// In production the packaged .app already supplies the Dock icon (the properly sized
 		// bundle .icns). Overriding it with the raw full-bleed PNG makes it look oversized and
 		// square, so only set it in dev where there's no bundle icon (avoids the generic Electron one).
-		if (isMac && dev) app.dock.setIcon(dockImage);
+		if (isMac && dev) app.dock?.setIcon(dockImage);
 		tray.setToolTip('Froggi');
 
 		const contextMenu = Menu.buildFromTemplate([

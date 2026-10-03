@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "2.0.0-beta.70",
+	"version": "2.0.0-beta.71",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -32,7 +32,6 @@
 		"compile": "npm run build:svelte && npm run compile:electron && tsc --p ./electron/tsconfig.json",
 		"compile:electron": "npm run && tsc --p ./electron/tsconfig.json && npm run copy",
 		"install:all": "npm i --legacy-peer-deps && npm i --legacy-peer-deps --prefix ./frontend",
-		"postinstall": "node scripts/rebuild-native.js",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles --forceExit",
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
 		"copy": "npm run overlay:copy && npm run update:copy && npm run mcpb:pack",
@@ -53,7 +52,7 @@
 		"@types/lodash": "^4.14.202",
 		"appdata-path": "^1.0.0",
 		"axios": "^1.6.5",
-		"better-sqlite3": "^12.11.1",
+		"better-sqlite3": "^13.0.3",
 		"call-bind-apply-helpers": "^1.0.2",
 		"cors": "^2.8.5",
 		"discord-rpc": "^4.0.1",
@@ -110,7 +109,7 @@
 		"concurrently": "9.0.1",
 		"cross-env": "^7.0.3",
 		"dotenv": "^16.4.0",
-		"electron": "^32.2.0",
+		"electron": "^43.7.7",
 		"electron-builder": "^25.1.8",
 		"electron-connect": "^0.6.3",
 		"electron-packager": "^17.1.2",
@@ -130,8 +129,8 @@
 		"typescript-eslint": "^8.25.0"
 	},
 	"optionalDependencies": {
-		"@asdf-overlay/core": "^1.2.2",
-		"@asdf-overlay/electron": "^1.2.2"
+		"@asdf-overlay/core": "2.1.0",
+		"@asdf-overlay/electron": "2.1.0"
 	},
 	"cmake-js": {
 		"runtime": "electron",

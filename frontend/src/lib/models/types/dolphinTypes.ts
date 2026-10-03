@@ -6,6 +6,7 @@ export interface DolphinSettingsMainline {
 interface Slippi {
     ForceNetplayPort: boolean
     NetplayPort: number
+    ReplayDir?: string
 }
 
 export interface DolphinSettings {
@@ -15,6 +16,7 @@ export interface DolphinSettings {
 interface Core {
     SlippiForceNetplayPort: string | boolean | undefined
     SlippiNetplayPort: number | undefined
+    SlippiReplayDir?: string
     GFXBackend: string | undefined
     Display: Display | undefined
 }

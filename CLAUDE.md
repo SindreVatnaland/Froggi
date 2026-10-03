@@ -272,7 +272,9 @@ These conventions apply to **all** minigames (Bingo, Iron Man, and any future ad
 
 ### Overlay injection
 
-`@asdf-overlay/core` and `@asdf-overlay/electron` handle overlay injection into the Dolphin game window. Windows-only. On Dolphin connect, `OverlayInjector.injectIntoGame()` calls `Overlay.attach(dllDir, pid)` which injects the DLL; once the game window is detected the `added` event fires and `ElectronOverlaySurface.connect()` pipes an offscreen `BrowserWindow` into the overlay via shared GPU texture. The package's native binaries must be in `app.asar.unpacked` — this is handled by the `asarUnpack` rule in `build.config.json`.
+`@asdf-overlay/core` + `@asdf-overlay/electron` **2.1.x** (requires **Electron ≥ 43** for `offscreen.useSharedTexture` paint textures) handle injection into the Dolphin game window. Windows-only; on macOS/Linux npm skips them, so types come from the ambient stub `electron/types/asdf-overlay-core.d.ts` (keep it in sync when bumping asdf). `OverlayInjector.injectIntoGame()` shares one in-flight `attachPromise` so concurrent callers (Dolphin connect + auto-inject) wait instead of skipping. After `Overlay.attach(dllDir, pid)`, it follows the game's render **surface** (`surface_added` / `surface_resized` / `surface_destroyed`, bigint ids): a fullscreen toggle or backend switch recreates the swapchain, so it disconnects and reconnects on the next `surface_added`. `ElectronOverlaySurface.connect({ overlay, id, info }, webContents)` pipes the offscreen `BrowserWindow`; positioning is `setPosition(surfaceId, x, y)` in physical px (centred fit). Surface copy/IPC errors are logged. Native binaries must be in `app.asar.unpacked` (`asarUnpack` in `build.config.json`).
+
+`better-sqlite3` is **13.x** (Node-API, bundled prebuilds): one binary works under Node (jest) and Electron — no per-ABI rebuild or postinstall needed.
 
 ### MCP server (local AI assistant)
 

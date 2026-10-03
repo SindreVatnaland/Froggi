@@ -131,6 +131,17 @@ export class ElectronSettingsStore {
 	}
 
 
+	/**
+	 * Where replays are actually written. Dolphin's own replay dir wins over Slippi Launcher's
+	 * rootSlpPath, which can be stale or a guessed default (e.g. Documents redirected to OneDrive).
+	 */
+	getReplayRootPath(): string | undefined {
+		const dolphin = this.getDolphinSettings() as (DolphinSettings & Partial<DolphinSettingsMainline>) | undefined;
+		const dolphinDir = dolphin?.Core?.SlippiReplayDir || dolphin?.Slippi?.ReplayDir;
+		if (dolphinDir && fs.existsSync(dolphinDir)) return dolphinDir;
+		return this.getSlippiLauncherSettings()?.rootSlpPath;
+	}
+
 	getSlippiDefaultPath(): string {
 		const username = os.userInfo().username;
 		if (this.isWindows) return `C:/Users/${username}/Documents/Slippi`;
