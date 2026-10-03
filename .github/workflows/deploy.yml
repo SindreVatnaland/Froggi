@@ -110,16 +110,20 @@ jobs:
                   npm config set fetch-retry-maxtimeout 120000
                   npm config set fetch-timeout 600000
                   ci_retry() {
-                      dir="${1:-.}"
+                      dir="${1:-.}"; shift || true
                       for attempt in 1 2 3; do
-                          npm ci --legacy-peer-deps --no-audit --prefix "$dir" && return 0
+                          npm ci --legacy-peer-deps --no-audit --prefix "$dir" "$@" && return 0
                           echo "npm ci ($dir) failed (attempt $attempt) — cleaning + retrying in 15s..."
                           rm -rf "$dir/node_modules" 2>/dev/null || true
                           sleep 15
                       done
                       return 1
                   }
-                  ci_retry .
+                  # Root: --ignore-scripts. Native deps (better-sqlite3 13, @asdf-overlay, dolphin-memory-reader)
+                  # ship prebuilt Node-API binaries; npm 10's `npm ci` ignores better-sqlite3's gypfile:false and
+                  # runs node-gyp, which can't find the Windows runner's Visual Studio. Electron's binary is
+                  # fetched by electron-builder itself.
+                  ci_retry . --ignore-scripts
                   ci_retry ./frontend
 
             - name: Test

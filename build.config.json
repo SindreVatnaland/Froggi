@@ -55,6 +55,7 @@
 		]
 	},
 	"executableName": "Froggi",
+	"npmRebuild": false,
 	"asarUnpack": [
 		"**/node_modules/@asdf-overlay/**"
 	],
