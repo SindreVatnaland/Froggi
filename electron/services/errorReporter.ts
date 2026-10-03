@@ -139,16 +139,16 @@ export class ErrorReporter {
 	}
 
 	/** User-submitted feature request or bug report. Always sends (explicit action) when a webhook exists. */
-	async submitFeedback(type: 'feature' | 'bug', message: string, includeLogs: boolean): Promise<void> {
+	async submitFeedback(type: 'feature' | 'bug', message: string, includeLogs: boolean, logOverride?: string): Promise<boolean> {
 		const text = (message ?? '').trim();
-		if (!text) return;
+		if (!text) return false;
 		const isBug = type === 'bug';
 		// Feature requests go to the feature webhook (falling back to the crash one if unset);
 		// bug reports go to the crash/bug webhook.
 		const webhook = isBug ? this.webhook : (this.featureWebhook || this.webhook);
 		if (!webhook) {
 			this.messageHandler.sendMessage('Notification', 'Feedback is unavailable in this build', NotificationType.Warning, 4000);
-			return;
+			return false;
 		}
 		try {
 			const payload = {
@@ -171,13 +171,14 @@ export class ErrorReporter {
 			form.append('payload_json', JSON.stringify(payload));
 			// Logs only attach to bug reports (and only when opted in) — never feature requests.
 			if (isBug && includeLogs) {
-				const logTail = this.readLogTail();
+				const logTail = logOverride ?? this.readLogTail();
 				if (logTail) form.append('files[0]', new Blob([logTail], { type: 'text/plain' }), 'froggi-log.txt');
 			}
 
 			const res = await fetch(webhook, { method: 'POST', body: form });
 			if (res.ok) {
 				this.messageHandler.sendMessage('Notification', 'Thanks! Your feedback was sent.', NotificationType.Success, 4000);
+				return true;
 			} else {
 				this.messageHandler.sendMessage('Notification', 'Failed to send feedback', NotificationType.Danger, 4000);
 				this.log.warn(`Feedback POST failed: HTTP ${res.status}`);
@@ -186,6 +187,7 @@ export class ErrorReporter {
 			this.log.warn('Failed to send feedback:', err);
 			this.messageHandler.sendMessage('Notification', 'Failed to send feedback', NotificationType.Danger, 4000);
 		}
+		return false;
 	}
 
 	/** Log a frontend error always; report it only if it looks like a real issue (not noise). */
@@ -199,36 +201,31 @@ export class ErrorReporter {
 		void this.report(err, `Frontend ${data.kind}`);
 	}
 
-	/**
-	 * Logs for the current session — from the last "Starting app" marker to the end —
-	 * scrubbed. Reads a bounded window from the end of the file; if the session is larger
-	 * than the window the oldest lines are dropped. Empty string if unavailable.
-	 */
 	/** Bounded, scrubbed log tail for the current session. Public so MCP diagnostics tools can reuse it. */
 	readLogTail(): string {
-		try {
-			const path = this.rootLog.transports.file.getFile()?.path;
-			if (!path || !fs.existsSync(path)) return '';
-			const stat = fs.statSync(path);
-			const maxBytes = 256 * 1024; // bound memory + upload size; one session is usually well under this
-			const start = Math.max(0, stat.size - maxBytes);
-			const fd = fs.openSync(path, 'r');
-			let content: string;
-			try {
-				const len = stat.size - start;
-				const buf = Buffer.alloc(len);
-				fs.readSync(fd, buf, 0, len, start);
-				content = buf.toString('utf8');
-			} finally {
-				fs.closeSync(fd);
-			}
+		return this.readLogSessions(1);
+	}
 
-			// Crop to the current session: everything after the last "Starting app".
-			const marker = content.lastIndexOf('Starting app');
-			if (marker !== -1) {
-				content = content.slice(content.lastIndexOf('\n', marker) + 1);
-			} else if (start > 0) {
-				// Session start is beyond the window — drop the partial first line.
+	/**
+	 * The last `count` app sessions (each starts at a "Starting app" line), scrubbed. Reads a bounded
+	 * window from the end of the log — plus electron-log's rotated main.old.log when the current file
+	 * is short — so older sessions may be cut. Empty string if unavailable.
+	 */
+	readLogSessions(count: number, maxBytes = count > 1 ? 2 * 1024 * 1024 : 256 * 1024): string {
+		try {
+			const file = this.rootLog.transports.file.getFile()?.path;
+			if (!file || !fs.existsSync(file)) return '';
+			let content = this.readTail(file, maxBytes);
+			const old = file.replace(/\.log$/, '.old.log');
+			if (Buffer.byteLength(content) < maxBytes && old !== file && fs.existsSync(old))
+				content = this.readTail(old, maxBytes - Buffer.byteLength(content)) + content;
+
+			// Crop to the last `count` sessions.
+			let marker = content.length;
+			for (let i = 0; i < count && marker > 0; i++) marker = content.lastIndexOf('Starting app', marker - 1);
+			if (marker > 0) content = content.slice(content.lastIndexOf('\n', marker) + 1);
+			else if (marker === -1) {
+				// Oldest session start is beyond the window — drop the partial first line.
 				const nl = content.indexOf('\n');
 				if (nl !== -1) content = content.slice(nl + 1);
 			}
@@ -238,8 +235,21 @@ export class ErrorReporter {
 		}
 	}
 
+	private readTail(file: string, maxBytes: number): string {
+		const size = fs.statSync(file).size;
+		const start = Math.max(0, size - maxBytes);
+		const buf = Buffer.alloc(size - start);
+		const fd = fs.openSync(file, 'r');
+		try {
+			fs.readSync(fd, buf, 0, buf.length, start);
+		} finally {
+			fs.closeSync(fd);
+		}
+		return buf.toString('utf8');
+	}
+
 	/** Strip machine-identifying data before anything leaves the user's system. */
-	private scrub(text: string): string {
+	scrub(text: string): string {
 		let out = text;
 		if (this.homedir) out = out.split(this.homedir).join('~');
 		if (this.username) out = out.split(this.username).join('<user>');

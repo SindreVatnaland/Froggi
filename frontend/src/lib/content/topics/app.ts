@@ -40,4 +40,26 @@ export const appTopics: ContentTopic[] = [
 			},
 		],
 	},
+	{
+		id: 'troubleshooting-crash-reports',
+		title: 'Troubleshooting errors and sending crash reports',
+		category: 'app',
+		summary: 'Froggi logs every error. The AI assistant can read the last few sessions, tell whether a problem is fixable locally or a bug, and — only if you agree — send a crash report to the developer.',
+		blocks: [
+			{
+				type: 'paragraph',
+				text: 'Logs live in main.log in the Froggi app-data folder (Windows: %APPDATA%\\froggi\\main.log; macOS: ~/Library/Application Support/Froggi/main.log). With Settings → AI Assistant → read access on, Claude can call diagnose_errors: it reads the last few app sessions (so a crash that closed Froggi is still visible), groups repeated errors, and labels known causes as local (you can fix it — e.g. Slippi replay folder missing, OBS WebSocket off, port already in use), benign, or dev (a bug).',
+			},
+			{
+				type: 'list',
+				text: 'Sending a crash report:',
+				items: [
+					'Through Claude: with write access on, Claude asks before sending and only sends after you agree. The report contains its summary plus the log lines around the chosen errors.',
+					'Manually: Settings → Feedback → Bug report, optionally with logs attached.',
+					'Automatic crash reports only go out if "Crash reports" is enabled in Settings.',
+					'Everything sent is scrubbed: your home folder, username, Slippi connect codes and IP addresses are removed.',
+				],
+			},
+		],
+	},
 ];

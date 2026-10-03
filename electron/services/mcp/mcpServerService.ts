@@ -43,6 +43,7 @@ import { registerAutomationReadTools } from './tools/automationRead';
 import { registerAutomationComboTools } from './tools/automationCombo';
 import { registerAutomationSceneTriggerTools } from './tools/automationSceneTrigger';
 import { registerInjectionWriteTools } from './tools/injectionWrite';
+import { registerCrashDiagnosisReadTools, registerCrashDiagnosisWriteTools } from './tools/crashDiagnosis';
 
 /**
  * Embeds an MCP server inside Electron main so a local MCP client (Claude Desktop/Code)
@@ -65,6 +66,8 @@ After you build or meaningfully change an overlay, ASK the user if they'd like t
 - If it returns a publicUrl (a tunnel is up), that page is live and reachable from this chat. If your client can render HTML/artifacts, show it inline as an iframe sized to the overlay's aspect ratio — use the returned aspectRatioCss (e.g. "16/9"), NOT a forced square: an <iframe src="<publicUrl>"> in a container with that aspect-ratio, width ~100%, no border. Always also give the plain publicUrl as a clickable link as a fallback. Tell the user it's live — it reflects the current game state, so with Dolphin idle it shows idle/empty art, and lights up during a game.
 - If there's no publicUrl (no tunnel), tell them a live in-chat preview needs a public tunnel (enable ngrok, or Tailscale Funnel — tailnet-only serve is not public), and otherwise offer the localUrl for a browser on their machine or adding it to OBS.
 Don't force the preview — only when the user wants it.
+
+When the user reports something broken, crashing, or not showing up, call diagnose_errors (it covers the last few sessions, including the one before a crash). Fix "local" issues with the user; ignore "benign" ones. If an error needs the developer, explain why and ASK whether to send a crash report — only call submit_crash_report after they say yes (it needs write access; if unavailable, point them to Settings → Feedback → Bug report).
 
 Ask before destructive edits (deleting overlays/elements). Keep changes reversible (undo/revert tools exist).`;
 
@@ -175,6 +178,7 @@ export class McpServerService {
 		if (this.froggiStore.getMcpReadEnabled()) {
 			registerExplainTools(server);
 			registerDiagnosticsTools(server);
+			registerCrashDiagnosisReadTools(server);
 			registerOverlayReadTools(server);
 			registerOverlaySchemaTools(server);
 			registerAutomationReadTools(server);
@@ -187,6 +191,7 @@ export class McpServerService {
 			registerAutomationComboTools(server);
 			registerAutomationSceneTriggerTools(server);
 			registerInjectionWriteTools(server);
+			registerCrashDiagnosisWriteTools(server);
 		}
 
 		return server;
