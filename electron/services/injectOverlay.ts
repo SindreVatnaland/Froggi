@@ -22,6 +22,25 @@ import type { ElectronOverlaySurface } from '@asdf-overlay/electron/surface';
 
 const DEFAULT_ASPECT_RATIO: AspectRatio = { width: 16, height: 9 };
 
+export type FitRect = { width: number; height: number; x: number; y: number };
+
+/**
+ * Where the overlay sits on the game surface (physical px; x/y may be negative = overflow, cropped).
+ * - Landscape game (wider than tall, incl. 4:3 / 1:1 / ultrawide): fill the height, centre
+ *   horizontally — narrower games crop the sides evenly, wider games get side margins.
+ * - Portrait game (taller than wide): fill the width, centre vertically.
+ * Centred HUD elements stay centred on the game either way.
+ */
+export function fitOverlay(gameWidth: number, gameHeight: number, aspect: AspectRatio): FitRect {
+	const ratio = aspect.width / aspect.height;
+	if (gameHeight > gameWidth) {
+		const height = Math.round(gameWidth / ratio);
+		return { width: gameWidth, height, x: 0, y: Math.round((gameHeight - height) / 2) };
+	}
+	const width = Math.round(gameHeight * ratio);
+	return { width, height: gameHeight, x: Math.round((gameWidth - width) / 2), y: 0 };
+}
+
 @singleton()
 export class OverlayInjector {
 	injectedOverlayIds: string[] = [];
@@ -94,16 +113,8 @@ export class OverlayInjector {
 		return DEFAULT_ASPECT_RATIO;
 	};
 
-	/** Fit the overlay's aspect ratio to the game's full height, centred; width overflows/crops as needed. */
-	private computeFitRect = async (
-		gameWidth: number,
-		gameHeight: number,
-	): Promise<{ width: number; height: number; x: number; y: number }> => {
-		const aspect = await this.getReferenceAspectRatio();
-		const height = gameHeight;
-		const width = Math.round(height * (aspect.width / aspect.height));
-		return { width, height, x: Math.round((gameWidth - width) / 2), y: 0 };
-	};
+	private computeFitRect = async (gameWidth: number, gameHeight: number): Promise<FitRect> =>
+		fitOverlay(gameWidth, gameHeight, await this.getReferenceAspectRatio());
 
 	/** Resize the offscreen window to the fit and centre it on the game surface (physical px offset). */
 	private applyFit = async (): Promise<void> => {
