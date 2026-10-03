@@ -25,19 +25,12 @@ const DEFAULT_ASPECT_RATIO: AspectRatio = { width: 16, height: 9 };
 export type FitRect = { width: number; height: number; x: number; y: number };
 
 /**
- * Where the overlay sits on the game surface (physical px; x/y may be negative = overflow, cropped).
- * - Landscape game (wider than tall, incl. 4:3 / 1:1 / ultrawide): fill the height, centre
- *   horizontally — narrower games crop the sides evenly, wider games get side margins.
- * - Portrait game (taller than wide): fill the width, centre vertically.
- * Centred HUD elements stay centred on the game either way.
+ * Where the overlay sits on the game surface (physical px; x may be negative = overflow, cropped).
+ * Always fills the game height and centres horizontally — narrower games (4:3, square, portrait)
+ * crop the sides evenly, wider games get side margins. Never crops vertically.
  */
 export function fitOverlay(gameWidth: number, gameHeight: number, aspect: AspectRatio): FitRect {
-	const ratio = aspect.width / aspect.height;
-	if (gameHeight > gameWidth) {
-		const height = Math.round(gameWidth / ratio);
-		return { width: gameWidth, height, x: 0, y: Math.round((gameHeight - height) / 2) };
-	}
-	const width = Math.round(gameHeight * ratio);
+	const width = Math.round((gameHeight * aspect.width) / aspect.height);
 	return { width, height: gameHeight, x: Math.round((gameWidth - width) / 2), y: 0 };
 }
 
@@ -140,18 +133,21 @@ export class OverlayInjector {
 	 * Measure physical texture px per window DIP from a paint. With Windows display scaling the
 	 * offscreen texture is DIP × scaleFactor, so a window sized to the game's physical px paints too
 	 * large and spills past the game window. Re-fit once the real ratio is known.
+	 * Returns true once measured. Only the window's first paint is trusted: after a setSize, paints
+	 * can still carry the old texture size, which mis-scaled the window (overlay taller than the game).
 	 */
-	private calibrateTextureScale = (e: Electron.Event) => {
+	private calibrateTextureScale = (e: Electron.Event): boolean => {
 		const coded = (e as unknown as { texture?: { textureInfo?: { codedSize?: { width: number } } } })
 			.texture?.textureInfo?.codedSize?.width;
-		if (!coded || !this.window || this.window.isDestroyed()) return;
+		if (!coded || !this.window || this.window.isDestroyed()) return false;
 		const [dipW] = this.window.getSize();
-		if (!dipW) return;
+		if (!dipW) return false;
 		const scale = coded / dipW;
-		if (Math.abs(scale - this.textureScale) < 0.01) return;
+		if (Math.abs(scale - this.textureScale) < 0.01) return true;
 		this.log.info(`Texture scale calibrated: ${coded}px / ${dipW}dip = ${scale.toFixed(3)} (was ${this.textureScale})`);
 		this.textureScale = scale;
 		void this.applyFit();
+		return true;
 	};
 
 	injectIntoGame = (processName: string = 'dolphin'): Promise<void> => {
@@ -253,7 +249,10 @@ export class OverlayInjector {
 					'html, body, #svelte, main { background: transparent !important; overflow: hidden !important; }',
 				);
 			});
-			window.webContents.on('paint', this.calibrateTextureScale);
+			const onPaint = (e: Electron.Event) => {
+				if (this.calibrateTextureScale(e)) window.webContents.off('paint', onPaint);
+			};
+			window.webContents.on('paint', onPaint);
 			void window.loadURL(overlayUrl);
 
 			const surface = ElectronOverlaySurface.connect({ overlay, id, info }, window.webContents);

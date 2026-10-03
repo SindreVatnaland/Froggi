@@ -67,7 +67,8 @@
 	}
 
 	const initializeFonts = async () => {
-		await updateFont(curOverlay);
+		// A broken font must not blank the whole overlay.
+		await updateFont(curOverlay).catch(console.error);
 		setTimeout(() => (ready = true));
 	};
 
@@ -125,16 +126,20 @@
 					fastStart={true}
 				>
 					{#key effectiveHeight * effectiveWidth}
-						<GridContent
-							{preview}
-							{dataItem}
-							bind:curScene
-							{designWidth}
-							{designHeight}
-							{overlayId}
-							additionalDelay={SCENE_TRANSITION_DELAY +
-								curScene.animation.layerRenderDelay * i}
-						/>
+						<!-- Absolute: on a size change the outgoing copy outros while the new one intros —
+						     in flow they stacked, showing a frozen duplicate below the live element. -->
+						<div class="absolute inset-0">
+							<GridContent
+								{preview}
+								{dataItem}
+								bind:curScene
+								{designWidth}
+								{designHeight}
+								{overlayId}
+								additionalDelay={SCENE_TRANSITION_DELAY +
+									curScene.animation.layerRenderDelay * i}
+							/>
+						</div>
 					{/key}
 				</Grid>
 			</div>

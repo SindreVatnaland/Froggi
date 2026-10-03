@@ -9,7 +9,7 @@ import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter
 import { BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { LiveStatsScene } from '../../../frontend/src/lib/models/enum';
+import { LiveStatsScene, NotificationType } from '../../../frontend/src/lib/models/enum';
 import { cloneDeep, isNil, kebabCase, merge } from 'lodash';
 import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
 import { COL, MIN } from '../../../frontend/src/lib/models/const';
@@ -18,7 +18,7 @@ import { ElectronFroggiStore } from './storeFroggi';
 import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
-import { getNewOverlay } from './../../utils/overlayHandler';
+import { fillOverlayDefaults, getNewOverlay } from './../../utils/overlayHandler';
 
 /** Grid placement patch (grid is COL x COL units). Any omitted field keeps the item's current value. */
 export type GridPosition = { x?: number; y?: number; w?: number; h?: number };
@@ -621,14 +621,25 @@ export class ElectronOverlayStore {
 				properties: ['openFile'],
 				filters: [{ name: 'json', extensions: ['json'] }],
 			});
-			if (canceled) return;
-			const sharedOverlay = JSON.parse(fs.readFileSync(filePaths[0], 'utf8')) as SharedOverlay;
-			const { customFiles, ...overlay } = sharedOverlay;
-			overlay.id = newId()
+			if (canceled || !filePaths[0]) return;
+			try {
+				const sharedOverlay = JSON.parse(fs.readFileSync(filePaths[0], 'utf8')) as SharedOverlay;
+				const { customFiles, ...overlay } = sharedOverlay;
+				this.log.info(`Importing overlay "${overlay.title}" (made with Froggi ${overlay.froggiVersion || 'unknown'})`);
+				// Files from older versions skip the startup migration (persist stamps the current
+				// version), so migrate here: old layer order + any fields/scenes added since.
+				if (semver.valid(overlay.froggiVersion) && semver.gt("0.9.20-beta.1", overlay.froggiVersion)) this.reverseLayers(overlay);
+				fillOverlayDefaults(overlay);
+				overlay.id = newId()
 
-			const customFileDir = path.join(this.appDir, "public", "custom", overlay.id)
-			saveCustomFiles(customFileDir, customFiles)
-			this.uploadOverlay(overlay, overlay.id);
+				const customFileDir = path.join(this.appDir, "public", "custom", overlay.id)
+				if (customFiles) saveCustomFiles(customFileDir, customFiles)
+				await this.uploadOverlay(overlay, overlay.id);
+				this.messageHandler.sendMessage('Notification', `Imported "${overlay.title}"`, NotificationType.Success);
+			} catch (e) {
+				this.log.error('Overlay import failed:', e);
+				this.messageHandler.sendMessage('Notification', 'Overlay import failed — not a valid Froggi overlay file', NotificationType.Danger);
+			}
 		});
 	}
 
@@ -737,6 +748,7 @@ export class ElectronOverlayStore {
 			if (!isNaN(Number(key))) continue;
 			const statsScene = LiveStatsScene[key as keyof typeof LiveStatsScene];
 			const scene = overlay[statsScene];
+			if (!scene?.layers) continue;
 			scene.layers.sort((a, b) => a.index - b.index);
 			scene.layers.reverse();
 			for (const [index, layer] of scene.layers.entries()) {
