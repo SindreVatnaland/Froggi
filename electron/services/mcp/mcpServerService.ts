@@ -6,7 +6,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { app, shell } from 'electron';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
@@ -129,12 +129,7 @@ export class McpServerService {
 			const bundled = path.join(__dirname, '..', '..', 'froggi.mcpb');
 			const target = path.join(app.getPath('temp'), 'Froggi.mcpb');
 			fs.writeFileSync(target, fs.readFileSync(bundled));
-			// macOS: Claude lists .mcpb as a document type but doesn't register as its default handler,
-			// so a plain open shows the "choose an app" dialog. Open it explicitly with Claude instead.
-			const err = process.platform === 'darwin'
-				? await new Promise<string>((resolve) =>
-					execFile('open', ['-a', 'Claude', target], (e) => resolve(e ? e.message : '')))
-				: await shell.openPath(target);
+			const err = await this.openWithClaude(target);
 			if (err) {
 				this.log.warn('Opening Froggi.mcpb failed:', err);
 				shell.showItemInFolder(target);
@@ -146,6 +141,29 @@ export class McpServerService {
 			this.log.error('Failed to install Claude extension:', err);
 			notify('Could not prepare the Claude Desktop extension — see logs', NotificationType.Danger);
 		}
+	}
+
+	// Claude Desktop doesn't register itself as the default .mcpb handler (macOS or Windows), so a plain
+	// open shows the "choose an app" dialog. Hand the file to Claude explicitly. Resolves '' on success.
+	private async openWithClaude(file: string): Promise<string> {
+		if (process.platform === 'darwin')
+			return new Promise((resolve) => execFile('open', ['-a', 'Claude', file], (e) => resolve(e ? e.message : '')));
+		if (process.platform !== 'win32') return shell.openPath(file);
+		const local = process.env.LOCALAPPDATA ?? '';
+		const candidates = [
+			path.join(local, 'Microsoft', 'WindowsApps', 'Claude.exe'), // MSIX/Store install (app execution alias)
+			path.join(local, 'AnthropicClaude', 'claude.exe'), // legacy Squirrel install
+		]; // no existsSync: libuv can't stat app execution aliases, so just try spawning
+		for (const exe of candidates) {
+			const err = await new Promise<string>((resolve) => {
+				const child = spawn(exe, [file], { detached: true, stdio: 'ignore' });
+				child.once('spawn', () => { child.unref(); resolve(''); });
+				child.once('error', (e) => resolve(e.message));
+			});
+			if (!err) return '';
+			this.log.warn(`Launching ${exe} failed:`, err);
+		}
+		return 'Claude Desktop not found';
 	}
 
 	private buildMcpServer(): McpServer {
