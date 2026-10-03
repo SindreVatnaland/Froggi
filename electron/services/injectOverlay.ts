@@ -117,7 +117,11 @@ export class OverlayInjector {
 		const dipW = Math.round(fit.width / this.textureScale);
 		const dipH = Math.round(fit.height / this.textureScale);
 		const [curWidth, curHeight] = window.getSize();
-		if (curWidth !== dipW || curHeight !== dipH) window.setSize(dipW, dipH);
+		if (curWidth !== dipW || curHeight !== dipH) {
+			window.setSize(dipW, dipH);
+			const [w, h] = window.getSize();
+			if (w !== dipW || h !== dipH) this.log.warn(`Overlay window size ${w}x${h} != requested ${dipW}x${dipH} (scale ${this.textureScale})`);
+		}
 		await overlay.setPosition(surfaceId, fit.x, fit.y).catch((e: unknown) => this.log.warn('setPosition failed:', e));
 	};
 
@@ -222,7 +226,8 @@ export class OverlayInjector {
 				// Chromium fills transparent regions of the shared texture with an opaque
 				// default regardless of page CSS, showing as a solid background in-game.
 				backgroundColor: '#00000000',
-				resizable: false,
+				// Not `resizable: false`: on Windows that pins the minimum size to the creation size, so
+				// setSize could never shrink the window after the game window shrank (overlay stuck oversized).
 				webPreferences: {
 					backgroundThrottling: false,
 					offscreen: { useSharedTexture: true },
