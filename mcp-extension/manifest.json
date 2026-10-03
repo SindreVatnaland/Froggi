@@ -1,0 +1,48 @@
+{
+  "manifest_version": "0.2",
+  "name": "froggi",
+  "display_name": "Froggi",
+  "version": "0.0.0",
+  "description": "Let Claude explain, diagnose, and build overlays in your running Froggi app \u2014 fully local.",
+  "long_description": "Connects Claude Desktop to the Froggi app running on this computer over its local loopback MCP endpoint. Claude can explain setup, check OBS/Dolphin status, read logs, and (if you allow edits in Froggi's settings) build and edit overlays, OBS sources, and automation. Nothing leaves your machine. Requires Froggi to be running with Settings \u2192 AI Assistant enabled.",
+  "author": {
+    "name": "Sindre Vatnaland",
+    "url": "https://github.com/SindreVatnaland/Froggi"
+  },
+  "homepage": "https://github.com/SindreVatnaland/Froggi",
+  "support": "https://github.com/SindreVatnaland/Froggi/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "FROGGI_MCP_URL": "http://127.0.0.1:${user_config.port}/froggi/mcp"
+      }
+    }
+  },
+  "tools_generated": true,
+  "user_config": {
+    "port": {
+      "type": "number",
+      "title": "Froggi MCP port",
+      "description": "Local port of Froggi's AI Assistant server. Leave as 3300 unless you changed it.",
+      "default": 3300,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

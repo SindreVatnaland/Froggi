@@ -57,6 +57,8 @@ export interface MessageEvents {
 	SetMcpReadEnabled: (enabled: boolean) => void;
 	SetMcpWriteEnabled: (enabled: boolean) => void;
 	SetMcpTailscaleEnabled: (enabled: boolean) => void;
+	/** Open the bundled froggi.mcpb so Claude Desktop installs the fully-local extension. */
+	InstallClaudeExtension: () => void;
 	/** tailnet-only HTTPS URL for the MCP when Tailscale exposure is on; undefined when hidden/off */
 	McpTailscaleUrl: (url: string | undefined) => void;
 	SetAutoInjectEnabled: (enabled: boolean) => void;

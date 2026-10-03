@@ -3,6 +3,9 @@ import type { ElectronLog } from 'electron-log';
 import type { Server } from 'node:http';
 import http from 'node:http';
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { app, shell } from 'electron';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
@@ -25,6 +28,7 @@ import { NgrokService } from '../ngrokService';
 import { OverlayInjector } from '../injectOverlay';
 import { ErrorReporter } from '../errorReporter';
 import { MCP_SERVER_PORT, MCP_SERVER_PATH } from '../../../frontend/src/lib/models/const';
+import { NotificationType } from '../../../frontend/src/lib/models/enum';
 import { mcpContext } from './mcpContext';
 import { registerExplainTools } from './tools/explain';
 import { registerDiagnosticsTools } from './tools/diagnostics';
@@ -110,6 +114,32 @@ export class McpServerService {
 		void this.applyDesiredState();
 		this.clientEmitter.on('SetMcpReadEnabled', () => void this.applyDesiredState());
 		this.clientEmitter.on('SetMcpWriteEnabled', () => void this.applyDesiredState());
+		this.clientEmitter.on('InstallClaudeExtension', () => void this.installClaudeExtension());
+	}
+
+	/**
+	 * Hand the bundled froggi.mcpb (packed by scripts/build-mcpb.mjs) to the OS. Claude Desktop owns the
+	 * .mcpb file type, so opening it shows its one-click install dialog for the fully-local stdio
+	 * extension. Copied to temp first — a file inside app.asar can't be opened by another app.
+	 */
+	private async installClaudeExtension() {
+		const notify = (msg: string, type: NotificationType) => this.messageHandler.sendMessage('Notification', msg, type);
+		try {
+			const bundled = path.join(__dirname, '..', '..', 'froggi.mcpb');
+			const target = path.join(app.getPath('temp'), 'Froggi.mcpb');
+			fs.writeFileSync(target, fs.readFileSync(bundled));
+			const err = await shell.openPath(target);
+			if (err) {
+				this.log.warn('Opening Froggi.mcpb failed:', err);
+				shell.showItemInFolder(target);
+				notify('Claude Desktop not found — install it, then double-click Froggi.mcpb', NotificationType.Danger);
+				return;
+			}
+			notify('Opening Claude Desktop to install the Froggi extension', NotificationType.Info);
+		} catch (err) {
+			this.log.error('Failed to install Claude extension:', err);
+			notify('Could not prepare the Claude Desktop extension — see logs', NotificationType.Danger);
+		}
 	}
 
 	private buildMcpServer(): McpServer {

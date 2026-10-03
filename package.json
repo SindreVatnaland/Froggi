@@ -1,6 +1,6 @@
 {
 	"name": "froggi",
-	"version": "2.0.0-beta.66",
+	"version": "2.0.0-beta.67",
 	"private": true,
 	"description": "Slippi Client",
 	"main": "build_electron/electron/main.js",
@@ -35,9 +35,10 @@
 		"postinstall": "node scripts/rebuild-native.js",
 		"test": "npm run compile:electron && npm run test:copy && jest --detectOpenHandles --forceExit",
 		"test:copy": "shx mkdir -p ./build_electron/test/sample-games/ && shx cp -r ./test/sample-games/* ./build_electron/test/sample-games/",
-		"copy": "npm run overlay:copy && npm run update:copy",
+		"copy": "npm run overlay:copy && npm run update:copy && npm run mcpb:pack",
 		"overlay:copy": "shx mkdir -p ./build_electron/electron/demo-overlays && shx cp -r ./demo-overlays/* ./build_electron/electron/demo-overlays",
-		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update"
+		"update:copy": "shx mkdir -p ./build_electron/electron/update && shx cp -r ./electron/update/* ./build_electron/electron/update",
+		"mcpb:pack": "node scripts/build-mcpb.mjs"
 	},
 	"engines": {
 		"npm": ">=7",
@@ -90,6 +91,7 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
+		"@anthropic-ai/mcpb": "^2.1.2",
 		"@eslint/js": "^9.21.0",
 		"@types/cors": "^2.8.17",
 		"@types/discord-rpc": "^4.0.8",

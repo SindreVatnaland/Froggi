@@ -85,9 +85,10 @@ Claude Code — add to ~/.claude.json, under the current project's "mcpServers":
   "froggi": { "type": "http", "url": "${mcpUrl}" }
 Then restart Claude Code and run /mcp to confirm it connected.
 
-Claude Desktop — it has no native HTTP transport, so bridge via mcp-remote in claude_desktop_config.json under "mcpServers":
+Claude Desktop — easiest: in Froggi, Settings → AI Assistant → "Add to Claude Desktop". That installs a fully-local Froggi extension (.mcpb) with one click — no config file, no OAuth, nothing leaves this computer. It then appears under Claude Desktop → Settings → Extensions.
+Manual alternative: bridge via mcp-remote in claude_desktop_config.json under "mcpServers":
   "froggi": { "command": "npx", "args": ["-y", "mcp-remote", "${mcpUrl}", "--transport", "http-only"] }
-Then fully quit Claude Desktop (Cmd/Ctrl+Q) and reopen it. Don't use the "Add custom connector" URL box — that expects OAuth and won't work.
+Then fully quit Claude Desktop (Cmd/Ctrl+Q) and reopen it.
 
 Requirements: Froggi must be running with the AI Assistant toggles enabled in its Settings. Once connected, ask Froggi to explain setup, check OBS/Dolphin status, or build an overlay.`;
 	let mcpSetupCopied = false;
@@ -535,6 +536,16 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 					<span class="tunnel-label">URL</span>
 					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
 					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
+				</div>
+				<!-- Fully-local Claude Desktop extension (.mcpb): one click, no config file, no OAuth. -->
+				<div class="flex items-center justify-between gap-4 mt-1">
+					<div>
+						<span class="text-sm text-secondary-color">Claude Desktop</span>
+						<p class="text-xs opacity-40 mt-0.5">Install the local Froggi extension — one click, nothing leaves this computer</p>
+					</div>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded shrink-0" on:click={() => $electronEmitter.emit('InstallClaudeExtension')}>
+						Add to Claude Desktop
+					</button>
 				</div>
 				<!-- Paste-to-an-LLM setup instructions — one-click copy, no preview. -->
 				<div class="flex items-center justify-between gap-4 mt-1">
