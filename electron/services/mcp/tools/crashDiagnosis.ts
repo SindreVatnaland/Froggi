@@ -66,6 +66,8 @@ type LogError = {
 	verdict: Verdict | 'unclassified';
 	known?: { id: string; title: string; fix: string };
 	context?: string;
+	/** Local flag: the user already reported it (via submit_crash_report) or marked it resolved. */
+	flag?: { status: 'reported' | 'resolved'; at: string };
 };
 
 const ENTRY_RE = /^\[(\d{4}-\d{2}-\d{2} [\d:.]+)\] \[(\w+)\]/;
@@ -116,6 +118,9 @@ export function extractErrors(sessions: number, includeWarnings = false): { sess
 		});
 	});
 
+	const flags = mcpContext.froggiStore?.getErrorFlags() ?? {};
+	for (const e of byId.values()) if (flags[e.id]) e.flag = { status: flags[e.id].status, at: flags[e.id].at };
+
 	const sessionsRead = entries.filter((e) => e.text.includes('Starting app')).length;
 	const errors = [...byId.values()]
 		.sort((a, b) => (a.lastSeen < b.lastSeen ? 1 : -1))
@@ -128,18 +133,43 @@ export function registerCrashDiagnosisReadTools(server: McpServer) {
 		'diagnose_errors',
 		{
 			description:
-				'Reads Froggi\'s log (personal data scrubbed) for the last few app sessions — including the session before a crash/restart — and returns each distinct error with how often/when it happened and the log lines leading up to it. Errors matching a known issue come with a verdict: "local" (the user can fix it — walk them through `known.fix`), "benign" (ignore), or "dev" (a bug — offer to report it). For "unclassified" errors, judge from the message and context: a missing file/folder, a disabled setting, a closed/blocked app, or a port/permission problem is usually local; a TypeError, unhandled rejection in Froggi code, or a crash in a native module usually needs the developer. If it needs the developer, ASK the user whether to send a crash report; only call submit_crash_report after they agree.',
+				'Errors already reported carry flag.status "reported"; ones the user marked solved ("resolved") are hidden unless showResolved:true — never suggest reporting a flagged error again. Reads Froggi\'s log (personal data scrubbed) for the last few app sessions — including the session before a crash/restart — and returns each distinct error with how often/when it happened and the log lines leading up to it. Errors matching a known issue come with a verdict: "local" (the user can fix it — walk them through `known.fix`), "benign" (ignore), or "dev" (a bug — offer to report it). For "unclassified" errors, judge from the message and context: a missing file/folder, a disabled setting, a closed/blocked app, or a port/permission problem is usually local; a TypeError, unhandled rejection in Froggi code, or a crash in a native module usually needs the developer. If it needs the developer, ASK the user whether to send a crash report; only call submit_crash_report after they agree.',
 			inputSchema: {
 				sessions: z.number().int().min(1).max(10).default(4).describe('How many recent app sessions to read (current = 1).'),
 				includeWarnings: z.boolean().default(false),
+				showResolved: z.boolean().default(false),
 			},
 		},
-		async ({ sessions, includeWarnings }) => {
+		async ({ sessions, includeWarnings, showResolved }) => {
 			const result = extractErrors(sessions, includeWarnings);
+			if (!showResolved) result.errors = result.errors.filter((e) => e.flag?.status !== 'resolved');
 			if (!result.errors.length) return text(`No errors in the last ${result.sessionsRead || sessions} session(s).`);
 			// Known local/benign issues don't need the raw context — keep the payload small.
-			for (const e of result.errors) if (e.verdict === 'local' || e.verdict === 'benign') delete e.context;
-			return text(result);
+			for (const e of result.errors) if (e.verdict === 'local' || e.verdict === 'benign' || e.flag) delete e.context;
+			const toReport = result.errors.filter((e) => !e.flag && (e.verdict === 'dev' || e.verdict === 'unclassified')).map((e) => e.id);
+			return text({ ...result, unreportedDeveloperErrors: toReport });
+		},
+	);
+
+	server.registerTool(
+		'mark_errors',
+		{
+			description: 'Flag errors from diagnose_errors so they are not raised again: "resolved" when the user says it is fixed / no longer happens / not worth reporting (hidden from future diagnoses), "reported" if they reported it another way (Discord, GitHub, Settings → Feedback), "clear" to remove a flag. Local bookkeeping only — nothing is sent.',
+			inputSchema: {
+				errorIds: z.array(z.string()).min(1).max(30),
+				status: z.enum(['reported', 'resolved', 'clear']),
+			},
+		},
+		async ({ errorIds, status }) => {
+			const store = mcpContext.froggiStore!;
+			const flags = store.getErrorFlags();
+			const known = new Map(extractErrors(10, true).errors.map((e) => [e.id, e.message]));
+			for (const id of errorIds) {
+				if (status === 'clear') delete flags[id];
+				else flags[id] = { status, at: new Date().toISOString(), message: known.get(id) ?? flags[id]?.message ?? '' };
+			}
+			store.setErrorFlags(flags);
+			return text(`Marked ${errorIds.length} error(s) as ${status}.`);
 		},
 	);
 }
@@ -166,6 +196,12 @@ export function registerCrashDiagnosisWriteTools(server: McpServer) {
 				.map((e) => `### ${e.id} ×${e.count} (${e.firstSeen} → ${e.lastSeen})\n${e.message}\n\n${e.context ?? ''}`)
 				.join('\n\n');
 			const ok = await reporter.submitFeedback('bug', `[via AI assistant]\n${reporter.scrub(summary)}`, true, attachment);
+			if (ok) {
+				const store = mcpContext.froggiStore!;
+				const flags = store.getErrorFlags();
+				for (const e of picked) flags[e.id] = { status: 'reported', at: new Date().toISOString(), message: e.message };
+				store.setErrorFlags(flags);
+			}
 			return text(ok ? `Crash report sent (${picked.length} error(s)).` : 'Sending failed — this build may have no report channel, or the network is down. Suggest the user report it via Settings → Feedback instead.');
 		},
 	);

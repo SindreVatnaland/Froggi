@@ -111,6 +111,7 @@
 								{dataItem}
 								{edit}
 								{preview}
+								{overlayId}
 								isDemo={!!demoItem}
 							>
 								<AnimationLayer
@@ -134,6 +135,8 @@
 										)}
 									{dataItem}
 									{edit}
+									{preview}
+									{overlayId}
 									isDemo={!!demoItem}
 								>
 									<GridElements {dataItem} {preview} {designWidth} {designHeight} {overlayId} />

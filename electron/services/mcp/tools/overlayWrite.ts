@@ -26,13 +26,14 @@ const animSettingsSchema = z.object({
 // getDefaultElementPayload() before use, so no field here needs to be required.
 const partialPayloadSchema = z.record(z.string(), z.unknown()).optional();
 
-// Grid placement. The overlay grid is 512x512 units; x/y is the top-left, w/h the size.
+// Grid placement. The overlay grid is 512 columns × 288 rows (COL × ROW) for EVERY aspect ratio — it
+// stretches to the overlay; x/y is the top-left, w/h the size.
 // Right corner example: a 90x90 element at the top-right ≈ { x: 412, y: 10, w: 90, h: 90 }.
 const gridPositionSchema = z.object({
 	x: z.number().min(0).max(512).optional(),
-	y: z.number().min(0).max(512).optional(),
+	y: z.number().min(0).max(288).optional(),
 	w: z.number().min(1).max(512).optional(),
-	h: z.number().min(1).max(512).optional(),
+	h: z.number().min(1).max(288).optional(),
 });
 
 export function registerOverlayWriteTools(server: McpServer) {
@@ -219,7 +220,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_element',
 		{
-			description: 'Add a new element to a layer. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults. Omit `position` to auto-place in the first free grid slot, or pass it to place at a specific grid coordinate/size (512x512 grid; e.g. top-right corner ≈ {x:412,y:10,w:90,h:90}).',
+			description: 'Add a new element to a layer. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults. Omit `position` to auto-place in the first free grid slot, or pass it to place at a specific grid coordinate/size (512 columns × 288 rows; e.g. top-right corner ≈ {x:412,y:10,w:90,h:90}, bottom-right ≈ {x:412,y:188,w:90,h:90}).',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
@@ -250,7 +251,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_elements',
 		{
-			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512x512 grid; optional layerIndex (default 0; index 0 is on top — add layers first with add_overlay_layer). Elements without a position auto-place, accounting for others added earlier in the same batch.',
+			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512×288 grid (x 0-512, y 0-288); optional layerIndex (default 0; index 0 is on top — add layers first with add_overlay_layer). Elements without a position auto-place, accounting for others added earlier in the same batch.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
@@ -287,7 +288,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'move_overlay_element',
 		{
-			description: 'Move/resize an existing element within its layer\'s grid (512x512 units; x/y = top-left, w/h = size). Omitted fields keep their current value. Records undo history. Use after add_overlay_element to place things in a corner, e.g. top-right ≈ {x:412,y:10,w:90,h:90}.',
+			description: 'Move/resize an existing element within its layer\'s grid (512 columns × 288 rows; x/y = top-left, w/h = size). Omitted fields keep their current value. Records undo history. Use after add_overlay_element to place things in a corner, e.g. top-right ≈ {x:412,y:10,w:90,h:90}.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),

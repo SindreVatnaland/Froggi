@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Layer, Overlay } from '$lib/models/types/overlay';
-	import Select from '$lib/components/input/Select.svelte';
 	import { currentOverlayEditor, electronEmitter, statsScene } from '$lib/utils/store.svelte';
 	import { fly } from 'svelte/transition';
 	import {
@@ -8,7 +7,6 @@
 		moveLayer,
 		newLayer,
 	} from '$lib/components/obs/overlays/edit/OverlayHandler.svelte';
-	import TextFitMulti from '$lib/components/TextFitMulti.svelte';
 
 	export let overlay: Overlay;
 	export let selectedLayer: Layer;
@@ -23,55 +21,59 @@
 	};
 </script>
 
+<!-- Sized to match the editor top bar's .toolbar-btn (Configure / Export / Embed). -->
 {#if selectedLayer}
-	<h1 class="text-secondary-color text-lg font-medium">Layers</h1>
-	<div class="w-full flex gap-2">
-		<div class="w-24">
-			<Select
-				bind:selected={selectedLayer}
-				on:change={() => changeLayer(selectedLayer.index)}
-			>
-				{#each scene?.layers as layer, i}
-					<option selected={i === 0} value={layer}>Layer {i + 1}</option>
-				{/each}
-			</Select>
-		</div>
-		<div>
-			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
-				on:click={() => newLayer(overlay.id, $statsScene, scene.id, selectedLayer.index)}
-			>
-				<TextFitMulti>New layer</TextFitMulti>
-			</button>
-		</div>
-		<div>
-			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
-				on:click={() =>
-					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, -1)}
-			>
-				<TextFitMulti>Move up</TextFitMulti>
-			</button>
-		</div>
-		<div>
-			<button
-				class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
-				on:click={() =>
-					moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, 1)}
-			>
-				<TextFitMulti>Move down</TextFitMulti>
-			</button>
-		</div>
+	<div class="flex items-center gap-2 shrink-0">
+		<span class="text-sm font-semibold text-secondary-color">Layers</span>
+		<select
+			class="layer-select"
+			bind:value={selectedLayer}
+			on:change={() => changeLayer(selectedLayer.index)}
+		>
+			{#each scene?.layers as layer, i}
+				<option selected={i === 0} value={layer}>Layer {i + 1}</option>
+			{/each}
+		</select>
+		<button class="layer-btn" on:click={() => newLayer(overlay.id, $statsScene, scene.id, selectedLayer.index)}>
+			New layer
+		</button>
+		<button class="layer-btn" on:click={() => moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, -1)}>
+			Move up
+		</button>
+		<button class="layer-btn" on:click={() => moveLayer(overlay.id, $statsScene, scene.id, selectedLayer.index, 1)}>
+			Move down
+		</button>
 		{#if scene?.layers?.length > 1}
-			<div transition:fly={{ duration: 250, y: -25 }}>
-				<button
-					class="btn text-md whitespace-nowrap h-10 lg:w-22 xl:w-auto px-2 xl:text-xl border-secondary rounded"
-					on:click={() =>
-						deleteLayer(overlay.id, $statsScene, scene.id, selectedLayer.id)}
-				>
-					<TextFitMulti>Delete layer</TextFitMulti>
-				</button>
-			</div>
+			<button
+				class="layer-btn"
+				transition:fly={{ duration: 250, y: -25 }}
+				on:click={() => deleteLayer(overlay.id, $statsScene, scene.id, selectedLayer.id)}
+			>
+				Delete layer
+			</button>
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.layer-btn,
+	.layer-select {
+		height: 2rem;
+		padding: 0 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		background-color: var(--primary-color);
+		color: var(--secondary-color);
+		border: 1px solid var(--secondary-color);
+		border-radius: 0.125rem;
+		white-space: nowrap;
+	}
+
+	.layer-btn {
+		transition: transform 0.1s;
+	}
+
+	.layer-btn:active {
+		opacity: 0.5;
+	}
+</style>

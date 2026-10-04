@@ -151,6 +151,8 @@ export interface MessageEvents {
 	TestAnimationTrigger: () => void;
 	TestCustomAnimationTrigger: () => void;
 	TestVisibilityTrigger: () => void;
+	/** Replay element animations in preview renders (MCP test_overlay_animation / preview button). No itemId = every element. */
+	PreviewTestAnimation: (overlayId?: string, itemId?: string) => void;
 
 
 	Ping: () => void;

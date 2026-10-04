@@ -171,6 +171,7 @@
 							max-height: 55%;
 							background-image: url('{tempBackgroundImage}');
 							background-size: cover;
+							background-position: center;
 						"
 					>
 						{#if showDemo}
@@ -237,6 +238,7 @@
 							width: {constrainedBoardWidth}px;
 							height: {constrainedBoardHeight}px;
 							background-image: url('{tempBackgroundImage}');
+							background-position: center;
 						"
 					>
 						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} {showDemo} />

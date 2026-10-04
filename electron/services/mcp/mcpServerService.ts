@@ -36,6 +36,9 @@ import { registerDiagnosticsTools } from './tools/diagnostics';
 import { registerOverlayReadTools } from './tools/overlayRead';
 import { registerOverlaySchemaTools } from './tools/overlaySchema';
 import { registerOverlayWriteTools } from './tools/overlayWrite';
+import { registerOnlinePlayReadTools, registerOnlinePlayWriteTools } from './tools/onlinePlay';
+import { BingoService } from '../bingoService';
+import { IronManService } from '../ironmanService';
 import { registerOverlayUndoTools } from './tools/overlayUndo';
 import { registerObsSetupTools } from './tools/obsSetup';
 import { registerObsAddSourceTools } from './tools/obsAddSource';
@@ -66,6 +69,10 @@ Before suggesting how to DISPLAY an overlay, check what's actually available and
 
 When you build an overlay, show it: call show_overlay_preview right after creating it and again after meaningful changes, pinning the scene you're working on (statsScene, e.g. "inGame"). Clients that support MCP Apps render it inline as a live view of Froggi on this machine; otherwise give the user the returned editUrl (opens Froggi's editor in their browser, this machine only) and previewUrl as links. Only if the user wants a preview reachable from outside this machine, use get_overlay_preview_url's publicUrl (needs Tailscale Funnel or ngrok).
 
+Early in a conversation (once, alongside your first Froggi call), run diagnose_errors. If unreportedDeveloperErrors is non-empty, briefly tell the user Froggi logged errors that look like bugs and offer to send a crash report to the developer (with their OK) — don't push if they decline; offer mark_errors "resolved" instead so it isn't raised again. Never re-suggest an error that already has a flag.
+
+Playing minigames online: only the HOST needs ngrok; guests just need Froggi and the code. Use get_online_play_status and follow its nextStep to walk the user through installing ngrok, signing in (authtoken), and starting the tunnel (ngrok_setup), then give them the connect code / join link to send their friend. The game itself is played in Froggi's Minigames page — you help with setup, not the match. join_minigame joins a friend's code.
+
 When the user reports something broken, crashing, or not showing up, call diagnose_errors (it covers the last few sessions, including the one before a crash). Fix "local" issues with the user; ignore "benign" ones. If an error needs the developer, explain why and ASK whether to send a crash report — only call submit_crash_report after they say yes (it needs write access; if unavailable, point them to Settings → Feedback → Bug report).
 
 Ask before destructive edits (deleting overlays/elements). delete_overlay only moves an overlay to Deleted Overlays (restore_overlay brings it back); you can never permanently delete anything. Keep changes reversible (undo/revert tools exist).`;
@@ -94,6 +101,8 @@ export class McpServerService {
 		@inject(NgrokService) private ngrokService: NgrokService,
 		@inject(OverlayInjector) private overlayInjector: OverlayInjector,
 		@inject(ErrorReporter) private errorReporter: ErrorReporter,
+		@inject(delay(() => BingoService)) private bingoService: BingoService,
+		@inject(delay(() => IronManService)) private ironmanService: IronManService,
 	) {
 		this.log = scopedLog(this.log, 'MCP');
 		this.log.info('Initializing MCP Server Service');
@@ -113,6 +122,9 @@ export class McpServerService {
 		mcpContext.ngrokService = this.ngrokService;
 		mcpContext.overlayInjector = this.overlayInjector;
 		mcpContext.errorReporter = this.errorReporter;
+		mcpContext.bingoService = this.bingoService;
+		mcpContext.ironmanService = this.ironmanService;
+		mcpContext.clientEmitter = this.clientEmitter;
 
 		void this.applyDesiredState();
 		this.clientEmitter.on('SetMcpReadEnabled', () => void this.applyDesiredState());
@@ -181,6 +193,7 @@ export class McpServerService {
 			registerOverlayReadTools(server);
 			registerOverlaySchemaTools(server);
 			registerAutomationReadTools(server);
+			registerOnlinePlayReadTools(server);
 		}
 		if (this.froggiStore.getMcpWriteEnabled()) {
 			registerOverlayWriteTools(server);
@@ -191,6 +204,7 @@ export class McpServerService {
 			registerAutomationSceneTriggerTools(server);
 			registerInjectionWriteTools(server);
 			registerCrashDiagnosisWriteTools(server);
+			registerOnlinePlayWriteTools(server);
 		}
 
 		return server;

@@ -54,7 +54,7 @@ export const minigamesTopics: ContentTopic[] = [
 			},
 			{
 				type: 'note',
-				text: 'Hosting or joining remotely requires a remote-access tunnel (Tailscale or ngrok) to be running first — see the remote-access topic for which one to use.',
+				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The AI assistant can walk you through installing ngrok, signing in, starting the tunnel, and getting the code to send your friend.',
 			},
 		],
 	},

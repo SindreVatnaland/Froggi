@@ -88,6 +88,15 @@ export class ElectronFroggiStore {
     // App version the demo overlays were last synced for. Kept outside settings.froggi
     // so it doesn't trigger FroggiSettings pushes. Lets startup skip the expensive
     // demo delete+reupload when nothing changed.
+    /** Local bookkeeping for MCP crash diagnosis: errors the user already reported or marked resolved. */
+    getErrorFlags(): Record<string, { status: 'reported' | 'resolved'; at: string; message: string }> {
+        return (this.store.get("mcp.errorFlags") ?? {}) as Record<string, { status: 'reported' | 'resolved'; at: string; message: string }>;
+    }
+
+    setErrorFlags(flags: Record<string, { status: 'reported' | 'resolved'; at: string; message: string }>) {
+        this.store.set("mcp.errorFlags", flags);
+    }
+
     getDemosSyncedVersion(): string | undefined {
         return this.store.get("overlays.demosSyncedVersion") as string | undefined;
     }

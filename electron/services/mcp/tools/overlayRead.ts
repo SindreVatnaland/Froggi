@@ -16,8 +16,8 @@ const STATS_SCENES = Object.values(LiveStatsScene);
 // Loopback origins only — the preview iframe and edit link never point at a LAN/remote address.
 const LOOPBACK_ORIGINS = [`http://127.0.0.1:${BACKEND_PORT}`, `http://localhost:${BACKEND_PORT}`];
 const PREVIEW_UI_URI = 'ui://froggi/overlay-preview';
-const loopbackUrls = (overlayId: string, statsScene?: string) => ({
-	previewUrl: `${LOOPBACK_ORIGINS[0]}/obs/overlay/${overlayId}/preview${statsScene ? `?scene=${statsScene}` : ''}`,
+const loopbackUrls = (overlayId: string, statsScene?: string, background?: string) => ({
+	previewUrl: `${LOOPBACK_ORIGINS[0]}/obs/overlay/${overlayId}/preview?controls${statsScene ? `&scene=${statsScene}` : ''}${background ? `&bg=${background}` : ''}`,
 	editUrl: `${LOOPBACK_ORIGINS[0]}/obs/overlay/${overlayId}?edit`,
 });
 
@@ -84,7 +84,7 @@ export function registerOverlayReadTools(server: McpServer) {
 	server.registerTool(
 		'get_game_hud_reference',
 		{
-			description: 'Reference screenshots of the GAME\'s own HUD (timer, stock icons, damage percent) with approximate positions on the 512x512 overlay grid. Use it two ways: (1) ADD to the game HUD — place extra elements (names, ranks, controller inputs, stats) in the free space around these regions without covering them; (2) REPLACE the game HUD — put custom stock/percent/timer elements exactly on these regions for a custom HUD. References are 16:9; pass aspectRatio (e.g. {width:4,height:3} or {width:73,height:60}) to get the center crop for a narrower overlay — regions are re-mapped to that overlay\'s grid and the screenshot is cropped. Without id: lists references.',
+			description: 'Reference screenshots of the GAME\'s own HUD (timer, stock icons, damage percent) with approximate positions on the overlay grid (512 columns × 288 rows). Use it two ways: (1) ADD to the game HUD — place extra elements (names, ranks, controller inputs, stats) in the free space around these regions without covering them; (2) REPLACE the game HUD — put custom stock/percent/timer elements exactly on these regions for a custom HUD. References are 16:9; pass aspectRatio (e.g. {width:4,height:3} or {width:73,height:60}) to get the center crop for a narrower overlay — regions are re-mapped to that overlay\'s grid and the screenshot is cropped. Without id: lists references.',
 			inputSchema: {
 				id: z.string().optional(),
 				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Target overlay aspect ratio; must be equal to or narrower than the reference'),
@@ -115,7 +115,7 @@ export function registerOverlayReadTools(server: McpServer) {
 					text: JSON.stringify({
 						...info,
 						overlayAspectRatio: aspectRatio ?? ref.aspectRatio,
-						grid: '512x512 on the overlay; x/y top-left, w/h size; approximate',
+						grid: '512 columns × 288 rows on the overlay (any aspect ratio); x/y top-left, w/h size; approximate',
 						regions: mapped,
 					}, null, 2),
 				},
@@ -137,16 +137,35 @@ export function registerOverlayReadTools(server: McpServer) {
 	);
 
 	server.registerTool(
-		'show_overlay_preview',
+		'test_overlay_animation',
 		{
-			description: 'Show a live preview of an overlay inside the chat (clients that support MCP Apps render it as an embedded view of Froggi on this machine). Call it after creating an overlay and again after meaningful changes so the user sees what you built. Pass statsScene to pin the scene you are working on (e.g. "inGame") — otherwise it follows the live game state, which shows the waiting/menu scene while Dolphin is idle. If the client cannot render the view, give the user editUrl (opens Froggi\'s editor in a browser on this machine) and previewUrl as links. Both are loopback-only.',
-			inputSchema: { overlayId: z.string(), statsScene: z.enum(STATS_SCENES as [string, ...string[]]).optional() },
-			_meta: { ui: { resourceUri: PREVIEW_UI_URI } },
+			description: 'Replay element animations in every open preview of an overlay (the show_overlay_preview view, or a preview page in a browser) — like the editor\'s "Test animation" button, but for the user\'s preview. Plays each element\'s animation-trigger out→in and, for elements with visibility animations, hides then shows them. Pass itemId to animate one element (ids from list_elements), or omit for all. Use it after adding animations so the user can see them; the preview also has a "▶ Test animations" button.',
+			inputSchema: { overlayId: z.string(), itemId: z.string().optional() },
 		},
-		async ({ overlayId, statsScene }) => {
+		async ({ overlayId, itemId }) => {
 			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			if (!overlay) return error(`No overlay with id "${overlayId}"`);
-			const data = { overlayId, title: overlay.title, statsScene, aspectRatio: overlay.aspectRatio, ...loopbackUrls(overlayId, statsScene) };
+			mcpContext.messageHandler!.sendMessage('PreviewTestAnimation', overlayId, itemId);
+			return text(`Replaying ${itemId ? `element ${itemId}` : 'all element'} animations in open previews of "${overlay.title}". If the user has no preview open, call show_overlay_preview first.`);
+		},
+	);
+
+	server.registerTool(
+		'show_overlay_preview',
+		{
+			description: 'Show a live preview of an overlay inside the chat (clients that support MCP Apps render it as an embedded view of Froggi on this machine). Call it after creating an overlay and again after meaningful changes so the user sees what you built. Pass statsScene to pin the scene you are working on (e.g. "inGame") — otherwise it follows the live game state, which shows the waiting/menu scene while Dolphin is idle. If the client cannot render the view, give the user editUrl (opens Froggi\'s editor in a browser on this machine) and previewUrl as links. Both are loopback-only. For in-game scenes pass background = a get_game_hud_reference id (matching the user\'s game/HUD; "melee-16x9-no-hud" when the overlay replaces the game HUD) so the overlay is shown over a real game screenshot — narrower overlays get the center crop automatically.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]).optional(),
+				background: z.string().optional().describe('HUD reference id to draw behind the overlay'),
+			},
+			_meta: { ui: { resourceUri: PREVIEW_UI_URI } },
+		},
+		async ({ overlayId, statsScene, background }) => {
+			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!overlay) return error(`No overlay with id "${overlayId}"`);
+			if (background && !HUD_REFERENCES.some((r) => r.id === background)) return error(`Unknown background "${background}" — use an id from get_game_hud_reference.`);
+			const data = { overlayId, title: overlay.title, statsScene, aspectRatio: overlay.aspectRatio, ...loopbackUrls(overlayId, statsScene, background) };
 			return {
 				content: [{ type: 'text' as const, text: `Preview of "${overlay.title}"${statsScene ? ` (${statsScene})` : ''}: ${data.previewUrl}\nEdit in browser: ${data.editUrl}` }],
 				structuredContent: data,

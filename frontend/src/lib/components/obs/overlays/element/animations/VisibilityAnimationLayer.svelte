@@ -44,6 +44,7 @@
 	export let preview: boolean;
 	export let edit: boolean = false;
 	export let isDemo: boolean = false;
+	export let overlayId: string | undefined = undefined;
 
 	let visible = true;
 	const updateVisibilityValue = (
@@ -143,11 +144,22 @@
 	};
 
 	onMount(() => {
-		if (!isDemo) return;
-		$localEmitter.on('TestVisibilityTrigger', toggleVisibility);
-		return () => {
-			$localEmitter.off('TestVisibilityTrigger', toggleVisibility);
+		if (isDemo) {
+			$localEmitter.on('TestVisibilityTrigger', toggleVisibility);
+			return () => $localEmitter.off('TestVisibilityTrigger', toggleVisibility);
+		}
+		if (!preview) return;
+		// Preview test: hide then show again so both the out and the in animation play.
+		const previewHandler = (targetOverlayId?: string, itemId?: string) => {
+			if (targetOverlayId && overlayId && targetOverlayId !== overlayId) return;
+			if (itemId && itemId !== dataItem?.id) return;
+			const out = dataItem?.data?.visibility?.out?.options;
+			if (!visible || dataItem?.data?.visibility?.out?.type === 'none') return;
+			visible = false;
+			setTimeout(() => (visible = true), (Number(out?.delay) || 0) + (Number(out?.duration) || 0) + 300);
 		};
+		$localEmitter.on('PreviewTestAnimation', previewHandler);
+		return () => $localEmitter.off('PreviewTestAnimation', previewHandler);
 	});
 </script>
 

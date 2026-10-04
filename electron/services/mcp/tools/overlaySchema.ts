@@ -63,8 +63,9 @@ Every element lives in one cell of a square (1:1) CSS grid. The element fills it
 When the user doesn't specify positions, use the standard Smash-broadcast layout instead of asking:
 **Player 1 on the LEFT, Player 2 on the RIGHT**, anchored to the BOTTOM by default (the current player,
 when used, goes wherever a single-player element makes sense — usually bottom-left). "In each corner"
-means P1 bottom-left, P2 bottom-right unless the user says top. On the 512x512 grid: bottom-left ≈
-{x:8,y:392,w:112,h:112}, bottom-right ≈ {x:392,y:392,w:112,h:112}, top-left ≈ {x:8,y:8,...},
+means P1 bottom-left, P2 bottom-right unless the user says top. The grid is 512 columns × 288 rows for EVERY
+aspect ratio (it stretches to the overlay), so y never exceeds 288. Bottom-left ≈
+{x:8,y:168,w:112,h:112}, bottom-right ≈ {x:392,y:168,w:112,h:112}, top-left ≈ {x:8,y:8,...},
 top-right ≈ {x:392,y:8,...}. Only ask if the request is genuinely ambiguous beyond left/right/corner.
 
 ## Payload shape (data)
@@ -136,7 +137,11 @@ independently (stock-loss vs percent punch).
 fetch the one matching the user's game + HUD setup, passing the overlay's aspectRatio — 4:3 / 73:60 are
 center crops of the 16:9 references). Ask which HUD placement they use if unsure (default vs. a
 centered-HUD gecko code). Use the regions to ADD elements in the free space around the game HUD, or to
-REPLACE it with a custom HUD by placing stock/percent/timer elements on those exact regions.
+REPLACE it with a custom HUD by placing stock/percent/timer elements on those exact regions. Preview
+in-game work over the matching screenshot: show_overlay_preview background=<reference id> (use
+"melee-16x9-no-hud" for a replacement HUD). The editor has the same screenshots under "Game HUD
+background…" next to Add Background. After adding animations, call test_overlay_animation so the user
+sees them play in the preview.
 
 **Images** — store the image first with add_overlay_image (url, local filePath, base64, or picker:true
 to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
@@ -168,7 +173,19 @@ Game Go=False\` so they hide during the intro/countdown.
   pops as it counts.
 - Timer runs out → show a "Time" text element gated on visibility \`Game Time\`.
 - Game ends (by stocks) → show a "Game" text element gated on visibility \`Game End\`.
-- Intro Ready/Go use conditions \`Game Ready\` / \`Game Go\` (see the Ready/Go recipe).
+- Intro Ready/Go use conditions \`Game Ready\` / \`Game Go\` (see the game-start sequence below).
+
+**Game-start sequence** (how the intro maps to conditions — Slippi frames start at −123, the match
+timer starts at frame 0):
+- \`Game Ready\` = frame ≤ −36: the intro, before characters can move (Melee shows "READY").
+- \`Game Go\` = frames −36 … −1: the "GO!" moment (~0.6s) right before control starts.
+- \`Game Running\` = the match is live (frame ≥ 0); \`Game Paused\` while paused.
+- \`Game Countdown\` = the LAST 5 seconds of the match timer (the 5…1 before TIME), not the intro.
+  Melee has no 3-2-1 at the start; Ultimate shows 3-2-1-GO during its intro (still \`Game Ready\`/\`Game Go\`).
+- End: \`Game End\` (stocks), \`Game Time\` (timer ran out), \`Game Tie\`.
+Recipe — custom "READY" / "GO!" callouts: two centered CustomString elements, one visible on
+\`Game Ready=True\`, the other on \`Game Go=True\`, each with a scale or fade visibility in/out animation.
+Hide in-game HUD elements during the intro with \`Game Ready=False, Game Go=False\` (as the timer does).
 
 ## Controller inputs
 **Controller elements are SELF-DRIVING — no triggers, no conditions.** Each button/stick/trigger
@@ -185,7 +202,7 @@ digital ControllerButtonL/R ship no art and are hidden from the catalog.
 
 **Layout (physical GameCube arrangement).** Read the demo "Current Player Controller" (or "Player1
 Controller") with get_overlay for exact coords — replicate that relative arrangement. From the demo
-(512 grid): AnalogL top-LEFT (x≈50,y≈10) / AnalogR top-RIGHT (x≈331,y≈10) — L left, R right; Z top-right
+(512×288 grid): AnalogL top-LEFT (x≈50,y≈10) / AnalogR top-RIGHT (x≈331,y≈10) — L left, R right; Z top-right
 (x≈466,y≈10); main stick left (x≈66,y≈67); A big center-right (x≈367,y≈71); B lower-left of A
 (x≈324,y≈124); X right of A (x≈442,y≈49); Y above A (x≈345,y≈36); C-stick lower-middle (x≈283,y≈185);
 D-pad lower-left (x≈132,y≈185). To fill the window, scale the whole set UNIFORMLY (same factor on

@@ -13,6 +13,9 @@ import type { MessageHandler } from '../messageHandler';
 import type { NgrokService } from '../ngrokService';
 import type { OverlayInjector } from '../injectOverlay';
 import type { ErrorReporter } from '../errorReporter';
+import type { BingoService } from '../bingoService';
+import type { IronManService } from '../ironmanService';
+import type { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 
 /**
  * Module-level holder for resolved singletons, populated once by McpServerService's
@@ -38,4 +41,7 @@ export const mcpContext: {
 	ngrokService?: NgrokService;
 	overlayInjector?: OverlayInjector;
 	errorReporter?: ErrorReporter;
+	bingoService?: BingoService;
+	ironmanService?: IronManService;
+	clientEmitter?: TypedEmitter;
 } = {};

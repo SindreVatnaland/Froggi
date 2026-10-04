@@ -44,6 +44,8 @@
 	export let dataItem: GridContentItem;
 	export let edit: boolean = false;
 	export let isDemo: boolean = false;
+	export let preview: boolean = false;
+	export let overlayId: string | undefined = undefined;
 
 	let key: number | undefined = 0;
 	let prevGameFrame: FrameEntryType | null | undefined;
@@ -143,21 +145,27 @@
 		$techniqueEvents,
 	);
 
+	const replay = () => {
+		const tempTrigger = key;
+		key = Math.random();
+		setTimeout(() => {
+			key = tempTrigger;
+		});
+	};
+
 	onMount(() => {
-		if (!isDemo) return;
-		const handler = () => {
-			const tempTrigger = key;
-			key = Math.random();
-			setTimeout(() => {
-				key = tempTrigger;
-			});
+		if (isDemo) {
+			$localEmitter.on('TestAnimationTrigger', replay);
+			return () => $localEmitter.off('TestAnimationTrigger', replay);
+		}
+		if (!preview) return;
+		const previewHandler = (targetOverlayId?: string, itemId?: string) => {
+			if (targetOverlayId && overlayId && targetOverlayId !== overlayId) return;
+			if (itemId && itemId !== dataItem?.id) return;
+			replay();
 		};
-
-		$localEmitter.on('TestAnimationTrigger', handler);
-
-		return () => {
-			$localEmitter.off('TestAnimationTrigger', handler);
-		};
+		$localEmitter.on('PreviewTestAnimation', previewHandler);
+		return () => $localEmitter.off('PreviewTestAnimation', previewHandler);
 	});
 </script>
 
