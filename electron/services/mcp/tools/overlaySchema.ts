@@ -125,10 +125,12 @@ element PER stock, laid left→right. Gate each on that stock number via visibil
 **Percent** — just below each player's stock row (demo: P1 x≈114, P2 x≈291, y≈239). Default to the
 pre-animated Custom variant (see above). Reads 0 when that player is dead.
 
-**Separate layers** — put stock icons and percent on DIFFERENT layers when they're close enough to
-overlap. They animate independently (stock-loss vs percent punch), and overlapping items on one layer
-fight for grid space. General rule: overlapping or independently-animated elements → separate layers
-(add_overlay_layer / target a higher layerIndex).
+**Separate layers** — new scenes have ONE layer; add more with add_overlay_layer. Layer 0 is drawn
+ON TOP; higher indexes are further behind (backgrounds/panels → higher index than the text over them).
+Group by kind, split by proximity: all stock icons can share one layer, percentages go on another;
+HUD elements can share a layer, but elements close together (touching / nearly overlapping) go on
+different layers. Overlapping items on one layer fight for grid space, and separate layers animate
+independently (stock-loss vs percent punch).
 
 **Timer** — elements InGameTimerMinutes (4300), InGameTimerSeconds (4301), and the milliseconds/
 centisecond digits InGameTimerMilliseconds1/2/3 (4302/4303/4304). Placement differs by game:

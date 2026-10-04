@@ -39,7 +39,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'create_overlay',
 		{
-			description: 'Create a new, empty custom overlay and return its id. The overlay ships with all stats scenes (WaitingForDolphin, Menu, InGame, PostGame, PostSet, RankChange, StrikePhase), each with one empty layer (index 0). After creating, use add_overlay_element to design it (start with statsScene "inGame", layerIndex 0), then obs_add_overlay_browser_source to put it in OBS.',
+			description: 'Create a new, empty custom overlay and return its id. The overlay ships with all stats scenes (WaitingForDolphin, Menu, InGame, PostGame, PostSet, RankChange, StrikePhase), each with one empty layer (index 0). Plan layers first (add_overlay_layer) when elements will sit close together, then add elements (start with statsScene "inGame"), then obs_add_overlay_browser_source to put it in OBS.',
 			inputSchema: {
 				title: z.string().optional().describe('Overlay name shown in Froggi. Defaults to an auto-generated name.'),
 				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Overlay aspect ratio, e.g. {width:16,height:9}. Defaults to 16:9.'),
@@ -56,6 +56,31 @@ export function registerOverlayWriteTools(server: McpServer) {
 				scenes: STATS_SCENES,
 				next: 'Use add_overlay_element with this overlayId (statsScene e.g. "inGame", layerIndex 0), then obs_add_overlay_browser_source.',
 			});
+		},
+	);
+
+	server.registerTool(
+		'add_overlay_layer',
+		{
+			description: 'Add empty layer(s) to a scene. Layer order: index 0 is drawn ON TOP, higher indexes are further BEHIND (so backgrounds/panels go on a higher index than the text drawn over them). Use separate layers for elements that sit close together or overlap — e.g. all stock icons on one layer, percentages on another; HUD elements can share a layer unless they are close together. Default appends at the end (behind everything); pass atIndex to insert elsewhere (existing layers at/after it shift +1). Records undo history. Returns the scene\'s new layer count and the added indexes.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				count: z.number().int().min(1).max(10).default(1),
+				atIndex: z.number().int().min(0).optional().describe('Insert position; omit to append (behind all existing layers)'),
+			},
+		},
+		async ({ overlayId, statsScene, count, atIndex }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			const start = Math.min(atIndex ?? sceneBefore.layers.length, sceneBefore.layers.length);
+
+			const afterScene = await mcpContext.overlayStore!.addLayersToScene(overlayId, statsScene as LiveStatsScene, count, start);
+			if (!afterScene) return error('Failed to add layer — see logs');
+
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${count} layer(s) to ${statsScene}`);
+			return text({ ok: true, layerCount: afterScene.layers.length, addedLayerIndexes: Array.from({ length: count }, (_, i) => start + i), note: 'Index 0 is on top; higher = further behind.' });
 		},
 	);
 
@@ -93,7 +118,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_elements',
 		{
-			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512x512 grid; optional layerIndex (default 0). Elements without a position auto-place, accounting for others added earlier in the same batch.',
+			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512x512 grid; optional layerIndex (default 0; index 0 is on top — add layers first with add_overlay_layer). Elements without a position auto-place, accounting for others added earlier in the same batch.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),

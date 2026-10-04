@@ -526,6 +526,17 @@ export class ElectronOverlayStore {
 		this.setScene(overlayId, statsScene, scene)
 	}
 
+	/** Insert `count` empty layers at `atIndex` (default: end = furthest back). Returns the saved scene. */
+	async addLayersToScene(overlayId: string, statsScene: LiveStatsScene, count: number, atIndex?: number): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const scene = overlay?.[statsScene];
+		if (!scene) return;
+		const index = Math.min(atIndex ?? scene.layers.length, scene.layers.length);
+		const newLayers: Layer[] = Array.from({ length: count }, () => ({ index: 0, items: [], id: undefined, preview: true }));
+		scene.layers = [...scene.layers.slice(0, index), ...newLayers, ...scene.layers.slice(index)];
+		return this.setScene(overlayId, statsScene, scene);
+	}
+
 	async deleteLayer(overlayId: string, statsScene: LiveStatsScene, sceneId: number, layerId: number) {
 		this.log.info("Delete layer", overlayId, statsScene)
 		const scene = await this.sqliteOverlay.getScene(sceneId) as Scene
