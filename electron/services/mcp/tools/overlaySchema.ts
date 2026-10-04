@@ -21,8 +21,10 @@ const RANGE_LABELS: Array<{ min: number; max: number; label: string }> = [
 	{ min: 4600, max: 5399, label: 'Per-character / per-stock icon sets' },
 	{ min: 6000, max: 6299, label: 'Character & rank images' },
 	{ min: 7000, max: 7599, label: 'Stage striking' },
-	{ min: 8000, max: 8299, label: 'Action state, bingo, rank graph' },
-	{ min: 9000, max: 9999, label: 'Misc' },
+	{ min: 8000, max: 8299, label: 'Action state' },
+	{ min: 9000, max: 9099, label: 'Minigames (Bingo board)' },
+	{ min: 9100, max: 9199, label: 'Rank graph' },
+	{ min: 9200, max: 9999, label: 'Misc' },
 ];
 
 const labelFor = (id: number) => RANGE_LABELS.find((r) => id >= r.min && id <= r.max)?.label ?? 'Other';
@@ -132,6 +134,12 @@ Group by kind, split by proximity: all stock icons can share one layer, percenta
 HUD elements can share a layer, but elements close together (touching / nearly overlapping) go on
 different layers. Overlapping items on one layer fight for grid space, and separate layers animate
 independently (stock-loss vs percent punch).
+
+**Minigames in an overlay** — the Bingo board is an overlay element: BingoBoard (9000) renders the
+live board of the current Bingo session (a preview board when none is running). Put it in a custom
+overlay to show Bingo inside your own layout, in OBS or injected into Dolphin (Windows,
+set_overlay_injection). Iron Man has no overlay element yet — its stream view is only the "Game
+Preview" browser source (/obs/game-preview).
 
 **Game HUD references** — before placing in-game elements, call get_game_hud_reference (list, then
 fetch the one matching the user's game + HUD setup, passing the overlay's aspectRatio — 4:3 / 73:60 are
