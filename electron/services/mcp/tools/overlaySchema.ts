@@ -22,7 +22,7 @@ const RANGE_LABELS: Array<{ min: number; max: number; label: string }> = [
 	{ min: 6000, max: 6299, label: 'Character & rank images' },
 	{ min: 7000, max: 7599, label: 'Stage striking' },
 	{ min: 8000, max: 8299, label: 'Action state' },
-	{ min: 9000, max: 9099, label: 'Minigames (Bingo board)' },
+	{ min: 9000, max: 9099, label: 'Minigames (Bingo board, Iron Man roster)' },
 	{ min: 9100, max: 9199, label: 'Rank graph' },
 	{ min: 9200, max: 9999, label: 'Misc' },
 ];
@@ -135,11 +135,13 @@ HUD elements can share a layer, but elements close together (touching / nearly o
 different layers. Overlapping items on one layer fight for grid space, and separate layers animate
 independently (stock-loss vs percent punch).
 
-**Minigames in an overlay** — the Bingo board is an overlay element: BingoBoard (9000) renders the
-live board of the current Bingo session (a preview board when none is running). Put it in a custom
-overlay to show Bingo inside your own layout, in OBS or injected into Dolphin (Windows,
-set_overlay_injection). Iron Man has no overlay element yet — its stream view is only the "Game
-Preview" browser source (/obs/game-preview).
+**Minigames in an overlay** — minigames are overlay elements, so they can sit in a custom layout, in
+OBS or injected into Dolphin (Windows, set_overlay_injection):
+- BingoBoard (9000): the live board of the current Bingo session.
+- IronManRoster (9010): each player's Iron Man roster — name pill + progress count, character grid,
+  progress bar; the opponent's section appears in versus. Give it a tall box (e.g. a side column).
+Both show a sample in the editor and "No active … session" when nothing is running. The full-page
+alternative is the "Game Preview" browser source (/obs/game-preview).
 
 **Game HUD references** — before placing in-game elements, call get_game_hud_reference (list, then
 fetch the one matching the user's game + HUD setup, passing the overlay's aspectRatio — 4:3 / 73:60 are

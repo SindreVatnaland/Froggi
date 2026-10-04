@@ -722,6 +722,10 @@ export const BINGO_ELEMENTS = new Set<CustomElement>([
 	CustomElement.BingoBoard,
 ]);
 
+export const IRONMAN_ELEMENTS = new Set<CustomElement>([
+	CustomElement.IronManRoster,
+]);
+
 export const STRIKING_ELEMENTS = new Set<CustomElement>([
 	CustomElement.StrikeRpsPlayer1Choice,
 	CustomElement.StrikeRpsPlayer2Choice,

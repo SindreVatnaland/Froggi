@@ -11,6 +11,8 @@
 	import Match from './elementRender/Match.svelte';
 	import {
 		bingoSession,
+		ironManSession,
+		ironManCurrentChar,
 		currentMatch,
 		currentPlayer,
 		currentPlayers,
@@ -28,6 +30,7 @@
 	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
 	import {
 		BINGO_ELEMENTS,
+		IRONMAN_ELEMENTS,
 		CUSTOM_ELEMENTS,
 		INGAME_ELEMENTS,
 		MATCH_ELEMENTS,
@@ -39,6 +42,7 @@
 		STRIKING_ELEMENTS,
 	} from './elementCategories';
 	import BingoBoard from './elementRender/BingoBoard.svelte';
+	import IronManRoster from './elementRender/IronManRoster.svelte';
 	import Striking from './elementRender/Striking.svelte';
 	import { strikeState } from '$lib/utils/store.svelte';
 
@@ -196,6 +200,8 @@
 				<Striking {dataItem} {defaultPreview} {style} strikeState={$strikeState} />
 			{:else if BINGO_ELEMENTS.has(dataItem.elementId)}
 				<BingoBoard {defaultPreview} {style} session={$bingoSession} />
+			{:else if IRONMAN_ELEMENTS.has(dataItem.elementId)}
+				<IronManRoster {defaultPreview} {style} session={$ironManSession} currentChar={$ironManCurrentChar} />
 			{/if}
 		</div>
 	{/if}

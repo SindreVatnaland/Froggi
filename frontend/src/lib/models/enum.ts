@@ -120,6 +120,7 @@ export enum ElementCategory {
 	Player2ActionState = 'Player 2 Action State',
 
 	Bingo = 'Bingo',
+	IronMan = 'Iron Man',
 }
 
 export enum InGameState {

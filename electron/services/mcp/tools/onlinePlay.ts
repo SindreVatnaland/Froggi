@@ -8,7 +8,7 @@ const error = (message: string) => ({ content: [{ type: 'text' as const, text: m
 
 // How the user finds and uses the code — explained to the user; the assistant does not hand out or enter codes.
 const SHARE_STEPS =
-	'Host: in Froggi open Minigames → Host, pick Bingo or Iron Man and the settings — the lobby shows the Share Code with a "Copy Code" button; send it to the friend (e.g. on Discord). Guest: in Froggi open Minigames → Join and paste it into "Paste share code or URL…". The guest does not need ngrok. To show the game on stream, the Minigames page lists a "Game Preview" URL to add as an OBS browser source. Bingo can also be shown in-game: build an overlay with the Bingo board element and inject it into Dolphin (Windows).';
+	'Host: in Froggi open Minigames → Host, pick Bingo or Iron Man and the settings — the lobby shows the Share Code with a "Copy Code" button; send it to the friend (e.g. on Discord). Guest: in Froggi open Minigames → Join and paste it into "Paste share code or URL…". The guest does not need ngrok. To show the game on stream, the Minigames page lists a "Game Preview" URL to add as an OBS browser source. Bingo and Iron Man can also be shown in-game: build an overlay with the Bingo Board or Iron Man Roster element and inject it into Dolphin (Windows).';
 
 // Explain-first: each step names where it is in Froggi; the tool is the "do it for me" option.
 function nextStep(s: { installed: boolean; authenticated: boolean; running: boolean; url?: string }): string {

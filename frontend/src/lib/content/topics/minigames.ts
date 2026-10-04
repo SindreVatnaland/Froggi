@@ -54,7 +54,7 @@ export const minigamesTopics: ContentTopic[] = [
 			},
 			{
 				type: 'note',
-				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The host finds the Share Code (and a join link) in the lobby; the friend pastes it in Minigames → Join. To show the game on stream, add the "Game Preview" URL from the Minigames page as an OBS browser source (800×1100). For Bingo you can also add the Bingo board element to a custom overlay and use it in OBS or inject it into Dolphin (Windows); Iron Man has no overlay element yet. The AI assistant can explain or help set up ngrok and the OBS source.',
+				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The host finds the Share Code (and a join link) in the lobby; the friend pastes it in Minigames → Join. To show the game on stream, add the "Game Preview" URL from the Minigames page as an OBS browser source (800×1100). You can also add the Bingo Board or Iron Man Roster element (Add Element → Bingo / Iron Man) to a custom overlay and use it in OBS or inject it into Dolphin (Windows). The AI assistant can explain or help set up ngrok and the OBS source.',
 			},
 		],
 	},

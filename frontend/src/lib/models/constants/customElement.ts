@@ -821,6 +821,9 @@ export enum CustomElement {
     // Bingo
     BingoBoard = 9000,
 
+    // Iron Man
+    IronManRoster = 9010,
+
     // Rank Graph
     SlippiRankCurrentPlayerRatingGraph = 9100,
 }
