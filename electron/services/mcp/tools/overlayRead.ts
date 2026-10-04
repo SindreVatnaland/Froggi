@@ -107,7 +107,7 @@ export function registerOverlayReadTools(server: McpServer) {
 			});
 
 			// Built frontend (build/image/…) in production; frontend/static in dev before a build.
-			const root = path.join(__dirname, '../../../..');
+			const root = path.join(__dirname, '../../../../..'); // build_electron/electron/services/mcp/tools → app root
 			const file = [path.join(root, 'build/image/hud-references', image), path.join(root, 'frontend/static/image/hud-references', image)].find((f) => fs.existsSync(f));
 			const content: ({ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string })[] = [
 				{
@@ -128,7 +128,7 @@ export function registerOverlayReadTools(server: McpServer) {
 					const cropW = Math.round(width * keep);
 					img = img.crop({ x: Math.round((width - cropW) / 2), y: 0, width: cropW, height });
 				}
-				content.push({ type: 'image', data: img.toPNG().toString('base64'), mimeType: 'image/png' });
+				content.push({ type: 'image', data: img.toJPEG(85).toString('base64'), mimeType: 'image/jpeg' });
 			} else {
 				content.push({ type: 'text', text: '(Screenshot not bundled in this build — use the description and regions.)' });
 			}

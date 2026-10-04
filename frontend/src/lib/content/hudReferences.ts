@@ -66,7 +66,7 @@ export const HUD_REFERENCES: HudReference[] = [
 		game: 'ultimate',
 		aspectRatio: { width: 16, height: 9 },
 		title: 'Ultimate 16:9 — default HUD',
-		image: 'ultimate-16x9-default-hud.png',
+		image: 'ultimate-16x9-default-hud.jpg',
 		description:
 			"Super Smash Bros. Ultimate in 16:9 with its default HUD. Timer at the TOP-RIGHT (M:SS with smaller centiseconds in this shot). Player panels along the bottom, P1 left of center and P2 right of center; each panel = character portrait on the left, large damage percent (with a small decimal) to its right, the character name in a bar under the percent, and the stock icons as small heads under the portrait/name. A 'P1'/'P2' tag floats above each character in play. The player radar (minimap of off-screen fighters) sits TOP-LEFT here — Froggi's radar element (InGamePlayerRadar) can replace or mirror it. The top-center, the left/right edges, and the area between the two panels are free.",
 		regions: [
