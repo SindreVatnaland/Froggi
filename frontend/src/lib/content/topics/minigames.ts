@@ -54,7 +54,7 @@ export const minigamesTopics: ContentTopic[] = [
 			},
 			{
 				type: 'note',
-				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The AI assistant can walk you through installing ngrok, signing in, starting the tunnel, and getting the code to send your friend.',
+				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The host finds the Share Code (and a join link) in the lobby; the friend pastes it in Minigames → Join. To show the game on stream, add the "Game Preview" URL from the Minigames page as an OBS browser source (800×1100). The AI assistant can explain or help set up ngrok and the OBS source.',
 			},
 		],
 	},

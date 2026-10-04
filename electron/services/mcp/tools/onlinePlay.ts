@@ -1,36 +1,29 @@
 import { z } from 'zod';
-import { app } from 'electron';
 import os from 'os';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
-import { encryptUrl } from '../../../../frontend/src/lib/utils/urlCrypto';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const error = (message: string) => ({ content: [{ type: 'text' as const, text: message }], isError: true });
 
-// Same landing page lobbyService uses for Discord invites: it bounces to froggi://join/<code>.
-const FROGGI_LANDING = 'https://sindrevatnaland.github.io/Froggi/';
+// How the user finds and uses the code — explained to the user; the assistant does not hand out or enter codes.
+const SHARE_STEPS =
+	'Host: in Froggi open Minigames → Host, pick Bingo or Iron Man and the settings — the lobby shows the Share Code with a "Copy Code" button; send it to the friend (e.g. on Discord). Guest: in Froggi open Minigames → Join and paste it into "Paste share code or URL…". The guest does not need ngrok. To show the game on stream, the Minigames page lists a "Game Preview" URL to add as an OBS browser source.';
 
-/** Connect code = encrypted ngrok URL (ngrok only — must match the Share Code, froggi:// link and Discord join). */
-function connectInfo(ngrokUrl: string | undefined) {
-	if (!ngrokUrl) return undefined;
-	const code = encryptUrl(ngrokUrl.replace(/\/$/, ''), app.getVersion());
-	return { connectCode: code, joinLink: `${FROGGI_LANDING}join.html?code=${encodeURIComponent(code)}` };
-}
-
+// Explain-first: each step names where it is in Froggi; the tool is the "do it for me" option.
 function nextStep(s: { installed: boolean; authenticated: boolean; running: boolean; url?: string }): string {
-	if (!s.installed) return 'Install ngrok: ngrok_setup action "install" (uses the system package manager when available, otherwise opens ngrok.com/download — the user installs it and you call get_online_play_status again).';
-	if (!s.authenticated) return 'The user needs a free ngrok account: sign up at https://dashboard.ngrok.com/signup, copy the authtoken from https://dashboard.ngrok.com/get-started/your-authtoken, then either paste it into Froggi (Settings → Remote Access → ngrok) or give it to you for ngrok_setup action "set_authtoken". Mention the token is a secret; pasting it in Froggi keeps it out of the chat.';
-	if (!s.running) return 'Start the tunnel: ngrok_setup action "start", then check status again for the URL.';
-	if (!s.url) return 'Tunnel is starting — check status again in a few seconds.';
-	return 'Ready. Host: open Minigames in Froggi, pick Bingo or Iron Man → Host, choose settings, and share the connect code / join link with the friend. Guest: the friend pastes the code in Minigames → Join (or you call join_minigame with it).';
+	if (!s.installed) return 'Step 1 — install ngrok: Froggi → Settings → Remote Access → "Install ngrok" (runs the package manager or opens ngrok.com/download). Offer ngrok_setup action "install" only if the user wants you to do it.';
+	if (!s.authenticated) return 'Step 2 — sign in: create a free account at https://dashboard.ngrok.com/signup, copy the authtoken from https://dashboard.ngrok.com/get-started/your-authtoken, and paste it in Froggi → Settings → Remote Access → "Add authtoken". The token is a secret — recommend pasting it in Froggi rather than in chat (ngrok_setup "set_authtoken" exists if they insist).';
+	if (!s.running) return 'Step 3 — start the tunnel: Froggi → Settings → Remote Access → "Enable tunnel" (or ngrok_setup "start" if the user asks you to).';
+	if (!s.url) return 'The tunnel is starting — check again in a few seconds.';
+	return `ngrok is ready, the user can host. ${SHARE_STEPS}`;
 }
 
 export function registerOnlinePlayReadTools(server: McpServer) {
 	server.registerTool(
 		'get_online_play_status',
 		{
-			description: 'Everything needed to play minigames (Bingo / Iron Man) online with a friend: ngrok status (installed / signed in / tunnel running / public URL), the connect code + join link for this machine (from the ngrok URL), the current Bingo/Iron Man lobby, and the next setup step. Only the HOST needs ngrok; a guest just needs Froggi and the host\'s code. Use this to guide setup step by step — the user plays in the Minigames page, you only help with setup.',
+			description: 'Status for playing minigames (Bingo / Iron Man) online with a friend: ngrok (installed / signed in / tunnel running), the current lobbies, the next setup step, and how to share/enter the code. Only the HOST needs ngrok. Use it to EXPLAIN the steps to the user; the connect code is found and shared by the user in the Minigames page (you don\'t hand it out or join for them).',
 			inputSchema: {},
 		},
 		async () => {
@@ -40,7 +33,7 @@ export function registerOnlinePlayReadTools(server: McpServer) {
 			return text({
 				platform: os.platform(),
 				ngrok,
-				connect: connectInfo(ngrok.running ? ngrok.url : undefined) ?? null,
+				howToShareAndJoin: SHARE_STEPS,
 				lobby: {
 					bingo: bingoLobby && { opponentConnected: bingoLobby.opponentConnected, opponentName: bingoLobby.opponentName },
 					ironman: ironmanLobby && { opponentConnected: ironmanLobby.opponentConnected, opponentName: ironmanLobby.opponentName },
@@ -56,7 +49,7 @@ export function registerOnlinePlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'ngrok_setup',
 		{
-			description: 'Set up ngrok so the user can HOST minigames online. Actions: "install" (package manager install, or opens the download page), "set_authtoken" (save the user\'s ngrok authtoken — only if they chose to give it to you; otherwise they paste it in Froggi Settings → Remote Access), "start" / "stop" the tunnel. Each action is async — call get_online_play_status afterwards (a few seconds later for install/start) to see the result.',
+			description: 'Set up ngrok so the user can HOST minigames online — explain the steps first (Settings → Remote Access in Froggi does the same) and only run this when the user asks you to. Actions: "install" (package manager install, or opens the download page), "set_authtoken" (save the user\'s ngrok authtoken — only if they chose to give it to you; otherwise they paste it in Froggi Settings → Remote Access), "start" / "stop" the tunnel. Each action is async — call get_online_play_status afterwards (a few seconds later for install/start) to see the result.',
 			inputSchema: {
 				action: z.enum(['install', 'set_authtoken', 'start', 'stop']),
 				authtoken: z.string().min(10).max(200).optional().describe('Required for set_authtoken'),
@@ -72,20 +65,6 @@ export function registerOnlinePlayWriteTools(server: McpServer) {
 			if (action === 'start') emitter.emit('NgrokStart');
 			if (action === 'stop') emitter.emit('NgrokStop');
 			return text(`ngrok ${action} requested. Check get_online_play_status in a few seconds.`);
-		},
-	);
-
-	server.registerTool(
-		'join_minigame',
-		{
-			description: 'Join a friend\'s Bingo / Iron Man lobby with their connect code (or join link — the code is extracted). Froggi opens the Minigames page and connects; the guest does not need ngrok.',
-			inputSchema: { code: z.string().min(8).max(2000) },
-		},
-		async ({ code }) => {
-			const m = /[?&]code=([^&]+)/.exec(code) ?? /froggi:\/\/join\/(.+)$/.exec(code);
-			const finalCode = m ? decodeURIComponent(m[1]) : code.trim();
-			mcpContext.messageHandler!.sendMessage('JoinWithCode', finalCode);
-			return text('Opening Minigames and joining with that code. If it fails, the host should check their ngrok tunnel is running and the code is current (it changes when their ngrok URL changes).');
 		},
 	);
 }
