@@ -5,9 +5,9 @@
 	import OverlayPreviewScaled from '$lib/components/obs/overlays/preview/OverlayPreviewScaled.svelte';
 	import type { Overlay } from '$lib/models/types/overlay';
 
-	$: deleted = Object.values($overlays ?? {})
-		.filter((o) => o.deletedAt)
-		.sort((a, b) => (b.deletedAt ?? '').localeCompare(a.deletedAt ?? ''));
+	// Restored overlays stay mounted but hidden — see the overlays list page for why.
+	$: all = Object.values($overlays ?? {}).sort((a, b) => (b.deletedAt ?? '').localeCompare(a.deletedAt ?? ''));
+	$: deletedCount = all.filter((o) => o.deletedAt).length;
 
 	let selected: Overlay | undefined = undefined;
 	let confirmPermanentOpen = false;
@@ -34,10 +34,13 @@
 			<h1 class="text-xl font-semibold text-secondary-color">Deleted overlays</h1>
 		</div>
 
-		{#if deleted.length}
-			<div class="card-grid">
-				{#each deleted as overlay (overlay.id)}
-					<button class="overlay-card" on:click={() => (selected = overlay)}>
+		<div class="card-grid" style:display={deletedCount ? null : 'none'}>
+			{#each all as overlay (overlay.id)}
+				<button
+					class="overlay-card"
+					style:display={overlay.deletedAt ? null : 'none'}
+					on:click={() => (selected = overlay)}
+				>
 						<div
 							class="preview-frame border-secondary"
 							style="aspect-ratio: {overlay.aspectRatio?.width ?? 16} / {overlay.aspectRatio?.height ?? 9};"
@@ -46,10 +49,10 @@
 						</div>
 						<p class="card-title text-secondary-color">{overlay.title}</p>
 						<p class="card-date text-secondary-color">Deleted {formatDate(overlay.deletedAt)}</p>
-					</button>
-				{/each}
-			</div>
-		{:else}
+				</button>
+			{/each}
+		</div>
+		{#if !deletedCount}
 			<p class="text-secondary-color text-sm" style="opacity: 0.5">No deleted overlays.</p>
 		{/if}
 	</div>

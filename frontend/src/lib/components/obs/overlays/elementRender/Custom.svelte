@@ -9,7 +9,7 @@
 	export let dataItem: GridContentItem;
 	export let style: GridContentItemStyle;
 
-	const overlayId = $page.params.overlay;
+	export let overlayId: string | undefined = $page.params.overlay;
 
 	$: url = $isElectron ? $urls?.localResource : $urls?.externalResource;
 </script>

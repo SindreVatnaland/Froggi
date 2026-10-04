@@ -30,7 +30,7 @@
 		args: { curScene: Scene | undefined; dataItem: GridContentItem },
 	): TransitionConfig => {
 		const { curScene, dataItem } = args;
-		if (edit || isNil(dataItem) || isNil(curScene)) return fly(node, { duration: 0 });
+		if (edit || preview || isNil(dataItem) || isNil(curScene)) return fly(node, { duration: 0 });
 		const delay =
 			dataItem[COL]?.y +
 			Math.abs(dataItem[COL]?.x + dataItem[COL]?.w / 2 - COL / 2) +
@@ -50,7 +50,9 @@
 		args: { curScene: Scene | undefined; dataItem: GridContentItem },
 	): TransitionConfig => {
 		const { curScene, dataItem } = args;
-		if (edit || !curScene) return fly(node, { duration: 0 });
+		// Previews (thumbnails, preview pages) skip scene in/out animations: Svelte 3 waits on these
+		// (incl. still-delayed intros) before removing a card, so deleted/filtered overlays stayed in the list.
+		if (edit || preview || !curScene) return fly(node, { duration: 0 });
 		return createAnimation(node, curScene.animation.out, boardHeight, boardWidth, 0, dataItem);
 	};
 

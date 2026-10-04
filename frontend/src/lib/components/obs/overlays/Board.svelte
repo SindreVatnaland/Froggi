@@ -113,6 +113,7 @@
 		style={`width: ${effectiveWidth}px; height: ${effectiveHeight}px;`}
 	>
 		<BoardContainer
+			{overlayId}
 			scene={curScene}
 			bind:boardHeight={innerHeight}
 			bind:boardWidth={innerWidth}

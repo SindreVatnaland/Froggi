@@ -17,7 +17,8 @@
 	export let scene: Scene;
 
 	$: url = $isElectron ? $urls?.localResource : $urls?.externalResource;
-	const overlayId = $page.params.overlay;
+	// Passed in for thumbnails/previews (the page param is only set on /obs/overlay/<id> routes).
+	export let overlayId: string | undefined = $page.params.overlay;
 
 	let innerHeight: number;
 	let innerWidth: number;

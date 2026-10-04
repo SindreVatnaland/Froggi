@@ -4,6 +4,9 @@ import { mcpContext } from '../mcpContext';
 import { LiveStatsScene } from '../../../../frontend/src/lib/models/enum';
 import { CustomElement } from '../../../../frontend/src/lib/models/constants/customElement';
 import { BACKEND_PORT, COL } from '../../../../frontend/src/lib/models/const';
+import { HUD_REFERENCES } from '../../../../frontend/src/lib/content/hudReferences';
+import fs from 'fs';
+import path from 'path';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const error = (message: string) => ({ content: [{ type: 'text' as const, text: message }], isError: true });
@@ -76,6 +79,61 @@ export function registerOverlayReadTools(server: McpServer) {
 		PREVIEW_UI_URI,
 		{ description: 'Live preview of a Froggi overlay (loopback iframe)', mimeType: 'text/html;profile=mcp-app', _meta: uiMeta },
 		async () => ({ contents: [{ uri: PREVIEW_UI_URI, mimeType: 'text/html;profile=mcp-app', text: PREVIEW_HTML, _meta: uiMeta }] }),
+	);
+
+	server.registerTool(
+		'get_game_hud_reference',
+		{
+			description: 'Reference screenshots of the GAME\'s own HUD (timer, stock icons, damage percent) with approximate positions on the 512x512 overlay grid. Use it two ways: (1) ADD to the game HUD — place extra elements (names, ranks, controller inputs, stats) in the free space around these regions without covering them; (2) REPLACE the game HUD — put custom stock/percent/timer elements exactly on these regions for a custom HUD. References are 16:9; pass aspectRatio (e.g. {width:4,height:3} or {width:73,height:60}) to get the center crop for a narrower overlay — regions are re-mapped to that overlay\'s grid and the screenshot is cropped. Without id: lists references.',
+			inputSchema: {
+				id: z.string().optional(),
+				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Target overlay aspect ratio; must be equal to or narrower than the reference'),
+			},
+		},
+		async ({ id, aspectRatio }) => {
+			if (!id) return text(HUD_REFERENCES.map(({ id, title, game, aspectRatio }) => ({ id, title, game, aspectRatio })));
+			const ref = HUD_REFERENCES.find((r) => r.id === id);
+			if (!ref) return error(`No HUD reference "${id}" — call without id to list them.`);
+			const { image, regions, ...info } = ref;
+
+			// Narrower targets are a centered crop of the reference (full height kept).
+			const keep = aspectRatio ? aspectRatio.width / aspectRatio.height / (ref.aspectRatio.width / ref.aspectRatio.height) : 1;
+			if (keep > 1.0001) return error(`Target ${aspectRatio!.width}:${aspectRatio!.height} is wider than the ${ref.aspectRatio.width}:${ref.aspectRatio.height} reference — only center crops of narrower ratios are supported.`);
+			const offset = ((1 - keep) / 2) * 512;
+			const mapped = regions.map((r) => {
+				const x = Math.round((r.x - offset) / keep);
+				const w = Math.round(r.w / keep);
+				return { ...r, x, w, ...(x < 0 || x + w > 512 ? { outsideCrop: x + w <= 0 || x >= 512 ? 'fully' : 'partly' } : {}) };
+			});
+
+			// Built frontend (build/image/…) in production; frontend/static in dev before a build.
+			const root = path.join(__dirname, '../../../..');
+			const file = [path.join(root, 'build/image/hud-references', image), path.join(root, 'frontend/static/image/hud-references', image)].find((f) => fs.existsSync(f));
+			const content: ({ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string })[] = [
+				{
+					type: 'text',
+					text: JSON.stringify({
+						...info,
+						overlayAspectRatio: aspectRatio ?? ref.aspectRatio,
+						grid: '512x512 on the overlay; x/y top-left, w/h size; approximate',
+						regions: mapped,
+					}, null, 2),
+				},
+			];
+			if (file) {
+				const { nativeImage } = await import('electron');
+				let img = nativeImage.createFromPath(file);
+				if (keep < 1) {
+					const { width, height } = img.getSize();
+					const cropW = Math.round(width * keep);
+					img = img.crop({ x: Math.round((width - cropW) / 2), y: 0, width: cropW, height });
+				}
+				content.push({ type: 'image', data: img.toPNG().toString('base64'), mimeType: 'image/png' });
+			} else {
+				content.push({ type: 'text', text: '(Screenshot not bundled in this build — use the description and regions.)' });
+			}
+			return { content };
+		},
 	);
 
 	server.registerTool(

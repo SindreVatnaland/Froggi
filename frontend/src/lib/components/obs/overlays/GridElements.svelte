@@ -138,7 +138,7 @@
 	{#if div && shouldPreview}
 		<div class="w-full h-full">
 			{#if CUSTOM_ELEMENTS.has(dataItem.elementId)}
-				<Custom {dataItem} {style} />
+				<Custom {dataItem} {style} overlayId={_overlayId} />
 			{:else if INGAME_ELEMENTS.has(dataItem.elementId)}
 				<InGame
 					{dataItem}

@@ -25,9 +25,10 @@
 
 	let search = '';
 
-	$: allOverlays = Object.values($overlays ?? {})
-		.filter((o) => !o.deletedAt)
-		.sort((a, b) => a.title.localeCompare(b.title));
+	// Deleted overlays stay mounted but hidden (style:display): removing a card in the same update that
+	// changes its data (deletedAt) never completes in Svelte 3 — the card stayed on screen.
+	$: allOverlays = Object.values($overlays ?? {}).sort((a, b) => a.title.localeCompare(b.title));
+	const anyVisible = (items: Overlay[]) => items.some((o) => !o.deletedAt);
 	$: deletedCount = Object.values($overlays ?? {}).filter((o) => o.deletedAt).length;
 
 	$: customOverlays = allOverlays
@@ -91,14 +92,16 @@
 
 	<!-- Custom overlays -->
 	{#if customOverlays.length}
-		<section class="mb-8">
+		<section class="mb-8" style:display={anyVisible(customOverlays) ? null : 'none'}>
 			<p class="section-label">Custom</p>
-			{#each customGroups as [ratio, groupOverlays]}
-				<div class="ratio-section">
+			{#each customGroups as [ratio, groupOverlays] (ratio)}
+				<div class="ratio-section" style:display={anyVisible(groupOverlays) ? null : 'none'}>
 					<p class="ratio-label">{ratio}</p>
 					<div class="card-grid mt-2 mb-6">
-						{#each groupOverlays as overlay, i}
+						{#each groupOverlays as overlay, i (overlay.id)}
 							<button
+								data-overlay-id={overlay.id}
+								style:display={overlay.deletedAt ? 'none' : null}
 								class="overlay-card"
 								in:fly={{ duration: 200, y: 24, delay: i * 40 }}
 								on:click={() => openPreview(overlay.id)}
@@ -120,14 +123,16 @@
 
 	<!-- Demo overlays -->
 	{#if demoOverlays.length}
-		<section>
+		<section style:display={anyVisible(demoOverlays) ? null : 'none'}>
 			<p class="section-label">Demo</p>
-			{#each demoGroups as [ratio, groupOverlays]}
-				<div class="ratio-section">
+			{#each demoGroups as [ratio, groupOverlays] (ratio)}
+				<div class="ratio-section" style:display={anyVisible(groupOverlays) ? null : 'none'}>
 					<p class="ratio-label">{ratio}</p>
 					<div class="card-grid mt-2 mb-6">
-						{#each groupOverlays as overlay, i}
+						{#each groupOverlays as overlay, i (overlay.id)}
 							<button
+								data-overlay-id={overlay.id}
+								style:display={overlay.deletedAt ? 'none' : null}
 								class="overlay-card"
 								in:fly={{ duration: 200, y: 24, delay: i * 40 }}
 								on:click={() => openPreview(overlay.id)}

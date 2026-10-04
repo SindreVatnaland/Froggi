@@ -132,6 +132,12 @@ HUD elements can share a layer, but elements close together (touching / nearly o
 different layers. Overlapping items on one layer fight for grid space, and separate layers animate
 independently (stock-loss vs percent punch).
 
+**Game HUD references** — before placing in-game elements, call get_game_hud_reference (list, then
+fetch the one matching the user's game + HUD setup, passing the overlay's aspectRatio — 4:3 / 73:60 are
+center crops of the 16:9 references). Ask which HUD placement they use if unsure (default vs. a
+centered-HUD gecko code). Use the regions to ADD elements in the free space around the game HUD, or to
+REPLACE it with a custom HUD by placing stock/percent/timer elements on those exact regions.
+
 **Images** — store the image first with add_overlay_image (url, local filePath, base64, or picker:true
 to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
 with payload \`{"image":{"name":fileName,"objectFit":"contain"}}\`, or a scene background via

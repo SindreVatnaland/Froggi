@@ -9,10 +9,11 @@ const getDefaultScene = (active: boolean = true): Scene => {
   return {
     id: undefined,
     active: active,
+    // New overlays slide elements in/out on scene changes ("fly automatic") out of the box.
     animation: {
       duration: 250,
-      in: getDefaultAnimations(SCENE_TRANSITION_DELAY),
-      out: getDefaultAnimations(),
+      in: getFlyAutomatic(),
+      out: getFlyAutomatic(),
       layerRenderDelay: 250,
     },
     background: {
@@ -88,6 +89,13 @@ export function fillOverlayDefaults(overlay: Overlay): Overlay {
   }
   overlay.aspectRatio ??= template.aspectRatio;
   return overlay;
+}
+
+function getFlyAutomatic(): AnimationSettings {
+  return {
+    options: { delay: 0, duration: 250, easing: 'cubicOut', start: 0, x: 0, y: 0 },
+    type: Animation.FlyAutomatic,
+  };
 }
 
 function getDefaultAnimations(delay: number = 0): AnimationSettings {

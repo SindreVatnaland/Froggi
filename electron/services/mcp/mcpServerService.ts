@@ -56,6 +56,8 @@ import { registerCrashDiagnosisReadTools, registerCrashDiagnosisWriteTools } fro
 const MCP_INSTRUCTIONS = `You are connected to a running Froggi instance — a Slippi (Melee) → OBS overlay app. Be proactively helpful.
 
 When you build or edit an overlay, first read the overlay authoring guide tool, and prefer the shipped demo overlays as references (list_overlays / get_overlay).
+Users describe overlays in plain language — don't ask them technical questions (grid units, CSS, easing, layer indexes). Pick sensible defaults from the guide (standard placement, readable sizes, the game HUD reference), build it, show the preview, then offer to adjust in plain terms ("bigger?", "move it to the top?"). Only ask when a choice really changes the result (e.g. which game/HUD placement, which players to show).
+Animations: new overlays already use "fly automatic" for scene changes. For elements whose value changes during play (score, percent, stocks, rank, set count), ask the user once whether they'd like a short animation when the value updates (recommend a quick fade or small fly-in) and apply it via the element's animationTrigger if they agree.
 
 Before suggesting how to DISPLAY an overlay, check what's actually available and make the user aware of the options:
 - Call get_obs_status: if OBS is connected or connectable, offer to add the overlay as an OBS browser source (obs_enable_and_connect, then obs_add_overlay_browser_source).
