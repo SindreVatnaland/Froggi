@@ -3,12 +3,14 @@
 	import { fade } from 'svelte/transition';
 	import Board from '$lib/components/obs/overlays/Board.svelte';
 	import { page } from '$app/stores';
+	import type { LiveStatsScene } from '$lib/models/enum';
 
 	export let layerIds: number[] | undefined = undefined;
 	export let preview: boolean = false;
 	export let overlayId: string | undefined = undefined;
 	export let designWidth: number | undefined = undefined;
 	export let designHeight: number | undefined = undefined;
+	export let sceneOverride: LiveStatsScene | undefined = undefined;
 
 	$: _overlayId = overlayId ?? $page.params.overlay;
 	$: curOverlay = $overlays[_overlayId];
@@ -28,6 +30,6 @@
 		in:fade={{ delay: 50, duration: 150 }}
 		out:fade={{ duration: 300 }}
 	>
-		<Board bind:curOverlay bind:layerIds {preview} {designWidth} {designHeight} />
+		<Board bind:curOverlay bind:layerIds {preview} {designWidth} {designHeight} {sceneOverride} />
 	</div>
 {/if}

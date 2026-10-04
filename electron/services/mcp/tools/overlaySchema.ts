@@ -132,6 +132,15 @@ HUD elements can share a layer, but elements close together (touching / nearly o
 different layers. Overlapping items on one layer fight for grid space, and separate layers animate
 independently (stock-loss vs percent punch).
 
+**Images** — store the image first with add_overlay_image (url, local filePath, base64, or picker:true
+to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
+with payload \`{"image":{"name":fileName,"objectFit":"contain"}}\`, or a scene background via
+configure_overlay_scene \`background {type:"Custom Image", customImage:{name:fileName, objectFit:"cover"}}\`.
+
+**Backdrops for several elements** — duplicate_overlay_layer copies a layer ON TOP of the original
+(the original moves to layerIndex+1); turn the lower copy's elements into translucent boxes
+(CustomBox 3000, e.g. css.background "#00000080") so every element gets a matching backdrop.
+
 **Timer** — elements InGameTimerMinutes (4300), InGameTimerSeconds (4301), and the milliseconds/
 centisecond digits InGameTimerMilliseconds1/2/3 (4302/4303/4304). Placement differs by game:
 - **Melee**: timer CENTERED at the top, and INCLUDE the centisecond decimals (minutes:seconds + 2 ms

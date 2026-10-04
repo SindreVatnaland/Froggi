@@ -25,7 +25,10 @@
 
 	let search = '';
 
-	$: allOverlays = Object.values($overlays ?? {}).sort((a, b) => a.title.localeCompare(b.title));
+	$: allOverlays = Object.values($overlays ?? {})
+		.filter((o) => !o.deletedAt)
+		.sort((a, b) => a.title.localeCompare(b.title));
+	$: deletedCount = Object.values($overlays ?? {}).filter((o) => o.deletedAt).length;
 
 	$: customOverlays = allOverlays
 		.filter((o) => !o.isDemo)
@@ -67,9 +70,18 @@
 			placeholder="Search…"
 			bind:value={search}
 		/>
+		{#if deletedCount}
+			<a
+				class="btn text-sm h-8 px-4 border-secondary rounded flex items-center ml-auto"
+				href="/obs/overlay/deleted"
+			>
+				Deleted ({deletedCount})
+			</a>
+		{/if}
 		{#if $isElectron}
 			<button
-				class="btn text-sm h-8 px-4 border-secondary rounded ml-auto"
+				class="btn text-sm h-8 px-4 border-secondary rounded"
+				class:ml-auto={!deletedCount}
 				on:click={() => (newOverlayModalOpen = true)}
 			>
 				+ New overlay

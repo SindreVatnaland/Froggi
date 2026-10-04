@@ -85,6 +85,138 @@ export function registerOverlayWriteTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'move_overlay_layer',
+		{
+			description: 'Reorder a scene\'s layers: move the layer at layerIndex to toIndex (others shift). Index 0 is drawn on top, higher = further behind. Records undo history.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				layerIndex: z.number().int().min(0),
+				toIndex: z.number().int().min(0),
+			},
+		},
+		async ({ overlayId, statsScene, layerIndex, toIndex }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
+			const afterScene = await mcpContext.overlayStore!.moveLayerTo(overlayId, statsScene as LiveStatsScene, layerIndex, toIndex);
+			if (!afterScene) return error('Failed to move layer — see logs');
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `move layer ${layerIndex} → ${toIndex}`);
+			return text({ ok: true, layerCount: afterScene.layers.length, movedTo: Math.min(toIndex, afterScene.layers.length - 1) });
+		},
+	);
+
+	server.registerTool(
+		'duplicate_overlay_layer',
+		{
+			description: 'Copy a layer with all its elements (new element ids, same positions/styling, custom files copied). The copy is inserted at layerIndex — i.e. ON TOP of the original, which shifts to layerIndex+1. Handy for giving several elements a matching backdrop: duplicate, then turn the lower copy\'s elements into background boxes (update/delete elements, or move_overlay_layer). Records undo history.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				layerIndex: z.number().int().min(0),
+			},
+		},
+		async ({ overlayId, statsScene, layerIndex }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
+			const afterScene = await mcpContext.overlayStore!.duplicateSceneLayer(overlayId, statsScene as LiveStatsScene, layerIndex);
+			if (!afterScene) return error('Failed to duplicate layer — see logs');
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `duplicate layer ${layerIndex}`);
+			return text({
+				ok: true,
+				copyLayerIndex: layerIndex,
+				originalNowAt: layerIndex + 1,
+				copyItemIds: afterScene.layers[layerIndex]?.items.map((i) => i.id),
+			});
+		},
+	);
+
+	server.registerTool(
+		'update_overlay_settings',
+		{
+			description: 'Rename an overlay, change its description, or change its aspect ratio (e.g. {width:16,height:9} landscape, {width:9,height:16} portrait). Element grid positions are relative, so they stretch to the new ratio. Not recorded in scene undo history — tell the user the previous values.',
+			inputSchema: {
+				overlayId: z.string(),
+				title: z.string().min(1).max(100).optional(),
+				description: z.string().max(500).optional(),
+				aspectRatio: z.object({ width: z.number().int().min(1).max(64), height: z.number().int().min(1).max(64) }).optional(),
+			},
+		},
+		async ({ overlayId, title, description, aspectRatio }) => {
+			if (title === undefined && description === undefined && !aspectRatio) return error('Provide at least one of title, description, aspectRatio.');
+			const before = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!before) return error(`No overlay with id "${overlayId}"`);
+			if (before.isDemo) return error('Demo overlays are read-only — duplicate it in Froggi first.');
+			const after = await mcpContext.overlayStore!.updateOverlaySettings(overlayId, { title, description, aspectRatio });
+			if (!after) return error('Failed to update overlay — see logs');
+			return text({
+				ok: true,
+				before: { title: before.title, description: before.description, aspectRatio: before.aspectRatio },
+				after: { title: after.title, description: after.description, aspectRatio: after.aspectRatio },
+			});
+		},
+	);
+
+	server.registerTool(
+		'add_overlay_image',
+		{
+			description: 'Store an image for an overlay and get its file name. Use the source the user gave: `url` for a link; `filePath` for a local file path (e.g. an image the user dropped into Claude Code); `base64` (data URI or raw base64 + fileName) only if you actually have the image bytes. If the user attached an image in chat that you cannot access as a path/URL/bytes — or gave nothing — use `picker: true`: Froggi opens a file dialog on their machine and waits for them to choose (tell them to look for it). Then use the returned fileName: on a CustomImage element (elementId 2000) as payload {"image": {"name": fileName, "objectFit": "contain"}}, or as a scene background via configure_overlay_scene background {type:"Custom Image", customImage:{name: fileName, objectFit:"cover"}}.',
+			inputSchema: {
+				overlayId: z.string(),
+				url: z.string().url().optional(),
+				filePath: z.string().optional(),
+				base64: z.string().optional(),
+				picker: z.boolean().optional(),
+				fileName: z.string().max(80).optional().describe('Optional name to save as (extension is taken from the image)'),
+			},
+		},
+		async ({ overlayId, url, filePath, base64, picker, fileName }) => {
+			const sources = [url, filePath, base64, picker || undefined].filter((v) => v !== undefined);
+			if (sources.length !== 1) return error('Pass exactly one of url, filePath, base64, picker:true.');
+			const result = await mcpContext.overlayStore!.saveOverlayImage(overlayId, { url, filePath, base64, picker }, fileName);
+			if ('error' in result) return error(result.error);
+			if ('canceled' in result) return text('The user closed the file picker without choosing an image.');
+			return text({ ok: true, fileName: result.fileName });
+		},
+	);
+
+	server.registerTool(
+		'delete_overlay',
+		{
+			description: 'Move an overlay to Deleted Overlays (soft delete — restorable with restore_overlay or from the Deleted Overlays page in Froggi). ONLY call after the user explicitly confirmed in this conversation that this overlay (say its title) should be deleted. You can never permanently delete — only the user can, from the Deleted Overlays page.',
+			inputSchema: {
+				overlayId: z.string(),
+				userConfirmed: z.literal(true).describe('Set only after the user agreed to delete this overlay.'),
+			},
+		},
+		async ({ overlayId }) => {
+			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!overlay) return error(`No overlay with id "${overlayId}"`);
+			if (overlay.deletedAt) return text(`"${overlay.title}" is already in Deleted Overlays.`);
+			await mcpContext.overlayStore!.deleteOverlay(overlayId);
+			return text(`Moved "${overlay.title}" to Deleted Overlays. It can be restored with restore_overlay or from Froggi → Overlays → Deleted.`);
+		},
+	);
+
+	server.registerTool(
+		'restore_overlay',
+		{
+			description: 'Restore an overlay from Deleted Overlays (find ids with list_overlays includeDeleted:true).',
+			inputSchema: { overlayId: z.string() },
+		},
+		async ({ overlayId }) => {
+			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!overlay) return error(`No overlay with id "${overlayId}" — permanently deleted overlays cannot be restored.`);
+			if (!overlay.deletedAt) return text(`"${overlay.title}" is not deleted.`);
+			await mcpContext.overlayStore!.restoreOverlay(overlayId);
+			return text(`Restored "${overlay.title}".`);
+		},
+	);
+
+	server.registerTool(
 		'add_overlay_element',
 		{
 			description: 'Add a new element to a layer. Records undo history. Pass a partial payload (e.g. {"string": "Hello", "css": {"color": "#ff0000ff"}}) — anything you omit uses sensible defaults. Omit `position` to auto-place in the first free grid slot, or pass it to place at a specific grid coordinate/size (512x512 grid; e.g. top-right corner ≈ {x:412,y:10,w:90,h:90}).',
@@ -196,6 +328,10 @@ export function registerOverlayWriteTools(server: McpServer) {
 					type: z.enum(BACKGROUND_TYPES).optional().describe('None | Color | Image | Custom Image | In Game Stage Image | Post Game Stage Image'),
 					color: z.string().optional().describe('CSS color, used when type=Color'),
 					opacity: z.number().min(0).max(100).optional(),
+					customImage: z.object({
+						name: z.string().describe('File name returned by add_overlay_image'),
+						objectFit: z.enum(['cover', 'contain', 'fill', 'none']).optional(),
+					}).optional().describe('Used when type="Custom Image"'),
 				}).optional(),
 				animation: z.object({
 					in: animSettingsSchema.optional(),

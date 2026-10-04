@@ -113,6 +113,8 @@ export interface MessageEvents {
 	Overlays: (overlays: Record<string, Overlay> | undefined) => void;
 	OverlayCreate: (aspectRatio: AspectRatio) => void;
 	OverlayDelete: (overlayId: string) => void;
+	OverlayDeletePermanent: (overlayId: string) => void;
+	OverlayRestore: (overlayId: string) => void;
 	OverlayDownload: (overlayId: string) => void;
 	OverlayDuplicate: (overlayId: string) => void;
 	OverlayUpdate: (overlay: Overlay) => void;

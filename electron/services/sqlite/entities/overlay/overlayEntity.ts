@@ -19,6 +19,9 @@ export class OverlayEntity implements Overlay {
   @Column({ default: "0.0.0" })
   froggiVersion: string = "0.0.0";
 
+  @Column({ type: "varchar", nullable: true })
+  deletedAt: string | null = null;
+
   @Column({ default: "New Overlay" })
   title: string;
 

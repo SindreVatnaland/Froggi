@@ -28,6 +28,18 @@ export const overlayBasicsTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'overlay-deleted-restore',
+		title: 'Deleting and restoring overlays',
+		category: 'overlays',
+		summary: 'Deleting an overlay moves it to Overlays → Deleted, where it can be previewed, restored, or permanently deleted.',
+		blocks: [
+			{
+				type: 'paragraph',
+				text: 'Deleting an overlay does not remove it right away — it moves to the Deleted overlays page (Overlays → "Deleted (n)", shown once something is deleted) with the time it was deleted. Click it there to preview it, then Restore it or Delete permanently. Permanent delete removes the overlay and its uploaded images/fonts and cannot be undone. The AI assistant can move an overlay to Deleted (after you confirm) and restore it, but can never permanently delete one.',
+			},
+		],
+	},
+	{
 		id: 'overlay-one-click-vs-manual',
 		title: 'One-click templates vs. building from scratch',
 		category: 'overlays',

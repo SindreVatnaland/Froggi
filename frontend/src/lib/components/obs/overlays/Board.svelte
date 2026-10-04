@@ -15,6 +15,8 @@
 	export let preview: boolean = false;
 	export let designWidth: number | undefined = undefined;
 	export let designHeight: number | undefined = undefined;
+	/** Force a scene instead of following the live game state (preview links). */
+	export let sceneOverride: LiveStatsScene | undefined = undefined;
 
 	$: overlayId = curOverlay?.id;
 
@@ -38,7 +40,7 @@
 		if (!curOverlay?.[curStatsScene]) return;
 		updateFixedLayerItems(curOverlay[curStatsScene].layers, layerIds);
 	}
-	$: updateCurrentScene(curOverlay, $statsScene, layerIds);
+	$: updateCurrentScene(curOverlay, sceneOverride ?? $statsScene, layerIds);
 
 	let fixedLayers: Layer[] = [];
 	function updateFixedLayerItems(layers: Layer[], includedLayerIds: number[] | undefined) {

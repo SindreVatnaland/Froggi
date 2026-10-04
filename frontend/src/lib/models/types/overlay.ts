@@ -162,6 +162,8 @@ export interface Overlay {
 	aspectRatio: AspectRatio;
 	isDemo: boolean;
 	froggiVersion: string;
+	/** ISO time the overlay was moved to Deleted Overlays (soft delete); null/absent = live. */
+	deletedAt?: string | null;
 	description: string;
 	id: string;
 	title: string;

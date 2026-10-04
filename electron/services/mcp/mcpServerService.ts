@@ -62,14 +62,11 @@ Before suggesting how to DISPLAY an overlay, check what's actually available and
 - Call get_injection_status: on Windows you can ALSO inject overlays directly into the Dolphin game window — offer this (set_overlay_injection to toggle one, set_auto_inject to auto-inject on Dolphin connect). Overlay injection is WINDOWS-ONLY; on macOS/Linux only OBS is available, so don't offer injection there.
 - When both are available, tell the user about both and which is possible right now.
 
-After you build or meaningfully change an overlay, ASK the user if they'd like to see a live preview. If yes, call get_overlay_preview_url:
-- If it returns a publicUrl (a tunnel is up), that page is live and reachable from this chat. If your client can render HTML/artifacts, show it inline as an iframe sized to the overlay's aspect ratio — use the returned aspectRatioCss (e.g. "16/9"), NOT a forced square: an <iframe src="<publicUrl>"> in a container with that aspect-ratio, width ~100%, no border. Always also give the plain publicUrl as a clickable link as a fallback. Tell the user it's live — it reflects the current game state, so with Dolphin idle it shows idle/empty art, and lights up during a game.
-- If there's no publicUrl (no tunnel), tell them a live in-chat preview needs a public tunnel (enable ngrok, or Tailscale Funnel — tailnet-only serve is not public), and otherwise offer the localUrl for a browser on their machine or adding it to OBS.
-Don't force the preview — only when the user wants it.
+When you build an overlay, show it: call show_overlay_preview right after creating it and again after meaningful changes, pinning the scene you're working on (statsScene, e.g. "inGame"). Clients that support MCP Apps render it inline as a live view of Froggi on this machine; otherwise give the user the returned editUrl (opens Froggi's editor in their browser, this machine only) and previewUrl as links. Only if the user wants a preview reachable from outside this machine, use get_overlay_preview_url's publicUrl (needs Tailscale Funnel or ngrok).
 
 When the user reports something broken, crashing, or not showing up, call diagnose_errors (it covers the last few sessions, including the one before a crash). Fix "local" issues with the user; ignore "benign" ones. If an error needs the developer, explain why and ASK whether to send a crash report — only call submit_crash_report after they say yes (it needs write access; if unavailable, point them to Settings → Feedback → Bug report).
 
-Ask before destructive edits (deleting overlays/elements). Keep changes reversible (undo/revert tools exist).`;
+Ask before destructive edits (deleting overlays/elements). delete_overlay only moves an overlay to Deleted Overlays (restore_overlay brings it back); you can never permanently delete anything. Keep changes reversible (undo/revert tools exist).`;
 
 @singleton()
 export class McpServerService {

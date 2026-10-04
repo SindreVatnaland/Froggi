@@ -250,7 +250,7 @@
 	</Modal>
 
 	<ConfirmModal bind:open={deleteOverlayModalOpen} on:confirm={handleDelete}>
-		Delete Overlay?
+		Move overlay to Deleted? You can restore it from Overlays → Deleted.
 	</ConfirmModal>
 	<EmbedModal overlayId={overlay?.id} bind:open={isEmbedModalOpen} />
 </Modal>

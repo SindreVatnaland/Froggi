@@ -168,6 +168,81 @@ export class ElectronOverlayStore {
 	}
 
 	/**
+	 * Stores an image for an overlay under public/custom/<overlayId>/image/ and returns the file name
+	 * to reference (element `image.name`, or scene `background.customImage.name`). Exactly one source:
+	 * an http(s) URL, a local file path, base64 data, or `picker` (opens a file dialog in Froggi for
+	 * the user). Images only (png/jpg/jpeg/gif/webp/svg/avif), max 15MB. Used by MCP overlay-write tools.
+	 */
+	async saveOverlayImage(
+		overlayId: string,
+		source: { url?: string; filePath?: string; base64?: string; picker?: boolean },
+		fileName?: string,
+	): Promise<{ fileName: string } | { error: string } | { canceled: true }> {
+		if (!(await this.getOverlayById(overlayId))) return { error: `No overlay with id "${overlayId}"` };
+		const EXT_BY_CT: Record<string, string> = {
+			'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif', 'image/webp': '.webp',
+			'image/svg+xml': '.svg', 'image/avif': '.avif',
+		};
+		const ALLOWED = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'];
+		const MAX = 15 * 1024 * 1024;
+
+		let buf: Buffer;
+		let ext = '';
+		let baseName = fileName ?? '';
+		try {
+			if (source.url) {
+				const u = new URL(source.url);
+				if (u.protocol !== 'https:' && u.protocol !== 'http:') return { error: 'Image URL must be http(s)' };
+				const res = await fetch(u);
+				if (!res.ok) return { error: `Download failed: HTTP ${res.status}` };
+				const ct = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+				const urlExt = path.extname(u.pathname).toLowerCase();
+				ext = ALLOWED.includes(urlExt) ? urlExt : EXT_BY_CT[ct] ?? '';
+				buf = Buffer.from(await res.arrayBuffer());
+				baseName ||= path.basename(u.pathname, urlExt);
+			} else if (source.filePath || source.picker) {
+				let filePath = source.filePath;
+				if (!filePath) {
+					this.mainWindow.show();
+					this.mainWindow.focus();
+					const { canceled, filePaths } = await dialog.showOpenDialog(this.mainWindow, {
+						title: 'Choose an image for the overlay',
+						properties: ['openFile'],
+						filters: [{ name: 'Images', extensions: ALLOWED.map((e) => e.slice(1)) }],
+					});
+					if (canceled || !filePaths[0]) return { canceled: true };
+					filePath = filePaths[0];
+				}
+				ext = path.extname(filePath).toLowerCase();
+				if (fs.statSync(filePath).size > MAX) return { error: 'Image too large (>15MB)' };
+				buf = fs.readFileSync(filePath);
+				baseName ||= path.basename(filePath, ext);
+			} else if (source.base64) {
+				const m = /^data:([^;]+);base64,/.exec(source.base64);
+				ext = (m && EXT_BY_CT[m[1]]) || path.extname(fileName ?? '').toLowerCase();
+				buf = Buffer.from(source.base64.replace(/^data:[^,]*,/, ''), 'base64');
+			} else {
+				return { error: 'Provide one of url, filePath, base64 or picker' };
+			}
+		} catch (e) {
+			return { error: `Could not read image: ${(e as Error).message}` };
+		}
+		if (ext === '.jpeg') ext = '.jpg';
+		if (!ALLOWED.includes(ext)) return { error: 'Not a supported image (png/jpg/gif/webp/svg/avif) — check the extension or content type' };
+		if (!buf.length) return { error: 'Image is empty' };
+		if (buf.length > MAX) return { error: 'Image too large (>15MB)' };
+
+		const base = baseName.replace(/\.[^.]*$/, '').replace(/[^a-zA-Z0-9_-]/g, '') || 'image';
+		const saveDir = path.join(this.appDir, 'public', 'custom', overlayId, 'image');
+		fs.mkdirSync(saveDir, { recursive: true });
+		let finalName = `${base}${ext}`;
+		if (fs.existsSync(path.join(saveDir, finalName))) finalName = `${base}-${newId()}${ext}`;
+		fs.writeFileSync(path.join(saveDir, finalName), buf);
+		this.log.info('Saved overlay image', overlayId, finalName, `${buf.length}b`);
+		return { fileName: finalName };
+	}
+
+	/**
 	 * Patches a scene's config (active/fallback/font/background/scene-switch animation), leaving
 	 * layers/items untouched. font/background/animation are deep-merged so a partial patch keeps the
 	 * rest of the structure. Used by MCP overlay-write tools.
@@ -271,7 +346,7 @@ export class ElectronOverlayStore {
 		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay)) return;
 
-		const newOverlay = { ...overlay, id: newId(), title: `${overlay.title} - copy`, isDemo: false }
+		const newOverlay = { ...overlay, id: newId(), title: `${overlay.title} - copy`, isDemo: false, deletedAt: null }
 		Object.keys(LiveStatsScene)
 			.filter(key => isNaN(Number(key)))
 			.forEach(key => {
@@ -297,9 +372,30 @@ export class ElectronOverlayStore {
 		await this.setOverlay(overlay)
 	}
 
-	async deleteOverlay(overlayId: string): Promise<void> {
+	/** Soft delete: moves the overlay to Deleted Overlays (restorable). Files are kept. */
+	async deleteOverlay(overlayId: string): Promise<boolean> {
+		return this.setDeletedAt(overlayId, new Date().toISOString());
+	}
+
+	async restoreOverlay(overlayId: string): Promise<boolean> {
+		return this.setDeletedAt(overlayId, null);
+	}
+
+	private async setDeletedAt(overlayId: string, deletedAt: string | null): Promise<boolean> {
+		const overlay = await this.getOverlayById(overlayId);
+		if (!overlay) return false;
+		this.log.info(deletedAt ? 'Moving overlay to deleted:' : 'Restoring overlay:', overlayId);
+		await this.sqliteOverlay.addOrUpdateOverlay({ ...overlay, deletedAt });
+		await this.emitOverlayUpdate();
+		return true;
+	}
+
+	/** Permanent delete — UI only (Deleted Overlays page), and only for already soft-deleted overlays. Never exposed to the MCP. */
+	async deleteOverlayPermanently(overlayId: string): Promise<void> {
+		const overlay = await this.getOverlayById(overlayId);
+		if (!overlay?.deletedAt) return;
 		await this.deleteOverlaySilent(overlayId);
-		setTimeout(this.emitOverlayUpdate.bind(this))
+		await this.emitOverlayUpdate();
 	}
 
 	/** Delete an overlay WITHOUT broadcasting. Use in bulk loops, then emit once at the end. */
@@ -487,7 +583,7 @@ export class ElectronOverlayStore {
 			...layers.slice(layerIndex),
 		];
 
-		this.setScene(overlayId, statsScene, overlay[statsScene])
+		return this.setScene(overlayId, statsScene, overlay[statsScene])
 	}
 
 	setCurrentOverlayEditor(overlayEditor: OverlayEditor) {
@@ -524,6 +620,25 @@ export class ElectronOverlayStore {
 		];
 
 		this.setScene(overlayId, statsScene, scene)
+	}
+
+	/** Move a layer from one index to another (others shift). Returns the saved scene. */
+	async moveLayerTo(overlayId: string, statsScene: LiveStatsScene, fromIndex: number, toIndex: number): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const scene = overlay?.[statsScene];
+		if (!scene || !scene.layers[fromIndex]) return;
+		const [layer] = scene.layers.splice(fromIndex, 1);
+		scene.layers.splice(Math.min(toIndex, scene.layers.length), 0, layer);
+		return this.setScene(overlayId, statsScene, scene);
+	}
+
+	/** Update overlay-level settings (title / description / aspect ratio). */
+	async updateOverlaySettings(overlayId: string, settings: { title?: string; description?: string; aspectRatio?: AspectRatio }): Promise<Overlay | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		if (!overlay) return;
+		const updated = { ...overlay, ...Object.fromEntries(Object.entries(settings).filter(([, v]) => v !== undefined)) } as Overlay;
+		await this.setOverlay(updated);
+		return updated;
 	}
 
 	/** Insert `count` empty layers at `atIndex` (default: end = furthest back). Returns the saved scene. */
@@ -594,6 +709,10 @@ export class ElectronOverlayStore {
 
 		this.clientEmitter.on('OverlayDelete', this.deleteOverlay.bind(this));
 
+		this.clientEmitter.on('OverlayRestore', this.restoreOverlay.bind(this));
+
+		this.clientEmitter.on('OverlayDeletePermanent', this.deleteOverlayPermanently.bind(this));
+
 		this.clientEmitter.on('OverlayCreate', this.createOverlay.bind(this));
 
 		this.clientEmitter.on('SceneItemDuplicate', this.copySceneLayerItem.bind(this))
@@ -642,6 +761,7 @@ export class ElectronOverlayStore {
 				if (semver.valid(overlay.froggiVersion) && semver.gt("0.9.20-beta.1", overlay.froggiVersion)) this.reverseLayers(overlay);
 				fillOverlayDefaults(overlay);
 				overlay.id = newId()
+				overlay.deletedAt = null
 
 				const customFileDir = path.join(this.appDir, "public", "custom", overlay.id)
 				if (customFiles) saveCustomFiles(customFileDir, customFiles)
