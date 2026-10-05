@@ -23,6 +23,7 @@
 	import { tooltip } from 'svooltip';
 	import { ConnectionState } from '$lib/models/enum';
 	import { tick } from 'svelte';
+	import { MODAL_CLOSE_MS } from '$lib/models/const';
 
 	export let open = false;
 	export let overlay: Overlay | undefined;
@@ -73,9 +74,13 @@
 		if (overlay?.id) $electronEmitter.emit('InjectOverlay', overlay.id);
 	};
 
+	// Close the modals first and send the delete once their close animation (200ms) is done: if the
+	// overlay data changes while the modal is closing, Svelte 3 never finishes the outro and the
+	// invisible full-screen modal layer keeps blocking every click (app looked frozen).
 	const handleDelete = () => {
-		deleteOverlay(overlay?.id);
+		const id = overlay?.id;
 		open = false;
+		setTimeout(() => deleteOverlay(id), MODAL_CLOSE_MS);
 	};
 
 	const startEditName = async () => {

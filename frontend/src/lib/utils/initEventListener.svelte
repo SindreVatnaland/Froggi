@@ -30,6 +30,7 @@
 		controller,
 		froggiSettings,
 		injectedOverlays,
+		previewTestAnimation,
 		autoInjectOverlays,
 		remoteAccess,
 		tailscaleStatus,
@@ -276,6 +277,12 @@
 					const value = payload[0] as Parameters<MessageEvents['SceneSwitchCommands']>[0];
 					if (!value) return;
 					sceneSwitch.set(value);
+				})();
+				break;
+			case 'PreviewTestAnimation':
+				(() => {
+					const [overlayId, itemId] = payload as Parameters<MessageEvents['PreviewTestAnimation']>;
+					previewTestAnimation.set({ overlayId, itemId, n: Date.now() });
 				})();
 				break;
 			case 'Overlays':

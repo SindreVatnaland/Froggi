@@ -102,6 +102,9 @@
 	export const statsScene = writable<LiveStatsScene>(LiveStatsScene.WaitingForDolphin);
 
 	export const injectedOverlays = writable<string[]>([]);
+	/** Latest "replay animations" request for preview renders (MCP test_overlay_animation / preview
+	 *  button). A store, not emitter listeners — one listener per previewed element blew past the limit. */
+	export const previewTestAnimation = writable<{ overlayId?: string; itemId?: string; n: number } | null>(null);
 
 	export const obs = writable<Obs>();
 	export const obsPreviewFrame = writable<string>('');

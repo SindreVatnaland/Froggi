@@ -2,7 +2,7 @@
 	import SecondaryOverlay from '$lib/components/obs/overlays/SecondaryOverlay.svelte';
 	import { page } from '$app/stores';
 	import { LiveStatsScene } from '$lib/models/enum';
-	import { localEmitter } from '$lib/utils/store.svelte';
+	import { previewTestAnimation } from '$lib/utils/store.svelte';
 	import { HUD_REFERENCES } from '$lib/content/hudReferences';
 
 	// ?scene=inGame pins a scene (MCP preview links), otherwise it follows the live game state.
@@ -13,7 +13,7 @@
 	// ?bg=<HUD reference id> draws that game screenshot behind the overlay (centered cover = center crop).
 	$: bgRef = HUD_REFERENCES.find((r) => r.id === $page.url.searchParams.get('bg'));
 
-	const testAnimations = () => $localEmitter.emit('PreviewTestAnimation', $page.params.overlay);
+	const testAnimations = () => previewTestAnimation.set({ overlayId: $page.params.overlay, n: Date.now() });
 </script>
 
 {#if bgRef}

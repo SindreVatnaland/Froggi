@@ -2,6 +2,7 @@
 	import type { GridContentItem } from '$lib/models/types/overlay';
 	import {
 		localEmitter,
+		previewTestAnimation,
 		gameFrame,
 		gameState,
 		gameSettings,
@@ -148,19 +149,20 @@
 			$localEmitter.on('TestVisibilityTrigger', toggleVisibility);
 			return () => $localEmitter.off('TestVisibilityTrigger', toggleVisibility);
 		}
-		if (!preview) return;
-		// Preview test: hide then show again so both the out and the in animation play.
-		const previewHandler = (targetOverlayId?: string, itemId?: string) => {
-			if (targetOverlayId && overlayId && targetOverlayId !== overlayId) return;
-			if (itemId && itemId !== dataItem?.id) return;
-			const out = dataItem?.data?.visibility?.out?.options;
-			if (!visible || dataItem?.data?.visibility?.out?.type === 'none') return;
-			visible = false;
-			setTimeout(() => (visible = true), (Number(out?.delay) || 0) + (Number(out?.duration) || 0) + 300);
-		};
-		$localEmitter.on('PreviewTestAnimation', previewHandler);
-		return () => $localEmitter.off('PreviewTestAnimation', previewHandler);
 	});
+
+	// Preview test (see previewTestAnimation in store.svelte): hide then show so out + in both play.
+	let lastTest = $previewTestAnimation?.n ?? 0;
+	$: if (preview && $previewTestAnimation && $previewTestAnimation.n !== lastTest) {
+		const req = $previewTestAnimation;
+		lastTest = req.n;
+		const matches = (!req.overlayId || !overlayId || req.overlayId === overlayId) && (!req.itemId || req.itemId === dataItem?.id);
+		const out = dataItem?.data?.visibility?.out;
+		if (matches && visible && out?.type !== 'none') {
+			visible = false;
+			setTimeout(() => (visible = true), (Number(out?.options?.delay) || 0) + (Number(out?.options?.duration) || 0) + 300);
+		}
+	}
 </script>
 
 {#if edit}

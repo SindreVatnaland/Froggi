@@ -2,6 +2,7 @@
 	import type { GridContentItem } from '$lib/models/types/overlay';
 	import {
 		localEmitter,
+		previewTestAnimation,
 		gameFrame,
 		gameSettings,
 		currentPlayer,
@@ -158,15 +159,16 @@
 			$localEmitter.on('TestAnimationTrigger', replay);
 			return () => $localEmitter.off('TestAnimationTrigger', replay);
 		}
-		if (!preview) return;
-		const previewHandler = (targetOverlayId?: string, itemId?: string) => {
-			if (targetOverlayId && overlayId && targetOverlayId !== overlayId) return;
-			if (itemId && itemId !== dataItem?.id) return;
-			replay();
-		};
-		$localEmitter.on('PreviewTestAnimation', previewHandler);
-		return () => $localEmitter.off('PreviewTestAnimation', previewHandler);
 	});
+
+	// Preview renders replay on request (see previewTestAnimation in store.svelte).
+	let lastTest = $previewTestAnimation?.n ?? 0;
+	$: if (preview && $previewTestAnimation && $previewTestAnimation.n !== lastTest) {
+		const req = $previewTestAnimation;
+		lastTest = req.n;
+		const matches = (!req.overlayId || !overlayId || req.overlayId === overlayId) && (!req.itemId || req.itemId === dataItem?.id);
+		if (matches) replay();
+	}
 </script>
 
 {#if edit}

@@ -4,6 +4,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import OverlayPreviewScaled from '$lib/components/obs/overlays/preview/OverlayPreviewScaled.svelte';
 	import type { Overlay } from '$lib/models/types/overlay';
+	import { MODAL_CLOSE_MS } from '$lib/models/const';
 
 	// Restored overlays stay mounted but hidden — see the overlays list page for why.
 	$: all = Object.values($overlays ?? {}).sort((a, b) => (b.deletedAt ?? '').localeCompare(a.deletedAt ?? ''));
@@ -14,16 +15,19 @@
 
 	const formatDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString() : '');
 
+	// Close the modal first, change the data after its close animation — see OverlayPreviewModal.
 	const restore = () => {
 		if (!selected) return;
-		$electronEmitter.emit('OverlayRestore', selected.id);
+		const id = selected.id;
 		selected = undefined;
+		setTimeout(() => $electronEmitter.emit('OverlayRestore', id), MODAL_CLOSE_MS);
 	};
 
 	const deletePermanently = () => {
 		if (!selected) return;
-		$electronEmitter.emit('OverlayDeletePermanent', selected.id);
+		const id = selected.id;
 		selected = undefined;
+		setTimeout(() => $electronEmitter.emit('OverlayDeletePermanent', id), MODAL_CLOSE_MS);
 	};
 </script>
 

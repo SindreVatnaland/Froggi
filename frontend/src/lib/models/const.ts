@@ -10,6 +10,9 @@ export const MCP_SERVER_PORT = 3300;
 // MCP servers on the same port. Legacy "/mcp" is still served as an alias.
 export const MCP_SERVER_PATH = '/froggi/mcp';
 
+/** Wait this long after closing a Modal before changing data it displays (its fade is 200ms). */
+export const MODAL_CLOSE_MS = 400;
+
 export const SCENE_TRANSITION_DELAY = 1000
 export const ELEMENT_TRANSITION_LIMIT = 5000
 
