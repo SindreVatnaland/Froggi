@@ -14,10 +14,13 @@
 		((e.currentTarget as HTMLImageElement).style.display = 'none');
 
 	const RPS_LABELS: Record<string, string> = {
-		rock: 'Rock',
-		paper: 'Paper',
-		scissors: 'Scissors',
+		rock: '✊ Rock',
+		paper: '✋ Paper',
+		scissors: '✌️ Scissors',
 	};
+	// Never reveal a pick on stream before both players have chosen (the opponent could see it).
+	const rpsText = (choice: string | null | undefined) =>
+		!choice ? '' : (strikeState?.rps?.p1 && strikeState?.rps?.p2) || strikeState?.phase !== 'rps' ? RPS_LABELS[choice] : '✓ Ready';
 
 	$: id = dataItem.elementId;
 
@@ -116,14 +119,14 @@
 {:else if id === CustomElement.StrikeRpsPlayer1Choice}
 	<div class="strike-text" style={style.cssValue}>
 		<span class={style.classValue}>
-			{defaultPreview ? 'Rock' : (p1Rps ? RPS_LABELS[p1Rps] : '')}
+			{defaultPreview ? RPS_LABELS.rock : rpsText(p1Rps)}
 		</span>
 	</div>
 
 {:else if id === CustomElement.StrikeRpsPlayer2Choice}
 	<div class="strike-text" style={style.cssValue}>
 		<span class={style.classValue}>
-			{defaultPreview ? 'Paper' : (p2Rps ? RPS_LABELS[p2Rps] : '')}
+			{defaultPreview ? RPS_LABELS.paper : rpsText(p2Rps)}
 		</span>
 	</div>
 

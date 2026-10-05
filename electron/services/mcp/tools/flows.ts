@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
 import type { Flow } from '../../../../frontend/src/lib/models/types/flow';
+import { DEMO_FLOWS } from '../../../../frontend/src/lib/content/demoFlows';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const error = (message: string) => ({ content: [{ type: 'text' as const, text: message }], isError: true });
@@ -9,8 +10,10 @@ const error = (message: string) => ({ content: [{ type: 'text' as const, text: m
 const SCHEMA = `Flow = { id, name, enabled, format: "any"|"singles"|"doubles", nodes, edges }.
 nodes: { id, kind: "trigger"|"condition"|"action", position: {x,y}, data }. edges: { id, source, target } — trigger → conditions → actions (an action runs when every condition on its path holds; actions may chain).
 Triggers (data.type): sceneChange {scene?}; controllerCombo {buttons: {isLPressed, isRPressed, isAPressed, isBPressed, isXPressed, isYPressed, isZPressed, isStartPressed, isDPadUp/Down/Left/RightPressed: true}}; gameStart; gameEnd; damageTaken {player?: any|p1|p2|current, minDamage?}; stockLost {player?}; rankChange; strikeChange {action?: any|pickCharacter|rps|chooseStrikeOrder|strike|ban|pick|answerAgreement|play|done}.
-Conditions: gameMode {modes: [local|direct|unranked|ranked]}; scene {scene}; playerStocks / playerPercent {player: p1|p2|current, compare: "<="|">="|"==", value}; strikePhase {phase}.
-Actions: httpPost {url, bearerToken?, body: "trigger"|"gameState"|<webhook event name e.g. "StrikeState">} (POSTs {flow, trigger, timestamp, payload}; payload shapes = get_webhook_reference); obsScene {sceneName}; obsToggleSource {sourceName}; obsVolume {inputName, volume 0-1}; obsSaveReplay.
+Conditions — Game state: gameMode {modes: [local|direct|unranked|ranked]}; playerStocks / playerPercent {player: p1|p2|current, compare: "<="|">="|"==", value}. Froggi: scene {scene}; strikePhase {phase}. OBS: obsScene {sceneName}; obsReplayBuffer {active}.
+Actions: httpPost {url, bearerToken?, body: "trigger"|"gameState"|"custom"|<webhook event name e.g. "StrikeState">, template?} — default POSTs {flow, trigger, timestamp, tokens, payload} (payload shapes = get_webhook_reference); body "custom" POSTs template with {{key}} filled from the trigger's keys (text keys inside quotes: {"who":"{{playerName}}","pct":{{percent}}}). OBS: obsScene {sceneName}; obsToggleSource {sourceName}; obsVolume {inputName, volume 0-1}; obsSaveReplay.
+Trigger keys: sceneChange scene · controllerCombo buttons · gameStart stage, mode · gameEnd stage, method, score · damageTaken player, playerName, isCurrentPlayer, damage, percent (new percent) · stockLost player, playerName, isCurrentPlayer, stocksLeft · rankChange playerName, rank, rating, ratingChange · strikeChange action, playerName, phase.
+Controller combos must be held 0.5s; then 1s cooldown.
 Scenes: waitingForDolphin, menu, inGame, postGame, postSet, rankChange, strikePhase.`;
 
 export function registerFlowReadTools(server: McpServer) {
@@ -20,7 +23,12 @@ export function registerFlowReadTools(server: McpServer) {
 			description: 'Automation flows (Froggi → OBS → Flows): WHEN a game event happens AND conditions hold THEN POST somewhere or control OBS — like Homey flows. Lists every flow with its trigger and actions. ' + SCHEMA,
 			inputSchema: {},
 		},
-		async () => text(mcpContext.flowService!.getFlows()),
+		async () =>
+			text({
+				flows: mcpContext.flowService!.getFlows(),
+				// Ready-made examples (Flows page → Demo flows → Use). To start from one, save_flow it with a new id, your URL/scene names.
+				demoFlows: DEMO_FLOWS,
+			}),
 	);
 	server.registerTool(
 		'get_flow',

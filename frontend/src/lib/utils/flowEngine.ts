@@ -1,4 +1,4 @@
-import type { Flow, FlowAction, FlowCompare, FlowCondition, FlowContext, FlowEvent, FlowPlayer, FlowTrigger } from '../models/types/flow';
+import type { Flow, FlowAction, FlowCompare, FlowCondition, FlowContext, FlowEvent, FlowPlayer, FlowTokens, FlowTrigger } from '../models/types/flow';
 
 const playerMatches = (wanted: FlowPlayer | undefined, player: 1 | 2, isCurrentPlayer: boolean) =>
 	!wanted || wanted === 'any' || (wanted === 'current' ? isCurrentPlayer : wanted === `p${player}`);
@@ -49,6 +49,10 @@ export function conditionPasses(condition: FlowCondition, ctx: FlowContext): boo
 		}
 		case 'strikePhase':
 			return ctx.strikePhase === condition.phase;
+		case 'obsScene':
+			return !!ctx.obsScene && ctx.obsScene === condition.sceneName;
+		case 'obsReplayBuffer':
+			return !!ctx.replayBufferActive === condition.active;
 	}
 }
 
@@ -100,6 +104,52 @@ export function validateFlow(flow: Flow): string[] {
 	}
 	for (const n of flow.nodes) {
 		if (n.kind === 'action' && n.data.type === 'httpPost' && !/^https?:\/\//.test(n.data.url ?? '')) problems.push('HTTP POST needs a http(s) URL');
+		if (n.kind === 'action' && n.data.type === 'httpPost' && n.data.body === 'custom') {
+			// Every key filled with a number must give valid JSON (string keys belong inside quotes).
+			const sample = fillTemplate(n.data.template ?? '', new Proxy({}, { get: () => 0 }) as FlowTokens);
+			try {
+				JSON.parse(sample);
+			} catch {
+				problems.push('Custom body is not valid JSON (put text keys in quotes: "{{playerName}}")');
+			}
+		}
 	}
 	return problems;
+}
+
+/** Keys each trigger provides to its actions (shown in the editor, documented for the AI). */
+export const TRIGGER_TOKENS: Record<FlowTrigger['type'], string[]> = {
+	sceneChange: ['scene'],
+	controllerCombo: ['buttons'],
+	gameStart: ['stage', 'mode'],
+	gameEnd: ['stage', 'method', 'score'],
+	damageTaken: ['player', 'playerName', 'isCurrentPlayer', 'damage', 'percent'],
+	stockLost: ['player', 'playerName', 'isCurrentPlayer', 'stocksLeft'],
+	rankChange: ['playerName', 'rank', 'rating', 'ratingChange'],
+	strikeChange: ['action', 'playerName', 'phase'],
+};
+
+/** Fill {{key}} placeholders. Strings are inserted as-is (put quotes in the template for JSON strings). */
+export function fillTemplate(template: string, tokens: FlowTokens = {}): string {
+	return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => {
+		const value = tokens[key];
+		return value === undefined || value === null ? 'null' : String(value);
+	});
+}
+
+/** A flow made safe to share: secrets (bearer tokens) removed. */
+export function flowForSharing(flow: Flow): Flow {
+	return {
+		...flow,
+		updatedAt: undefined,
+		nodes: flow.nodes.map((n) =>
+			n.kind === 'action' && n.data.type === 'httpPost' ? { ...n, data: { ...n.data, bearerToken: undefined } } : n,
+		),
+	};
+}
+
+/** An imported/copied flow: fresh id when it would clash, and disabled until the user turns it on
+ *  (it may POST your game data somewhere — check it first). */
+export function flowForImport(flow: Flow, existingIds: string[], newId: () => string): Flow {
+	return { ...flow, id: existingIds.includes(flow.id) ? newId() : flow.id, enabled: false, updatedAt: undefined };
 }

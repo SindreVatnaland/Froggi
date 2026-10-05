@@ -3,31 +3,33 @@ import type { FlowAction, FlowCondition, FlowNode, FlowTrigger } from '$lib/mode
 import { WebhookEvent } from '$lib/models/types/webhook';
 
 /** Labels + defaults for the flow editor (the AI assistant gets the same schema from the MCP tools). */
-export const TRIGGERS: { type: FlowTrigger['type']; label: string; make: () => FlowTrigger }[] = [
-	{ type: 'sceneChange', label: 'Scene changes', make: () => ({ type: 'sceneChange', scene: LiveStatsScene.InGame }) },
-	{ type: 'controllerCombo', label: 'Controller button combo', make: () => ({ type: 'controllerCombo', buttons: { isLPressed: true, isRPressed: true } }) },
-	{ type: 'gameStart', label: 'Game starts', make: () => ({ type: 'gameStart' }) },
-	{ type: 'gameEnd', label: 'Game ends', make: () => ({ type: 'gameEnd' }) },
-	{ type: 'damageTaken', label: 'A player takes damage', make: () => ({ type: 'damageTaken', player: 'any', minDamage: 0 }) },
-	{ type: 'stockLost', label: 'A player loses a stock', make: () => ({ type: 'stockLost', player: 'any' }) },
-	{ type: 'rankChange', label: 'Rank changes', make: () => ({ type: 'rankChange' }) },
-	{ type: 'strikeChange', label: 'Stage striking changes', make: () => ({ type: 'strikeChange', action: 'any' }) },
+export const TRIGGERS: { type: FlowTrigger['type']; group: string; label: string; make: () => FlowTrigger }[] = [
+	{ type: 'sceneChange', group: 'Froggi', label: 'Scene changes', make: () => ({ type: 'sceneChange', scene: LiveStatsScene.InGame }) },
+	{ type: 'controllerCombo', group: 'Controller', label: 'Controller button combo', make: () => ({ type: 'controllerCombo', buttons: { isLPressed: true, isRPressed: true } }) },
+	{ type: 'gameStart', group: 'Game', label: 'Game starts', make: () => ({ type: 'gameStart' }) },
+	{ type: 'gameEnd', group: 'Game', label: 'Game ends', make: () => ({ type: 'gameEnd' }) },
+	{ type: 'damageTaken', group: 'Game', label: 'A player takes damage', make: () => ({ type: 'damageTaken', player: 'any', minDamage: 0 }) },
+	{ type: 'stockLost', group: 'Game', label: 'A player loses a stock', make: () => ({ type: 'stockLost', player: 'any' }) },
+	{ type: 'rankChange', group: 'Game', label: 'Rank changes', make: () => ({ type: 'rankChange' }) },
+	{ type: 'strikeChange', group: 'Froggi', label: 'Stage striking changes', make: () => ({ type: 'strikeChange', action: 'any' }) },
 ];
 
-export const CONDITIONS: { type: FlowCondition['type']; label: string; make: () => FlowCondition }[] = [
-	{ type: 'gameMode', label: 'Game mode is', make: () => ({ type: 'gameMode', modes: ['local'] }) },
-	{ type: 'scene', label: 'Scene is', make: () => ({ type: 'scene', scene: LiveStatsScene.InGame }) },
-	{ type: 'playerStocks', label: 'Player stocks', make: () => ({ type: 'playerStocks', player: 'current', compare: '<=', value: 1 }) },
-	{ type: 'playerPercent', label: 'Player percent', make: () => ({ type: 'playerPercent', player: 'current', compare: '>=', value: 100 }) },
-	{ type: 'strikePhase', label: 'Stage striking phase is', make: () => ({ type: 'strikePhase', phase: 'stageBan' }) },
+export const CONDITIONS: { type: FlowCondition['type']; group: string; label: string; make: () => FlowCondition }[] = [
+	{ type: 'gameMode', group: 'Game state', label: 'Game mode is', make: () => ({ type: 'gameMode', modes: ['local'] }) },
+	{ type: 'scene', group: 'Froggi', label: 'Scene is', make: () => ({ type: 'scene', scene: LiveStatsScene.InGame }) },
+	{ type: 'playerStocks', group: 'Game state', label: 'Player stocks', make: () => ({ type: 'playerStocks', player: 'current', compare: '<=', value: 1 }) },
+	{ type: 'playerPercent', group: 'Game state', label: 'Player percent', make: () => ({ type: 'playerPercent', player: 'current', compare: '>=', value: 100 }) },
+	{ type: 'strikePhase', group: 'Froggi', label: 'Stage striking phase is', make: () => ({ type: 'strikePhase', phase: 'stageBan' }) },
+	{ type: 'obsScene', group: 'OBS', label: 'OBS scene is', make: () => ({ type: 'obsScene', sceneName: '' }) },
+	{ type: 'obsReplayBuffer', group: 'OBS', label: 'OBS replay buffer is', make: () => ({ type: 'obsReplayBuffer', active: true }) },
 ];
 
-export const ACTIONS: { type: FlowAction['type']; label: string; make: () => FlowAction }[] = [
-	{ type: 'httpPost', label: 'Send HTTP POST', make: () => ({ type: 'httpPost', url: 'https://', body: 'trigger' }) },
-	{ type: 'obsScene', label: 'OBS: switch scene', make: () => ({ type: 'obsScene', sceneName: '' }) },
-	{ type: 'obsToggleSource', label: 'OBS: show/hide source', make: () => ({ type: 'obsToggleSource', sourceName: '' }) },
-	{ type: 'obsVolume', label: 'OBS: set volume', make: () => ({ type: 'obsVolume', inputName: '', volume: 1 }) },
-	{ type: 'obsSaveReplay', label: 'OBS: save replay', make: () => ({ type: 'obsSaveReplay' }) },
+export const ACTIONS: { type: FlowAction['type']; group: string; label: string; make: () => FlowAction }[] = [
+	{ type: 'httpPost', group: 'Send', label: 'Send HTTP POST', make: () => ({ type: 'httpPost', url: 'https://', body: 'trigger' }) },
+	{ type: 'obsScene', group: 'OBS', label: 'OBS: switch scene', make: () => ({ type: 'obsScene', sceneName: '' }) },
+	{ type: 'obsToggleSource', group: 'OBS', label: 'OBS: show/hide source', make: () => ({ type: 'obsToggleSource', sourceName: '' }) },
+	{ type: 'obsVolume', group: 'OBS', label: 'OBS: set volume', make: () => ({ type: 'obsVolume', inputName: '', volume: 1 }) },
+	{ type: 'obsSaveReplay', group: 'OBS', label: 'OBS: save replay', make: () => ({ type: 'obsSaveReplay' }) },
 ];
 
 export const SCENES = Object.values(LiveStatsScene);
@@ -41,6 +43,7 @@ export const BUTTONS: { key: string; label: string }[] = [
 export const POST_BODIES: { value: string; label: string }[] = [
 	{ value: 'trigger', label: 'The event that started the flow' },
 	{ value: 'gameState', label: 'Game state snapshot' },
+	{ value: 'custom', label: 'Custom JSON (use the trigger keys)' },
 	...Object.values(WebhookEvent).map((e) => ({ value: e, label: `Latest ${e} payload` })),
 ];
 
@@ -64,11 +67,23 @@ export function describe(node: FlowNode): string {
 		case 'playerStocks': return `${who(d.player as string)} stocks ${d.compare} ${d.value}`;
 		case 'playerPercent': return `${who(d.player as string)} percent ${d.compare} ${d.value}`;
 		case 'strikePhase': return `Striking phase is ${d.phase}`;
+		case 'obsScene': return node.kind === 'condition' ? `OBS scene is "${d.sceneName || '…'}"` : `Switch to "${d.sceneName || '…'}"`;
+		case 'obsReplayBuffer': return `Replay buffer is ${d.active ? 'on' : 'off'}`;
 		case 'httpPost': return `POST ${(d.url as string)?.replace(/^https?:\/\//, '') || '…'}`;
-		case 'obsScene': return `Switch to "${d.sceneName || '…'}"`;
 		case 'obsToggleSource': return `Toggle "${d.sourceName || '…'}"`;
 		case 'obsVolume': return `Volume "${d.inputName || '…'}" → ${Math.round((d.volume as number) * 100)}%`;
 		case 'obsSaveReplay': return 'Save replay buffer';
 	}
 	return '';
+}
+
+/** Options grouped for <optgroup>s, in the order the groups first appear. */
+export function grouped<T extends { group: string }>(items: T[]): { group: string; items: T[] }[] {
+	const out: { group: string; items: T[] }[] = [];
+	for (const item of items) {
+		const g = out.find((x) => x.group === item.group);
+		if (g) g.items.push(item);
+		else out.push({ group: item.group, items: [item] });
+	}
+	return out;
 }

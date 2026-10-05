@@ -5,6 +5,7 @@
 	import ObsScenes from '$lib/components/dashboard/ObsCommands/ObsScenes.svelte';
 	import { onMount } from 'svelte';
 	import StreamPreview from '$lib/components/dashboard/StreamPreview.svelte';
+	import StrikePreview from '$lib/components/dashboard/StrikePreview.svelte';
 	import ScoreUpdateModal from '$lib/components/dashboard/Modals/ScoreUpdateModal.svelte';
 	import TagUpdateModal from '$lib/components/dashboard/Modals/TagUpdateModal.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -412,6 +413,11 @@
 	</div>
 </div>
 {/if}
+
+<!-- ── Stage striking (live, with host overrides) ── -->
+<div class="mb-3">
+	<StrikePreview />
+</div>
 
 <!-- ── Stream preview ── -->
 <div class="mb-3">

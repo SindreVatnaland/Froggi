@@ -17,8 +17,7 @@ import {
 	normalizeImage,
 	readFroggiZip,
 	readJsonEntry,
-	safeName,
-} from '../utils/froggiFile';
+	safeName, wrongKindMessage } from '../utils/froggiFile';
 
 type PackManifest = Omit<AssetPack, 'builtIn' | 'builtinFile'>;
 export type SlotSource = { filePath?: string; picker?: boolean; base64?: string; url?: string };
@@ -320,7 +319,7 @@ export class AssetPackService {
 		if (canceled || !filePaths[0]) return;
 		try {
 			const { manifest, files } = readFroggiZip(fs.readFileSync(filePaths[0]));
-			if (manifest.kind !== 'asset-pack') return this.notify('That is an overlay file — import it on the Overlays page.', NotificationType.Warning);
+			if (manifest.kind !== 'asset-pack') return this.notify(wrongKindMessage(manifest.kind), NotificationType.Warning);
 			const map = this.importPacksFromZip(files);
 			this.notify(`Imported ${Object.keys(map).length} asset pack(s)`, NotificationType.Success);
 		} catch (e) {

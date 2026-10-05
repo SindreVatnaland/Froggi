@@ -163,6 +163,9 @@
 
 <div class="player-root">
 
+	{#if s?.paused && phase !== 'lobby'}
+	<div class="paused-bar">Paused by the TO — wait a moment</div>
+	{/if}
 	<!-- Always-visible score bar -->
 	{#if s && phase !== 'lobby'}
 	<div class="top-bar">
@@ -767,4 +770,5 @@
 		background: none;
 		color: inherit;
 	}
+	.paused-bar { background: #f59e0b; color: #000; text-align: center; font-size: 0.8rem; font-weight: 700; padding: 0.4rem; }
 </style>

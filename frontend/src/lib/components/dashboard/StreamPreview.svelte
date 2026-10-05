@@ -24,7 +24,7 @@
 	$: draft = typeof location === 'undefined' ? undefined : streamEmbedUrl(input, location.hostname);
 </script>
 
-<div class="dash-card border-secondary">
+<div class="dash-card border-secondary stream-card">
 	<div class="flex items-center justify-between mb-2">
 		<p class="dash-label">Stream preview</p>
 		{#if saved && !editing}
@@ -56,6 +56,8 @@
 </div>
 
 <style>
+	.stream-card { padding: 1rem 1.25rem; border-radius: 0.25rem; }
+	.dash-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.4; }
 	.stream-input {
 		flex: 1;
 		height: 2rem;

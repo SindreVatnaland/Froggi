@@ -1,6 +1,7 @@
-import { actionsToRun, conditionPasses, triggerMatches, validateFlow } from '../../frontend/src/lib/utils/flowEngine';
+import { actionsToRun, conditionPasses, fillTemplate, flowForImport, flowForSharing, triggerMatches, validateFlow } from '../../frontend/src/lib/utils/flowEngine';
 import type { Flow, FlowContext } from '../../frontend/src/lib/models/types/flow';
 import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
+import { DEMO_FLOWS } from '../../frontend/src/lib/content/demoFlows';
 
 const ctx = (over: Partial<FlowContext> = {}): FlowContext => ({
 	scene: LiveStatsScene.InGame,
@@ -82,5 +83,41 @@ describe('flow engine', () => {
 		const bad = flow();
 		bad.edges.push({ id: 'x', source: 'a2', target: 't' });
 		expect(validateFlow(bad)).toContain('Nothing can connect into a When (trigger) node');
+	});
+
+	it('OBS conditions', () => {
+		expect(conditionPasses({ type: 'obsScene', sceneName: 'Game' }, ctx({ obsScene: 'Game' }))).toBe(true);
+		expect(conditionPasses({ type: 'obsScene', sceneName: 'Game' }, ctx({ obsScene: 'Menu' }))).toBe(false);
+		expect(conditionPasses({ type: 'obsReplayBuffer', active: true }, ctx({ replayBufferActive: false }))).toBe(false);
+	});
+
+	it('custom body templates use the trigger keys', () => {
+		expect(fillTemplate('{"who": "{{playerName}}", "hit": {{ damage }}, "pct": {{percent}}, "x": {{missing}}}', { playerName: 'Mango', damage: 23.5, percent: 104 }))
+			.toBe('{"who": "Mango", "hit": 23.5, "pct": 104, "x": null}');
+	});
+
+	it('sharing strips bearer tokens; imports get a fresh id when it clashes and start disabled', () => {
+		const f = flow();
+		(f.nodes[2].data as any).bearerToken = 'secret';
+		const shared = flowForSharing(f);
+		expect(JSON.stringify(shared)).not.toContain('secret');
+		expect(flowForImport(shared, ['f1'], () => 'f2')).toMatchObject({ id: 'f2', enabled: false });
+		expect(flowForImport(shared, [], () => 'f2')).toMatchObject({ id: 'f1', enabled: false });
+	});
+
+	it('custom body must be valid JSON once keys are filled', () => {
+		const f = flow();
+		(f.nodes[2].data as any).body = 'custom';
+		(f.nodes[2].data as any).template = '{"pct": {{percent}}, "who": "{{playerName}}"}';
+		expect(validateFlow(f)).toEqual([]);
+		(f.nodes[2].data as any).template = '{"who": {{playerName}}';
+		expect(validateFlow(f).join()).toContain('not valid JSON');
+	});
+
+	it('every demo flow is valid (and ships disabled)', () => {
+		for (const demo of DEMO_FLOWS) {
+			expect([demo.name, validateFlow(demo)]).toEqual([demo.name, []]);
+			expect(demo.enabled).toBe(false);
+		}
 	});
 });

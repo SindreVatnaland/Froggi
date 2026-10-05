@@ -67,6 +67,8 @@ export interface StrikeState {
 	agreement?: { stageId: number; requestedBy: 1 | 2 } | null;
 	/** The set's players, taken from its first Slippi game — later games only count if they match. */
 	setPlayers?: { connectCode: string; playerIndex: number }[] | null;
+	/** The host paused striking: phones can't act until it is resumed (the host still can). */
+	paused?: boolean;
 	/** Set winner when the host ended the match early (for result reporting). */
 	setWinner?: 1 | 2 | null;
 	/** Last change (epoch ms) — a set idle for 3 hours ends on startup. */

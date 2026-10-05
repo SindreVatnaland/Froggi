@@ -189,6 +189,12 @@ export interface MessageEvents {
 	StrikeAgreeResponse: (player: 1 | 2, accept: boolean, token?: string) => void;
 	/** Host ends the match: a winner completes the set with that result, null cancels it. */
 	StrikeEndMatch: (winner: 1 | 2 | null) => void;
+	/** Host: step back one striking action (strike, ban, pick, character, RPS). */
+	StrikeUndoAction: () => void;
+	/** Host: start the current step over (e.g. all of game 1's strikes, or this game's ban + pick). */
+	StrikeRestartStep: () => void;
+	/** Host: pause/resume phone input. */
+	StrikePause: (paused: boolean) => void;
 	/** Host only (IPC): the per-player tokens for the phone links. */
 	StrikePlayerTokens: (tokens: { 1: string; 2: string }) => void;
 	StrikePlayerTokensRequest: () => void;
@@ -198,6 +204,8 @@ export interface MessageEvents {
 	FlowsRequest: () => void;
 	FlowSave: (flow: Flow) => void;
 	FlowDelete: (flowId: string) => void;
+	FlowExport: (flowId: string) => void;
+	FlowImport: () => void;
 	/** Run a flow's actions now (editor "Test" button), skipping trigger and conditions. */
 	FlowTest: (flowId: string) => void;
 	RpsChoice: (player: 1 | 2, choice: RpsChoice, token?: string) => void;

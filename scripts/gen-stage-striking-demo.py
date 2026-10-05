@@ -70,17 +70,17 @@ layer('Stage names', [item(CUSTOM_STRING, x, y + H + 1, W, 11, string=label, str
 layer('Players', [
     item(P1_NAME, 0, 120, 66, 14, stroke=1),
     item(P1_CHAR, 13, 136, 40, 40, fit='contain', vis=on('Strike Player 1 Character Selected')),
-    item(P1_RPS, 8, 180, 50, 12, stroke=1, vis=on('Strike Phase: RPS Result')),
+    item(P1_RPS, 0, 180, 66, 12, stroke=1, vis=on('Strike Phase: RPS', 'Strike Phase: RPS Result')),
     item(P2_NAME, 446, 120, 66, 14, stroke=1),
     item(P2_CHAR, 459, 136, 40, 40, fit='contain', vis=on('Strike Player 2 Character Selected')),
-    item(P2_RPS, 454, 180, 50, 12, stroke=1, vis=on('Strike Phase: RPS Result')),
+    item(P2_RPS, 446, 180, 66, 12, stroke=1, vis=on('Strike Phase: RPS', 'Strike Phase: RPS Result')),
 ])
 layer('Whose turn', [item(STRIKE_CURRENT, 176, 58, 160, 14, color='#facc15ff', stroke=1,
                           vis=on('Strike Player 1 Turn', 'Strike Player 2 Turn'))])
 CAPTIONS = [
     ('Strike Phase: Char Select', 'PICK YOUR CHARACTERS'),
     ('Strike Phase: RPS', 'ROCK · PAPER · SCISSORS'),
-    ('Strike Phase: RPS Result', 'RPS WINNER CHOOSES STRIKE ORDER'),
+    ('Strike Phase: RPS Result', 'RPS WINNER CHOOSES: STRIKE FIRST OR SECOND'),
     ('Strike Phase: Striking', 'STRIKE STAGES  1 · 2 · 1'),
     ('Strike Phase: Stage Ban', 'WINNER BANS A STAGE'),
     ('Strike Phase: Stage Pick', 'LOSER PICKS THE STAGE'),

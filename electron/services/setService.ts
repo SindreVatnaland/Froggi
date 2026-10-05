@@ -80,6 +80,8 @@ const other = (player: 1 | 2): 1 | 2 => (player === 1 ? 2 : 1);
 @singleton()
 export class ElectronSetService {
 	private state: StrikeState = makeLobbyState();
+	/** States before each striking action — host undo (in memory only). */
+	private history: StrikeState[] = [];
 	private rpsTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor(
@@ -132,6 +134,7 @@ export class ElectronSetService {
 	allowedAs(token: string | undefined, player: 1 | 2 | null | undefined): boolean {
 		const who = this.tokenPlayer(token);
 		if (who === undefined) return true;
+		if (this.state.paused) return false; // the host paused striking
 		return who !== null && who === player;
 	}
 
@@ -205,6 +208,7 @@ export class ElectronSetService {
 
 	startSet(p1Name: string, p2Name: string, bestOf: 3 | 5, allowAgreement = true) {
 		this.clearRpsTimer();
+		this.history = [];
 		this.setState({
 			...makeLobbyState(),
 			p1Name: p1Name || 'Player 1',
@@ -420,6 +424,81 @@ export class ElectronSetService {
 		);
 	}
 
+	/** Run a striking action; if it changed the state, remember the state before it (host undo). */
+	private act<T>(fn: () => T): T {
+		const before = structuredClone(this.state);
+		const result = fn();
+		const strip = (st: StrikeState) => JSON.stringify({ ...st, updatedAt: 0, rpsDeadline: 0, connectedPlayers: [] });
+		if (strip(before) !== strip(this.state)) {
+			this.history.push(before);
+			if (this.history.length > 50) this.history.shift();
+		}
+		return result;
+	}
+
+	/** Host: step back one striking action. */
+	undoAction() {
+		const prev = this.history.pop();
+		if (!prev) return;
+		this.clearRpsTimer();
+		// Keep who is connected and any pause; everything else returns to before the action.
+		this.setState({ ...prev, connectedPlayers: this.state.connectedPlayers, paused: this.state.paused, rpsDeadline: null });
+		this.log.info('Host undid the last striking action');
+	}
+
+	/** Host: start the current step over. */
+	restartStep() {
+		this.act(() => this.restartStepNow());
+	}
+
+	private restartStepNow() {
+		const s = { ...this.state };
+		switch (s.phase) {
+			case 'charSelect':
+				s.characters = { p1: null, p2: null };
+				break;
+			case 'rps':
+			case 'rpsResult':
+				s.rps = { p1: null, p2: null, winner: null };
+				s.rpsDeadline = null;
+				s.phase = 'rps';
+				s.currentStriker = null;
+				break;
+			case 'striking':
+				s.strikes = [];
+				s.strikeOrderIndex = 0;
+				s.currentStriker = s.strikeOrder[0]?.[0] ?? s.currentStriker;
+				break;
+			case 'stageBan':
+			case 'stagePick':
+			case 'charLock':
+			case 'charPick': {
+				// Back to this game's ban (or pick in Bo5) with the full stage list for the loser.
+				const loser = s.lastWinner ? other(s.lastWinner) : 2;
+				const allStages = [...s.starters, ...s.counterpicks];
+				const available = allStages.filter((id) => !s.dsrStages[key(loser)].includes(id));
+				s.stages = available.length ? available : allStages;
+				s.strikes = [];
+				s.bans = [];
+				s.agreement = null;
+				s.finalStageId = null;
+				s.characters = { p1: null, p2: null };
+				s.phase = s.bestOf === 5 ? 'stagePick' : 'stageBan';
+				s.currentStriker = s.bestOf === 5 ? loser : s.lastWinner;
+				break;
+			}
+			default:
+				return;
+		}
+		this.setState(s);
+		this.maybeStartRpsTimer(this.state);
+		this.log.info(`Host restarted the ${s.phase} step`);
+	}
+
+	setPaused(paused: boolean) {
+		this.setState({ ...this.state, paused });
+	}
+
 	/** Report a finished Slippi game. Set Player 1 = Froggi's Player 1 (the lower port of the set). */
 	async reportFromGame(game: GameStats | undefined) {
 		if (!game || this.state.phase !== 'playing' || game.settings?.isSimulated) return;
@@ -445,7 +524,7 @@ export class ElectronSetService {
 		const slot = getPlayerSlot(game, winnerIndex, reference);
 		if (slot !== 0 && slot !== 1) return;
 		this.log.info(`Auto-reporting game winner: set player ${slot + 1}`);
-		this.reportWinner(slot === 0 ? 1 : 2, game.settings?.stageId ?? undefined);
+		this.act(() => this.reportWinner(slot === 0 ? 1 : 2, game.settings?.stageId ?? undefined));
 	}
 
 	markWarmup() {
@@ -511,7 +590,7 @@ export class ElectronSetService {
 		// Player striking actions also bring the Strike Phase scene up (after Post Game).
 		const striking = <A extends unknown[]>(fn: (...args: A) => unknown) => (...args: A) => {
 			if (this.state.phase === 'lobby' || this.state.phase === 'setComplete') return;
-			if (fn(...args) === false) return; // rejected (wrong player / not their turn)
+			if (this.act(() => fn(...args)) === false) return; // rejected (wrong player / not their turn)
 			this.enterStrikeScene();
 		};
 		// Phones may only act as themselves (player-argument events) or on their own turn.
@@ -525,7 +604,10 @@ export class ElectronSetService {
 		this.clientEmitter.on('StrikeAgreeRequest', striking((player, stageId, token) => own(token, player) && this.requestAgreement(player, stageId)));
 		this.clientEmitter.on('StrikeAgreeResponse', striking((player, accept, token) => own(token, player) && this.answerAgreement(player, accept)));
 		this.clientEmitter.on('StrikeEndMatch', (winner) => this.endMatch(winner));
-		this.clientEmitter.on('ReportWinner', (player) => this.reportWinner(player));
+		this.clientEmitter.on('StrikeUndoAction', () => this.undoAction());
+		this.clientEmitter.on('StrikeRestartStep', () => this.restartStep());
+		this.clientEmitter.on('StrikePause', (paused) => this.setPaused(paused));
+		this.clientEmitter.on('ReportWinner', (player) => this.act(() => this.reportWinner(player)));
 		this.localEmitter.on('PostGameStats', (game) => void this.reportFromGame(game));
 		this.clientEmitter.on('MarkWarmup', () => this.markWarmup());
 		this.clientEmitter.on('UndoLastGame', () => this.undoLastGame());

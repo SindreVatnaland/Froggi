@@ -59,9 +59,11 @@ export const automationTopics: ContentTopic[] = [
 				text: 'Building blocks:',
 				items: [
 					'WHEN (one per flow): scene changes, controller button combo, game starts/ends, a player takes damage (min %), a player loses a stock, rank changes, stage striking changes (e.g. "time to ban").',
-					'AND (any number, on the path): game mode is local/direct/unranked/ranked, scene is X, a player\'s stocks or percent compared to a number (Player 1/2 or You), striking phase is X.',
-					'THEN: HTTP POST (URL, optional bearer token; body = the event that fired, a game-state snapshot, or the latest payload of any webhook event — same shapes as the webhooks), OBS switch scene, show/hide a source, set volume, save replay.',
-					'Format: Singles + Doubles, Singles only, or Doubles only (doubles = Slippi teams game). New flows start disabled; "Test" runs the actions once.',
+					'AND (any number, on the path) — Game state: game mode, a player\'s stocks or percent compared to a number (Player 1/2 or You). Froggi: scene is X, striking phase is X. OBS: OBS scene is X, replay buffer on/off.',
+					'THEN — Send: HTTP POST (URL, optional bearer token; body = the event that fired, a game-state snapshot, the latest payload of any webhook event, or a custom JSON body). OBS: switch scene, show/hide a source, set volume, save replay.',
+					'Keys: each trigger hands values to its actions (like Homey tokens) — e.g. "takes damage" gives player, playerName, damage and the new percent; "loses a stock" gives stocksLeft. Use them in a custom body as {{percent}} (text keys inside quotes: "{{playerName}}"); the default body includes them as "tokens".',
+					'Format: Singles + Doubles, Singles only, or Doubles only (doubles = Slippi teams game). New flows start disabled; "Test" runs the actions once. Controller combos must be held for half a second (then a 1s cooldown).',
+					'Sharing: Export a flow as a .froggi file (bearer tokens are left out); Import brings it in disabled. Demo flows (Flows page) are ready-made examples — "Use" copies one to edit.',
 				],
 			},
 			{

@@ -28,15 +28,17 @@ import { ElectronLiveStatsStore } from './storeLiveStats';
 import { isNil } from 'lodash';
 import { getSubsetCommands } from '../../../frontend/src/lib/utils/controllerCommandHelper';
 import { pickForFormat } from '../../../frontend/src/lib/utils/commandFormat';
+import { ComboHold, comboKey } from '../../utils/comboHold';
+import type { ControllerButtons } from '../../../frontend/src/lib/models/types/controller';
 import { OBSRequestTypes } from 'obs-websocket-js';
 import { ObsItem } from '../../../frontend/src/lib/models/types/obsTypes';
+import { SqliteOrm } from '../sqlite/initiSqlite';
+import { ControllerCommandEntity, SceneCommandEntity } from '../sqlite/entities/automation/automationEntities';
 
 @singleton()
 export class ElectronCommandStore {
 	private store: Store = new Store();
 	private controllerCommands: ControllerCommand[] = [];
-	private controllerCommandState: boolean = false;
-	private commandTimeout: boolean = false;
 	constructor(
 		@inject('ElectronLog') private log: ElectronLog,
 		@inject('LocalEmitter') private localEmitter: TypedEmitter,
@@ -47,6 +49,7 @@ export class ElectronCommandStore {
 		@inject(ElectronSettingsStore) private storeSettings: ElectronSettingsStore,
 		@inject(ElectronLiveStatsStore) private storeLiveStats: ElectronLiveStatsStore,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(SqliteOrm) private sqlite: SqliteOrm,
 	) {
 		this.log.info('Initializing Obs Command Store');
 		this.initListeners();
@@ -54,14 +57,58 @@ export class ElectronCommandStore {
 		this.init();
 	}
 
-	getController(): Controller {
-		return this.store.get('command.controller') as Controller;
+	// Command lists live in SQLite (ControllerCommandEntity / SceneCommandEntity), kept in memory for the
+	// input/scene handlers; the on/off switches stay in electron-store. Older electron-store lists are
+	// copied over once (the old keys are left as a backup).
+	private sceneCommandList: { scene: LiveStatsScene; command: Command }[] = [];
+
+	private controllerRepo() {
+		return this.sqlite.getRepository(ControllerCommandEntity);
+	}
+	private sceneRepo() {
+		return this.sqlite.getRepository(SceneCommandEntity);
 	}
 
-	setController(controller: Controller) {
-		this.store.set('command.controller', controller);
-		this.controllerCommands = controller.inputCommands as ControllerCommand[];
-		this.controllerCommandState = controller.enabled as boolean;
+	private async loadCommands() {
+		await this.sqlite.initializing;
+		try {
+			if (!this.store.get('migrations.commandsSqlite')) {
+				const legacyController = (this.store.get('command.controller.inputCommands') ?? []) as ControllerCommand[];
+				for (const c of legacyController) {
+					await this.controllerRepo().save(this.controllerRepo().create({ id: c.id || newId(), inputs: c.inputs, command: c.command, format: c.format ?? 'any' }));
+				}
+				const legacyScenes = (this.store.get('command.sceneSwitch') ?? {}) as Partial<Record<LiveStatsScene, Command[]>>;
+				let sceneCount = 0;
+				for (const scene of Object.values(LiveStatsScene)) {
+					for (const command of legacyScenes[scene] ?? []) {
+						await this.sceneRepo().save(this.sceneRepo().create({ id: command.id || newId(), scene, command, format: command.format ?? 'any' }));
+						sceneCount++;
+					}
+				}
+				this.store.set('migrations.commandsSqlite', true);
+				if (legacyController.length || sceneCount) this.log.info(`Moved ${legacyController.length} controller and ${sceneCount} scene command(s) to SQLite`);
+			}
+			const controllerRows = (await this.controllerRepo().find()) ?? [];
+			this.controllerCommands = controllerRows.map((r) => ({ id: r.id, inputs: r.inputs, command: r.command, format: r.format }));
+			const sceneRows = (await this.sceneRepo().find()) ?? [];
+			this.sceneCommandList = sceneRows.map((r) => ({ scene: r.scene, command: { ...r.command, id: r.id, format: r.format } }));
+		} catch (err) {
+			this.log.error('Could not load commands:', err);
+		}
+		this.emitController();
+		this.emitSceneCommands();
+	}
+
+	private emitController() {
+		this.messageHandler.sendMessage('ControllerCommand', this.getController());
+	}
+
+	private emitSceneCommands() {
+		this.messageHandler.sendMessage('SceneSwitchCommands', this.getSceneCommands());
+	}
+
+	getController(): Controller {
+		return { enabled: this.getControllerCommandsState(), inputCommands: this.controllerCommands };
 	}
 
 	getControllerCommandInputs(): ControllerCommand[] {
@@ -69,84 +116,61 @@ export class ElectronCommandStore {
 	}
 
 	addControllerCommand(command: ControllerCommand) {
-		const commands = this.getControllerCommandInputs();
-		this.store.set('command.controller.inputCommands', [
-			...commands,
-			{ ...command, id: newId() },
-		]);
+		const saved = { ...command, id: newId(), format: command.format ?? 'any' };
+		this.controllerCommands = [...this.controllerCommands, saved];
+		void this.controllerRepo().save(this.controllerRepo().create(saved)).catch((err) => this.log.error('Saving controller command failed:', err));
+		this.emitController();
 	}
 
 	deleteControllerCommand(commandId: string) {
-		const controllerCommands = this.getControllerCommandInputs() ?? [];
-		this.store.set(
-			'command.controller.inputCommands',
-			controllerCommands.filter((controllerCommands) => controllerCommands.id !== commandId),
-		);
+		this.controllerCommands = this.controllerCommands.filter((c) => c.id !== commandId);
+		void this.controllerRepo().delete({ id: commandId }).catch((err) => this.log.error('Deleting controller command failed:', err));
+		this.emitController();
 	}
 
 	getControllerCommandsState(): boolean {
-		return this.controllerCommandState ?? false;
+		return (this.store.get('command.controller.enabled') as boolean) ?? false;
 	}
 
 	toggleControllerCommandsState() {
-		const state = (this.store.get('command.controller.enabled') as boolean) ?? false;
-		this.store.set('command.controller.enabled', !state);
+		this.store.set('command.controller.enabled', !this.getControllerCommandsState());
+		this.emitController();
 	}
 
 	getSceneCommands(): SceneSwitchCommands {
-		return (
-			(this.store.get('command.sceneSwitch') as SceneSwitchCommands) ?? {
-				enabled: false,
-				[LiveStatsScene.WaitingForDolphin]: [],
-				[LiveStatsScene.Menu]: [],
-				[LiveStatsScene.InGame]: [],
-				[LiveStatsScene.PostGame]: [],
-				[LiveStatsScene.PostSet]: [],
-				[LiveStatsScene.RankChange]: [],
-				[LiveStatsScene.StrikePhase]: [],
-			}
-		);
+		const commands = Object.fromEntries(Object.values(LiveStatsScene).map((scene) => [scene, [] as Command[]])) as Record<LiveStatsScene, Command[]>;
+		for (const { scene, command } of this.sceneCommandList) (commands[scene] ??= []).push(command);
+		return { enabled: this.getSceneSwitchCommandsState(), ...commands } as SceneSwitchCommands;
 	}
 
 	getSceneCommandsByScene(scene: LiveStatsScene): Command[] {
-		const sceneCommands = this.getSceneCommands();
-		return sceneCommands[scene];
-	}
-
-	setSceneCommands(value: SceneSwitchCommands) {
-		this.store.set('command.sceneSwitch', value);
+		return this.sceneCommandList.filter((c) => c.scene === scene).map((c) => c.command);
 	}
 
 	addSceneCommand(scene: LiveStatsScene, command: Command) {
-		const sceneCommands = this.getSceneCommands();
-		if (!Array.isArray(sceneCommands[scene])) {
-			sceneCommands[scene] = [];
-		}
-		sceneCommands[scene] = [...sceneCommands[scene], { ...command, id: newId() }];
-		this.setSceneCommands(sceneCommands);
+		const saved = { ...command, id: newId(), format: command.format ?? 'any' };
+		this.sceneCommandList = [...this.sceneCommandList, { scene, command: saved }];
+		void this.sceneRepo().save(this.sceneRepo().create({ id: saved.id, scene, command: saved, format: saved.format })).catch((err) => this.log.error('Saving scene command failed:', err));
+		this.emitSceneCommands();
 	}
 
-	deleteSceneCommand(scene: LiveStatsScene, commandId: string) {
-		const sceneCommands = this.getSceneCommands();
-		sceneCommands[scene] = sceneCommands[scene].filter((command) => command.id !== commandId);
-		this.setSceneCommands(sceneCommands);
+	deleteSceneCommand(_scene: LiveStatsScene, commandId: string) {
+		this.sceneCommandList = this.sceneCommandList.filter((c) => c.command.id !== commandId);
+		void this.sceneRepo().delete({ id: commandId }).catch((err) => this.log.error('Deleting scene command failed:', err));
+		this.emitSceneCommands();
 	}
 
 	getSceneSwitchCommandsState(): boolean {
-		return this.getSceneCommands().enabled;
+		return (this.store.get('command.sceneSwitch.enabled') as boolean) ?? false;
 	}
 
 	toggleSceneSwitchCommandsState() {
-		const state = this.getSceneSwitchCommandsState();
-		if (isNil(state)) return;
-		this.store.set('command.sceneSwitch.enabled', !state);
+		this.store.set('command.sceneSwitch.enabled', !this.getSceneSwitchCommandsState());
+		this.emitSceneCommands();
 	}
 
 	private init() {
-		this.controllerCommands =
-			(this.store.get('command.controller.inputCommands') as ControllerCommand[]) ?? [];
-		this.controllerCommandState =
-			(this.store.get('command.controller.enabled') as boolean) ?? false;
+		void this.loadCommands();
 	}
 
 	/** Which controller drives commands: the current player, else the lowest port in game / first connected. */
@@ -172,16 +196,21 @@ export class ElectronCommandStore {
 		return player?.playerIndex ?? lowestIndex;
 	};
 
+	// A combo must be held 0.5s to fire, then nothing fires for 1s.
+	private comboHold = new ComboHold(500, 1000);
+	private heldButtons: ControllerButtons | undefined;
+
 	private handleControllerCommand = (playerControllerInputs: PlayerController) => {
-		if (!this.getControllerCommandsState()) return;
-		if (this.commandTimeout) return;
-
+		if (!this.getControllerCommandsState()) return this.comboHold.update(null, () => undefined);
 		const controllerIndex = this.getControllerIndex(playerControllerInputs);
+		this.heldButtons = isNil(controllerIndex) ? undefined : playerControllerInputs?.[controllerIndex]?.buttons;
+		const anyMatch = getSubsetCommands(this.controllerCommands, this.heldButtons).length > 0;
+		this.comboHold.update(anyMatch ? comboKey(this.heldButtons as unknown as Record<string, boolean>) : null, () =>
+			this.runControllerCommands(this.heldButtons),
+		);
+	};
 
-		if (isNil(controllerIndex)) return;
-
-		const buttonInputs = playerControllerInputs?.[controllerIndex]?.buttons;
-
+	private runControllerCommands(buttonInputs: ControllerButtons | undefined) {
 		const matched = getSubsetCommands(this.controllerCommands, buttonInputs);
 		// Global / Singles / Doubles override per button combo (not across different combos).
 		const byCombo = new Map<string, ControllerCommand[]>();
@@ -190,8 +219,6 @@ export class ElectronCommandStore {
 			byCombo.set(key, [...(byCombo.get(key) ?? []), c]);
 		}
 		const controllerCommands = [...byCombo.values()].flatMap((group) => pickForFormat(group, this.isTeamsGame()));
-		if (!controllerCommands.length) return; // nothing matched — don't start the cooldown
-
 		controllerCommands.forEach(async (controllerCommand) => {
 			await this.executeCommand(
 				CommandType.Obs,
@@ -199,11 +226,7 @@ export class ElectronCommandStore {
 				controllerCommand.command.payload,
 			);
 		});
-		this.commandTimeout = true;
-		setTimeout(() => {
-			this.commandTimeout = false;
-		}, 1000);
-	};
+	}
 
 	private isTeamsGame = () => !!this.storeLiveStats.getGameSettings()?.isTeams;
 
@@ -324,13 +347,6 @@ export class ElectronCommandStore {
 	}
 
 	private initListeners() {
-		this.store.onDidChange('command.controller', (value) => {
-			const controller = value as Controller;
-			this.setController(controller);
-			this.messageHandler.sendMessage('ControllerCommand', value as Controller);
-		});
-		this.store.onDidChange('command.sceneSwitch', (value) => {
-			this.messageHandler.sendMessage('SceneSwitchCommands', value as SceneSwitchCommands);
-		});
+		// Lists are saved through the methods above (SQLite), which notify the app themselves.
 	}
 }

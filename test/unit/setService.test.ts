@@ -402,3 +402,53 @@ describe('Stage striking — names and agreement cancel', () => {
 		expect(state().phase).toBe('stagePick');
 	});
 });
+
+describe('Stage striking — host controls', () => {
+	it('undo steps back one real action; rejected actions are not recorded', () => {
+		const { clientEmitter, state, service } = setup();
+		service.startSet('A', 'B', 3);
+		clientEmitter.emit('SelectCharacter', 1, 2, P1);
+		clientEmitter.emit('SelectCharacter', 1, 9, P2); // rejected (wrong player) — not recorded
+		clientEmitter.emit('SelectCharacter', 2, 20, P2);
+		expect(state().phase).toBe('rps');
+		clientEmitter.emit('StrikeUndoAction');
+		expect(state().characters).toEqual({ p1: 2, p2: null });
+		expect(state().phase).toBe('charSelect');
+		clientEmitter.emit('StrikeUndoAction');
+		expect(state().characters).toEqual({ p1: null, p2: null });
+	});
+
+	it('restart step: game 1 strikes start over; game 2 ban + pick start over', () => {
+		const { service, state, clientEmitter } = setup();
+		service.startSet('A', 'B', 3);
+		service.selectCharacter(1, 2); service.selectCharacter(2, 20);
+		service.rpsChoice(1, 'rock'); service.rpsChoice(2, 'scissors'); service.rpsWinnerOrder(1);
+		service.strikeStage(2); service.strikeStage(8);
+		clientEmitter.emit('StrikeRestartStep');
+		expect(state().strikes).toEqual([]);
+		expect(state().currentStriker).toBe(1);
+		clientEmitter.emit('StrikeUndoAction'); // undo the restart
+		expect(state().strikes).toEqual([2, 8]);
+
+		toGame1(service);
+		service.reportWinner(1);
+		service.strikeStage(31); service.pickStage(8);
+		clientEmitter.emit('StrikeRestartStep');
+		expect(state().phase).toBe('stageBan');
+		expect(state().bans).toEqual([]);
+		expect(state().stages).toContain(31);
+	});
+
+	it('pause blocks phones but not the host', () => {
+		const { clientEmitter, state, service } = setup();
+		service.startSet('A', 'B', 3);
+		clientEmitter.emit('StrikePause', true);
+		clientEmitter.emit('SelectCharacter', 1, 2, P1);
+		expect(state().characters.p1).toBeNull();
+		clientEmitter.emit('SelectCharacter', 1, 2); // host
+		expect(state().characters.p1).toBe(2);
+		clientEmitter.emit('StrikePause', false);
+		clientEmitter.emit('SelectCharacter', 2, 20, P2);
+		expect(state().characters.p2).toBe(20);
+	});
+});

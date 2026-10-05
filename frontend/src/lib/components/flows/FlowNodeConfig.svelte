@@ -2,10 +2,22 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { FlowNode } from '$lib/models/types/flow';
 	import { obsConnection } from '$lib/utils/store.svelte';
-	import { ACTIONS, BUTTONS, CONDITIONS, POST_BODIES, SCENES, STRIKE_ACTIONS, STRIKE_PHASES, TRIGGERS } from './flowOptions';
+	import { ACTIONS, BUTTONS, CONDITIONS, POST_BODIES, SCENES, STRIKE_ACTIONS, STRIKE_PHASES, TRIGGERS, grouped } from './flowOptions';
+	import { TRIGGER_TOKENS } from '$lib/utils/flowEngine';
+	import type { FlowTrigger } from '$lib/models/types/flow';
 
 	// Edit one node's settings. The node object is edited in place, then `change` re-renders the canvas.
 	export let node: FlowNode;
+	/** The flow's When — decides which {{keys}} a custom POST body can use. */
+	export let triggerType: FlowTrigger['type'] | undefined = undefined;
+	$: keys = triggerType ? TRIGGER_TOKENS[triggerType] : [];
+	let templateArea: HTMLTextAreaElement;
+	const insertKey = (key: string) => {
+		const t = d.template ?? '';
+		const at = templateArea?.selectionStart ?? t.length;
+		d.template = `${t.slice(0, at)}{{${key}}}${t.slice(at)}`;
+		changed();
+	};
 	const dispatch = createEventDispatcher<{ change: void; delete: void }>();
 	const changed = () => {
 		node = node;
@@ -15,6 +27,7 @@
 	// Loose view of the config so one form covers every type (fields only render for matching types).
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	$: d = node.data as any;
+	let choices: { type: string; group: string; label: string; make: () => unknown }[] = [];
 	$: choices = node.kind === 'trigger' ? TRIGGERS : node.kind === 'condition' ? CONDITIONS : ACTIONS;
 	const setType = (type: string) => {
 		const choice = choices.find((c) => c.type === type);
@@ -46,8 +59,12 @@
 <div class="config">
 	<p class="dash-label">{node.kind === 'trigger' ? 'When' : node.kind === 'condition' ? 'And' : 'Then'}</p>
 	<select class="field" value={d.type} on:change={(e) => setType(e.currentTarget.value)}>
-		{#each choices as choice (choice.type)}
-			<option value={choice.type}>{choice.label}</option>
+		{#each grouped(choices) as g (g.group)}
+			<optgroup label={g.group}>
+				{#each g.items as choice (choice.type)}
+					<option value={choice.type}>{choice.label}</option>
+				{/each}
+			</optgroup>
 		{/each}
 	</select>
 
@@ -120,10 +137,30 @@
 				{#each POST_BODIES as b (b.value)}<option value={b.value}>{b.label}</option>{/each}
 			</select>
 		</label>
-		<p class="hint">Sent as {'{ flow, trigger, timestamp, payload }'} — payload shapes are the same as the webhooks.</p>
+		{#if d.body === 'custom'}
+			<label>Body template (JSON)
+				<textarea class="field area" rows="6" bind:this={templateArea} bind:value={d.template} on:change={changed} placeholder={'{ "who": "{{playerName}}", "percent": {{percent}} }'} />
+			</label>
+			{#if keys.length}
+				<p class="hint">Keys from the trigger — click to insert:</p>
+				<div class="chips">
+					{#each keys as key}<button class="chip chip--on" on:click={() => insertKey(key)}>{key}</button>{/each}
+				</div>
+			{/if}
+		{:else}
+			<p class="hint">Sent as {'{ flow, trigger, timestamp, tokens, payload }'} — tokens are the trigger's keys{keys.length ? ` (${keys.join(', ')})` : ''}; payload shapes match the webhooks.</p>
+		{/if}
+	{/if}
+	{#if d.type === 'obsReplayBuffer'}
+		<label>Replay buffer
+			<select class="field" bind:value={d.active} on:change={changed}>
+				<option value={true}>is on</option>
+				<option value={false}>is off</option>
+			</select>
+		</label>
 	{/if}
 	{#if d.type === 'obsScene'}
-		<label>OBS scene
+		<label>{node.kind === 'condition' ? 'Current OBS scene is' : 'Switch OBS to'}
 			<input class="field" list="flow-obs-scenes" bind:value={d.sceneName} on:change={changed} />
 			<datalist id="flow-obs-scenes">{#each obsScenes as s}<option value={s} />{/each}</datalist>
 		</label>
@@ -151,6 +188,7 @@
 	}
 	select.field option { color: #000; }
 	.row { display: flex; gap: 0.4rem; }
+	.area { height: auto; padding: 0.4rem 0.5rem; font-family: monospace; font-size: 0.72rem; resize: vertical; }
 	.chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 	.chip { font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 1rem; border: 1px solid var(--secondary-color); opacity: 0.4; color: var(--secondary-color); background: transparent; }
 	.chip--on { opacity: 1; background: color-mix(in srgb, var(--secondary-color) 15%, transparent); }

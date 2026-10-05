@@ -29,13 +29,19 @@ export type FlowCondition =
 	| { type: 'scene'; scene: LiveStatsScene }
 	| { type: 'playerStocks'; player: Exclude<FlowPlayer, 'any'>; compare: FlowCompare; value: number }
 	| { type: 'playerPercent'; player: Exclude<FlowPlayer, 'any'>; compare: FlowCompare; value: number }
-	| { type: 'strikePhase'; phase: StrikePhase };
+	| { type: 'strikePhase'; phase: StrikePhase }
+	| { type: 'obsScene'; sceneName: string }
+	| { type: 'obsReplayBuffer'; active: boolean };
 
-/** HTTP POST body: the event that fired the flow, the latest payload of a webhook event, or a game-state snapshot. */
-export type FlowPostBody = 'trigger' | 'gameState' | WebhookEvent;
+/** HTTP POST body: the event that fired the flow, the latest payload of a webhook event, a game-state
+ *  snapshot, or a custom JSON template with {{key}} placeholders filled from the trigger's keys. */
+export type FlowPostBody = 'trigger' | 'gameState' | 'custom' | WebhookEvent;
+
+/** Values a trigger hands to its actions (Homey "tokens"), e.g. {{damage}}, {{percent}}, {{playerName}}. */
+export type FlowTokens = Record<string, string | number | boolean | null>;
 
 export type FlowAction =
-	| { type: 'httpPost'; url: string; bearerToken?: string; body: FlowPostBody }
+	| { type: 'httpPost'; url: string; bearerToken?: string; body: FlowPostBody; template?: string }
 	| { type: 'obsScene'; sceneName: string }
 	| { type: 'obsToggleSource'; sourceName: string }
 	| { type: 'obsVolume'; inputName: string; volume: number }
@@ -74,6 +80,9 @@ export type FlowEvent =
 	| { type: 'rankChange'; payload?: unknown }
 	| { type: 'strikeChange'; action: string; payload?: unknown };
 
+/** Event + the keys it exposes to actions. */
+export type FlowEventWithTokens = FlowEvent & { tokens?: FlowTokens };
+
 /** Game state the conditions read. Players are Player 1 / Player 2 (slot order). */
 export interface FlowContext {
 	scene: LiveStatsScene | undefined;
@@ -83,4 +92,6 @@ export interface FlowContext {
 	/** 0/1 = which slot is the current (local) player, if known. */
 	currentPlayerSlot: number | undefined;
 	strikePhase: StrikePhase | undefined;
+	obsScene?: string;
+	replayBufferActive?: boolean;
 }

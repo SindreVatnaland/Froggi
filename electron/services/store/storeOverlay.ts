@@ -19,7 +19,7 @@ import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
 import { fillOverlayDefaults, getNewOverlay } from './../../utils/overlayHandler';
-import { buildFroggiZip, FROGGI_EXT, isZip, readFroggiZip, readJsonEntry, safeName } from '../../utils/froggiFile';
+import { buildFroggiZip, FROGGI_EXT, isZip, readFroggiZip, readJsonEntry, safeName, wrongKindMessage } from '../../utils/froggiFile';
 import { AssetPackService } from '../assetPackService';
 
 /** Grid placement patch (grid is COL x COL units). Any omitted field keeps the item's current value. */
@@ -868,7 +868,7 @@ export class ElectronOverlayStore {
 			if (isZip(data)) {
 				const { manifest, files } = readFroggiZip(data);
 				if (manifest.kind !== 'overlay') {
-					this.messageHandler.sendMessage('Notification', 'That is an asset pack — import it on the Assets page.', NotificationType.Warning);
+					this.messageHandler.sendMessage('Notification', wrongKindMessage(manifest.kind), NotificationType.Warning);
 					return;
 				}
 				const parsed = readJsonEntry<Overlay>(files, 'overlay.json');

@@ -6,6 +6,15 @@
 	import { describe } from '$lib/components/flows/flowOptions';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import { MODAL_CLOSE_MS } from '$lib/models/const';
+	import { DEMO_FLOWS } from '$lib/content/demoFlows';
+
+	/** Copy a demo into your flows (disabled) and open it to set your URL / scene names. */
+	const useDemo = (demo: Flow) => {
+		const id = `flow-${Date.now().toString(36)}`;
+		const { description: _d, ...flow } = demo as Flow & { description?: string };
+		$electronEmitter.emit('FlowSave', { ...flow, id, enabled: false });
+		setTimeout(() => goto(`/obs/flows/${id}`), 150);
+	};
 
 	// Automation flows: WHEN something happens AND conditions hold THEN do things (POST / OBS).
 	onMount(() => $electronEmitter.emit('FlowsRequest'));
@@ -53,7 +62,8 @@
 		<div class="flex items-center gap-3 mb-2">
 			<a class="btn text-sm h-8 px-3 border-secondary rounded flex items-center" href="/obs">← OBS</a>
 			<h1 class="text-xl font-semibold text-secondary-color">Flows</h1>
-			<button class="btn text-sm h-8 px-4 border-secondary rounded ml-auto" on:click={newFlow}>+ New flow</button>
+			<button class="btn text-sm h-8 px-3 border-secondary rounded ml-auto" on:click={() => $electronEmitter.emit('FlowImport')}>Import .froggi</button>
+			<button class="btn text-sm h-8 px-4 border-secondary rounded" on:click={newFlow}>+ New flow</button>
 		</div>
 		<p class="text-xs opacity-50 mb-4">
 			WHEN something happens in the game, AND your conditions hold, THEN Froggi sends a POST request or controls OBS.
@@ -68,10 +78,25 @@
 						<span class="flow-sum">{summary(flow)}</span>
 					</button>
 					<span class="pill-tag">{flow.format === 'any' ? 'Singles + Doubles' : flow.format}</span>
+					<button class="text-xs opacity-50 hover:opacity-100" on:click={() => $electronEmitter.emit('FlowExport', flow.id)} title="Share as a .froggi file (bearer tokens are left out)">Export</button>
 					<button class="text-xs opacity-50 hover:opacity-100" on:click={() => askDelete(flow)}>Delete</button>
 				</div>
 			{:else}
-				<p class="text-sm opacity-50">No flows yet — create one, or ask the AI assistant to build it for you.</p>
+				<p class="text-sm opacity-50">No flows yet — start from a demo below, create one, or ask the AI assistant to build it.</p>
+			{/each}
+		</div>
+
+		<p class="section-label mt-6 mb-2">Demo flows</p>
+		<div class="flex flex-col gap-2">
+			{#each DEMO_FLOWS as demo (demo.id)}
+				<div class="flow-row border-secondary">
+					<div class="flow-main">
+						<span class="flow-name">{demo.name}</span>
+						<span class="flow-sum">{demo.description}</span>
+					</div>
+					<span class="pill-tag">{demo.format === 'any' ? 'Singles + Doubles' : demo.format}</span>
+					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => useDemo(demo)}>Use</button>
+				</div>
 			{/each}
 		</div>
 	</div>
@@ -84,6 +109,8 @@
 	.flow-main { flex: 1; display: flex; flex-direction: column; text-align: left; background: none; color: var(--secondary-color); min-width: 0; }
 	.flow-name { font-size: 0.9rem; font-weight: 600; }
 	.flow-sum { font-size: 0.72rem; opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.pill-tag { font-size: 0.65rem; text-transform: uppercase; opacity: 0.6; }
+	.pill-tag { font-size: 0.65rem; text-transform: uppercase; opacity: 0.6; white-space: nowrap; }
+	.section-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.45; }
+	.flow-sum { white-space: normal; }
 	.toggle-check { width: 0.9rem; height: 0.9rem; }
 </style>

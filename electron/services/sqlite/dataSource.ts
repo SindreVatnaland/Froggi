@@ -16,6 +16,7 @@ import { CurrentPlayerEntity } from './entities/currentPlayer/currentPlayerEntit
 import { CurrentPlayerRankEntity } from './entities/currentPlayer/currentPlayerRankEntity';
 import { GameInfoTypeEntity } from './entities/game/gameInfoBlockEntity';
 import { FlowEntity } from './entities/flow/flowEntity';
+import { ControllerCommandEntity, SceneCommandEntity, WebhookProfileEntity } from './entities/automation/automationEntities';
 
 // Single source of truth for the entity set + DataSource config, shared by the utilityProcess
 // host (dbHost.ts) and the in-process fallback (initiSqlite.ts, used under jest where Electron's
@@ -26,7 +27,7 @@ export const ENTITIES = [
 	PlayerTypeEntity,
 	GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, MatchInfoEntity,
 	PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity, GameInfoTypeEntity,
-	FlowEntity,
+	FlowEntity, WebhookProfileEntity, ControllerCommandEntity, SceneCommandEntity,
 ];
 
 export const createDataSource = (dbPath: string): DataSource =>

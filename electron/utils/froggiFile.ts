@@ -14,7 +14,14 @@ import path from 'path';
  * Legacy overlay .json (base64 customFiles) is still accepted on import.
  */
 export const FROGGI_EXT = 'froggi';
-export type FroggiKind = 'overlay' | 'asset-pack';
+export type FroggiKind = 'overlay' | 'asset-pack' | 'flow';
+
+/** Each importer only accepts its own kind (nothing is written otherwise) — this says where it goes. */
+export const wrongKindMessage = (kind: string): string =>
+	kind === 'overlay' ? 'That is an overlay — import it on the Overlays page.'
+	: kind === 'asset-pack' ? 'That is an asset pack — import it on Overlays → Assets.'
+	: kind === 'flow' ? 'That is a flow — import it on OBS → Flows.'
+	: 'That is not a Froggi file this version understands.';
 export interface FroggiManifest {
 	format: 'froggi';
 	version: 1;

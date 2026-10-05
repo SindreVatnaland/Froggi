@@ -4915,9 +4915,9 @@
                 "y": 511,
                 "h": 513
               },
-              "w": 50,
+              "w": 66,
               "h": 12,
-              "x": 8,
+              "x": 0,
               "y": 180,
               "id": "ssag7i1mn"
             },
@@ -5002,6 +5002,7 @@
                 },
                 "selectedOptions": [
                   {
+                    "Strike Phase: RPS": 1,
                     "Strike Phase: RPS Result": 1
                   }
                 ]
@@ -5292,9 +5293,9 @@
                 "y": 511,
                 "h": 513
               },
-              "w": 50,
+              "w": 66,
               "h": 12,
-              "x": 454,
+              "x": 446,
               "y": 180,
               "id": "ss706i8j7"
             },
@@ -5379,6 +5380,7 @@
                 },
                 "selectedOptions": [
                   {
+                    "Strike Phase: RPS": 1,
                     "Strike Phase: RPS Result": 1
                   }
                 ]
@@ -5816,7 +5818,7 @@
         "index": 9
       },
       {
-        "title": "Caption: Rps Winner Chooses Strike Order",
+        "title": "Caption: Rps Winner Chooses: Strike First Or Second",
         "items": [
           {
             "512": {
@@ -5930,7 +5932,7 @@
                 "spread": 0,
                 "color": "#000000ff"
               },
-              "string": "RPS WINNER CHOOSES STRIKE ORDER",
+              "string": "RPS WINNER CHOOSES: STRIKE FIRST OR SECOND",
               "textStroke": {
                 "size": 2,
                 "color": "#000000ff"
