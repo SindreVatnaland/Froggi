@@ -216,6 +216,7 @@ export function registerOverlayReadTools(server: McpServer) {
 					elementId: item.elementId,
 					elementType: CustomElement[item.elementId] ?? `unknown(${item.elementId})`,
 					layerIndex,
+					layerTitle: layer.title || undefined,
 					position: { x: item[COL]?.x, y: item[COL]?.y, w: item[COL]?.w, h: item[COL]?.h },
 					text: item.data?.string || undefined,
 					// When it shows / what animates it — e.g. a stock icon gated on "Player 1 Stock 3", or a

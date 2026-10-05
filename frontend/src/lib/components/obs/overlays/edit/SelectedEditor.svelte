@@ -113,6 +113,7 @@
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!overlayEditor.itemId || !selectedItem) return;
+		if ((e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]')) return;
 		if (e.shiftKey) {
 			if (e.key === 'ArrowDown') {
 				selectedItem[COL].h += 1;

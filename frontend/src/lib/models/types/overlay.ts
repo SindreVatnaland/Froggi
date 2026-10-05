@@ -157,6 +157,8 @@ export interface Layer {
 	index: number;
 	id: number | undefined;
 	preview: boolean;
+	/** Optional name shown in the layer panel (e.g. "Timer", "Stock-loss icons"). */
+	title?: string;
 }
 
 export interface OverlayEditor {

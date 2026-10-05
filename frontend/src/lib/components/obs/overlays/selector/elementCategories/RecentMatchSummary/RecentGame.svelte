@@ -19,14 +19,14 @@
 		Recent Game Stage
 	</SelectOption>
 	<SelectOption
-		description="Recent Game Player 1 Score"
+		description="Set score — games Player 1 has won in the current set (updates after each game)"
 		value={CustomElement.CurrentSetGameRecentPlayer1Score}
 		on:select={select}
 	>
 		Player 1 Score
 	</SelectOption>
 	<SelectOption
-		description="Recent Game Player 2 Score"
+		description="Set score — games Player 2 has won in the current set (updates after each game)"
 		value={CustomElement.CurrentSetGameRecentPlayer2Score}
 		on:select={select}
 	>

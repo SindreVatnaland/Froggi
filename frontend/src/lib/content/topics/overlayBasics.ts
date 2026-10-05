@@ -13,7 +13,7 @@ export const overlayBasicsTopics: ContentTopic[] = [
 			},
 			{
 				type: 'paragraph',
-				text: 'Each scene has one or more layers (stacked, like Photoshop layers), and each layer holds elements — text, images, stat displays, timers, etc. Elements are placed and resized on a grid, not free-pixel positioning, so they stay aligned and scale cleanly with the overlay\'s aspect ratio.',
+				text: 'Each scene has one or more layers (stacked, like Photoshop layers) — name a layer in the field under its row in the layer panel — and each layer holds elements — text, images, stat displays, timers, etc. Elements are placed and resized on a grid, not free-pixel positioning, so they stay aligned and scale cleanly with the overlay\'s aspect ratio.',
 			},
 			{
 				type: 'list',

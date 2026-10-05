@@ -37,6 +37,7 @@ const fixMatchTransition = (item: GridContentItem) => {
     if (
         [
             CustomElement.MatchPlayer1Score,
+            CustomElement.CurrentSetGameRecentPlayer1Score,
         ].includes(item.elementId)
     ) {
         item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer1ScoreChange] = true;
@@ -44,6 +45,7 @@ const fixMatchTransition = (item: GridContentItem) => {
     if (
         [
             CustomElement.MatchPlayer2Score,
+            CustomElement.CurrentSetGameRecentPlayer2Score,
         ].includes(item.elementId)
     ) {
         item.data.animationTrigger.selectedOptions[AnimationTrigger.MatchPlayer2ScoreChange] = true;

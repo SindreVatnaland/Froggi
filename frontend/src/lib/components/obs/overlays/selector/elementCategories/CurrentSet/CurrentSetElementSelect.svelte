@@ -25,18 +25,4 @@
 	>
 		Best Of
 	</SelectOption>
-	<SelectOption
-		description="Player 1 Current Match Score"
-		value={CustomElement.MatchPlayer1Score}
-		on:select={select}
-	>
-		Player 1 Match Score
-	</SelectOption>
-	<SelectOption
-		description="Player 2 Current Match Score"
-		value={CustomElement.MatchPlayer2Score}
-		on:select={select}
-	>
-		Player 2 Match Score
-	</SelectOption>
 </div>

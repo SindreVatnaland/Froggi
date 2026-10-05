@@ -15,8 +15,8 @@
 	const bestOf = gameSettings?.matchInfo?.bestOf ?? BestOf.BestOf3;
 	const player1Tag = currentPlayers.at(0)?.displayName ?? '';
 	const player2Tag = currentPlayers.at(1)?.displayName ?? '';
-	const player1Score = gameScore.at(0) ?? 0;
-	const player2Score = gameScore.at(1) ?? 0;
+	$: player1Score = gameScore.at(0) ?? 0;
+	$: player2Score = gameScore.at(1) ?? 0;
 </script>
 
 {#if dataItem?.elementId === CustomElement.MatchBestOf}

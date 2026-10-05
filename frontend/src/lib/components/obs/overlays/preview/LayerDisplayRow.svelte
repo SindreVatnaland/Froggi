@@ -40,6 +40,12 @@
 			!curOverlay[$statsScene].layers[layerIndex].preview;
 		updateScene(curOverlay, $statsScene);
 	};
+
+	const renameLayer = (title: string) => {
+		if (!curOverlay) return;
+		curOverlay[$statsScene].layers[layerIndex].title = title.trim() || undefined;
+		updateScene(curOverlay, $statsScene);
+	};
 </script>
 
 {#if layer}
@@ -127,6 +133,13 @@
 				</button>
 			</div>
 		</div>
+		<input
+			class="layer-title background-primary-color bg-opacity-30 text-secondary-color"
+			placeholder={`Layer ${layer.index + 1}`}
+			value={layer.title ?? ''}
+			on:change={(e) => renameLayer(e.currentTarget.value)}
+			on:keydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+		/>
 		<div class="w-full items-center overflow-hidden">
 			<button
 				class="w-full h-full justify-center background-primary-color bg-opacity-40 hover:bg-opacity-60"
@@ -146,3 +159,18 @@
 		</ConfirmModal>
 	</RightClick>
 {/if}
+
+<style>
+	.layer-title {
+		width: 100%;
+		height: 1.25rem;
+		padding: 0 0.5rem;
+		font-size: 0.7rem;
+		border: none;
+		outline: none;
+	}
+	.layer-title::placeholder {
+		color: var(--secondary-color);
+		opacity: 0.35;
+	}
+</style>

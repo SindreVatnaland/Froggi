@@ -37,6 +37,8 @@ const HIDDEN_ELEMENT_IDS = new Set<number>([
 	CustomElement.InGameCurrentPlayerControllerButtonL, CustomElement.InGameCurrentPlayerControllerButtonR,
 	CustomElement.InGamePlayer1ControllerButtonL, CustomElement.InGamePlayer1ControllerButtonR,
 	CustomElement.InGamePlayer2ControllerButtonL, CustomElement.InGamePlayer2ControllerButtonR,
+	// Legacy duplicates of CurrentSetGameRecentPlayerNScore (4200/4201) — still render, hidden from the picker.
+	CustomElement.MatchPlayer1Score, CustomElement.MatchPlayer2Score,
 ]);
 const ALL_ELEMENTS = Object.entries(CustomElement)
 	.filter(([, v]) => typeof v === 'number')
@@ -140,7 +142,8 @@ ON TOP; higher indexes are further behind (backgrounds/panels → higher index t
 Group by kind, split by proximity: all stock icons can share one layer, percentages go on another;
 HUD elements can share a layer, but elements close together (touching / nearly overlapping) go on
 different layers. Overlapping items on one layer fight for grid space, and separate layers animate
-independently (stock-loss vs percent punch).
+independently (stock-loss vs percent punch). Name every layer you add (add_overlay_layer titles, or
+rename_overlay_layer) after what it holds — the user sees those names in the layer panel.
 
 **Minigames in an overlay** — minigames are overlay elements, so they can sit in a custom layout, in
 OBS or injected into Dolphin (Windows, set_overlay_injection):
@@ -225,6 +228,39 @@ timer starts at frame 0):
 Recipe — custom "READY" / "GO!" callouts: two centered CustomString elements, one visible on
 \`Game Ready=True\`, the other on \`Game Go=True\`, each with a scale or fade visibility in/out animation.
 Hide in-game HUD elements during the intro with \`Game Ready=False, Game Go=False\` (as the timer does).
+
+**Set score** — CurrentSetGameRecentPlayer1Score / 2Score (4200 / 4201) = games each player has won in
+the current set (updates after every game). For a "1 - 0" scoreboard: score, a CustomString "-", score.
+(MatchPlayer1Score/2Score 4422/4423 are older duplicates kept only so existing overlays still render.)
+
+**Players** — Froggi overlays are 1v1 (singles): every per-player element is Player 1 / Player 2 /
+Current Player. Doubles and free-for-all aren't supported yet — say so if the user asks.
+
+## Demo HUD walkthrough (demo "HUD", inGame scene — read it with list_elements)
+A complete replacement for Melee's HUD (meant for a no-HUD gecko code), 16:9, font Roboto Bold Italic.
+Its 15 layers are named; index 0 is on top. What each does and when it shows:
+- 0 "GAME / TIME / TIE banner lines" — two thin full-width CustomBox lines (y≈86 and y≈194) framing the
+  end callouts; visible on {Game Tie | Game Time | Game End}.
+- 1 "Final countdown" — InGameTimerSecondsCountdown, big and centered; {Game Countdown} AND {NOT Paused};
+  animationTrigger "Game Countdown" pops each number.
+- 2 / 3 / 4 "TIE" / "TIME" / "GAME" callouts — centered CustomStrings on Game Tie / Game Time / Game End.
+- 5–7 Stock-loss display (Ultimate-style), all gated {P1 dead | P2 dead} AND {Game Running}, i.e. from
+  a KO until the respawn: 5 = each player's StocksRemaining as a big number (P1 left, P2 right,
+  animationTrigger "PlayerN Stock Loss"), 6 = 4 stock icons per player (Stock 1…4) on a band at y≈137,
+  7 = the dark CustomBox band behind those icons.
+- 8 "PAUSE label" — top-left text on Game Paused.
+- 9 "Timer" — top-left MM:SS:mmm (Minutes, ":", Seconds, ":", Milliseconds3); {Game Running} AND NOT
+  Paused/Countdown/Ready/Go, so the big countdown (layer 1) takes over in the last 5 seconds.
+- 10 "Player HUD: stocks + percent" — the bottom panels: 4 stock icons per player (y≈215) above the
+  pre-animated percent (InGamePlayerNPercentDecimalCustom, y≈239). P1 x≈114, P2 x≈291.
+- 11 "Player radar" — top-right, {P1 Off Stage | P2 Off Stage} AND NOT Paused AND Running.
+- 12 "Series symbol (behind percent)" — each character's series emblem under the percent (a lower
+  layer so it draws behind layer 10), on Game Running.
+- 13 / 14 "GO" / "READY" callouts — centered text on Game Go / Game Ready (NOT Paused).
+Why split like this: every centered callout (1–4, 13, 14) occupies the same box, so each has its own
+layer; the stock-loss parts overlap each other; the series symbol sits under the percent. Elements that
+never overlap (timer digits; one player's stocks + percent) share a layer.
+To restyle it: duplicate_overlay "hud", then edit/move elements on these layers (keep each layer's role).
 
 ## Controller inputs
 **Controller elements are SELF-DRIVING — no triggers, no conditions.** Each button/stick/trigger

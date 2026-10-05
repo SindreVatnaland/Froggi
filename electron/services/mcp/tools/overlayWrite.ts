@@ -95,19 +95,44 @@ export function registerOverlayWriteTools(server: McpServer) {
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
 				count: z.number().int().min(1).max(10).default(1),
 				atIndex: z.number().int().min(0).optional().describe('Insert position; omit to append (behind all existing layers)'),
+				titles: z.array(z.string().max(60)).max(10).optional().describe('Names for the new layers, in order (e.g. ["Timer", "P1 panel backdrop"]). Always name layers so the user can find them in the layer panel.'),
 			},
 		},
-		async ({ overlayId, statsScene, count, atIndex }) => {
+		async ({ overlayId, statsScene, count, atIndex, titles }) => {
 			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			const start = Math.min(atIndex ?? sceneBefore.layers.length, sceneBefore.layers.length);
 
-			const afterScene = await mcpContext.overlayStore!.addLayersToScene(overlayId, statsScene as LiveStatsScene, count, start);
+			const added = Math.max(count, titles?.length ?? 0);
+			const afterScene = await mcpContext.overlayStore!.addLayersToScene(overlayId, statsScene as LiveStatsScene, added, start, titles);
 			if (!afterScene) return error('Failed to add layer — see logs');
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${count} layer(s) to ${statsScene}`);
-			return text({ ok: true, layerCount: afterScene.layers.length, addedLayerIndexes: Array.from({ length: count }, (_, i) => start + i), note: 'Index 0 is on top; higher = further behind.' });
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${added} layer(s) to ${statsScene}`);
+			return text({ ok: true, layerCount: afterScene.layers.length, addedLayerIndexes: Array.from({ length: added }, (_, i) => start + i), note: 'Index 0 is on top; higher = further behind.' });
+		},
+	);
+
+	server.registerTool(
+		'rename_overlay_layer',
+		{
+			description: 'Name a layer (shown in the editor\'s layer panel; empty string clears it). Name every layer you create or restructure after what it holds — "Timer", "P1 panel", "Stock-loss icons", "GO callout" — so the user can find it. Records undo history.',
+			inputSchema: {
+				overlayId: z.string(),
+				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
+				layerIndex: z.number().int().min(0),
+				title: z.string().max(60),
+			},
+		},
+		async ({ overlayId, statsScene, layerIndex, title }) => {
+			const overlayBefore = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
+			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
+			const afterScene = await mcpContext.overlayStore!.renameLayer(overlayId, statsScene as LiveStatsScene, layerIndex, title);
+			if (!afterScene) return error('Failed to rename layer — see logs');
+			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `rename layer ${layerIndex}`);
+			return text({ ok: true, layerIndex, title: afterScene.layers[layerIndex]?.title ?? null });
 		},
 	);
 

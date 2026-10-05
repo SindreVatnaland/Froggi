@@ -198,6 +198,7 @@
     "layers": [
       {
         "index": 0,
+        "title": "GAME / TIME / TIE banner lines",
         "preview": true,
         "id": 11215,
         "items": [
@@ -441,6 +442,7 @@
       },
       {
         "index": 1,
+        "title": "Final countdown (last 5 seconds)",
         "preview": true,
         "id": 11216,
         "items": [
@@ -580,6 +582,7 @@
       },
       {
         "index": 2,
+        "title": "TIE callout",
         "preview": true,
         "id": 11217,
         "items": [
@@ -698,6 +701,7 @@
       },
       {
         "index": 3,
+        "title": "TIME callout",
         "preview": true,
         "id": 11218,
         "items": [
@@ -816,6 +820,7 @@
       },
       {
         "index": 4,
+        "title": "GAME callout",
         "preview": true,
         "id": 11219,
         "items": [
@@ -941,6 +946,7 @@
       },
       {
         "index": 5,
+        "title": "Stock loss: remaining stocks number",
         "preview": true,
         "id": 11220,
         "items": [
@@ -1258,6 +1264,7 @@
       },
       {
         "index": 6,
+        "title": "Stock loss: stock icons",
         "preview": true,
         "id": 11221,
         "items": [
@@ -2640,6 +2647,7 @@
       },
       {
         "index": 7,
+        "title": "Stock loss: backdrop band",
         "preview": true,
         "id": 11222,
         "items": [
@@ -2952,6 +2960,7 @@
       },
       {
         "index": 8,
+        "title": "PAUSE label",
         "preview": true,
         "id": 11223,
         "items": [
@@ -3077,6 +3086,7 @@
       },
       {
         "index": 9,
+        "title": "Timer",
         "preview": true,
         "id": 11224,
         "items": [
@@ -3914,6 +3924,7 @@
       },
       {
         "index": 10,
+        "title": "Player HUD: stocks + percent",
         "preview": true,
         "id": 11225,
         "items": [
@@ -5500,6 +5511,7 @@
       },
       {
         "index": 11,
+        "title": "Player radar",
         "preview": true,
         "id": 11226,
         "items": [
@@ -5687,6 +5699,7 @@
       },
       {
         "index": 12,
+        "title": "Series symbol (behind percent)",
         "preview": true,
         "id": 11227,
         "items": [
@@ -5932,6 +5945,7 @@
       },
       {
         "index": 13,
+        "title": "GO callout",
         "preview": true,
         "id": 11228,
         "items": [
@@ -6062,6 +6076,7 @@
       },
       {
         "index": 14,
+        "title": "READY callout",
         "preview": true,
         "id": 11229,
         "items": [

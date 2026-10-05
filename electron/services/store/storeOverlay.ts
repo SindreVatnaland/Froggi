@@ -703,6 +703,15 @@ export class ElectronOverlayStore {
 		return this.setScene(overlayId, statsScene, scene);
 	}
 
+	/** Name a layer (empty title clears it). Returns the saved scene. */
+	async renameLayer(overlayId: string, statsScene: LiveStatsScene, layerIndex: number, title: string): Promise<Scene | undefined> {
+		const overlay = await this.getOverlayById(overlayId);
+		const scene = overlay?.[statsScene];
+		if (!scene?.layers[layerIndex]) return;
+		scene.layers[layerIndex].title = title.trim() || undefined;
+		return this.setScene(overlayId, statsScene, scene);
+	}
+
 	/** Update overlay-level settings (title / description / aspect ratio). */
 	async updateOverlaySettings(overlayId: string, settings: { title?: string; description?: string; aspectRatio?: AspectRatio }): Promise<Overlay | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
@@ -713,12 +722,12 @@ export class ElectronOverlayStore {
 	}
 
 	/** Insert `count` empty layers at `atIndex` (default: end = furthest back). Returns the saved scene. */
-	async addLayersToScene(overlayId: string, statsScene: LiveStatsScene, count: number, atIndex?: number): Promise<Scene | undefined> {
+	async addLayersToScene(overlayId: string, statsScene: LiveStatsScene, count: number, atIndex?: number, titles?: string[]): Promise<Scene | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		const scene = overlay?.[statsScene];
 		if (!scene) return;
 		const index = Math.min(atIndex ?? scene.layers.length, scene.layers.length);
-		const newLayers: Layer[] = Array.from({ length: count }, () => ({ index: 0, items: [], id: undefined, preview: true }));
+		const newLayers: Layer[] = Array.from({ length: count }, (_, i) => ({ index: 0, items: [], id: undefined, preview: true, title: titles?.[i] || undefined }));
 		scene.layers = [...scene.layers.slice(0, index), ...newLayers, ...scene.layers.slice(index)];
 		return this.setScene(overlayId, statsScene, scene);
 	}
