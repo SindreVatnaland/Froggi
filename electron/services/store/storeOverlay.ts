@@ -408,11 +408,12 @@ export class ElectronOverlayStore {
 		this.setOverlay(overlay)
 	}
 
-	async copyOverlay(overlayId: string): Promise<void> {
+	/** Duplicates an overlay (scenes, layers, elements, custom files). Returns the new id. */
+	async copyOverlay(overlayId: string, title?: string): Promise<string | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		if (isNil(overlay)) return;
 
-		const newOverlay = { ...overlay, id: newId(), title: `${overlay.title} - copy`, isDemo: false, deletedAt: null }
+		const newOverlay = { ...overlay, id: newId(), title: title || `${overlay.title} - copy`, isDemo: false, deletedAt: null }
 		Object.keys(LiveStatsScene)
 			.filter(key => isNaN(Number(key)))
 			.forEach(key => {
@@ -424,12 +425,13 @@ export class ElectronOverlayStore {
 				delete newOverlay[statsScene].id
 			})
 
-		this.setOverlay(newOverlay);
+		await this.setOverlay(newOverlay);
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		const destination = path.join(this.appDir, "public", "custom", newOverlay.id)
 		if (fs.existsSync(source)) {
 			fs.cp(source, destination, { recursive: true }, (err => { if (err) this.log.error(err) }));
 		}
+		return newOverlay.id;
 	}
 
 	async uploadOverlay(overlay: Overlay, overlayId: string = newId()): Promise<void> {
@@ -771,7 +773,7 @@ export class ElectronOverlayStore {
 			this.setScene(overlayId, statsScene, scene)
 		})
 
-		this.clientEmitter.on('OverlayDuplicate', this.copyOverlay.bind(this));
+		this.clientEmitter.on('OverlayDuplicate', (overlayId: string) => void this.copyOverlay(overlayId));
 
 		this.clientEmitter.on('OverlayDelete', this.deleteOverlay.bind(this));
 

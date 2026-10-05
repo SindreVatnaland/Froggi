@@ -27,6 +27,48 @@ export interface HudReference {
 	regions: HudRegion[];
 }
 
+export interface HudGuideItem {
+	/** What the game shows */
+	element: string;
+	where: string;
+	when: string;
+	/** How to recreate / complement it in Froggi */
+	froggi: string;
+}
+
+/**
+ * How each game's own HUD behaves — what is on screen, where, and when — so the AI assistant knows
+ * what "looks like Melee/Ultimate" means and which Froggi elements + conditions recreate it.
+ * Returned by get_game_hud_reference together with the screenshots.
+ */
+export const GAME_HUD_GUIDES: Record<HudReference['game'], HudGuideItem[]> = {
+	melee: [
+		{ element: 'Match timer', where: 'Top center', when: 'Timed matches (Slippi online: 8:00), counting down while the match runs', froggi: 'InGameTimerMinutes (4300) + InGameTimerSeconds (4301) + centiseconds (4302/4303, smaller), visibility Game Running=True, Game Ready=False, Game Go=False' },
+		{ element: 'Player panel (one per port)', where: 'Bottom row in port order by default (P1 ~20% across, P2 ~40%); centered pair with a centered-HUD gecko code', when: 'Whole match', froggi: 'Group per player: stock icons, percent and the series emblem behind it' },
+		{ element: 'Stock icons', where: 'Small character heads in a row ABOVE the percent', when: 'One per remaining stock; the rightmost disappears on each KO', froggi: 'InGamePlayerNCharacterIcon (6220 / 6230), one per stock, leftmost = visibility "Player N Stock 1" … rightmost "Stock 4"' },
+		{ element: 'Damage percent', where: 'Large digits + "%" under the stocks, over a faded series emblem in the port color', when: 'Whole match; turns from white through yellow/orange to red as damage rises and shakes when hit; resets to 0% on respawn', froggi: 'InGamePlayerNPercentCustom (1008 / 1009, pre-animated) over InGamePlayerNCharacterSeriesSymbol (6221 / 6231) on a lower layer' },
+		{ element: 'Stock loss', where: 'On the player panel', when: 'When a player is KO\'d (they respawn on a platform)', froggi: 'animationTrigger "PlayerN Stock Loss" (e.g. a flash or banner); stock icons hide via their Stock conditions automatically' },
+		{ element: '"READY" / "GO!"', where: 'Screen center', when: 'Match start: READY during the intro, then GO! — Melee has no 3-2-1', froggi: 'Two centered CustomString elements, visibility Game Ready=True / Game Go=True, separate layers' },
+		{ element: 'Final countdown', where: 'Center', when: 'Last seconds of a timed match', froggi: 'InGameTimerSecondsCountdown (4305), visibility Game Countdown=True (last 5 s), animationTrigger in "scale"' },
+		{ element: '"GAME!" / "TIME!"', where: 'Center', when: 'Match end: GAME! when stocks run out, TIME! when the timer hits 0 (a tie goes to Sudden Death)', froggi: 'CustomString elements with visibility Game End / Game Time (Game Tie for ties)' },
+		{ element: 'Pause', where: 'Center', when: 'Offline only (online play cannot pause)', froggi: 'visibility Game Paused=True; hide other elements with Game Paused=False if wanted' },
+		{ element: 'Off-screen bubble', where: 'Screen edge near the player', when: 'While a character is off-screen (a magnifying bubble)', froggi: 'No bubble element — use the player radar InGamePlayerRadar (3200, or 3201 animated) with visibility "Player N Off Stage"' },
+		{ element: 'Online frame delay', where: 'Small "Delay: Nf" bottom-right', when: 'Slippi online, if enabled', froggi: 'Leave that corner free' },
+	],
+	ultimate: [
+		{ element: 'Match timer', where: 'Top-right', when: 'Timed matches, counting down; small centiseconds after the seconds', froggi: 'InGameTimerMinutes/Seconds (+ centiseconds 4302/4303 smaller), top-right, visibility Game Running=True, Game Ready=False, Game Go=False' },
+		{ element: 'Player panel (one per player)', where: 'Bottom, centered as a row: P1 left of center, P2 right of center', when: 'Whole match', froggi: 'Group per player: portrait, percent, name plate, stocks' },
+		{ element: 'Character portrait', where: 'Left part of the panel, framed in the player color', when: 'Whole match; swaps with the character', froggi: 'InGamePlayerNCharacterRenderLeft/Right (2003/2004 for P1) or a character icon, on a lower layer than the percent' },
+		{ element: 'Damage percent', where: 'Large, right of the portrait, with a small one-decimal fraction', when: 'Whole match; shifts from white toward red as damage rises and bumps when hit', froggi: 'InGamePlayerNPercentCustom (1008/1009) + DecimalCustom (1010–1012) for the small decimal' },
+		{ element: 'Name plate', where: 'Bar under the percent with the name (character name or player tag)', when: 'Whole match', froggi: 'MatchPlayerNTag (4420 / 4421) in a dark rounded CustomBox (3000) under the percent' },
+		{ element: 'Stock icons', where: 'Small heads under the name plate / portrait', when: 'One per remaining stock (large stock counts show as a number)', froggi: 'InGamePlayerNCharacterIcon per stock with visibility "Player N Stock K", small, in a row' },
+		{ element: '"3, 2, 1, GO!"', where: 'Screen center', when: 'Match start intro', froggi: 'Game Ready covers the intro (count as you like), Game Go the GO! — separate layers' },
+		{ element: 'Radar (minimap)', where: 'A corner (top-left in the reference)', when: 'When a fighter is off-screen', froggi: 'InGamePlayerRadar (3200 / 3201) with visibility "Player N Off Stage"' },
+		{ element: 'Player tag above fighter', where: 'Floating "P1"/"P2"/"CP" above each character', when: 'Whole match', froggi: 'Not reproducible as an element (needs positions)' },
+		{ element: '"GAME!" / "TIME!"', where: 'Center', when: 'Match end (stocks out / time up; ties go to Sudden Death)', froggi: 'CustomString elements with visibility Game End / Game Time / Game Tie' },
+	],
+};
+
 export const HUD_REFERENCES: HudReference[] = [
 	{
 		id: 'melee-16x9-default',

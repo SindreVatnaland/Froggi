@@ -69,6 +69,24 @@ export function registerOverlayWriteTools(server: McpServer) {
 	);
 
 	server.registerTool(
+		'duplicate_overlay',
+		{
+			description: 'Copy a whole overlay (all scenes, layers, elements and its custom images/fonts) into a new, editable overlay — the way to start from a demo overlay (demos themselves are read-only). Returns the new id.',
+			inputSchema: {
+				overlayId: z.string(),
+				title: z.string().min(1).max(100).optional().describe('Title for the copy (default "<original> - copy")'),
+			},
+		},
+		async ({ overlayId, title }) => {
+			const source = await mcpContext.overlayStore!.getOverlayById(overlayId);
+			if (!source) return error(`No overlay with id "${overlayId}"`);
+			const newId = await mcpContext.overlayStore!.copyOverlay(overlayId, title);
+			if (!newId) return error('Failed to duplicate overlay — see logs');
+			return text({ ok: true, overlayId: newId, title: title || `${source.title} - copy` });
+		},
+	);
+
+	server.registerTool(
 		'add_overlay_layer',
 		{
 			description: 'Add empty layer(s) to a scene. Layer order: index 0 is drawn ON TOP, higher indexes are further BEHIND (so backgrounds/panels go on a higher index than the text drawn over them). Use separate layers for elements that sit close together or overlap — e.g. all stock icons on one layer, percentages on another; HUD elements can share a layer unless they are close together. Default appends at the end (behind everything); pass atIndex to insert elsewhere (existing layers at/after it shift +1). Records undo history. Returns the scene\'s new layer count and the added indexes.',

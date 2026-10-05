@@ -4,7 +4,7 @@ import { mcpContext } from '../mcpContext';
 import { LiveStatsScene } from '../../../../frontend/src/lib/models/enum';
 import { CustomElement } from '../../../../frontend/src/lib/models/constants/customElement';
 import { BACKEND_PORT, COL } from '../../../../frontend/src/lib/models/const';
-import { HUD_REFERENCES } from '../../../../frontend/src/lib/content/hudReferences';
+import { GAME_HUD_GUIDES, HUD_REFERENCES } from '../../../../frontend/src/lib/content/hudReferences';
 import fs from 'fs';
 import path from 'path';
 
@@ -84,14 +84,14 @@ export function registerOverlayReadTools(server: McpServer) {
 	server.registerTool(
 		'get_game_hud_reference',
 		{
-			description: 'Reference screenshots of the GAME\'s own HUD (timer, stock icons, damage percent) with approximate positions on the overlay grid (512 columns × 288 rows). Use it two ways: (1) ADD to the game HUD — place extra elements (names, ranks, controller inputs, stats) in the free space around these regions without covering them; (2) REPLACE the game HUD — put custom stock/percent/timer elements exactly on these regions for a custom HUD. References are 16:9; pass aspectRatio (e.g. {width:4,height:3} or {width:73,height:60}) to get the center crop for a narrower overlay — regions are re-mapped to that overlay\'s grid and the screenshot is cropped. Without id: lists references.',
+			description: 'Reference screenshots of the GAME\'s own HUD (timer, stock icons, damage percent) with approximate positions on the overlay grid (512 columns × 288 rows). Also returns hudGuide: how that game\'s HUD behaves — each element, where it sits, WHEN it shows (intro, stock loss, off-screen, end) and which Froggi element + conditions recreate it; use it to understand what "looks like Melee/Ultimate" means. Use it two ways: (1) ADD to the game HUD — place extra elements (names, ranks, controller inputs, stats) in the free space around these regions without covering them; (2) REPLACE the game HUD — put custom stock/percent/timer elements exactly on these regions for a custom HUD. References are 16:9; pass aspectRatio (e.g. {width:4,height:3} or {width:73,height:60}) to get the center crop for a narrower overlay — regions are re-mapped to that overlay\'s grid and the screenshot is cropped. Without id: lists references.',
 			inputSchema: {
 				id: z.string().optional(),
 				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Target overlay aspect ratio; must be equal to or narrower than the reference'),
 			},
 		},
 		async ({ id, aspectRatio }) => {
-			if (!id) return text(HUD_REFERENCES.map(({ id, title, game, aspectRatio }) => ({ id, title, game, aspectRatio })));
+			if (!id) return text({ references: HUD_REFERENCES.map(({ id, title, game, aspectRatio }) => ({ id, title, game, aspectRatio })), note: 'Fetch one by id for its screenshot, regions and the game\'s HUD guide.' });
 			const ref = HUD_REFERENCES.find((r) => r.id === id);
 			if (!ref) return error(`No HUD reference "${id}" — call without id to list them.`);
 			const { image, regions, ...info } = ref;
@@ -117,6 +117,7 @@ export function registerOverlayReadTools(server: McpServer) {
 						overlayAspectRatio: aspectRatio ?? ref.aspectRatio,
 						grid: '512 columns × 288 rows on the overlay (any aspect ratio); x/y top-left, w/h size; approximate',
 						regions: mapped,
+						hudGuide: GAME_HUD_GUIDES[ref.game],
 					}, null, 2),
 				},
 			];
@@ -201,7 +202,7 @@ export function registerOverlayReadTools(server: McpServer) {
 	server.registerTool(
 		'list_elements',
 		{
-			description: 'List elements in one scene of an overlay — id, element type, layer index, and grid position/size. Use get_overlay with verbose:true if you need full styling for a specific element.',
+			description: 'List elements in one scene of an overlay — id, element type, layer index, grid position/size, and when each element shows (visibleWhen = visibility conditions) / what animates it (animatesOn = animation trigger). Read those to understand what an element is for (e.g. a stock row only visible on stock loss). Use get_overlay with verbose:true for full styling.',
 			inputSchema: { overlayId: z.string(), statsScene: z.enum(STATS_SCENES as [string, ...string[]]) },
 		},
 		async ({ overlayId, statsScene }) => {
@@ -217,6 +218,10 @@ export function registerOverlayReadTools(server: McpServer) {
 					layerIndex,
 					position: { x: item[COL]?.x, y: item[COL]?.y, w: item[COL]?.w, h: item[COL]?.h },
 					text: item.data?.string || undefined,
+					// When it shows / what animates it — e.g. a stock icon gated on "Player 1 Stock 3", or a
+					// banner that plays on "Player1 Stock Loss".
+					visibleWhen: item.data?.visibility?.selectedOptions?.length ? item.data.visibility.selectedOptions : undefined,
+					animatesOn: item.data?.animationTrigger?.selectedOptions && Object.keys(item.data.animationTrigger.selectedOptions).length ? item.data.animationTrigger.selectedOptions : undefined,
 				})),
 			);
 			return text(elements);
