@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Stage } from '@slippi/slippi-js';
 
@@ -19,6 +20,7 @@
 		}; `}
 	>
 		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 			class="w-full h-full aspect-video"
 			style={`object-fit: ${dataItem?.data.image.objectFit ?? 'contain'}; ${
 				dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''

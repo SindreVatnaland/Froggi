@@ -61,6 +61,11 @@ export function getDefaultElementPayload(): ElementPayload {
 			src: undefined,
 			objectFit: 'contain',
 		},
+		colorOverlay: {
+			enabled: false,
+			color: '#ffffff',
+			strength: 100,
+		},
 		visibility: {
 			in: getDefaultAnimations(SCENE_TRANSITION_DELAY),
 			out: getDefaultAnimations(),

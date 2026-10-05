@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
 	import { isNil } from 'lodash';
@@ -26,6 +27,7 @@
 		}; `}
 	>
 		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 			class="h-full aspect-video contain"
 			style={`object-fit: ${dataItem?.data.image.objectFit ?? 'contain'}; ${
 				dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''

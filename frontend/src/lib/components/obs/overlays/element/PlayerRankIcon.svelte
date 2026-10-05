@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
 
@@ -24,6 +25,7 @@
 		}; `}
 	>
 		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 			class="w-full h-full object-contain"
 			style={`${dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''};`}
 			src={`/image/rank-icons/${rankIcon}.svg`}

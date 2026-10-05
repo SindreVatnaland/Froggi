@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import { CHARACTERS_INTERNAL_EXTERNAL } from '$lib/models/constants/characterData';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
@@ -34,6 +35,7 @@
 	>
 		{#if div}
 			<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 				class="h-full"
 				style={`object-fit: cover; object-position: ${
 					direction === 'left' ? 100 : 0

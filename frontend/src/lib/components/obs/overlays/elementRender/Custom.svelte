@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import { page } from '$app/stores';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
@@ -33,6 +34,7 @@
 		}; `}
 	>
 		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 			class="w-full h-full"
 			style={`object-fit: ${dataItem?.data.image.objectFit ?? 'contain'};
 					${dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''};`}

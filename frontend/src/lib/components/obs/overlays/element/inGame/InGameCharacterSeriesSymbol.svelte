@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import {
 		CHARACTERS_INTERNAL_EXTERNAL,
 		CHARACTERS_SERIES,
@@ -35,6 +36,7 @@
 		}; `}
 	>
 		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 			class="h-full w-full aspect-video"
 			style={`object-fit: ${dataItem?.data.image.objectFit ?? 'contain'};
 			${dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''};`}

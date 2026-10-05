@@ -153,6 +153,11 @@ in-game work over the matching screenshot: show_overlay_preview background=<refe
 background…" next to Add Background. After adding animations, call test_overlay_animation so the user
 sees them play in the preview.
 
+**Recoloring images** — any image element (character/stock icons, renders, rank icons, stage, Custom
+Image) takes \`colorOverlay: {enabled:true, color:"#ffffff", strength:100}\`: 100 = solid silhouette in
+that color (white/black/team color stock icons), lower = tint that keeps detail. Layer a silhouette in
+the backdrop's color over a panel for a "hole punch" look.
+
 **Images** — store the image first with add_overlay_image (url, local filePath, base64, or picker:true
 to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
 with payload \`{"image":{"name":fileName,"objectFit":"contain"}}\`, or a scene background via

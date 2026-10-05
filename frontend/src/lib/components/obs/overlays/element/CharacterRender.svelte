@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Character } from '$lib/models/enum';
 	import { PlayerType } from '@slippi/slippi-js';
@@ -35,6 +36,7 @@
 		>
 			{#if div}
 				<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
 					class="h-full"
 					style={`object-fit: cover; ${'object-position: 100% 0;'};  height: ${
 						div?.clientHeight

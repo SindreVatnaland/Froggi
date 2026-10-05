@@ -24,6 +24,6 @@ export const isPercentColorElement = (elementId: number) => elementId >= 1001 &&
 /** Which ElementPayload fields actually affect each kind — so a client sets only relevant options. */
 export const ELEMENT_KIND_OPTIONS: Record<ElementKind, string[]> = {
 	text: ['string', 'font.family / font.src', 'css.color', 'css.background', 'css.border{Top,Right,Bottom,Left} + borderColor', 'textStroke', 'shadow', 'percent.startColor/endColor (percent elements only)', 'transform', 'class.alignment'],
-	image: ['image.src', 'image.name', 'image.objectFit (contain|cover)', 'css.opacity', 'shadow', 'transform', 'class.alignment'],
+	image: ['image.src', 'image.name', 'image.objectFit (contain|cover)', 'colorOverlay {enabled, color, strength 0-100} — recolor the image (100 = solid silhouette in that color, lower = tint)', 'css.opacity', 'shadow', 'transform', 'class.alignment'],
 	box: ['css.background', 'css.border{Top,Right,Bottom,Left} + borderColor', 'css.fill / stroke / strokeWidth (controller & svg)', 'css.customBox (needs advancedStyling)', 'shadow', 'transform'],
 };

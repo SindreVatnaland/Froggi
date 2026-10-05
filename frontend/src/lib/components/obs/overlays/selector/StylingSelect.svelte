@@ -34,6 +34,9 @@
 	$: customImageSettings = isCustomImageSettings(selectedElementId);
 	$: stringSettings = isStringSettings(selectedElementId);
 	$: imageSettings = isImageSettings(selectedElementId);
+	// Elements created before the color option existed have no colorOverlay yet.
+	$: if ((imageSettings || customImageSettings) && payload && !payload.colorOverlay)
+		payload.colorOverlay = { enabled: false, color: '#ffffff', strength: 100 };
 
 	$: boxSettings = isBoxSettings(selectedElementId);
 	$: iframeSettings = selectedElementId === CustomElement.CustomBoxIframe;
@@ -252,6 +255,32 @@
 						<option value="contain">Contain</option>
 						<option selected value="cover">Cover</option>
 					</Select>
+				</section>
+			{/if}
+
+			{#if (imageSettings || customImageSettings) && payload.colorOverlay}
+				<section class="styling-section">
+					<div class="flex items-center gap-3">
+						<p
+							class="section-label"
+							use:tooltip={{
+								content: 'Paint the image in one color, keeping its shape and transparency. 100% = solid recolor (e.g. a white or black silhouette), lower = tint.',
+								placement: 'top-start',
+								offset: 15,
+								delay: [200, 0],
+							}}
+						>
+							Color Overlay
+						</p>
+						<BooleanInput bind:checked={payload.colorOverlay.enabled} />
+					</div>
+					{#if payload.colorOverlay.enabled}
+						<div class="flex flex-col gap-2" in:fly={{ duration: 250, x: 100 }}>
+							<ColorInput bind:value={payload.colorOverlay.color} />
+							<p class="section-label">Strength · {payload.colorOverlay.strength}%</p>
+							<SliderInput bind:value={payload.colorOverlay.strength} min={0} max={100} step={1} />
+						</div>
+					{/if}
 				</section>
 			{/if}
 

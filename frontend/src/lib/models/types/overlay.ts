@@ -94,6 +94,15 @@ export interface ElementPayload {
 	textStroke: Stroke;
 	transform: CssTransform;
 	visibility: VisibilityAnimations;
+	/** Image elements: paint the image's shape in one color. strength 100 = solid recolor, lower = tint. */
+	colorOverlay?: ColorOverlay;
+}
+
+export interface ColorOverlay {
+	enabled: boolean;
+	color: string;
+	/** 0–100 */
+	strength: number;
 }
 
 export interface Font {
