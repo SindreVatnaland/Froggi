@@ -40,6 +40,7 @@ import { ActionStateService } from './services/actionStateService';
 import { ErrorReporter, reportStartupError } from './services/errorReporter';
 import { BUILD_CRASH_WEBHOOK } from './services/reportWebhooks';
 import { BingoService } from './services/bingoService';
+import { AssetPackService } from './services/assetPackService';
 import { IronManService } from './services/ironmanService';
 import { LobbyService } from './services/lobbyService';
 import { TwitchChatService } from './services/twitchChatService';
@@ -382,6 +383,7 @@ try {
 			container.resolve(PacketCapture);
 			container.resolve(ElectronSetService);
 			container.resolve(NgrokService);
+			container.resolve(AssetPackService);
 			container.resolve(ElectronWebhookStore);
 			container.resolve(WebhookService);
 			container.resolve(ActionStateService);

@@ -30,6 +30,7 @@
 	import { isDisallowedInjectedElement } from '$lib/utils/disallowedElements';
 	import {
 		BINGO_ELEMENTS,
+		PACK_CHARACTER_ELEMENTS,
 		IRONMAN_ELEMENTS,
 		CUSTOM_ELEMENTS,
 		INGAME_ELEMENTS,
@@ -43,6 +44,7 @@
 	} from './elementCategories';
 	import BingoBoard from './elementRender/BingoBoard.svelte';
 	import IronManRoster from './elementRender/IronManRoster.svelte';
+	import PackCharacter from './elementRender/PackCharacter.svelte';
 	import Striking from './elementRender/Striking.svelte';
 	import { strikeState } from '$lib/utils/store.svelte';
 
@@ -141,7 +143,9 @@
 >
 	{#if div && shouldPreview}
 		<div class="w-full h-full">
-			{#if CUSTOM_ELEMENTS.has(dataItem.elementId)}
+			{#if PACK_CHARACTER_ELEMENTS.has(dataItem.elementId)}
+				<PackCharacter {dataItem} {defaultPreview} {style} />
+			{:else if CUSTOM_ELEMENTS.has(dataItem.elementId)}
 				<Custom {dataItem} {style} overlayId={_overlayId} />
 			{:else if INGAME_ELEMENTS.has(dataItem.elementId)}
 				<InGame

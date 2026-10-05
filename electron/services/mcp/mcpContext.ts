@@ -14,6 +14,7 @@ import type { NgrokService } from '../ngrokService';
 import type { OverlayInjector } from '../injectOverlay';
 import type { ErrorReporter } from '../errorReporter';
 import type { BingoService } from '../bingoService';
+import type { AssetPackService } from '../assetPackService';
 import type { IronManService } from '../ironmanService';
 import type { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 
@@ -44,4 +45,5 @@ export const mcpContext: {
 	bingoService?: BingoService;
 	ironmanService?: IronManService;
 	clientEmitter?: TypedEmitter;
+	assetPackService?: AssetPackService;
 } = {};

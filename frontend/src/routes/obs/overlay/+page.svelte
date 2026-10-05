@@ -71,9 +71,12 @@
 			placeholder="Search…"
 			bind:value={search}
 		/>
+		<a class="btn text-sm h-8 px-4 border-secondary rounded flex items-center ml-auto" href="/obs/overlay/assets">
+			Assets
+		</a>
 		{#if deletedCount}
 			<a
-				class="btn text-sm h-8 px-4 border-secondary rounded flex items-center ml-auto"
+				class="btn text-sm h-8 px-4 border-secondary rounded flex items-center"
 				href="/obs/overlay/deleted"
 			>
 				Deleted ({deletedCount})
@@ -82,7 +85,6 @@
 		{#if $isElectron}
 			<button
 				class="btn text-sm h-8 px-4 border-secondary rounded"
-				class:ml-auto={!deletedCount}
 				on:click={() => (newOverlayModalOpen = true)}
 			>
 				+ New overlay

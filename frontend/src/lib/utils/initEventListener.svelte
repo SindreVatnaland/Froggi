@@ -31,6 +31,7 @@
 		froggiSettings,
 		injectedOverlays,
 		previewTestAnimation,
+		assetPacks,
 		autoInjectOverlays,
 		remoteAccess,
 		tailscaleStatus,
@@ -283,6 +284,12 @@
 				(() => {
 					const [overlayId, itemId] = payload as Parameters<MessageEvents['PreviewTestAnimation']>;
 					previewTestAnimation.set({ overlayId, itemId, n: Date.now() });
+				})();
+				break;
+			case 'AssetPacks':
+				(() => {
+					const value = payload[0] as Parameters<MessageEvents['AssetPacks']>[0];
+					assetPacks.set(value ?? []);
 				})();
 				break;
 			case 'Overlays':

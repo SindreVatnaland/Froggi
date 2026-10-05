@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { BUILTIN_ASSET_PACKS, DEFAULT_ASSET_PACK_ID } from '$lib/models/types/assetPack';
+	import { PACK_CHARACTER_ELEMENTS } from '../elementCategories';
 	import Select from '$lib/components/input/Select.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import type { ElementPayload } from '$lib/models/types/overlay';
@@ -9,7 +11,7 @@
 	import CodeInput from '$lib/components/input/CodeInput.svelte';
 	import { fly } from 'svelte/transition';
 	import ShadowSelect from './ShadowSelect.svelte';
-	import { localEmitter, statsScene } from '$lib/utils/store.svelte';
+	import { assetPacks, localEmitter, statsScene } from '$lib/utils/store.svelte';
 	import AnimationInput from '$lib/components/input/AnimationInput.svelte';
 	import BooleanInput from '$lib/components/input/BooleanInput.svelte';
 	import FontSelectorLayer from '$lib/components/obs/overlays/selector/FontSelectLayer.svelte';
@@ -34,6 +36,8 @@
 	$: customImageSettings = isCustomImageSettings(selectedElementId);
 	$: stringSettings = isStringSettings(selectedElementId);
 	$: imageSettings = isImageSettings(selectedElementId);
+	$: isPackCharacter = PACK_CHARACTER_ELEMENTS.has(selectedElementId);
+	$: if (isPackCharacter && payload && !payload.assetPack) payload.assetPack = DEFAULT_ASSET_PACK_ID;
 	// Elements created before the color option existed have no colorOverlay yet.
 	$: if ((imageSettings || customImageSettings) && payload && !payload.colorOverlay)
 		payload.colorOverlay = { enabled: false, color: '#ffffff', strength: 100 };
@@ -245,6 +249,28 @@
 						<option selected value="justify-center">Center</option>
 						<option value="justify-end">Right</option>
 					</Select>
+				</section>
+			{/if}
+
+			{#if isPackCharacter}
+				<section class="styling-section">
+					<p
+						class="section-label"
+						use:tooltip={{
+							content: 'Which set of character images to show — built-in stock icons, portraits or renders, or your own asset pack (Overlays → Assets).',
+							placement: 'top-start',
+							offset: 15,
+							delay: [200, 0],
+						}}
+					>
+						Asset pack
+					</p>
+					<Select bind:selected={payload.assetPack}>
+						{#each [...BUILTIN_ASSET_PACKS, ...$assetPacks] as pack}
+							<option value={pack.id} selected={(payload.assetPack ?? DEFAULT_ASSET_PACK_ID) === pack.id}>{pack.title}</option>
+						{/each}
+					</Select>
+					<a class="text-xs underline opacity-60" href="/obs/overlay/assets">Manage asset packs →</a>
 				</section>
 			{/if}
 

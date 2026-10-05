@@ -96,6 +96,8 @@ export interface ElementPayload {
 	visibility: VisibilityAnimations;
 	/** Image elements: paint the image's shape in one color. strength 100 = solid recolor, lower = tint. */
 	colorOverlay?: ColorOverlay;
+	/** Character elements: asset pack id (see models/types/assetPack). Default: built-in stock icons. */
+	assetPack?: string;
 }
 
 export interface ColorOverlay {

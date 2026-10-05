@@ -1,4 +1,5 @@
 import { BrowserWindow, shell } from 'electron';
+import { AssetPackService } from './assetPackService';
 import type { IpcMain } from 'electron';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
@@ -79,6 +80,7 @@ export class MessageHandler {
 		@inject(delay(() => OverlayInjector)) private overlayInjector: OverlayInjector,
 		@inject(delay(() => ElectronStrikeStore)) private storeStrike: ElectronStrikeStore,
 		@inject(delay(() => NgrokService)) private ngrokService: NgrokService,
+		@inject(delay(() => AssetPackService)) private assetPackService: AssetPackService,
 		@inject(delay(() => ElectronWebhookStore)) private storeWebhook: ElectronWebhookStore,
 		@inject(delay(() => BingoService)) private bingoService: BingoService,
 		@inject(delay(() => IronManService)) private ironManService: IronManService,
@@ -357,6 +359,7 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'GameState', this.storeLiveStats.getGameState());
 		this.sendInitMessage(socketId, 'LiveStatsSceneChange', this.storeLiveStats.getStatsScene());
 		this.sendInitMessage(socketId, 'Overlays', await this.storeOverlay.getOverlays());
+		this.sendInitMessage(socketId, 'AssetPacks', this.assetPackService.getPacks());
 		this.sendInitMessage(socketId, 'Obs', this.storeObs.getObs());
 		this.sendInitMessage(
 			socketId,

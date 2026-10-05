@@ -39,6 +39,8 @@ import { registerOverlayWriteTools } from './tools/overlayWrite';
 import { registerOnlinePlayReadTools, registerOnlinePlayWriteTools } from './tools/onlinePlay';
 import { BingoService } from '../bingoService';
 import { IronManService } from '../ironmanService';
+import { AssetPackService } from '../assetPackService';
+import { registerAssetPackReadTools, registerAssetPackWriteTools } from './tools/assetPacks';
 import { registerOverlayUndoTools } from './tools/overlayUndo';
 import { registerObsSetupTools } from './tools/obsSetup';
 import { registerObsAddSourceTools } from './tools/obsAddSource';
@@ -61,6 +63,7 @@ const MCP_INSTRUCTIONS = `You are connected to a running Froggi instance — a S
 When you build or edit an overlay, first read the overlay authoring guide tool, and prefer the shipped demo overlays as references (list_overlays / get_overlay).
 When the user refers to a game's look or HUD ("like Ultimate", "modernize the Melee HUD", "around the game HUD"), call get_game_hud_reference FIRST (list, then the matching game/HUD with the overlay's aspectRatio) and look at the screenshots — they show the layout (portrait, percent, name plate, stocks, timer, radar positions). Base your proposal on them instead of asking the user to describe positions or styles, and show the result with show_overlay_preview using that reference as background.
 Users describe overlays in plain language — don't ask them technical questions (grid units, CSS, easing, layer indexes). Pick sensible defaults from the guide (standard placement, readable sizes, the game HUD reference), build it, show the preview, then offer to adjust in plain terms ("bigger?", "move it to the top?"). Only ask when a choice really changes the result (e.g. which game/HUD placement, which players to show).
+Character asset packs (custom character art per character + skin) are mostly a human job on Overlays → Assets: use get_asset_pack to check which slots are filled and tell the user exactly which character/costume (skin id) is missing and where to click; the Character elements (6225/6235/6215, payload assetPack) show them.
 Fonts: when the look matters (a themed or esports-style overlay), ask once if they have a font in mind — a Google Fonts name or link, a font file, or let you suggest 2–3 that fit — then add it with add_overlay_font. Animations: new overlays already use "fly automatic" for scene changes. For elements whose value changes during play (score, percent, stocks, rank, set count), ask the user once whether they'd like a short animation when the value updates (recommend a quick fade or small fly-in) and apply it via the element's animationTrigger if they agree.
 
 Before suggesting how to DISPLAY an overlay, check what's actually available and make the user aware of the options:
@@ -106,6 +109,7 @@ export class McpServerService {
 		@inject(ErrorReporter) private errorReporter: ErrorReporter,
 		@inject(delay(() => BingoService)) private bingoService: BingoService,
 		@inject(delay(() => IronManService)) private ironmanService: IronManService,
+		@inject(delay(() => AssetPackService)) private assetPackService: AssetPackService,
 	) {
 		this.log = scopedLog(this.log, 'MCP');
 		this.log.info('Initializing MCP Server Service');
@@ -128,6 +132,7 @@ export class McpServerService {
 		mcpContext.bingoService = this.bingoService;
 		mcpContext.ironmanService = this.ironmanService;
 		mcpContext.clientEmitter = this.clientEmitter;
+		mcpContext.assetPackService = this.assetPackService;
 
 		void this.applyDesiredState();
 		this.clientEmitter.on('SetMcpReadEnabled', () => void this.applyDesiredState());
@@ -197,6 +202,7 @@ export class McpServerService {
 			registerOverlaySchemaTools(server);
 			registerAutomationReadTools(server);
 			registerOnlinePlayReadTools(server);
+			registerAssetPackReadTools(server);
 		}
 		if (this.froggiStore.getMcpWriteEnabled()) {
 			registerOverlayWriteTools(server);
@@ -208,6 +214,7 @@ export class McpServerService {
 			registerInjectionWriteTools(server);
 			registerCrashDiagnosisWriteTools(server);
 			registerOnlinePlayWriteTools(server);
+			registerAssetPackWriteTools(server);
 		}
 
 		return server;

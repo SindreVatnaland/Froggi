@@ -114,7 +114,14 @@ stock icons with that player's damage percent just below. Same for Melee and Ult
 adds the player name above the stocks; Melee uses the port-colored panel) — the stock ORDER rule is
 identical for both.
 
-**Stock icons** — use InGamePlayer1CharacterIcon (6220) / InGamePlayer2CharacterIcon (6230), one
+**Character images (stock icons, portraits, renders)** — use the Character elements:
+InGamePlayer1Character (6225), InGamePlayer2Character (6235), InGameCurrentPlayerCharacter (6215), with
+payload \`assetPack\` = a pack id from list_asset_packs: "builtin-stock" (default, stock icons),
+"builtin-portrait", "builtin-render-left", "builtin-render-right", or a user's custom pack (their own
+art per character + skin). The image follows the player's character AND skin automatically. The older
+CharacterIcon (6220/6230/6210) and CharacterRender (2003/2004…) elements still render but are legacy.
+
+**Stock icons** — use the Character element (assetPack "builtin-stock" or a custom icon pack), one
 element PER stock, laid left→right. Gate each on that stock number via visibility
 \`selectedOptions [{ "Player N Stock K": 1 }]\`:
 - LEFTMOST icon → "Player N Stock 1", next → "Player N Stock 2", … RIGHTMOST → "Player N Stock <max>".

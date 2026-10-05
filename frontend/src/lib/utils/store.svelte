@@ -9,6 +9,7 @@
 	} from '$lib/models/enum';
 	import Device from 'svelte-device-info';
 	import { Overlay, OverlayEditor, Url } from '$lib/models/types/overlay';
+	import type { AssetPack } from '$lib/models/types/assetPack';
 	import type {
 		CurrentPlayer,
 		GameStartTypeExtended,
@@ -102,6 +103,8 @@
 	export const statsScene = writable<LiveStatsScene>(LiveStatsScene.WaitingForDolphin);
 
 	export const injectedOverlays = writable<string[]>([]);
+	/** Custom character asset packs (built-ins are BUILTIN_ASSET_PACKS in models/types/assetPack). */
+	export const assetPacks = writable<AssetPack[]>([]);
 	/** Latest "replay animations" request for preview renders (MCP test_overlay_animation / preview
 	 *  button). A store, not emitter listeners — one listener per previewed element blew past the limit. */
 	export const previewTestAnimation = writable<{ overlayId?: string; itemId?: string; n: number } | null>(null);

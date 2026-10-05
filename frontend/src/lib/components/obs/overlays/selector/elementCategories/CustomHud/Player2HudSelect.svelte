@@ -12,11 +12,11 @@
 
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player 2 Stock Icon"
-		value={CustomElement.InGamePlayer2CharacterIcon}
+		description="Player 2 character image from an asset pack — stock icons by default; pick portraits, renders or your own pack under Styling → Asset pack"
+		value={CustomElement.InGamePlayer2Character}
 		on:select={select}
 	>
-		Stock Icon
+		Character
 	</SelectOption>
 	<SelectOption
 		description="Player 2 Remaining Stocks"
@@ -24,20 +24,6 @@
 		on:select={select}
 	>
 		Remaining Stocks
-	</SelectOption>
-	<SelectOption
-		description="Player 2 Character Left Side Render"
-		value={CustomElement.InGamePlayer2CharacterRenderLeft}
-		on:select={select}
-	>
-		Character Render (Left)
-	</SelectOption>
-	<SelectOption
-		description="Player 2 Character Right Side Render"
-		value={CustomElement.InGamePlayer2CharacterRenderRight}
-		on:select={select}
-	>
-		Character Render (Right)
 	</SelectOption>
 	<SelectOption
 		description="Player 2 Character Series Symbol (Melee)"

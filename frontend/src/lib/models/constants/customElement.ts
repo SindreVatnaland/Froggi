@@ -719,14 +719,18 @@ export enum CustomElement {
 
 
     InGameCurrentPlayerCharacterIcon = 6210,
+    /** Character image from an asset pack (data.assetPack) — replaces the stock icon / render elements in the picker */
+    InGameCurrentPlayerCharacter = 6215,
     InGameCurrentPlayerCharacterSeriesSymbol = 6211,
     InGameCurrentPlayerCharacterSeriesSymbolUltimate = 6212,
 
     InGamePlayer1CharacterIcon = 6220,
+    InGamePlayer1Character = 6225,
     InGamePlayer1CharacterSeriesSymbol = 6221,
     InGamePlayer1CharacterSeriesSymbolUltimate = 6222,
 
     InGamePlayer2CharacterIcon = 6230,
+    InGamePlayer2Character = 6235,
     InGamePlayer2CharacterSeriesSymbol = 6231,
     InGamePlayer2CharacterSeriesSymbolUltimate = 6232,
 

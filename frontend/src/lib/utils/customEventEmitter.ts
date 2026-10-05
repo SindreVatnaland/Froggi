@@ -21,6 +21,7 @@ import type {
 	NotificationType,
 } from '../models/enum';
 import type { PlayerController } from '../models/types/controller';
+import type { AssetPack } from '../models/types/assetPack';
 import type { AspectRatio, Overlay, OverlayEditor, Scene, Url } from '../models/types/overlay';
 import type {
 	CurrentPlayer,
@@ -113,6 +114,16 @@ export interface MessageEvents {
 	Overlays: (overlays: Record<string, Overlay> | undefined) => void;
 	OverlayCreate: (aspectRatio: AspectRatio) => void;
 	OverlayDelete: (overlayId: string) => void;
+	AssetPacks: (packs: AssetPack[]) => void;
+	AssetPackCreate: (title: string) => void;
+	AssetPackDuplicate: (packId: string) => void;
+	AssetPackUpdate: (packId: string, title?: string, fallback?: string) => void;
+	AssetPackDelete: (packId: string) => void;
+	AssetPackSetSlot: (packId: string, characterId: number, skinId: number) => void;
+	AssetPackRemoveSlot: (packId: string, characterId: number, skinId: number) => void;
+	AssetPackImportFolder: (packId: string) => void;
+	AssetPackExport: (packId: string) => void;
+	AssetPackImport: () => void;
 	OverlayDeletePermanent: (overlayId: string) => void;
 	OverlayRestore: (overlayId: string) => void;
 	OverlayDownload: (overlayId: string) => void;

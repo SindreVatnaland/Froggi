@@ -718,6 +718,13 @@ export const SLIPPIRANK_ELEMENTS = new Set<CustomElement>([
 	CustomElement.SlippiRankCurrentPlayerRatingGraph,
 ]);
 
+/** Character images from asset packs — rendered by elementRender/PackCharacter.svelte. */
+export const PACK_CHARACTER_ELEMENTS = new Set<CustomElement>([
+	CustomElement.InGameCurrentPlayerCharacter,
+	CustomElement.InGamePlayer1Character,
+	CustomElement.InGamePlayer2Character,
+]);
+
 export const BINGO_ELEMENTS = new Set<CustomElement>([
 	CustomElement.BingoBoard,
 ]);

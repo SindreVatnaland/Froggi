@@ -11,7 +11,7 @@ import path from 'path';
 import fs from 'fs';
 import { LiveStatsScene, NotificationType } from '../../../frontend/src/lib/models/enum';
 import { cloneDeep, isNil, kebabCase, merge } from 'lodash';
-import { findFilesStartingWith, getCustomFiles, saveCustomFiles } from '../../utils/fileHandler';
+import { findFilesStartingWith, saveCustomFiles } from '../../utils/fileHandler';
 import { COL, MIN } from '../../../frontend/src/lib/models/const';
 import gridHelp from "../../utils/gridHelp.js"
 import { ElectronFroggiStore } from './storeFroggi';
@@ -19,6 +19,8 @@ import { SqliteOverlay } from './../sqlite/sqliteOverlay';
 import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
 import { fillOverlayDefaults, getNewOverlay } from './../../utils/overlayHandler';
+import { buildFroggiZip, FROGGI_EXT, isZip, readFroggiZip, readJsonEntry, safeName } from '../../utils/froggiFile';
+import { AssetPackService } from '../assetPackService';
 
 /** Grid placement patch (grid is COL x COL units). Any omitted field keeps the item's current value. */
 export type GridPosition = { x?: number; y?: number; w?: number; h?: number };
@@ -67,6 +69,7 @@ export class ElectronOverlayStore {
 		@inject('ElectronStore') private store: Store,
 		@inject('ClientEmitter') private clientEmitter: TypedEmitter,
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
+		@inject(delay(() => AssetPackService)) private assetPackService: AssetPackService,
 		@inject(ElectronFroggiStore) private froggiStore: ElectronFroggiStore,
 		@inject(SqliteOverlay) private sqliteOverlay: SqliteOverlay,
 	) {
@@ -797,49 +800,108 @@ export class ElectronOverlayStore {
 
 		this.clientEmitter.on('CurrentOverlayEditor', this.setCurrentOverlayEditor.bind(this));
 
-		this.clientEmitter.on('OverlayDownload', async (overlayId) => {
-			const overlay = await this.getOverlayById(overlayId);
-			if (!overlay) return;
-			const { canceled, filePath } = await dialog.showSaveDialog(this.mainWindow, {
-				filters: [{ name: 'json', extensions: ['json'] }],
-				nameFieldLabel: overlay.title,
-			});
-			if (canceled || !filePath) return;
-			const appDirCustomFilesDir = `${this.appDir}/public/custom/${overlayId}`
-			const entries = getCustomFiles(appDirCustomFilesDir);
-			const shareOverlay: SharedOverlay = {
-				...overlay,
-				customFiles: entries
-			}
-			fs.writeFileSync(filePath, JSON.stringify(shareOverlay), 'utf-8');
-		});
+		this.clientEmitter.on('OverlayDownload', (overlayId) => void this.exportOverlay(overlayId));
+		this.clientEmitter.on('OverlayUpload', () => void this.importOverlayFile());
+	}
 
-		this.clientEmitter.on('OverlayUpload', async () => {
-			const { canceled, filePaths } = await dialog.showOpenDialog(this.mainWindow, {
-				properties: ['openFile'],
-				filters: [{ name: 'json', extensions: ['json'] }],
-			});
-			if (canceled || !filePaths[0]) return;
-			try {
-				const sharedOverlay = JSON.parse(fs.readFileSync(filePaths[0], 'utf8')) as SharedOverlay;
-				const { customFiles, ...overlay } = sharedOverlay;
-				this.log.info(`Importing overlay "${overlay.title}" (made with Froggi ${overlay.froggiVersion || 'unknown'})`);
-				// Files from older versions skip the startup migration (persist stamps the current
-				// version), so migrate here: old layer order + any fields/scenes added since.
-				if (semver.valid(overlay.froggiVersion) && semver.gt("0.9.20-beta.1", overlay.froggiVersion)) this.reverseLayers(overlay);
-				fillOverlayDefaults(overlay);
-				overlay.id = newId()
-				overlay.deletedAt = null
-
-				const customFileDir = path.join(this.appDir, "public", "custom", overlay.id)
-				if (customFiles) saveCustomFiles(customFileDir, customFiles)
-				await this.uploadOverlay(overlay, overlay.id);
-				this.messageHandler.sendMessage('Notification', `Imported "${overlay.title}"`, NotificationType.Success);
-			} catch (e) {
-				this.log.error('Overlay import failed:', e);
-				this.messageHandler.sendMessage('Notification', 'Overlay import failed — not a valid Froggi overlay file', NotificationType.Danger);
+	/** Custom asset packs referenced by an overlay's elements (built-ins are bundled, not exported). */
+	private usedAssetPacks(overlay: Overlay): string[] {
+		const ids = new Set<string>();
+		for (const scene of Object.values(LiveStatsScene)) {
+			for (const layer of overlay[scene]?.layers ?? []) {
+				for (const item of layer.items) {
+					const pack = item.data?.assetPack;
+					if (pack && !pack.startsWith('builtin-')) ids.add(pack);
+				}
 			}
+		}
+		return [...ids];
+	}
+
+	/** Exports an overlay as a .froggi file: overlay.json + its custom images/fonts + every custom asset pack it uses. */
+	async exportOverlay(overlayId: string) {
+		const overlay = await this.getOverlayById(overlayId);
+		if (!overlay) return;
+		const { canceled, filePath } = await dialog.showSaveDialog(this.mainWindow, {
+			defaultPath: `${safeName(overlay.title)}.${FROGGI_EXT}`,
+			filters: [{ name: 'Froggi overlay', extensions: [FROGGI_EXT] }],
 		});
+		if (canceled || !filePath) return;
+		const files: Record<string, Uint8Array> = { 'overlay.json': Buffer.from(JSON.stringify(overlay)) };
+		const customDir = path.join(this.appDir, 'public', 'custom', overlayId);
+		if (fs.existsSync(customDir)) {
+			for (const sub of fs.readdirSync(customDir, { withFileTypes: true })) {
+				if (!sub.isDirectory()) continue;
+				for (const file of fs.readdirSync(path.join(customDir, sub.name), { withFileTypes: true })) {
+					if (file.isFile()) files[`custom/${sub.name}/${file.name}`] = fs.readFileSync(path.join(customDir, sub.name, file.name));
+				}
+			}
+		}
+		for (const packId of this.usedAssetPacks(overlay)) Object.assign(files, this.assetPackService.packZipFiles(packId));
+		fs.writeFileSync(
+			filePath,
+			buildFroggiZip({ format: 'froggi', version: 1, kind: 'overlay', froggiVersion: this.froggiStore.getFroggiConfig().version ?? '0.0.0', createdAt: new Date().toISOString() }, files),
+		);
+		this.messageHandler.sendMessage('Notification', `Exported "${overlay.title}"`, NotificationType.Success);
+	}
+
+	/** Imports a .froggi overlay (with its asset packs) or a legacy .json overlay (base64 customFiles). */
+	async importOverlayFile() {
+		const { canceled, filePaths } = await dialog.showOpenDialog(this.mainWindow, {
+			properties: ['openFile'],
+			filters: [{ name: 'Froggi overlay', extensions: [FROGGI_EXT, 'json'] }],
+		});
+		if (canceled || !filePaths[0]) return;
+		try {
+			const data = fs.readFileSync(filePaths[0]);
+			let overlay: Overlay;
+			let writeFiles: (dir: string) => void;
+			if (isZip(data)) {
+				const { manifest, files } = readFroggiZip(data);
+				if (manifest.kind !== 'overlay') {
+					this.messageHandler.sendMessage('Notification', 'That is an asset pack — import it on the Assets page.', NotificationType.Warning);
+					return;
+				}
+				const parsed = readJsonEntry<Overlay>(files, 'overlay.json');
+				if (!parsed) throw new Error('overlay.json missing');
+				overlay = parsed;
+				// Restore its asset packs (reuse identical / copy different) and point elements at the result.
+				const packMap = this.assetPackService.importPacksFromZip(files);
+				for (const scene of Object.values(LiveStatsScene)) {
+					for (const layer of overlay[scene]?.layers ?? []) {
+						for (const item of layer.items) {
+							const ref = item.data?.assetPack;
+							if (ref && packMap[ref]) item.data.assetPack = packMap[ref];
+						}
+					}
+				}
+				writeFiles = (dir) => {
+					for (const [name, content] of Object.entries(files)) {
+						if (!name.startsWith('custom/')) continue;
+						const target = path.join(dir, ...name.slice('custom/'.length).split('/').map(safeName));
+						fs.mkdirSync(path.dirname(target), { recursive: true });
+						fs.writeFileSync(target, content);
+					}
+				};
+			} else {
+				const { customFiles, ...legacy } = JSON.parse(data.toString('utf8')) as SharedOverlay;
+				overlay = legacy;
+				writeFiles = (dir) => customFiles && saveCustomFiles(dir, customFiles);
+			}
+			this.log.info(`Importing overlay "${overlay.title}" (made with Froggi ${overlay.froggiVersion || 'unknown'})`);
+			// Files from older versions skip the startup migration (persist stamps the current
+			// version), so migrate here: old layer order + any fields/scenes added since.
+			if (semver.valid(overlay.froggiVersion) && semver.gt("0.9.20-beta.1", overlay.froggiVersion)) this.reverseLayers(overlay);
+			fillOverlayDefaults(overlay);
+			overlay.id = newId()
+			overlay.deletedAt = null
+			writeFiles(path.join(this.appDir, "public", "custom", overlay.id));
+			await this.uploadOverlay(overlay, overlay.id);
+			this.messageHandler.sendMessage('Notification', `Imported "${overlay.title}"`, NotificationType.Success);
+		} catch (e) {
+			this.log.error('Overlay import failed:', e);
+			this.messageHandler.sendMessage('Notification', 'Overlay import failed — not a valid Froggi overlay file', NotificationType.Danger);
+		}
 	}
 
 	private async initDemoOverlays() {

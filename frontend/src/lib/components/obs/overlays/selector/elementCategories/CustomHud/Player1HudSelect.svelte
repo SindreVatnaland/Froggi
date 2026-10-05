@@ -12,11 +12,11 @@
 
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player 1 Stock Icon"
-		value={CustomElement.InGamePlayer1CharacterIcon}
+		description="Player 1 character image from an asset pack — stock icons by default; pick portraits, renders or your own pack under Styling → Asset pack"
+		value={CustomElement.InGamePlayer1Character}
 		on:select={select}
 	>
-		Stock Icon
+		Character
 	</SelectOption>
 	<SelectOption
 		description="Player 1 Remaining Stocks"
@@ -24,20 +24,6 @@
 		on:select={select}
 	>
 		Stocks Remaining
-	</SelectOption>
-	<SelectOption
-		description="Player 1 Character Left Side Render"
-		value={CustomElement.InGamePlayer1CharacterRenderLeft}
-		on:select={select}
-	>
-		Character Render (Left)
-	</SelectOption>
-	<SelectOption
-		description="Player 1 Character Right Side Render"
-		value={CustomElement.InGamePlayer1CharacterRenderRight}
-		on:select={select}
-	>
-		Character Render (Right)
 	</SelectOption>
 	<SelectOption
 		description="Player 1 Character Series Symbols From N64/Melee"
