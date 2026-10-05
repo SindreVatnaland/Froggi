@@ -6,11 +6,19 @@ import { Animation, LiveStatsScene, SceneBackground } from '../../../../frontend
 import { CustomElement } from '../../../../frontend/src/lib/models/constants/customElement';
 import type { ElementPayload, Scene } from '../../../../frontend/src/lib/models/types/overlay';
 import { getDefaultElementPayload } from '../../../../frontend/src/lib/utils/overlayElementDefaults';
+import { newId } from '../../../utils/functions';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const error = (message: string) => ({ content: [{ type: 'text' as const, text: message }], isError: true });
 
 const STATS_SCENES = Object.values(LiveStatsScene);
+
+// Fonts built into Froggi (the editor's font dropdown). A custom font file is registered by
+// CustomFontHandler under the SCENE NAME (scene font) or the ELEMENT ID (element font), and rendered
+// via font-family = font.family — so a custom src only shows if family is that scene name / item id.
+const BUILTIN_FONTS = ['default', 'sans-serif', 'Melee', 'Ultimate', 'A-OTF Folk Pro M', 'Roboto', 'Roboto Bold Italic', 'Wix'];
+const withCustomFontFamily = <T extends { family?: string; src?: string } | undefined>(font: T, registeredAs: string): T =>
+	font?.src && !BUILTIN_FONTS.includes(font.family ?? '') ? ({ ...font, family: registeredAs } as T) : font;
 const ELEMENT_TYPES = Object.values(CustomElement).filter((v) => typeof v === 'number') as CustomElement[];
 const ANIMATION_TYPES = Object.values(Animation) as [string, ...string[]];
 const BACKGROUND_TYPES = Object.values(SceneBackground) as [string, ...string[]];
@@ -240,7 +248,9 @@ export function registerOverlayWriteTools(server: McpServer) {
 			// `in`) can't clobber the rest of the structure and leave the editor with an undefined
 			// animation slot. Matches updateItemInLayer's merge semantics.
 			const merged: ElementPayload = merge(getDefaultElementPayload(), payload as Partial<ElementPayload> | undefined);
-			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, undefined, position);
+			const itemId = newId();
+			merged.font = withCustomFontFamily(merged.font, itemId);
+			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, itemId, position);
 			if (!afterScene) return error('Failed to add element — see logs');
 
 			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${CustomElement[elementId as CustomElement]}`);
@@ -268,12 +278,12 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 
-			const items = elements.map((e) => ({
-				layerIndex: e.layerIndex ?? 0,
-				elementId: e.elementId as CustomElement,
-				payload: merge(getDefaultElementPayload(), e.payload as Partial<ElementPayload> | undefined),
-				position: e.position,
-			}));
+			const items = elements.map((e) => {
+				const id = newId();
+				const payload: ElementPayload = merge(getDefaultElementPayload(), e.payload as Partial<ElementPayload> | undefined);
+				payload.font = withCustomFontFamily(payload.font, id);
+				return { id, layerIndex: e.layerIndex ?? 0, elementId: e.elementId as CustomElement, payload, position: e.position };
+			});
 			const missing = items.find((it) => !sceneBefore.layers[it.layerIndex]);
 			if (missing) return error(`No layer at index ${missing.layerIndex} in "${statsScene}"`);
 
@@ -322,7 +332,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 				active: z.boolean().optional().describe('true = scene shown, false = disabled (falls back)'),
 				fallback: z.enum(STATS_SCENES as [string, ...string[]]).optional().describe('Scene to show instead while this one is disabled, e.g. "menu"'),
 				font: z.object({
-					family: z.string().optional().describe('"default" for the app default font, or a custom family name'),
+					family: z.string().optional().describe(`Built-in: ${'"default" | "sans-serif" | "Melee" | "Ultimate" | "A-OTF Folk Pro M" | "Roboto" | "Roboto Bold Italic" | "Wix"'}. For a custom font just pass src (from add_overlay_font) — family is set for you`),
 					src: z.string().optional().describe('Custom font filename uploaded under the overlay; omit/empty for the default font'),
 				}).optional().describe('Scene default font — applies to text elements that use the scene font'),
 				background: z.object({
@@ -353,7 +363,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const afterScene = await mcpContext.overlayStore!.setSceneConfig(overlayId, statsScene as LiveStatsScene, {
 				active,
 				fallback: fallback as LiveStatsScene | undefined,
-				font: font as Scene['font'] | undefined,
+				font: withCustomFontFamily(font, statsScene) as Scene['font'] | undefined,
 				background: background as Partial<Scene['background']> as Scene['background'] | undefined,
 				animation: animation as Partial<Scene['animation']> as Scene['animation'] | undefined,
 			});
@@ -367,20 +377,41 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_font',
 		{
-			description: 'Download a font from a URL and add it to an overlay so it can be used as a custom font. Pass a DIRECT font-file URL (.ttf/.otf/.woff/.woff2 — e.g. a Google Fonts fonts.gstatic.com file). Returns the saved filename; then apply it with configure_overlay_scene font:{ family:"<name>", src:"<filename>" } for the scene default, or set an element payload data.font:{ family, src }. https only, font files only, 5MB cap.',
+			description: 'Add a custom font to an overlay. Sources (pass exactly one): `googleFont` — a Google Fonts family NAME ("Bebas Neue", "Press Start 2P") or a fonts.google.com/specimen link (optionally `weight`, e.g. 700); `url` — a direct .ttf/.otf/.woff/.woff2 file URL; `filePath` — a font file on this machine; `picker: true` — Froggi opens a file dialog for the user. If the user wants a different look but names no font, suggest 2–3 fitting Google Fonts by name (e.g. bold display: "Bebas Neue", "Anton"; esports/tech: "Rajdhani", "Orbitron"; retro: "Press Start 2P") and ask which they like, or ask for a name/link. Returns `fileName`; apply it with configure_overlay_scene font:{ src: fileName } for the scene default (elements left on the "default" font use it), or update_overlay_element payload {"font":{"src":fileName}} for one element — family is set automatically.',
 			inputSchema: {
 				overlayId: z.string(),
-				url: z.string().url().describe('Direct https URL to a .ttf/.otf/.woff/.woff2 file'),
-				fileName: z.string().optional().describe('Base name to save as (no extension); defaults to the URL filename'),
+				googleFont: z.string().min(2).max(200).optional().describe('Google Fonts family name or fonts.google.com/specimen link'),
+				weight: z.number().int().min(100).max(900).optional().describe('Google Fonts weight, e.g. 400 or 700'),
+				url: z.string().url().optional().describe('Direct https URL to a .ttf/.otf/.woff/.woff2 file'),
+				filePath: z.string().optional(),
+				picker: z.boolean().optional(),
+				fileName: z.string().optional().describe('Base name to save as (no extension)'),
 			},
 		},
-		async ({ overlayId, url, fileName }) => {
-			const result = await mcpContext.overlayStore!.downloadFont(overlayId, url, fileName);
+		async ({ overlayId, googleFont, weight, url, filePath, picker, fileName }) => {
+			const sources = [googleFont, url, filePath, picker || undefined].filter((v) => v !== undefined);
+			if (sources.length !== 1) return error('Pass exactly one of googleFont, url, filePath, picker:true.');
+			const store = mcpContext.overlayStore!;
+			let family: string | undefined;
+			let result: { fileName: string } | { error: string } | { canceled: true };
+			if (googleFont || (url && /fonts\.google(apis)?\.com/.test(url))) {
+				const resolved = await store.resolveGoogleFont((googleFont ?? url)!, weight);
+				if ('error' in resolved) return error(resolved.error);
+				family = resolved.family;
+				result = await store.downloadFont(overlayId, resolved.url, fileName ?? `${family}${weight ? `-${weight}` : ''}`);
+			} else if (url) {
+				result = await store.downloadFont(overlayId, url, fileName);
+			} else {
+				result = await store.saveFontFile(overlayId, { filePath, picker }, fileName);
+			}
 			if ('error' in result) return error(result.error);
+			if ('canceled' in result) return text('The user closed the file picker without choosing a font.');
+			family ??= result.fileName.replace(/\.[^.]+$/, '');
 			return text({
 				ok: true,
 				fileName: result.fileName,
-				apply: 'Set this as a custom font: configure_overlay_scene with font:{ family:"<a name>", src:"' + result.fileName + '" } for the whole scene, or set an element\'s data.font:{ family, src } to use it on just that element.',
+				family,
+				apply: `Whole scene: configure_overlay_scene font:{ src:"${result.fileName}" } (text elements on "default" font use it). One element: payload {"font":{"src":"${result.fileName}"}} in add_overlay_element(s) or update_overlay_element. Froggi sets the matching family automatically.`,
 			});
 		},
 	);
@@ -388,7 +419,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'update_overlay_element',
 		{
-			description: 'Merge a partial payload patch into an existing element (styling, text, etc.) — sibling fields not mentioned are preserved. Records undo history.',
+			description: 'Merge a partial payload patch into an existing element (styling, text, etc.) — sibling fields not mentioned are preserved. Custom font on one element: payload {"font":{"src":"<fileName from add_overlay_font>"}} (family is set for you). Records undo history.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
@@ -402,7 +433,9 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const sceneBefore = overlayBefore?.[statsScene as LiveStatsScene];
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 
-			const afterScene = await mcpContext.overlayStore!.updateItemInLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId, (payload ?? {}) as Partial<ElementPayload>);
+			const patch = { ...(payload ?? {}) } as Partial<ElementPayload>;
+			if (patch.font) patch.font = withCustomFontFamily(patch.font, itemId) as ElementPayload['font'];
+			const afterScene = await mcpContext.overlayStore!.updateItemInLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId, patch);
 			if (!afterScene) return error(`No element "${itemId}" at layer ${layerIndex} in "${statsScene}"`);
 
 			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `update ${itemId}`);

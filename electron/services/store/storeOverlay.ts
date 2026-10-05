@@ -168,6 +168,72 @@ export class ElectronOverlayStore {
 	}
 
 	/**
+	 * Resolves a Google Fonts family (e.g. "Bebas Neue", optional weight) to its TTF file URL via the
+	 * Google Fonts CSS API — non-browser clients get TTF URLs. Also accepts fonts.google.com specimen
+	 * links and fonts.googleapis.com CSS links.
+	 */
+	async resolveGoogleFont(nameOrLink: string, weight?: number): Promise<{ url: string; family: string } | { error: string }> {
+		let family = nameOrLink.trim();
+		let cssUrl: string | undefined;
+		try {
+			const u = new URL(family);
+			if (u.hostname === 'fonts.google.com') {
+				const m = /\/specimen\/([^/?#]+)/.exec(u.pathname);
+				if (!m) return { error: 'Use a fonts.google.com/specimen/<Font> link or just the font name' };
+				family = decodeURIComponent(m[1].replace(/\+/g, ' '));
+			} else if (u.hostname === 'fonts.googleapis.com') {
+				cssUrl = u.toString();
+				family = (u.searchParams.get('family') ?? 'font').split(':')[0];
+			}
+		} catch {
+			// not a URL — a plain family name
+		}
+		cssUrl ??= `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, '+')}${weight ? `:wght@${weight}` : ''}&display=swap`;
+		let css: string;
+		try {
+			const res = await fetch(cssUrl);
+			if (res.status === 400) return { error: `Google Fonts has no font named "${family}"${weight ? ` in weight ${weight}` : ''} — check the spelling on fonts.google.com` };
+			if (!res.ok) return { error: `Google Fonts lookup failed: HTTP ${res.status}` };
+			css = await res.text();
+		} catch (e) {
+			return { error: `Google Fonts lookup failed: ${(e as Error).message}` };
+		}
+		const url = /url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/.exec(css)?.[1];
+		return url ? { url, family } : { error: `No downloadable file found for "${family}"` };
+	}
+
+	/** Copies a local font file (path, or chosen in a Froggi file dialog) into the overlay's font dir. */
+	async saveFontFile(overlayId: string, source: { filePath?: string; picker?: boolean }, fileName?: string): Promise<{ fileName: string } | { error: string } | { canceled: true }> {
+		if (!(await this.getOverlayById(overlayId))) return { error: `No overlay with id "${overlayId}"` };
+		const ALLOWED = ['.ttf', '.otf', '.woff', '.woff2'];
+		let filePath = source.filePath;
+		if (!filePath) {
+			this.mainWindow.show();
+			this.mainWindow.focus();
+			const { canceled, filePaths } = await dialog.showOpenDialog(this.mainWindow, {
+				title: 'Choose a font for the overlay',
+				properties: ['openFile'],
+				filters: [{ name: 'Fonts', extensions: ALLOWED.map((e) => e.slice(1)) }],
+			});
+			if (canceled || !filePaths[0]) return { canceled: true };
+			filePath = filePaths[0];
+		}
+		const ext = path.extname(filePath).toLowerCase();
+		if (!ALLOWED.includes(ext)) return { error: 'Not a font file — expected .ttf/.otf/.woff/.woff2' };
+		try {
+			if (fs.statSync(filePath).size > 5 * 1024 * 1024) return { error: 'Font too large (>5MB)' };
+			const base = (fileName ?? path.basename(filePath, ext)).replace(/[^a-zA-Z0-9_-]/g, '') || 'font';
+			const saveDir = path.join(this.appDir, 'public', 'custom', overlayId, 'font');
+			fs.mkdirSync(saveDir, { recursive: true });
+			fs.copyFileSync(filePath, path.join(saveDir, `${base}${ext}`));
+			this.log.info('Saved overlay font', overlayId, `${base}${ext}`);
+			return { fileName: `${base}${ext}` };
+		} catch (e) {
+			return { error: `Could not read font: ${(e as Error).message}` };
+		}
+	}
+
+	/**
 	 * Stores an image for an overlay under public/custom/<overlayId>/image/ and returns the file name
 	 * to reference (element `image.name`, or scene `background.customImage.name`). Exactly one source:
 	 * an http(s) URL, a local file path, base64 data, or `picker` (opens a file dialog in Froggi for
@@ -478,7 +544,7 @@ export class ElectronOverlayStore {
 	async addItemsToScene(
 		overlayId: string,
 		statsScene: LiveStatsScene,
-		items: { layerIndex: number; elementId: CustomElement; payload: ElementPayload; position?: GridPosition }[],
+		items: { layerIndex: number; elementId: CustomElement; payload: ElementPayload; position?: GridPosition; id?: string }[],
 	): Promise<{ scene: Scene; addedIds: string[] } | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		const sceneObj = overlay?.[statsScene];
@@ -488,7 +554,7 @@ export class ElectronOverlayStore {
 		for (const it of items) {
 			const layer = sceneObj.layers[it.layerIndex];
 			if (isNil(layer)) continue;
-			const id = newId();
+			const id = it.id ?? newId();
 			const item = buildGridItem(it.elementId, it.payload, layer.items, it.position, id);
 			layer.items = [...layer.items, item];
 			addedIds.push(id);

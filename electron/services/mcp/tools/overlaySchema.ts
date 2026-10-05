@@ -79,7 +79,7 @@ Pass a partial payload to add_overlay_element / update_overlay_element; omitted 
 - \`class\`: { alignment, rounded }.
 - \`transform\`: { rotate (deg), scale ("x, y"), translate {x,y} } — use to rotate/flip/nudge.
 - \`shadow\`: { x, y, spread, color } (box shadow). \`textStroke\`: { size, color }.
-- \`font\`: { family, src }. \`image\`: { name, src, objectFit }.
+- \`font\`: { family, src }. family = a built-in ("default" = the scene font, "Melee", "Ultimate", "Roboto", "sans-serif", …) or, for a custom font, src = a file from add_overlay_font (family is set by the tools). \`image\`: { name, src, objectFit }.
 - \`percent\`: { startColor, endColor } — for percent elements, the text color interpolates from
   startColor (0%) toward endColor as the value rises. Default reddens (#ffffff → #6f1622).
 - \`advancedStyling\`: true to enable the raw custom* CSS fields.
