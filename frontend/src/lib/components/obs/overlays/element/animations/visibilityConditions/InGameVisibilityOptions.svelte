@@ -100,6 +100,23 @@
 			)
 				return true;
 
+		if (option[VisibilityOption.InGamePlayer1LeftSide] === VisibilityToggle.True)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'left') return true;
+		if (option[VisibilityOption.InGamePlayer1LeftSide] === VisibilityToggle.False)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) !== 'left') return true;
+		if (option[VisibilityOption.InGamePlayer1RightSide] === VisibilityToggle.True)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'right') return true;
+		if (option[VisibilityOption.InGamePlayer1RightSide] === VisibilityToggle.False)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) !== 'right') return true;
+		if (option[VisibilityOption.InGamePlayer2LeftSide] === VisibilityToggle.True)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'left') return true;
+		if (option[VisibilityOption.InGamePlayer2LeftSide] === VisibilityToggle.False)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) !== 'left') return true;
+		if (option[VisibilityOption.InGamePlayer2RightSide] === VisibilityToggle.True)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'right') return true;
+		if (option[VisibilityOption.InGamePlayer2RightSide] === VisibilityToggle.False)
+			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) !== 'right') return true;
+
 		if (option[VisibilityOption.InGameIsGame1] === VisibilityToggle.True)
 			if (isGameNumber(gameScore, 1)) return true;
 		if (option[VisibilityOption.InGameIsGame1] === VisibilityToggle.False)
@@ -132,6 +149,14 @@
 	const isGameGo = (gameFrame: FrameEntryType | null | undefined) => {
 		if (isNil(gameFrame)) return false;
 		return (gameFrame?.frame ?? 0) >= -36 && (gameFrame?.frame ?? 0) < 0;
+	};
+
+	// Left/right of the stage's horizontal center (Melee stages are centered on x = 0). Combine with
+	// "Player N Off Stage" for a radar that sits on the side the player went off.
+	const sideOfCenter = (playerFrame: PreFrameUpdateType | undefined): 'left' | 'right' | undefined => {
+		const x = playerFrame?.positionX;
+		if (isNil(x) || x === 0) return undefined;
+		return x < 0 ? 'left' : 'right';
 	};
 
 	const isGameCountdown = (seconds: number) => {

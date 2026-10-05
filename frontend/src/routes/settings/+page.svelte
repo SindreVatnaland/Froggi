@@ -67,6 +67,40 @@
 		mcpUrlCopied = true;
 		setTimeout(() => (mcpUrlCopied = false), 2000);
 	};
+	// Connect an AI app: each app gets its own one-click method (all point at the same local URL).
+	type McpClient = 'claude-desktop' | 'claude-code' | 'cursor' | 'vscode' | 'other';
+	const mcpClients: { value: McpClient; label: string; hint: string; action: string }[] = [
+		{ value: 'claude-desktop', label: 'Claude Desktop', hint: 'Installs the local Froggi extension (.mcpb) — nothing leaves this computer', action: 'Add to Claude Desktop' },
+		{ value: 'claude-code', label: 'Claude Code', hint: 'Copies the command — run it in a terminal, then /mcp in Claude Code', action: 'Copy command' },
+		{ value: 'cursor', label: 'Cursor', hint: 'Opens Cursor and asks to add the Froggi server', action: 'Add to Cursor' },
+		{ value: 'vscode', label: 'VS Code', hint: 'Opens VS Code and asks to add the Froggi server (Copilot agent mode)', action: 'Add to VS Code' },
+		{ value: 'other', label: 'Other app', hint: 'Copies the server config (HTTP URL) for any app that supports MCP', action: 'Copy config' },
+	];
+	let mcpClient: McpClient = 'claude-desktop';
+	$: selectedMcpClient = mcpClients.find((c) => c.value === mcpClient) ?? mcpClients[0];
+	let mcpClientDone = false;
+	const connectMcpClient = async () => {
+		if (mcpClient === 'claude-desktop') {
+			$electronEmitter.emit('InstallClaudeExtension');
+			return;
+		}
+		if (mcpClient === 'cursor') {
+			$electronEmitter.emit('OpenUrl', `cursor://anysphere.cursor-deeplink/mcp/install?name=froggi&config=${btoa(JSON.stringify({ url: mcpUrl }))}`);
+			return;
+		}
+		if (mcpClient === 'vscode') {
+			$electronEmitter.emit('OpenUrl', `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: 'froggi', type: 'http', url: mcpUrl }))}`);
+			return;
+		}
+		const textToCopy =
+			mcpClient === 'claude-code'
+				? `claude mcp add --transport http froggi ${mcpUrl}`
+				: JSON.stringify({ mcpServers: { froggi: { type: 'http', url: mcpUrl } } }, null, 2);
+		await navigator.clipboard.writeText(textToCopy);
+		mcpClientDone = true;
+		setTimeout(() => (mcpClientDone = false), 2000);
+	};
+
 	const toggleMcpTailscale = () => $electronEmitter.emit('SetMcpTailscaleEnabled', !($froggiSettings?.mcpTailscaleEnabled === true));
 	const toggleAutoInject = () => $electronEmitter.emit('SetAutoInjectEnabled', !($froggiSettings?.autoInjectEnabled === true));
 	let mcpTsUrlCopied = false;
@@ -89,6 +123,8 @@ Claude Desktop — easiest: in Froggi, Settings → AI Assistant → "Add to Cla
 Manual alternative: bridge via mcp-remote in claude_desktop_config.json under "mcpServers":
   "froggi": { "command": "npx", "args": ["-y", "mcp-remote", "${mcpUrl}", "--transport", "http-only"] }
 Then fully quit Claude Desktop (Cmd/Ctrl+Q) and reopen it.
+
+Other apps (Cursor, VS Code, …): Froggi → Settings → AI Assistant → "Connect an AI app" has a one-click option per app; any MCP client can use the HTTP URL above.
 
 Requirements: Froggi must be running with the AI Assistant toggles enabled in its Settings. Once connected, ask Froggi to explain setup, check OBS/Dolphin status, or build an overlay.`;
 	let mcpSetupCopied = false;
@@ -537,15 +573,25 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 					<span class="url-value font-mono flex-1 truncate">{mcpUrl}</span>
 					<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={copyMcpUrl}>{mcpUrlCopied ? 'Copied!' : 'Copy'}</button>
 				</div>
-				<!-- Fully-local Claude Desktop extension (.mcpb): one click, no config file, no OAuth. -->
+				<!-- Connect an AI app: pick the app, one button does the right thing for it. -->
 				<div class="flex items-center justify-between gap-4 mt-1">
-					<div>
-						<span class="text-sm text-secondary-color">Claude Desktop</span>
-						<p class="text-xs opacity-40 mt-0.5">Install the local Froggi extension — one click, nothing leaves this computer</p>
+					<div class="min-w-0">
+						<span class="text-sm text-secondary-color">Connect an AI app</span>
+						<p class="text-xs opacity-40 mt-0.5">{selectedMcpClient.hint}</p>
 					</div>
-					<button class="btn text-xs h-7 px-3 border-secondary rounded shrink-0" on:click={() => $electronEmitter.emit('InstallClaudeExtension')}>
-						Add to Claude Desktop
-					</button>
+					<div class="flex items-center gap-2 shrink-0">
+						<select
+							class="h-7 px-2 text-xs rounded background-primary-color border-secondary text-secondary-color"
+							bind:value={mcpClient}
+						>
+							{#each mcpClients as client}
+								<option value={client.value}>{client.label}</option>
+							{/each}
+						</select>
+						<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={connectMcpClient}>
+							{mcpClientDone ? 'Copied!' : selectedMcpClient.action}
+						</button>
+					</div>
 				</div>
 				<!-- Paste-to-an-LLM setup instructions — one-click copy, no preview. -->
 				<div class="flex items-center justify-between gap-4 mt-1">

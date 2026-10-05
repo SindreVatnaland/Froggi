@@ -181,6 +181,23 @@ Game Go=False\` so they hide during the intro/countdown.
   graphics on it.
 - Visible only when a player is off stage: visibility \`Player 1 Off Stage\` / \`Player 2 Off Stage\`
   (shown while either has been off stage a moment). Demo places it top area (x≈376, y≈8).
+- Side-aware radar (Ultimate-style: the radar appears in the upper corner on the side the fighter
+  left from): \`Player N Left Side\` / \`Player N Right Side\` = left/right of the stage center.
+  Simplest: one radar per side PER PLAYER, e.g. top-left radar A = groups [{Player 1 Off Stage:1},
+  {Player 1 Left Side:1}], radar B = the same for Player 2, at the same spot on separate layers (and the
+  mirror pair top-right) — see "Visibility logic" below for why.
+
+**Visibility logic** — \`data.visibility.selectedOptions\` is a LIST OF GROUPS. The element is visible
+when EVERY group matches; a group matches when ANY of its entries holds (1 = condition true, 2 =
+condition false, 0 = ignored). So: AND across groups, OR inside a group. Examples:
+- "while Player 1 or Player 2 is dead": one group {Player 1 Alive:2, Player 2 Alive:2}
+- "while the game runs AND player 2 has ≥ 3 stocks": groups [{Game Running:1}, {Player 2 Stock 3:1}]
+list_elements shows each element's groups as visibleWhen.
+
+**Stock-loss display (Ultimate-style)** — both players' stocks shown big mid-screen while someone is
+respawning: a centered row of stock icons where each icon has groups [{Player N Stock K:1},
+{Player 1 Alive:2, Player 2 Alive:2}, {Game Running:1}] (it shows while either player is dead, i.e.
+between the KO and the respawn). The demo HUD's mid-screen stock set (layers 5–7) is exactly this.
 
 **Countdown & end text** — the "3..2..1" and TIME/GAME callouts:
 - Countdown: InGameTimerSecondsCountdown (4305), centered, visible only the last ~5s via visibility

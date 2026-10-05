@@ -41,6 +41,28 @@ export const appTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'connect-ai-app',
+		title: 'Connecting an AI app to Froggi',
+		category: 'app',
+		summary: 'Settings → AI Assistant → "Connect an AI app": pick your app and press the button — Claude Desktop, Claude Code, Cursor, VS Code, or any other MCP app.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'Turn on the AI Assistant toggles (read, and optionally edits), then pick your app:',
+				items: [
+					'Claude Desktop — "Add to Claude Desktop" installs the local Froggi extension (.mcpb); nothing leaves this computer',
+					'Claude Code — "Copy command" copies `claude mcp add --transport http froggi http://127.0.0.1:3300/froggi/mcp`; run it in a terminal, then /mcp',
+					'Cursor / VS Code — opens the app and asks you to confirm adding the Froggi server',
+					'Other app — "Copy config" copies the server config (HTTP URL) to paste into any app that supports MCP',
+				],
+			},
+			{
+				type: 'note',
+				text: 'If the assistant seems to be missing tools after a Froggi update, restart the AI app (or toggle the Froggi extension/server off and on) so it reloads the tool list.',
+			},
+		],
+	},
+	{
 		id: 'troubleshooting-crash-reports',
 		title: 'Troubleshooting errors and sending crash reports',
 		category: 'app',

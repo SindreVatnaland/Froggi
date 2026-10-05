@@ -39,6 +39,22 @@
 	Player 1 Off Stage
 </SelectOption>
 <SelectOption
+	description="When Player 1 Is Left Of The Stage Center (combine with Off Stage for a left-side radar)"
+	value={VisibilityOption.InGamePlayer1LeftSide}
+	bind:selected={selectedVisibilityOption[VisibilityOption.InGamePlayer1LeftSide]}
+	on:select={select}
+>
+	Player 1 Left Side
+</SelectOption>
+<SelectOption
+	description="When Player 1 Is Right Of The Stage Center (combine with Off Stage for a right-side radar)"
+	value={VisibilityOption.InGamePlayer1RightSide}
+	bind:selected={selectedVisibilityOption[VisibilityOption.InGamePlayer1RightSide]}
+	on:select={select}
+>
+	Player 1 Right Side
+</SelectOption>
+<SelectOption
 	description="When Player 1 Has 1 Stock Or More"
 	value={VisibilityOption.InGamePlayer1Stock1}
 	bind:selected={selectedVisibilityOption[VisibilityOption.InGamePlayer1Stock1]}

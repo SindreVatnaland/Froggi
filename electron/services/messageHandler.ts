@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, shell } from 'electron';
 import type { IpcMain } from 'electron';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
@@ -615,7 +615,11 @@ export class MessageHandler {
 			}
 		});
 		this.clientEmitter.on('OpenUrl', (url: string) => {
-			openurl.open(url);
+			// shell.openExternal handles app deep links (cursor://, vscode:) safely on every OS.
+			shell.openExternal(url).catch((err) => {
+				this.log.warn('openExternal failed, falling back:', err);
+				openurl.open(url);
+			});
 		});
 		this.clientEmitter.on('RemoteAccessRefresh', async () => {
 			await this.detectRemoteAccess();
