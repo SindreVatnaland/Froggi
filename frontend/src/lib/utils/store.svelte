@@ -119,6 +119,10 @@
 	export const ngrokStatus = writable<{ installed: boolean; authenticated: boolean; running: boolean; url?: string; installMethod?: string } | undefined>(undefined);
 	export const obsProcessStatus = writable<{ running: boolean; websocketEnabled?: boolean; port?: string; password?: string } | null>(null);
 	export const strikeState = writable<StrikeState | undefined>(undefined);
+	/** Host only: per-player tokens for the phone links (/set/p/N?t=…). */
+	export const strikeTokens = writable<{ 1: string; 2: string } | undefined>(undefined);
+	/** Automation flows (SQLite, run in Electron). */
+	export const flows = writable<import('$lib/models/types/flow').Flow[]>([]);
 	export const webhookProfiles = writable<WebhookProfile[]>([]);
 	export const webhooksEnabled = writable<boolean>(true);
 

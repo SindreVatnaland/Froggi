@@ -50,7 +50,7 @@ import { ElectronSessionStore } from './store/storeSession';
 import { retryFunctionAsync } from './../utils/retryHelper';
 import { predictNewRating } from './../utils/rankPrediction';
 import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
-import { getGameMode } from '../../frontend/src/lib/utils/gamePredicates';
+import { didPlayerWin, getGameMode } from '../../frontend/src/lib/utils/gamePredicates';
 
 function computeEdgeguardStats(
 	frames: Record<number, FrameEntryType>,
@@ -345,7 +345,7 @@ export class StatsDisplay {
 	}
 
 	private async handlePredictedRank(player: CurrentPlayer, prevRank: RankedNetplayProfile, game: GameStats) {
-		const didWin = game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
+		const didWin = didPlayerWin(game, player);
 		const prediction = didWin ? player.rank?.predictedRating?.win : player.rank?.predictedRating?.loss;
 		if (!prediction) return;
 		prevRank.rating = prediction.ordinal ?? prevRank.rating;

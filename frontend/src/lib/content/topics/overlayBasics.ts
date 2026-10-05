@@ -73,4 +73,26 @@ export const overlayBasicsTopics: ContentTopic[] = [
 			},
 		],
 	},
+	{
+		id: 'overlay-embed-url',
+		title: 'Embed any web page in an overlay (chat, alerts, widgets)',
+		category: 'overlays',
+		summary: 'The "Embed" element (CustomBoxIframe, 3001) shows any URL inside an overlay — in OBS or injected into the game: Twitch chat, sub/follow alerts, a now-playing widget, a scoreboard from another tool.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'How to use it:',
+				items: [
+					'Add the Embed element and paste the URL under Styling → Embed URL (AI: payload.url). It is display-only — viewers cannot click into it.',
+					'Twitch chat: the chat embed https://www.twitch.tv/embed/<channel>/chat?parent=localhost&darkpopout (Froggi serves overlays on localhost), or a chat-overlay service URL (StreamElements, jChat) made for OBS browser sources.',
+					'Alerts (subs, follows, donations): paste the alert-box URL from StreamElements / Streamlabs — the same URL you would give OBS. Keep it private: it identifies your account.',
+					'Injected into Dolphin (Windows) the embed is drawn in-game, so a streamer can see chat/alerts while playing without a second monitor.',
+				],
+			},
+			{
+				type: 'note',
+				text: 'Audio: in OBS, an embed plays through the browser source (tick "Control audio via OBS" to mix it). When injected, sound from the embed plays from Froggi itself on the default audio device (not through the game) — autoplay works without a click (verified on an Electron 43 offscreen window) — so OBS desktop-audio capture picks it up. Its level is set per app in the OS volume mixer (Froggi), not in OBS; suggest one test alert.',
+			},
+		],
+	},
 ];

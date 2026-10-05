@@ -3,13 +3,29 @@ import type { GameStartMode, GameStats, Player } from "../../lib/models/types/sl
 import type { GameEndType, GameStartType, PostFrameUpdateType } from "@slippi/slippi-js";
 import { isNil } from "lodash";
 
-// TODO: Figure out how tied game placements look
+/** The settings entry for a port index. `settings.players` skips empty ports (ports 1 + 3 →
+ *  [port1, port3]), so array position ≠ playerIndex — always look players up by playerIndex. */
+export const findSettingsPlayer = <T extends { playerIndex: number }>(
+    players: (T | null | undefined)[] | null | undefined,
+    playerIndex: number | null | undefined,
+): T | undefined => {
+    if (isNil(playerIndex)) return undefined;
+    return players?.find((player) => player?.playerIndex === playerIndex) ?? undefined;
+}
+
+/** Winning player's port index (playerIndex), or undefined for ties / handwarmers / no result. */
 export const getWinnerIndex = (game: GameStats | undefined): number | undefined => {
     if (!game) return;
     if (isHandwarmers(game)) return;
     if (isTiedGame(game)) return
     const lrasIndex = game.gameEnd.lrasInitiatorIndex ?? -1
-    if (lrasIndex >= 0) return lrasIndex === 0 ? 1 : 0
+    if (lrasIndex >= 0) {
+        // The player who did NOT quit wins (singles). Without settings, assume ports 1 + 2.
+        const players = game.settings?.players?.filter((player) => player) ?? [];
+        if (!players.length) return lrasIndex === 0 ? 1 : 0
+        const others = players.filter((player) => player.playerIndex !== lrasIndex);
+        return others.length === 1 ? others[0].playerIndex : undefined
+    }
 
     const placements = game.gameEnd.placements;
     if (placements.filter(placement => placement.position === 0).length >= 2) return
@@ -31,23 +47,43 @@ export const isTiedGame = (game: GameStats | undefined | null) => {
     return false
 }
 
-export const getGameScore = (recentGames: GameStats[]) => {
-    const gameScore = recentGames
-        .reduce((score: number[], game: GameStats | undefined) => {
-            if (!game) return score
-
-            if (isTiedGame(game)) return score
-
-            const winnerIndex = getWinnerIndex(game)
-            if (isNil(winnerIndex)) return score
-            score[winnerIndex] += 1
-            return score
-        }, [0, 0]) ?? [0, 0]
-    return gameScore
+/** Player slot (0 = Player 1, 1 = Player 2) of a port in a set. Slots follow the set's first game
+ *  (players ordered by port); later games match by connect code, so swapping ports mid-set keeps the
+ *  score with the player. Offline (no codes) the port decides. */
+export const getPlayerSlot = (
+    game: GameStats | undefined,
+    playerIndex: number | undefined,
+    referencePlayers?: ({ playerIndex: number; connectCode?: string } | null | undefined)[],
+): number | undefined => {
+    const players = game?.settings?.players?.filter((player) => player) ?? [];
+    const player = findSettingsPlayer(players, playerIndex);
+    if (!player) return undefined;
+    const reference = (referencePlayers ?? players).filter((p) => p);
+    if (player.connectCode) {
+        const byCode = reference.findIndex((p) => p?.connectCode === player.connectCode);
+        if (byCode >= 0) return byCode;
+    }
+    const byPort = reference.findIndex((p) => p?.playerIndex === playerIndex);
+    return byPort >= 0 ? byPort : players.indexOf(player);
 }
 
+/** Running set score [Player 1 wins, Player 2 wins] — indexed by player slot, not by port. */
+export const getGameScore = (recentGames: GameStats[]) => {
+    const reference = recentGames.find((game) => game?.settings?.players?.length)?.settings?.players;
+    return recentGames.reduce((score: number[], game: GameStats | undefined) => {
+        if (!game) return score
+        if (isTiedGame(game)) return score
+        const slot = getPlayerSlot(game, getWinnerIndex(game), reference)
+        if (isNil(slot) || slot > 1) return score
+        score[slot] += 1
+        return score
+    }, [0, 0])
+}
+
+/** Is `player` ahead in the set score after `game`? */
 export const didPlayerWin = (game: GameStats, player: Player): boolean => {
-    return game.score[player.playerIndex] > game.score[player.playerIndex === 0 ? 1 : 0];
+    const slot = getPlayerSlot(game, player.playerIndex) ?? player.playerIndex;
+    return (game.score[slot] ?? 0) > (game.score[slot === 0 ? 1 : 0] ?? 0);
 }
 
 export const getGameMode = (settings: GameStartType | null): GameStartMode => {
@@ -155,8 +191,9 @@ export const isHandwarmers = (gameStats: GameStats): boolean => {
         let stocksPlayer1 = 0;
         let stocksPlayer2 = 0;
 
+        const player1Index = gameStats.settings.players.find((player) => player)?.playerIndex ?? 0;
         gameStats.postGameStats.stocks.forEach((stock) => {
-            if (stock.playerIndex == 0) {
+            if (stock.playerIndex == player1Index) {
                 stocksPlayer1 += 1;
             } else {
                 stocksPlayer2 += 1;

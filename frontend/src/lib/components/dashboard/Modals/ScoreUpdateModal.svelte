@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import type { GameStats, Player } from '$lib/models/types/slippiData';
@@ -45,10 +46,10 @@
 
 		<div class="game-list">
 			{#each games as game, i (game.timestamp?.toString() ?? i)}
-				{@const p1c = game.settings?.players?.[p1Idx]?.characterId ?? 0}
-				{@const p1col = game.settings?.players?.[p1Idx]?.characterColor ?? 0}
-				{@const p2c = game.settings?.players?.[p2Idx]?.characterId ?? 0}
-				{@const p2col = game.settings?.players?.[p2Idx]?.characterColor ?? 0}
+				{@const p1c = findSettingsPlayer(game.settings?.players, p1Idx)?.characterId ?? 0}
+				{@const p1col = findSettingsPlayer(game.settings?.players, p1Idx)?.characterColor ?? 0}
+				{@const p2c = findSettingsPlayer(game.settings?.players, p2Idx)?.characterId ?? 0}
+				{@const p2col = findSettingsPlayer(game.settings?.players, p2Idx)?.characterColor ?? 0}
 				{@const p1stocks = game.lastFrame?.players?.[p1Idx]?.post.stocksRemaining ?? 0}
 				{@const p2stocks = game.lastFrame?.players?.[p2Idx]?.post.stocksRemaining ?? 0}
 				{@const stageName = STAGE_DATA[game.settings?.stageId ?? -1]?.name ?? '—'}

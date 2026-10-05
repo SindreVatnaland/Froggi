@@ -49,6 +49,7 @@
 	import StrikingElementSelect from './Striking/StrikingElementSelect.svelte';
 	import BingoElementSelect from './Bingo/BingoElementSelect.svelte';
 	import IronManElementSelect from './IronMan/IronManElementSelect.svelte';
+	import LiveGameElementSelect from './LiveGame/LiveGameElementSelect.svelte';
 	import CurrentPlayerActionStateSelect from './CustomHud/CurrentPlayerActionStateSelect.svelte';
 	import Player1ActionStateSelect from './CustomHud/Player1ActionStateSelect.svelte';
 	import Player2ActionStateSelect from './CustomHud/Player2ActionStateSelect.svelte';
@@ -65,11 +66,11 @@
 
 	$: buttons = [
 		{
-			category: ElementCategory.Bingo,
+			category: ElementCategory.LiveGame,
 			visible: true,
 		},
 		{
-			category: ElementCategory.IronMan,
+			category: ElementCategory.Minigames,
 			visible: true,
 		},
 		{
@@ -309,11 +310,14 @@
 				out:fly={{ duration: 100, x: -16 }}
 				class="elem-inner"
 			>
-				{#if selectedCategory === ElementCategory.Bingo}
-					<BingoElementSelect on:select={select} />
+				{#if selectedCategory === ElementCategory.LiveGame}
+					<LiveGameElementSelect on:select={select} />
 				{/if}
-				{#if selectedCategory === ElementCategory.IronMan}
-					<IronManElementSelect on:select={select} />
+				{#if selectedCategory === ElementCategory.Minigames}
+					<div class="flex flex-col gap-2">
+						<BingoElementSelect on:select={select} />
+						<IronManElementSelect on:select={select} />
+					</div>
 				{/if}
 				{#if selectedCategory === ElementCategory.StageStriking}
 					<StrikingElementSelect on:select={select} />

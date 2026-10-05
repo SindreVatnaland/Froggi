@@ -5,9 +5,27 @@
 		VisibilityOption,
 		type SelectedVisibilityCondition,
 	} from '$lib/models/types/animationOption';
+	import type { StageStatus } from '$lib/models/types/stageStriking';
+	import { STRIKE_STAGES } from '$lib/utils/strikeStageStatus';
 
 	export let selectedVisibilityOption: SelectedVisibilityCondition;
 	const dispatch = createEventDispatcher();
+
+	const extraPhases: { value: VisibilityOption; label: string; tip: string }[] = [
+		{ value: VisibilityOption.StrikeIsFirstGame, label: 'Game 1', tip: 'Before/while game 1 is decided (characters, RPS, striking)' },
+		{ value: VisibilityOption.StrikePhaseRpsResult, label: 'Phase: RPS Result', tip: 'RPS winner is choosing to strike first or second' },
+		{ value: VisibilityOption.StrikePhaseStageBan, label: 'Phase: Stage Ban', tip: 'Game 2+: the previous winner bans a stage' },
+		{ value: VisibilityOption.StrikePhaseStagePick, label: 'Phase: Stage Pick', tip: 'Game 2+: the previous loser picks the stage' },
+		{ value: VisibilityOption.StrikePhaseCharacterPick, label: 'Phase: Character Pick', tip: 'Game 2+: winner picks a character, then the loser' },
+		{ value: VisibilityOption.StrikeAgreementPending, label: 'Stage Agreement Pending', tip: 'A player asked to play a DSR-blocked stage and is waiting for the other to agree' },
+	];
+	const statusLabels: { key: StageStatus; label: string; tip: string }[] = [
+		{ key: 'available', label: 'Available', tip: 'Can be struck / picked (full colour)' },
+		{ key: 'locked', label: 'Locked', tip: 'Counterpick during game 1, or not in this ruleset (grey)' },
+		{ key: 'struck', label: 'Struck / Banned', tip: 'Struck in game 1 or banned by the previous winner this game (yellow)' },
+		{ key: 'dsr', label: 'DSR Blocked', tip: 'The player picking already won here (red) — players may agree to play it' },
+		{ key: 'picked', label: 'Picked', tip: 'The stage this game is played on (green outline)' },
+	];
 
 	function select(event: CustomEvent<VisibilityOption>) {
 		dispatch('select', event.detail);
@@ -56,6 +74,33 @@
 	>
 		Phase: Complete
 	</SelectOption>
+
+	{#each extraPhases as option (option.value)}
+		<SelectOption
+			description={option.tip}
+			value={option.value}
+			bind:selected={selectedVisibilityOption[option.value]}
+			on:select={select}
+		>
+			{option.label}
+		</SelectOption>
+	{/each}
+
+	<p class="section-label">Stage state</p>
+	<p class="text-xs opacity-50">One state is on per stage — stack coloured layers over the stage images and show each on its state.</p>
+	{#each STRIKE_STAGES as stage (stage.stageId)}
+		<p class="text-xs font-semibold mt-1">{stage.name}</p>
+		{#each statusLabels as status (status.key)}
+			<SelectOption
+				description={status.tip}
+				value={stage.conditions[status.key]}
+				bind:selected={selectedVisibilityOption[stage.conditions[status.key]]}
+				on:select={select}
+			>
+				{stage.name}: {status.label}
+			</SelectOption>
+		{/each}
+	{/each}
 
 	<p class="section-label">Turn</p>
 	<SelectOption

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
@@ -18,8 +19,8 @@
 	$: gameNumber = recentGames.length > 5 ? -5 : 0;
 	$: game = recentGames.at(gameNumber);
 
-	$: player1 = game?.settings?.players.at(currentPlayers?.at(0)?.playerIndex ?? 0);
-	$: player2 = game?.settings?.players.at(currentPlayers?.at(1)?.playerIndex ?? 1);
+	$: player1 = findSettingsPlayer(game?.settings?.players, currentPlayers?.at(0)?.playerIndex ?? 0);
+	$: player2 = findSettingsPlayer(game?.settings?.players, currentPlayers?.at(1)?.playerIndex ?? 1);
 </script>
 
 {#if dataItem?.elementId === CustomElement.CurrentSetGame5Stage}

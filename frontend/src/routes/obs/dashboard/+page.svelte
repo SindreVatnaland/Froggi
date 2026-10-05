@@ -2,6 +2,9 @@
 	import { BestOf, ConnectionState, InGameState } from '$lib/models/enum';
 	import { CommandType } from '$lib/models/types/commandTypes';
 	import ReplayBufferHandler from '$lib/components/dashboard/ReplayBufferHandler.svelte';
+	import ObsScenes from '$lib/components/dashboard/ObsCommands/ObsScenes.svelte';
+	import { onMount } from 'svelte';
+	import StreamPreview from '$lib/components/dashboard/StreamPreview.svelte';
 	import ScoreUpdateModal from '$lib/components/dashboard/Modals/ScoreUpdateModal.svelte';
 	import TagUpdateModal from '$lib/components/dashboard/Modals/TagUpdateModal.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -26,14 +29,16 @@
 		sceneSwitch,
 		strikeState,
 		tailscaleStatus,
+		strikeTokens,
 		ngrokStatus,
 		urls,
 		remoteAccess,
 	} from '$lib/utils/store.svelte';
 	// @ts-ignore
 	import QrCode from 'svelte-qrcode';
+	import { tooltip } from 'svooltip';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
-	import { getWinnerIndex } from '$lib/utils/gamePredicates';
+	import { getWinnerIndex, findSettingsPlayer } from '$lib/utils/gamePredicates';
 
 	let isScoreModalOpen = false;
 	let isTagModalOpen = false;
@@ -68,10 +73,10 @@
 	$: p2Stocks = p2Frame?.stocksRemaining ?? 0;
 	$: p1Percent = Math.floor(p1Frame?.percent ?? 0);
 	$: p2Percent = Math.floor(p2Frame?.percent ?? 0);
-	$: p1CharId = $gameSettings?.players?.[p1Idx]?.characterId ?? 0;
-	$: p2CharId = $gameSettings?.players?.[p2Idx]?.characterId ?? 0;
-	$: p1ColorId = $gameSettings?.players?.[p1Idx]?.characterColor ?? 0;
-	$: p2ColorId = $gameSettings?.players?.[p2Idx]?.characterColor ?? 0;
+	$: p1CharId = findSettingsPlayer($gameSettings?.players, p1Idx)?.characterId ?? 0;
+	$: p2CharId = findSettingsPlayer($gameSettings?.players, p2Idx)?.characterId ?? 0;
+	$: p1ColorId = findSettingsPlayer($gameSettings?.players, p1Idx)?.characterColor ?? 0;
+	$: p2ColorId = findSettingsPlayer($gameSettings?.players, p2Idx)?.characterColor ?? 0;
 	$: stageId = $gameSettings?.stageId ?? -1;
 	$: stageName = STAGE_DATA[stageId]?.name ?? '';
 	$: gameNum = $recentGames.length + 1;
@@ -137,8 +142,10 @@
 	$: strikeBase = isOnline
 		? ($remoteAccess.ngrok ?? $urls?.external ?? '')
 		: ($remoteAccess.tailscale ?? $urls?.external ?? '');
-	$: strikeP1Url = strikeBase ? `${strikeBase}/set/p/1` : '';
-	$: strikeP2Url = strikeBase ? `${strikeBase}/set/p/2` : '';
+	// Player links carry each player's secret token (only the app window receives them).
+	$: strikeP1Url = strikeBase && $strikeTokens ? `${strikeBase}/set/p/1?t=${$strikeTokens[1]}` : '';
+	$: strikeP2Url = strikeBase && $strikeTokens ? `${strikeBase}/set/p/2?t=${$strikeTokens[2]}` : '';
+	onMount(() => $electronEmitter.emit('StrikePlayerTokensRequest'));
 
 	$: tsInstalled = $tailscaleStatus?.installed ?? false;
 	$: tsAuthenticated = $tailscaleStatus?.authenticated ?? false;
@@ -201,6 +208,13 @@
 		$electronEmitter.emit('StartSet', setP1Name || 'Player 1', setP2Name || 'Player 2', setBo);
 		isStartSetModalOpen = false;
 	};
+	const copyStrikeLink = async (url: string, idx: number, who: string) => {
+		await navigator.clipboard.writeText(url);
+		copiedIdx = idx;
+		setTimeout(() => (copiedIdx = null), 2000);
+		notifications.success(`${who} stage striking link copied`, 2500);
+	};
+
 	const enableReplayBuffer = () => {
 		$electronEmitter.emit('EnableReplayBuffer');
 	};
@@ -215,17 +229,21 @@
 	<div class="match-names">
 		<div class="player-col">
 			<button class="player-name" on:click={() => (isTagModalOpen = true)}>{p1Name}</button>
-			{#if strikeBase}
+			{#if strikeP1Url}
 				<div class="player-qr-group">
-					<span class="qr-type-label">Strike</span>
-					<button class="qr-click" title={strikeP1Url} on:click={async () => { await navigator.clipboard.writeText(strikeP1Url); copiedIdx = 11; setTimeout(() => (copiedIdx = null), 2000); }}>
+					<span class="qr-type-label">P1 phone · stage striking</span>
+					<button
+						class="qr-click"
+						use:tooltip={{ content: 'Copy URL', placement: 'top', delay: [200, 0] }}
+						on:click={() => copyStrikeLink(strikeP1Url, 11, 'Player 1')}
+					>
 						<QrCode value={strikeP1Url} size="64" color="#ffffff" background="#000000" />
 						{#if copiedIdx === 11}<span class="qr-copied-overlay">✓</span>{/if}
 					</button>
 				</div>
 			{:else if ngrokLoading}
 				<div class="player-qr-group">
-					<span class="qr-type-label">Strike</span>
+					<span class="qr-type-label">Stage striking</span>
 					<div class="qr-placeholder" style="width:64px;height:64px;" />
 				</div>
 			{/if}
@@ -239,17 +257,21 @@
 
 		<div class="player-col player-col--right">
 			<button class="player-name text-right" on:click={() => (isTagModalOpen = true)}>{p2Name}</button>
-			{#if strikeBase}
+			{#if strikeP2Url}
 				<div class="player-qr-group player-qr-group--right">
-					<span class="qr-type-label">Strike</span>
-					<button class="qr-click" title={strikeP2Url} on:click={async () => { await navigator.clipboard.writeText(strikeP2Url); copiedIdx = 12; setTimeout(() => (copiedIdx = null), 2000); }}>
+					<span class="qr-type-label">P2 phone · stage striking</span>
+					<button
+						class="qr-click"
+						use:tooltip={{ content: 'Copy URL', placement: 'top', delay: [200, 0] }}
+						on:click={() => copyStrikeLink(strikeP2Url, 12, 'Player 2')}
+					>
 						<QrCode value={strikeP2Url} size="64" color="#ffffff" background="#000000" />
 						{#if copiedIdx === 12}<span class="qr-copied-overlay">✓</span>{/if}
 					</button>
 				</div>
 			{:else if ngrokLoading}
 				<div class="player-qr-group player-qr-group--right">
-					<span class="qr-type-label">Strike</span>
+					<span class="qr-type-label">Stage striking</span>
 					<div class="qr-placeholder" style="width:64px;height:64px;" />
 				</div>
 			{/if}
@@ -271,6 +293,7 @@
 				class:start-set-btn--progress={setInProgress}
 				on:click={openStartSetModal}
 			>Start Set</button>
+			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => goto('/set')}>Stage striking →</button>
 		</div>
 		<div class="ctrl-right">
 			<button class="btn text-xs h-6 px-2.5 border-secondary rounded" on:click={() => (isScoreModalOpen = true)}>Edit Games</button>
@@ -372,10 +395,10 @@
 	<div class="history-list">
 		{#each $recentGames as game, i}
 			{@const wi = getWinnerIndex(game)}
-			{@const gp1c = game.settings?.players?.[p1Idx]?.characterId ?? 0}
-			{@const gp2c = game.settings?.players?.[p2Idx]?.characterId ?? 0}
-			{@const gp1col = game.settings?.players?.[p1Idx]?.characterColor ?? 0}
-			{@const gp2col = game.settings?.players?.[p2Idx]?.characterColor ?? 0}
+			{@const gp1c = findSettingsPlayer(game.settings?.players, p1Idx)?.characterId ?? 0}
+			{@const gp2c = findSettingsPlayer(game.settings?.players, p2Idx)?.characterId ?? 0}
+			{@const gp1col = findSettingsPlayer(game.settings?.players, p1Idx)?.characterColor ?? 0}
+			{@const gp2col = findSettingsPlayer(game.settings?.players, p2Idx)?.characterColor ?? 0}
 			{@const gStage = STAGE_DATA[game.settings?.stageId ?? -1]?.name ?? '—'}
 			<div class="history-row">
 				<span class="history-num">G{i + 1}</span>
@@ -389,6 +412,11 @@
 	</div>
 </div>
 {/if}
+
+<!-- ── Stream preview ── -->
+<div class="mb-3">
+	<StreamPreview />
+</div>
 
 <!-- ── Share live game ── -->
 {#if $isElectron}
@@ -405,8 +433,7 @@
 		<div class="conn-row">
 			<span class="conn-tag conn-tag--obs">OBS</span>
 			{#if obsConnected}
-				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">ws://localhost:{$obsConnection?.port ?? '4455'}</span>
-				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText(`ws://localhost:${$obsConnection?.port ?? '4455'}`); copiedIdx = 22; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 22 ? '✓' : '⎘'}</button>
+				<span class="text-xs opacity-55 flex-1">Connected</span>
 			{:else if $obsConnection?.state === ConnectionState.Searching}
 				<span class="text-xs opacity-40 flex-1">Connecting…</span>
 			{:else if obsWebsocketDisabled}
@@ -423,7 +450,7 @@
 				<span class="text-xs opacity-40 flex-1">Not configured</span>
 				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={() => goto('/settings')}>Set up →</button>
 			{:else if tsFunnelActive && $remoteAccess.tailscale}
-				<span class="font-mono text-xs opacity-55 flex-1 truncate min-w-0">{$remoteAccess.tailscale}</span>
+				<span class="text-xs opacity-55 flex-1">Funnel on · link hidden</span>
 				<button class="btn text-xs h-6 px-2 border-secondary rounded shrink-0" on:click={async () => { await navigator.clipboard.writeText($remoteAccess.tailscale ?? ''); copiedIdx = 20; setTimeout(() => copiedIdx = null, 2000); }}>{copiedIdx === 20 ? '✓' : '⎘'}</button>
 				<input type="checkbox" class="toggle-check shrink-0" checked={tsFunnelActive} on:change={toggleTailscaleFunnel} />
 			{:else}
@@ -469,7 +496,15 @@
 	<div class="obs-grid">
 
 		<div class="dash-card border-secondary">
-			<p class="dash-label mb-3">Automation</p>
+			<p class="dash-label mb-3">Scenes</p>
+			<ObsScenes />
+		</div>
+
+		<div class="dash-card border-secondary">
+			<div class="flex items-center justify-between mb-3">
+				<p class="dash-label">Automation</p>
+				<button class="text-xs opacity-50 hover:opacity-100" on:click={() => goto('/obs/flows')}>Flows →</button>
+			</div>
 			<div class="flex flex-col gap-2">
 				<label class="toggle-row border-secondary">
 					<span class="toggle-label text-secondary-color">Controller commands</span>

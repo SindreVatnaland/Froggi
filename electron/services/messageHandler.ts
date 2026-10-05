@@ -19,7 +19,7 @@ import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import { scopedLog } from '../utils/logger';
 import type { MessageEvents } from '../../frontend/src/lib/utils/customEventEmitter';
 import { Worker } from 'worker_threads';
-import { sendAuthenticatedMessage } from '../../frontend/src/lib/utils/websocketAuthentication';
+import { isAllowedUnauthenticated, sendAuthenticatedMessage } from '../../frontend/src/lib/utils/websocketAuthentication';
 import { NotificationType } from '../../frontend/src/lib/models/enum';
 import { ElectronCommandStore } from './store/storeCommands';
 import fs from "fs"
@@ -32,7 +32,7 @@ import openurl from 'openurl';
 import { ElectronFroggiStore } from './store/storeFroggi';
 import { OverlayInjector } from './injectOverlay';
 import { ElectronStrikeStore } from './store/storeStrike';
-import { NgrokService } from './ngrokService';
+import { NgrokService, NGROK_DOWN_AFTER_MISSES } from './ngrokService';
 import { ElectronWebhookStore } from './store/storeWebhook';
 import { BACKEND_PORT, VITE_PORT, MCP_SERVER_PORT, MCP_SERVER_PATH } from '../../frontend/src/lib/models/const';
 import { newId } from '../utils/functions';
@@ -198,11 +198,10 @@ export class MessageHandler {
 					const hasServerKey = Boolean(serverKey);
 					const keyValid = hasServerKey && authKey === serverKey;
 					const isAuthorized = matchIdValid || keyValid;
-					const allowUnauth = ['InitData', 'InitElectron', 'InitAuthentication', 'Ping'];
 
 					for (const [key, value] of Object.entries(data)) {
 						if (['AuthorizationKey', 'MatchId'].includes(key)) continue;
-						if (isAuthorized || allowUnauth.includes(key)) {
+						if (isAuthorized || isAllowedUnauthenticated(key, value)) {
 							this.clientEmitter.emit(key as keyof MessageEvents, ...(value as any));
 						}
 						// Unauthorized commands are dropped silently — clients get a passive
@@ -306,6 +305,11 @@ export class MessageHandler {
 		this.localEmitter.emit(topic, ...payload);
 	}
 
+	/** Only to the Froggi app window (the host) — never to WebSocket clients (overlays, phones, viewers). */
+	sendHostMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
+		this.sendElectronMessage(topic, ...payload);
+	}
+
 	private sendWebsocketMessage<J extends keyof MessageEvents>(topic: J, ...payload: Parameters<MessageEvents[J]>) {
 		// Serialize once and reuse for the worker (3100) and every express (3200) client.
 		const msg = JSON.stringify({ [topic]: payload });
@@ -346,6 +350,9 @@ export class MessageHandler {
 	}
 
 	private async initData(socketId: string | undefined = undefined) {
+		// Cheap + time-critical first: a player's phone shows the striking state straight away instead
+		// of waiting for the overlay list etc. to load.
+		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 		this.sendInitMessage(socketId, 'CurrentPlayer', await this.storeCurrentPlayer.getCurrentPlayer());
 		this.sendInitMessage(socketId, 'CurrentPlayers', this.storePlayers.getCurrentPlayers());
 		this.sendInitMessage(
@@ -392,7 +399,6 @@ export class MessageHandler {
 			this.detectRemoteAccess();
 		}
 		this.sendInitMessage(socketId, 'NgrokStatus', this.ngrokService.getStatus());
-		this.sendInitMessage(socketId, 'StrikeState', this.storeStrike.getStrikeState());
 		this.sendInitMessage(socketId, 'WebhookProfiles', this.storeWebhook.getProfiles());
 		this.sendInitMessage(socketId, 'WebhooksEnabled', this.storeWebhook.getEnabled());
 		this.sendInitMessage(socketId, 'BingoLobbyState', this.bingoService.getLobby());
@@ -424,6 +430,7 @@ export class MessageHandler {
 
 	private tailscaleUrl: string | undefined = undefined;
 	private ngrokUrl: string | undefined = undefined;
+	private ngrokMisses = 0;
 
 	/** Public tunnel URL for remote clients, preferring Tailscale Funnel over ngrok. Undefined if neither is up. */
 	getRemoteAccessUrl(): string | undefined {
@@ -562,7 +569,10 @@ export class MessageHandler {
 			req.setTimeout(1500, () => { req.destroy(); resolve(undefined); });
 		});
 
-		if (ngrokUrl !== this.ngrokUrl) {
+		// A single failed poll is not a dead tunnel — only drop it after several misses in a row.
+		if (ngrokUrl) this.ngrokMisses = 0;
+		const ngrokDown = !ngrokUrl && ++this.ngrokMisses >= NGROK_DOWN_AFTER_MISSES;
+		if (ngrokUrl !== this.ngrokUrl && (ngrokUrl || ngrokDown)) {
 			this.ngrokUrl = ngrokUrl;
 			this.log.info('detectRemoteAccess: ngrokUrl=', ngrokUrl);
 			this.sendMessage('RemoteAccessStatus', ngrokUrl, 'ngrok');

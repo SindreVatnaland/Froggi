@@ -60,6 +60,10 @@ export const appTopics: ContentTopic[] = [
 				type: 'note',
 				text: 'If the assistant seems to be missing tools after a Froggi update, restart the AI app (or toggle the Froggi extension/server off and on) so it reloads the tool list.',
 			},
+			{
+				type: 'note',
+				text: 'Apps on this computer always use the local URL — no Tailscale needed. "Expose over Tailscale (HTTPS)" is only for an MCP app on ANOTHER of your devices in the same tailnet. Web/cloud apps (claude.ai, the Claude mobile app\'s connectors) run on remote servers and cannot reach a tailnet-only URL, so exposing it does not help them.',
+			},
 		],
 	},
 	{

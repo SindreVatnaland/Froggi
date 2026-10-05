@@ -41,4 +41,29 @@ export const obsIntegrationTopics: ContentTopic[] = [
 			},
 		],
 	},
+	{
+		id: 'obs-dashboard',
+		title: 'The Dashboard (running a stream or tournament set)',
+		category: 'obs',
+		summary: 'OBS → Dashboard is the live control page: players + set score, stage-striking phone links, live game, scenes, OBS automation, replay buffer.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'Sections:',
+				items: [
+					'Match bar — player tags (click to edit), set score (click to edit games), Start Set (stage striking), and per player a "P1/P2 phone · stage striking" QR: each player scans theirs to strike/ban/pick on their phone. Hover = "Copy URL"; click copies it. The QRs need a public link (ngrok "Online" toggle).',
+					'Live game + game history — percents, stocks, stage while a game runs; past games of the set.',
+					'Share live game — a watch-only /live page link: permanent (Tailscale Funnel, hidden until "Show") or temporary (ngrok).',
+					'Connectivity — OBS connected?, Tailscale Funnel, ngrok tunnel (↻ = new URL).',
+					'Scenes — click to switch the OBS program scene; ★ pins favourites to the top (saved per device).',
+					'Automation — controller commands and auto scene switch toggles. Scene Items / Volume — show/hide sources and set input volume in the current scene.',
+					'Replay Buffer — "Enable 30s" turns OBS\'s replay buffer on (30 s) through obs-websocket; if OBS has not applied it yet it asks for an OBS restart once.',
+				],
+			},
+			{
+				type: 'note',
+				text: 'Explain the relevant section first; only act (switch scenes, start ngrok, start a set) when the user asks you to.',
+			},
+		],
+	},
 ];

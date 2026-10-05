@@ -160,15 +160,14 @@ export class ObsWebSocket {
 
 	private startReplayBuffer = async () => {
 		try {
-			// Force 30s duration in whichever output mode is active
+			// Turn the replay buffer on with a 30s duration in whichever output mode is active
+			// (Simple / Advanced). OBS builds the replay output when it reloads its output settings.
 			for (const category of ['SimpleOutput', 'AdvOut']) {
-				try {
-					await this.obs.call('SetProfileParameter', {
-						parameterCategory: category,
-						parameterName: 'RecRBTime',
-						parameterValue: '30',
-					});
-				} catch { /* ignore — category may not exist in this output mode */ }
+				for (const [parameterName, parameterValue] of [['RecRB', 'true'], ['RecRBTime', '30']]) {
+					try {
+						await this.obs.call('SetProfileParameter', { parameterCategory: category, parameterName, parameterValue });
+					} catch { /* ignore — category may not exist in this output mode */ }
+				}
 			}
 
 			const { outputActive } = await this.obs.call('GetReplayBufferStatus');
@@ -181,7 +180,7 @@ export class ObsWebSocket {
 			if (err?.message?.includes('not available')) {
 				this.messageHandler.sendMessage(
 					'Notification',
-					'Enable Replay Buffer in OBS: Settings → Output → Replay Buffer → Enable Replay Buffer',
+					'Replay Buffer is now enabled in your OBS profile — OBS applies it after a restart (or open OBS Settings and press OK). Then press Enable again.',
 					NotificationType.Warning,
 				);
 			} else {

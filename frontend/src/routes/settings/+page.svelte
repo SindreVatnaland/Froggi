@@ -103,35 +103,14 @@
 
 	const toggleMcpTailscale = () => $electronEmitter.emit('SetMcpTailscaleEnabled', !($froggiSettings?.mcpTailscaleEnabled === true));
 	const toggleAutoInject = () => $electronEmitter.emit('SetAutoInjectEnabled', !($froggiSettings?.autoInjectEnabled === true));
+	// Injection is Windows-only (the Electron renderer's user agent names the OS).
+	const injectionSupported = typeof navigator !== 'undefined' && /windows/i.test(navigator.userAgent);
 	let mcpTsUrlCopied = false;
 	const copyMcpTsUrl = async () => {
 		if (!$mcpTailscaleUrl) return;
 		await navigator.clipboard.writeText($mcpTailscaleUrl);
 		mcpTsUrlCopied = true;
 		setTimeout(() => (mcpTsUrlCopied = false), 2000);
-	};
-	// Paste-to-an-LLM setup instructions for wiring Claude Code / Desktop to this Froggi MCP.
-	$: mcpSetupInstructions = `Help me connect Claude to my running Froggi app via its local MCP server.
-
-Froggi's MCP server: ${mcpUrl} (HTTP, localhost only).${$mcpTailscaleUrl ? `\nFor a remote device over HTTPS use: ${$mcpTailscaleUrl} (works only on my Tailscale network).` : ''}
-
-Claude Code — add to ~/.claude.json, under the current project's "mcpServers":
-  "froggi": { "type": "http", "url": "${mcpUrl}" }
-Then restart Claude Code and run /mcp to confirm it connected.
-
-Claude Desktop — easiest: in Froggi, Settings → AI Assistant → "Add to Claude Desktop". That installs a fully-local Froggi extension (.mcpb) with one click — no config file, no OAuth, nothing leaves this computer. It then appears under Claude Desktop → Settings → Extensions.
-Manual alternative: bridge via mcp-remote in claude_desktop_config.json under "mcpServers":
-  "froggi": { "command": "npx", "args": ["-y", "mcp-remote", "${mcpUrl}", "--transport", "http-only"] }
-Then fully quit Claude Desktop (Cmd/Ctrl+Q) and reopen it.
-
-Other apps (Cursor, VS Code, …): Froggi → Settings → AI Assistant → "Connect an AI app" has a one-click option per app; any MCP client can use the HTTP URL above.
-
-Requirements: Froggi must be running with the AI Assistant toggles enabled in its Settings. Once connected, ask Froggi to explain setup, check OBS/Dolphin status, or build an overlay.`;
-	let mcpSetupCopied = false;
-	const copyMcpSetup = async () => {
-		await navigator.clipboard.writeText(mcpSetupInstructions);
-		mcpSetupCopied = true;
-		setTimeout(() => (mcpSetupCopied = false), 2000);
 	};
 	const closeActionOptions: { value: 'minimize' | 'quit' | null; label: string }[] = [
 		{ value: null, label: 'Ask' },
@@ -330,10 +309,12 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 				</div>
 				<button
 					class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
-					class:active-toggle={$froggiSettings?.autoInjectEnabled === true}
+					class:active-toggle={injectionSupported && $froggiSettings?.autoInjectEnabled === true}
+					disabled={!injectionSupported}
+					title={injectionSupported ? undefined : 'Injection is only available on Windows'}
 					on:click={toggleAutoInject}
 				>
-					{$froggiSettings?.autoInjectEnabled === true ? 'On' : 'Off'}
+					{injectionSupported ? ($froggiSettings?.autoInjectEnabled === true ? 'On' : 'Off') : 'Windows only'}
 				</button>
 			</div>
 		</div>
@@ -593,22 +574,12 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 						</button>
 					</div>
 				</div>
-				<!-- Paste-to-an-LLM setup instructions — one-click copy, no preview. -->
-				<div class="flex items-center justify-between gap-4 mt-1">
-					<div>
-						<span class="text-sm text-secondary-color">Setup instructions</span>
-						<p class="text-xs opacity-40 mt-0.5">Copy and paste into Claude to wire up the connection for you</p>
-					</div>
-					<button class="btn text-xs h-7 px-3 border-secondary rounded shrink-0" on:click={copyMcpSetup}>
-						{mcpSetupCopied ? 'Copied!' : 'Copy for LLM'}
-					</button>
-				</div>
 				<!-- Tailscale exposure surfaces only when Tailscale is ready; otherwise guide the user to it. -->
 				{#if tsInstalled && tsAuthenticated}
 					<div class="flex items-start justify-between gap-4 mt-2">
 						<div>
 							<span class="text-sm text-secondary-color">Expose over Tailscale (HTTPS)</span>
-							<p class="text-xs opacity-40 mt-0.5">Reach the MCP from your own remote devices over TLS. Tailnet-only — never public.</p>
+							<p class="text-xs opacity-40 mt-0.5">Only for an AI app on <strong>another device</strong> in your tailnet. Apps on this computer use the local URL; web apps (claude.ai) can't reach a tailnet URL. Tailnet-only — never public.</p>
 						</div>
 						<button
 							class="btn text-xs h-7 px-3 border-secondary rounded shrink-0"
@@ -627,7 +598,7 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 					{/if}
 				{:else}
 					<p class="text-xs opacity-40 mt-1 leading-relaxed">
-						Need HTTPS for a remote device? Install <strong>Tailscale</strong> in <strong>Remote Access</strong> above — it's a one-click install and you just log in. Once connected, an "Expose over Tailscale (HTTPS)" toggle appears here.
+						Only needed to use the assistant from another device: install <strong>Tailscale</strong> in <strong>Remote Access</strong> above, and an "Expose over Tailscale (HTTPS)" toggle appears here. AI apps on this computer don't need it.
 					</p>
 				{/if}
 			{/if}
@@ -758,30 +729,6 @@ Requirements: Froggi must be running with the AI Assistant toggles enabled in it
 	.option-tag--alt {
 		background: rgba(148, 163, 184, 0.12);
 		color: rgba(148, 163, 184, 0.8);
-	}
-
-	.setup-steps {
-		list-style: decimal;
-		padding-left: 1.25rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-		margin-top: 0.5rem;
-	}
-
-	.setup-steps li {
-		font-size: 0.75rem;
-		opacity: 0.6;
-		line-height: 1.5;
-	}
-
-	.setup-steps code {
-		font-family: monospace;
-		font-size: 0.7rem;
-		opacity: 0.9;
-		background: rgba(128, 128, 128, 0.1);
-		padding: 0.1rem 0.3rem;
-		border-radius: 0.2rem;
 	}
 
 	.url-detect {

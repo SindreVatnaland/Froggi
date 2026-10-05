@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { gameScore, gameSettings } from '$lib/utils/store.svelte';
@@ -16,8 +17,8 @@
 	export let game: GameStats | undefined;
 	export let currentPlayers: Player[];
 
-	$: player1 = game?.settings?.players.at(currentPlayers?.at(0)?.playerIndex ?? 0);
-	$: player2 = game?.settings?.players.at(currentPlayers?.at(1)?.playerIndex ?? 1);
+	$: player1 = findSettingsPlayer(game?.settings?.players, currentPlayers?.at(0)?.playerIndex ?? 0);
+	$: player2 = findSettingsPlayer(game?.settings?.players, currentPlayers?.at(1)?.playerIndex ?? 1);
 </script>
 
 {#if dataItem?.elementId === CustomElement.CurrentSetGameRecentStage}

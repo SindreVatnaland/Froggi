@@ -7,6 +7,7 @@
 	} from '$lib/models/types/animationOption';
 	import { GameStartTypeExtended, Player } from '$lib/models/types/slippiData';
 	import { getOffStageZone } from '$lib/utils/gamePredicates';
+	import { nextRadarSide, type RadarSide } from '$lib/utils/radarSide';
 	import { gameSettings } from '$lib/utils/store.svelte';
 	import type {
 		FrameEntryType,
@@ -28,6 +29,14 @@
 			if (gameState === InGameState.Running) return true;
 		if (option[VisibilityOption.InGameRunning] === VisibilityToggle.False)
 			if (gameState !== InGameState.Running) return true;
+
+		if (option[VisibilityOption.InGameRadarLeft] || option[VisibilityOption.InGameRadarRight]) {
+			const side = radarSide(gameFrame, currentPlayers, gameSettings?.stageId);
+			if (option[VisibilityOption.InGameRadarLeft] === VisibilityToggle.True && side === 'left') return true;
+			if (option[VisibilityOption.InGameRadarLeft] === VisibilityToggle.False && side !== 'left') return true;
+			if (option[VisibilityOption.InGameRadarRight] === VisibilityToggle.True && side === 'right') return true;
+			if (option[VisibilityOption.InGameRadarRight] === VisibilityToggle.False && side !== 'right') return true;
+		}
 
 		if (option[VisibilityOption.InGamePaused] === VisibilityToggle.True)
 			if (gameState === InGameState.Paused) return true;
@@ -116,6 +125,24 @@
 			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'right') return true;
 		if (option[VisibilityOption.InGamePlayer2RightSide] === VisibilityToggle.False)
 			if (sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) !== 'right') return true;
+		// Off stage AND on that side — one condition per player/side so a single radar element can
+		// OR them in one group (e.g. "any player off stage on the right").
+		if (option[VisibilityOption.InGamePlayer1OffStageLeft] === VisibilityToggle.True)
+			if (isOffStage(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'left') return true;
+		if (option[VisibilityOption.InGamePlayer1OffStageLeft] === VisibilityToggle.False)
+			if (!(isOffStage(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'left')) return true;
+		if (option[VisibilityOption.InGamePlayer1OffStageRight] === VisibilityToggle.True)
+			if (isOffStage(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'right') return true;
+		if (option[VisibilityOption.InGamePlayer1OffStageRight] === VisibilityToggle.False)
+			if (!(isOffStage(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(0)?.playerIndex ?? 0]?.pre) === 'right')) return true;
+		if (option[VisibilityOption.InGamePlayer2OffStageLeft] === VisibilityToggle.True)
+			if (isOffStage(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'left') return true;
+		if (option[VisibilityOption.InGamePlayer2OffStageLeft] === VisibilityToggle.False)
+			if (!(isOffStage(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'left')) return true;
+		if (option[VisibilityOption.InGamePlayer2OffStageRight] === VisibilityToggle.True)
+			if (isOffStage(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'right') return true;
+		if (option[VisibilityOption.InGamePlayer2OffStageRight] === VisibilityToggle.False)
+			if (!(isOffStage(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre, gameSettings?.stageId) && sideOfCenter(gameFrame?.players?.[currentPlayers.at(1)?.playerIndex ?? 1]?.pre) === 'right')) return true;
 
 		if (option[VisibilityOption.InGameIsGame1] === VisibilityToggle.True)
 			if (isGameNumber(gameScore, 1)) return true;
@@ -153,6 +180,22 @@
 
 	// Left/right of the stage's horizontal center (Melee stages are centered on x = 0). Combine with
 	// "Player N Off Stage" for a radar that sits on the side the player went off.
+	// Ultimate radar corner, latched across frames (see nextRadarSide). Module-level so every radar
+	// element reads the same side — exactly one of "Radar Left" / "Radar Right" is true at a time.
+	let radarLatch: RadarSide | null = null;
+	const radarSide = (
+		gameFrame: FrameEntryType | undefined | null,
+		currentPlayers: Player[],
+		stageId: number | undefined | null,
+	): RadarSide | null => {
+		const players = [0, 1].map((i) => {
+			const pre = gameFrame?.players?.[currentPlayers.at(i)?.playerIndex ?? i]?.pre;
+			return { offStage: isOffStage(pre, stageId), side: sideOfCenter(pre) };
+		});
+		radarLatch = nextRadarSide(radarLatch, players);
+		return radarLatch;
+	};
+
 	const sideOfCenter = (playerFrame: PreFrameUpdateType | undefined): 'left' | 'right' | undefined => {
 		const x = playerFrame?.positionX;
 		if (isNil(x) || x === 0) return undefined;

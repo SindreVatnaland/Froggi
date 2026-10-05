@@ -119,8 +119,8 @@ export enum ElementCategory {
 	Player1ActionState = 'Player 1 Action State',
 	Player2ActionState = 'Player 2 Action State',
 
-	Bingo = 'Bingo',
-	IronMan = 'Iron Man',
+	Minigames = 'Minigames',
+	LiveGame = 'Live Game',
 }
 
 export enum InGameState {

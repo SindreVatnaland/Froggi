@@ -186,16 +186,18 @@ Gate timer digits on \`Game Running=True, Game Paused=False, Game Countdown=Fals
 Game Go=False\` so they hide during the intro/countdown.
 
 **Player radar** (InGamePlayerRadar 3200, or InGamePlayerRadarAnimated 3201 = live character graphics):
-- **Melee**: NO radar. **Ultimate**: include the radar.
+- **Melee**: NO radar (it shows a magnifying bubble instead). **Ultimate**: include the radar.
 - Default to the plain radar (3200); use the animated one (3201) when the user wants live character
-  graphics on it.
-- Visible only when a player is off stage: visibility \`Player 1 Off Stage\` / \`Player 2 Off Stage\`
-  (shown while either has been off stage a moment). Demo places it top area (x≈376, y≈8).
-- Side-aware radar (Ultimate-style: the radar appears in the upper corner on the side the fighter
-  left from): \`Player N Left Side\` / \`Player N Right Side\` = left/right of the stage center.
-  Simplest: one radar per side PER PLAYER, e.g. top-left radar A = groups [{Player 1 Off Stage:1},
-  {Player 1 Left Side:1}], radar B = the same for Player 2, at the same spot on separate layers (and the
-  mirror pair top-right) — see "Visibility logic" below for why.
+  graphics on it. For a full live game view with a following camera use InGameLiveCamera (3202).
+- Show it ONLY while someone is off stage, in ONE corner. Ultimate puts it in the top corner on the
+  SAME side the first fighter left from (off right → top-right) and keeps it there until everyone is
+  back. Use the game conditions "Radar Left" / "Radar Right" — that latch is built in and only one is
+  ever on, so two radars never show at once: top-right radar = groups [{Radar Right:1},
+  {Game Running:1}, {Game Paused:2}], top-left = the same with "Radar Left". (Other conditions:
+  "Player N Off Stage Left/Right" = that player off stage on that side, per player — can be true on
+  both sides at once; "Player N Off Stage" = a single fixed radar.)
+- Mirror the pair (x and 512-x-w) and keep them clear of the timer (Ultimate's timer is top-right →
+  put the right radar under it). Demo HUD: x≈8 / x≈376, y≈44, 128×74.
 
 **Visibility logic** — \`data.visibility.selectedOptions\` is a LIST OF GROUPS. The element is visible
 when EVERY group matches; a group matches when ANY of its entries holds (1 = condition true, 2 =
@@ -236,6 +238,58 @@ the current set (updates after every game). For a "1 - 0" scoreboard: score, a C
 **Players** — Froggi overlays are 1v1 (singles): every per-player element is Player 1 / Player 2 /
 Current Player. Doubles and free-for-all aren't supported yet — say so if the user asks.
 
+## Designing a good overlay (read before building)
+**Ask the aspect ratio first — never assume 16:9.** Ask what the overlay is for and its shape: the
+stream canvas / OBS scene (usually 16:9) or the game window when injected (16:9, 4:3, Dolphin's 73:60,
+ultrawide 21:9, or a phone-like 19:9). Any ratio works: set it with create_overlay /
+update_overlay_settings aspectRatio {width,height} (e.g. 19:9). The grid stays 512×288 for every ratio —
+horizontal, 4:3 or vertical — and stretches with it (on a vertical overlay each column is very narrow
+and each row tall), so element proportions change with the ratio: check them in show_overlay_preview.
+Start from the use: (a) REPLACE the game HUD — injected into Dolphin or over the game in OBS, with
+Melee's HUD hidden by a gecko code (rebuild percent, stocks, timer, callouts); (b) ADD around the game
+HUD (game HUD stays — use get_game_hud_reference regions and keep off them); (c) full-screen scenes
+(Menu, Post Game, Post Set, Strike Phase) where nothing is being played.
+- **Keep gameplay clear.** During play only the edges are yours: a bottom band (y ≳ 200 of 288) for
+  player panels, the top corners for timer / radar / score. Nothing large in the middle except
+  short-lived callouts (READY, GO, GAME, stock-loss display) that hide again by condition.
+- **Game narrower than the overlay** (injected or captured: the overlay fills the game height, centred).
+  Sides are cropped: visible x ≈ 256·(1 − g/o) … 512 − that, with g = game ratio, o = overlay ratio.
+  16:9 overlay on a 4:3 game → x≈64–448; on 73:60 → x≈81–431. A wider game (21:9 on 16:9) gets
+  margins instead. Ask which game ratio(s) they play and keep essentials inside the visible band —
+  or make the overlay the game's own ratio.
+- **Symmetry and order.** P1 left, P2 right, mirrored (x₂ = 512 − x₁ − w); same sizes and styling for
+  both; consistent per-player colours (port/team colour accents).
+- **Hierarchy.** Percent biggest, then stocks, then name/tag, then small extras (rating, rank icon,
+  score). Timer medium. Demo sizes: percent box ≈100×30, stock icons ≈16×16, radar 128×74.
+- **Readability over gameplay.** High contrast; a translucent dark backing box (CustomBox,
+  "#00000080", rounded) behind text that sits over the stage; one font family per overlay (scene font);
+  text boxes sized for the longest value.
+- **Show things only when they matter** (this is what makes a HUD feel like a real game):
+  HUD hidden during the intro / pause / final countdown (Game Ready/Go/Countdown/Paused = false);
+  callouts only at their moment; radar only while someone is off stage, on that side; stock-loss
+  display only between KO and respawn; post-game stats in the Post Game scene, not in-game.
+- **Motion with purpose.** Scene in/out "fly automatic" (default); a flash/shake on "PlayerN Stock
+  Loss"; the pre-animated percent elements; no constant looping animation. Run test_overlay_animation.
+- **Structure.** One centred callout per layer; backgrounds/backdrops on lower layers; name every layer.
+- **Melee vs Ultimate look.** Melee: timer top-centre with centiseconds, panels in port order along the
+  bottom (stocks above percent over the series emblem), no radar, READY → GO!. Ultimate: timer
+  top-right, centred bottom panels (portrait + big percent with one decimal, name plate, stock heads
+  below), side-aware radar, big mid-screen stocks after a KO. Details: get_game_hud_reference (hudGuide).
+- **Check it.** show_overlay_preview with the matching HUD background (and the 4:3 crop if relevant),
+  test animations, then show the user.
+
+**Stage striking overlays** (Strike Phase scene) — build them from elements + conditions:
+- Plain stage images StrikeStageImageFoD/BF/FD/DL/YS/PS (7600–7650, image kind) — just the picture.
+- Per stage exactly one state condition is true: "Strike: <Stage> Available / Locked / Struck Or
+  Banned / DSR Blocked / Picked" (Locked = counterpick during game 1 or not in the ruleset). Put the
+  images on a low layer and one layer per state above them with a CustomBox over each stage, shown on
+  that stage's state (grey #111111b3 locked, yellow #facc158c struck, red #ef44448c DSR, green
+  border picked).
+- Phases: "Strike Phase: Char Select / RPS / RPS Result / Striking / Stage Ban / Stage Pick /
+  Character Pick (game 2+) / Playing / Complete", "Strike: Game 1", "Strike: Stage Agreement
+  Pending"; turn: "Strike Player 1/2 Turn" (+ StrikeCurrentStriker 7030 text).
+- Demo "Stage Striking" (id stage-striking) is exactly this — copy it with duplicate_overlay.
+
 ## Demo HUD walkthrough (demo "HUD", inGame scene — read it with list_elements)
 A complete replacement for Melee's HUD (meant for a no-HUD gecko code), 16:9, font Roboto Bold Italic.
 Its 15 layers are named; index 0 is on top. What each does and when it shows:
@@ -253,7 +307,9 @@ Its 15 layers are named; index 0 is on top. What each does and when it shows:
   Paused/Countdown/Ready/Go, so the big countdown (layer 1) takes over in the last 5 seconds.
 - 10 "Player HUD: stocks + percent" — the bottom panels: 4 stock icons per player (y≈215) above the
   pre-animated percent (InGamePlayerNPercentDecimalCustom, y≈239). P1 x≈114, P2 x≈291.
-- 11 "Player radar" — top-right, {P1 Off Stage | P2 Off Stage} AND NOT Paused AND Running.
+- 11 "Player radar (Ultimate: one corner)" — two radars, top-left and top-right (y≈44, under the timer
+  row) on "Radar Left" / "Radar Right" AND Running AND NOT Paused: one radar, on the side the first
+  fighter went off, held until everyone is back (Ultimate's behaviour).
 - 12 "Series symbol (behind percent)" — each character's series emblem under the percent (a lower
   layer so it draws behind layer 10), on Game Running.
 - 13 / 14 "GO" / "READY" callouts — centered text on Game Go / Game Ready (NOT Paused).

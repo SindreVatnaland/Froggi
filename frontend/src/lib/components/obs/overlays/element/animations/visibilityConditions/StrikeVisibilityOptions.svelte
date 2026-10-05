@@ -5,6 +5,7 @@
 		VisibilityToggle,
 	} from '$lib/models/types/animationOption';
 	import type { StrikeState } from '$lib/models/types/stageStriking';
+	import { STRIKE_STAGES, stageStatus } from '$lib/utils/strikeStageStatus';
 
 	export const strikeVisibilityOption = (
 		option: SelectedVisibilityCondition,
@@ -26,15 +27,35 @@
 			return check(VisibilityOption.StrikePhaseCharSelect, phase === 'charSelect')!;
 		if (check(VisibilityOption.StrikePhasePlaying, phase === 'playing') != null)
 			return check(VisibilityOption.StrikePhasePlaying, phase === 'playing')!;
-		if (check(VisibilityOption.StrikePhaseComplete, phase === 'complete') != null)
-			return check(VisibilityOption.StrikePhaseComplete, phase === 'complete')!;
+		if (check(VisibilityOption.StrikePhaseComplete, phase === 'setComplete') != null)
+			return check(VisibilityOption.StrikePhaseComplete, phase === 'setComplete')!;
+		const phaseChecks: [VisibilityOption, boolean][] = [
+			[VisibilityOption.StrikePhaseRpsResult, phase === 'rpsResult'],
+			[VisibilityOption.StrikePhaseStageBan, phase === 'stageBan'],
+			[VisibilityOption.StrikePhaseStagePick, phase === 'stagePick'],
+			[VisibilityOption.StrikePhaseCharacterPick, phase === 'charLock' || phase === 'charPick'],
+			[VisibilityOption.StrikeAgreementPending, !!strikeState?.agreement],
+			[VisibilityOption.StrikeIsFirstGame, !!strikeState && strikeState.gameNum === 1 && !strikeState.lastWinner],
+		];
+		for (const [opt, cond] of phaseChecks) {
+			const v = check(opt, cond);
+			if (v != null) return v;
+		}
+		// Per-stage display state — exactly one is true per stage.
+		for (const stage of STRIKE_STAGES) {
+			const status = stageStatus(strikeState, stage.stageId);
+			for (const [s, opt] of Object.entries(stage.conditions)) {
+				const v = check(opt, status === s);
+				if (v != null) return v;
+			}
+		}
 
 		if (check(VisibilityOption.StrikeIsPlayer1Turn, strikeState?.currentStriker === 1) != null)
 			return check(VisibilityOption.StrikeIsPlayer1Turn, strikeState?.currentStriker === 1)!;
 		if (check(VisibilityOption.StrikeIsPlayer2Turn, strikeState?.currentStriker === 2) != null)
 			return check(VisibilityOption.StrikeIsPlayer2Turn, strikeState?.currentStriker === 2)!;
 
-		const hasFinal = strikeState?.finalStageIndex != null;
+		const hasFinal = strikeState?.finalStageId != null;
 		if (check(VisibilityOption.StrikeIsStageFinal, hasFinal) != null)
 			return check(VisibilityOption.StrikeIsStageFinal, hasFinal)!;
 
@@ -53,7 +74,7 @@
 			return check(VisibilityOption.StrikePlayer2CharacterSelected, p2CharSelected)!;
 
 		// Per-stage struck (stage is in current strikes[] list)
-		const strikes = strikeState?.strikes ?? [];
+		const strikes = [...(strikeState?.strikes ?? []), ...(strikeState?.bans ?? [])];
 		const struckChecks: [VisibilityOption, number][] = [
 			[VisibilityOption.StrikeIsFoDStruck, 2],
 			[VisibilityOption.StrikeIsBFStruck,  31],

@@ -2,7 +2,7 @@
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { LiveStatsScene } from '$lib/models/enum';
-	import { Command, CommandType } from '$lib/models/types/commandTypes';
+	import { Command, CommandType, type CommandFormat } from '$lib/models/types/commandTypes';
 	import { electronEmitter } from '$lib/utils/store.svelte';
 	import Select from '$lib/components/input/Select.svelte';
 	import CommandSelect from '../ObsCommands/CommandSelect.svelte';
@@ -10,6 +10,12 @@
 
 	export let open: boolean;
 	export let initialScene: LiveStatsScene = LiveStatsScene.WaitingForDolphin;
+	const FORMATS: { value: CommandFormat; label: string; tip: string }[] = [
+		{ value: 'any', label: 'Global', tip: 'Singles and doubles — unless a Singles/Doubles command for the same trigger overrides it' },
+		{ value: 'singles', label: 'Singles', tip: 'Only in 1v1 games (overrides Global)' },
+		{ value: 'doubles', label: 'Doubles', tip: 'Only in teams games (overrides Global)' },
+	];
+	let format: CommandFormat = 'any';
 
 	let selectedScene: LiveStatsScene = initialScene;
 	let sceneCommand: Command = {
@@ -24,7 +30,7 @@
 	}
 
 	const addSceneCommand = () => {
-		$electronEmitter.emit('SceneSwitchCommandAdd', selectedScene, sceneCommand);
+		$electronEmitter.emit('SceneSwitchCommandAdd', selectedScene, { ...sceneCommand, format });
 		notifications.success('Command added', 1500);
 		open = false;
 	};
@@ -45,6 +51,12 @@
 				{/each}
 			</Select>
 			<CommandSelect bind:command={sceneCommand} displayOverlayCommands={false} />
+		</div>
+		<div class="format-row">
+			<span class="format-label">Runs in</span>
+			{#each FORMATS as f (f.value)}
+				<button class="format-pill" class:format-pill--on={format === f.value} on:click={() => (format = f.value)} title={f.tip}>{f.label}</button>
+			{/each}
 		</div>
 		<div class="modal-actions">
 			<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => (open = false)}>
@@ -98,4 +110,9 @@
 		background-color: var(--secondary-color);
 		color: var(--primary-color);
 	}
+
+	.format-row { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.75rem; }
+	.format-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.45; margin-right: 0.25rem; }
+	.format-pill { font-size: 0.72rem; padding: 0.1rem 0.6rem; border-radius: 1rem; border: 1px solid var(--secondary-color); opacity: 0.4; color: var(--secondary-color); background: transparent; }
+	.format-pill--on { opacity: 1; background: color-mix(in srgb, var(--secondary-color) 12%, transparent); }
 </style>

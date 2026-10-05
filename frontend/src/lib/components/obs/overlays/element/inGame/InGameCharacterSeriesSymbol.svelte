@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import {
 		CHARACTERS_INTERNAL_EXTERNAL,
@@ -17,7 +18,7 @@
 	export let series: 'melee' | 'ultimate' = 'melee';
 
 	$: playerPostFrame = $gameFrame?.players?.[player?.playerIndex ?? 0]?.post;
-	$: playerSettings = $gameSettings.players?.[player?.playerIndex ?? 0];
+	$: playerSettings = findSettingsPlayer($gameSettings?.players, player?.playerIndex ?? 0);
 	$: externalCharacterId = preview
 		? defaultPreviewId
 		: playerPostFrame

@@ -5511,7 +5511,7 @@
       },
       {
         "index": 11,
-        "title": "Player radar",
+        "title": "Player radar (Ultimate: one corner)",
         "preview": true,
         "id": 11226,
         "items": [
@@ -5522,12 +5522,18 @@
               "draggable": true,
               "customDragger": false,
               "customResizer": true,
-              "min": { "w": 1, "h": 1 },
-              "max": { "y": 511, "h": 513 },
+              "min": {
+                "w": 1,
+                "h": 1
+              },
+              "max": {
+                "y": 511,
+                "h": 513
+              },
               "w": 128,
               "h": 74,
               "x": 376,
-              "y": 8,
+              "y": 44,
               "id": "co1i8adqq"
             },
             "elementId": 3200,
@@ -5557,7 +5563,9 @@
                   },
                   "type": "none"
                 },
-                "selectedOptions": { "Game Countdown": false }
+                "selectedOptions": {
+                  "Game Countdown": false
+                }
               },
               "class": {
                 "rounded": "rounded-sm",
@@ -5578,9 +5586,14 @@
                 "fillOpacity": 1
               },
               "description": "",
-              "percent": { "startColor": "#ffffff", "endColor": "#6f1622" },
+              "percent": {
+                "startColor": "#ffffff",
+                "endColor": "#6f1622"
+              },
               "font": {},
-              "image": { "objectFit": "contain" },
+              "image": {
+                "objectFit": "contain"
+              },
               "visibility": {
                 "in": {
                   "options": {
@@ -5613,14 +5626,14 @@
                     "Player 1 Stock 3": 0,
                     "Player 1 Stock 2": 0,
                     "Player 1 Stock 1": 0,
-                    "Player 1 Off Stage": 1,
+                    "Player 1 Off Stage": 0,
                     "Player 1 Alive": 0,
                     "Player 2 Combo": 0,
                     "Player 2 Stock 4": 0,
                     "Player 2 Stock 3": 0,
                     "Player 2 Stock 2": 0,
                     "Player 2 Stock 1": 0,
-                    "Player 2 Off Stage": 1,
+                    "Player 2 Off Stage": 0,
                     "Player 2 Alive": 0,
                     "Game Tie": 0,
                     "Game Time": 0,
@@ -5636,7 +5649,12 @@
                     "Player 2 Score 1": 0,
                     "Player 1 Score 3": 0,
                     "Player 1 Score 2": 0,
-                    "Player 1 Score 1": 0
+                    "Player 1 Score 1": 0,
+                    "Player 1 Off Stage Right": 0,
+                    "Player 2 Off Stage Right": 0,
+                    "Player 1 Off Stage Left": 0,
+                    "Player 2 Off Stage Left": 0,
+                    "Radar Right": 1
                   },
                   {
                     "Session Positive Net Rating": 0,
@@ -5685,13 +5703,233 @@
                   }
                 ]
               },
-              "shadow": { "x": 0, "y": 0, "spread": 0, "color": "#000000ff" },
+              "shadow": {
+                "x": 0,
+                "y": 0,
+                "spread": 0,
+                "color": "#000000ff"
+              },
               "string": "",
-              "textStroke": { "size": 1, "color": "#000000ff" },
+              "textStroke": {
+                "size": 1,
+                "color": "#000000ff"
+              },
               "transform": {
                 "rotate": 0,
                 "scale": "1, 1",
-                "translate": { "x": 0, "y": 0 }
+                "translate": {
+                  "x": 0,
+                  "y": 0
+                }
+              }
+            }
+          },
+          {
+            "512": {
+              "fixed": true,
+              "resizable": true,
+              "draggable": true,
+              "customDragger": false,
+              "customResizer": true,
+              "min": {
+                "w": 1,
+                "h": 1
+              },
+              "max": {
+                "y": 511,
+                "h": 513
+              },
+              "w": 128,
+              "h": 74,
+              "x": 8,
+              "y": 44,
+              "id": "radarleft01"
+            },
+            "elementId": 3200,
+            "id": "radarleft01",
+            "data": {
+              "advancedStyling": false,
+              "animationTrigger": {
+                "in": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 0,
+                    "easing": "",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "none"
+                },
+                "out": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 0,
+                    "easing": "",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "none"
+                },
+                "selectedOptions": {
+                  "Game Countdown": false
+                }
+              },
+              "class": {
+                "rounded": "rounded-sm",
+                "alignment": "justify-center"
+              },
+              "css": {
+                "background": "#0000005d",
+                "borderLeft": "0.1rem solid",
+                "borderRight": "0.1rem solid",
+                "borderTop": "0.1rem solid",
+                "borderBottom": "0.1rem solid",
+                "borderColor": "#ffffff00",
+                "color": "#ffffffff",
+                "opacity": 1,
+                "fill": "#ff000000",
+                "stroke": "#ffffff",
+                "strokeWidth": 4,
+                "fillOpacity": 1
+              },
+              "description": "",
+              "percent": {
+                "startColor": "#ffffff",
+                "endColor": "#6f1622"
+              },
+              "font": {},
+              "image": {
+                "objectFit": "contain"
+              },
+              "visibility": {
+                "in": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 500,
+                    "easing": "expoIn",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "fly"
+                },
+                "out": {
+                  "options": {
+                    "delay": 1000,
+                    "duration": 500,
+                    "easing": "expoIn",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "fly"
+                },
+                "selectedOptions": [
+                  {
+                    "Session Positive Net Rating": 0,
+                    "Session Positive Win Rate": 0,
+                    "Player 1 Combo": 0,
+                    "Player 1 Stock 4": 0,
+                    "Player 1 Stock 3": 0,
+                    "Player 1 Stock 2": 0,
+                    "Player 1 Stock 1": 0,
+                    "Player 1 Off Stage": 0,
+                    "Player 1 Alive": 0,
+                    "Player 2 Combo": 0,
+                    "Player 2 Stock 4": 0,
+                    "Player 2 Stock 3": 0,
+                    "Player 2 Stock 2": 0,
+                    "Player 2 Stock 1": 0,
+                    "Player 2 Off Stage": 0,
+                    "Player 2 Alive": 0,
+                    "Game Tie": 0,
+                    "Game Time": 0,
+                    "Game End": 0,
+                    "Game Countdown": 0,
+                    "Game Go": 0,
+                    "Game Ready": 0,
+                    "Game Paused": 0,
+                    "Game Running": 0,
+                    "Player 1 Entering Halo": 0,
+                    "Player 2 Score 3": 0,
+                    "Player 2 Score 2": 0,
+                    "Player 2 Score 1": 0,
+                    "Player 1 Score 3": 0,
+                    "Player 1 Score 2": 0,
+                    "Player 1 Score 1": 0,
+                    "Player 1 Off Stage Left": 0,
+                    "Player 2 Off Stage Left": 0,
+                    "Player 1 Off Stage Right": 0,
+                    "Player 2 Off Stage Right": 0,
+                    "Radar Left": 1
+                  },
+                  {
+                    "Session Positive Net Rating": 0,
+                    "Session Positive Win Rate": 0,
+                    "Game Tie": 0,
+                    "Game Time": 0,
+                    "Game End": 0,
+                    "Game Countdown": 0,
+                    "Game Go": 0,
+                    "Game Ready": 0,
+                    "Game Paused": 2,
+                    "Game Running": 0
+                  },
+                  {
+                    "Session Positive Net Rating": 0,
+                    "Session Positive Win Rate": 0,
+                    "Game Tie": 0,
+                    "Game Time": 0,
+                    "Game End": 0,
+                    "Game Countdown": 0,
+                    "Game Go": 0,
+                    "Game Ready": 0,
+                    "Game Paused": 0,
+                    "Game Running": 1,
+                    "Player 1 Combo": 0,
+                    "Player 1 Stock 4": 0,
+                    "Player 1 Stock 3": 0,
+                    "Player 1 Stock 2": 0,
+                    "Player 1 Stock 1": 0,
+                    "Player 1 Off Stage": 0,
+                    "Player 1 Entering Halo": 0,
+                    "Player 1 Alive": 0,
+                    "Player 2 Combo": 0,
+                    "Player 2 Stock 4": 0,
+                    "Player 2 Stock 3": 0,
+                    "Player 2 Stock 2": 0,
+                    "Player 2 Stock 1": 0,
+                    "Player 2 Off Stage": 0,
+                    "Player 2 Alive": 0,
+                    "Player 2 Score 3": 0,
+                    "Player 2 Score 2": 0,
+                    "Player 2 Score 1": 0,
+                    "Player 1 Score 3": 0,
+                    "Player 1 Score 2": 0,
+                    "Player 1 Score 1": 0
+                  }
+                ]
+              },
+              "shadow": {
+                "x": 0,
+                "y": 0,
+                "spread": 0,
+                "color": "#000000ff"
+              },
+              "string": "",
+              "textStroke": {
+                "size": 1,
+                "color": "#000000ff"
+              },
+              "transform": {
+                "rotate": 0,
+                "scale": "1, 1",
+                "translate": {
+                  "x": 0,
+                  "y": 0
+                }
               }
             }
           }

@@ -31,6 +31,22 @@
 	Game Paused
 </SelectOption>
 <SelectOption
+	description="Ultimate-style radar, top-left: on when the first fighter to go off stage left on the LEFT side; stays until everyone is back on stage. Only one of Radar Left / Radar Right is on at a time."
+	value={VisibilityOption.InGameRadarLeft}
+	bind:selected={selectedVisibilityOption[VisibilityOption.InGameRadarLeft]}
+	on:select={select}
+>
+	Radar Left
+</SelectOption>
+<SelectOption
+	description="Ultimate-style radar, top-right: on when the first fighter to go off stage left on the RIGHT side; stays until everyone is back on stage. Only one of Radar Left / Radar Right is on at a time."
+	value={VisibilityOption.InGameRadarRight}
+	bind:selected={selectedVisibilityOption[VisibilityOption.InGameRadarRight]}
+	on:select={select}
+>
+	Radar Right
+</SelectOption>
+<SelectOption
 	description="When 'Ready' Is Being Displayed Before Game Starts"
 	value={VisibilityOption.InGameReady}
 	bind:selected={selectedVisibilityOption[VisibilityOption.InGameReady]}

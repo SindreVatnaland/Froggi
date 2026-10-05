@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { strikeState, electronEmitter, urls, remoteAccess } from '$lib/utils/store.svelte';
+	import { strikeState, strikeTokens, electronEmitter, urls, remoteAccess, currentPlayers } from '$lib/utils/store.svelte';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
 	import { CHARACTERS } from '$lib/models/constants/characterData';
 	// @ts-ignore
@@ -37,16 +37,27 @@
 
 	let p1Name = '';
 	let p2Name = '';
+	// Player tags from Slippi when known (display name, else connect code) — used when left empty.
+	$: tag1 = $currentPlayers?.[0]?.displayName || $currentPlayers?.[0]?.connectCode || '';
+	$: tag2 = $currentPlayers?.[1]?.displayName || $currentPlayers?.[1]?.connectCode || '';
 	let bestOf: 3 | 5 = 3;
 
 	$: s = $strikeState;
 	$: phase = s?.phase ?? 'lobby';
-	$: baseUrl = $remoteAccess.url ?? $urls?.external ?? '';
-	$: p1Url = baseUrl ? `${baseUrl}/set/p/1` : '';
-	$: p2Url = baseUrl ? `${baseUrl}/set/p/2` : '';
+	$: baseUrl = $remoteAccess.ngrok ?? $remoteAccess.tailscale ?? $urls?.external ?? "";
+	// Each player's link carries their secret token; only the app window (the host) receives tokens.
+	$: p1Url = baseUrl && $strikeTokens ? `${baseUrl}/set/p/1?t=${$strikeTokens[1]}` : '';
+	$: p2Url = baseUrl && $strikeTokens ? `${baseUrl}/set/p/2?t=${$strikeTokens[2]}` : '';
+	onMount(() => $electronEmitter.emit('StrikePlayerTokensRequest'));
+	let allowAgreement = true;
+	let endMatchOpen = false;
+	const endMatch = (winner: 1 | 2 | null) => {
+		endMatchOpen = false;
+		$electronEmitter.emit('StrikeEndMatch', winner);
+	};
 
 	function startSet() {
-		$electronEmitter.emit('StartSet', p1Name || 'Player 1', p2Name || 'Player 2', bestOf);
+		$electronEmitter.emit('StartSet', p1Name || tag1 || 'Player 1', p2Name || tag2 || 'Player 2', bestOf, allowAgreement);
 	}
 
 	function rpsWinnerOrder(first: 1 | 2) {
@@ -93,6 +104,24 @@
 		<span class="player-name text-right">{s.p2Name}</span>
 		<button class="reset-btn" on:click={resetSet}>Reset</button>
 	</div>
+	{#if phase !== 'setComplete'}
+	<div class="forfeit-row mb-3">
+		{#if !endMatchOpen}
+		<button class="undo-btn" on:click={() => (endMatchOpen = true)}>End match…</button>
+		{:else}
+		<span class="text-xs opacity-60">Who won?</span>
+		<button class="undo-btn" on:click={() => endMatch(1)}>{s.p1Name}</button>
+		<button class="undo-btn" on:click={() => endMatch(2)}>{s.p2Name}</button>
+		<button class="undo-btn" on:click={() => endMatch(null)}>No winner — cancel set</button>
+		<button class="undo-btn" on:click={() => (endMatchOpen = false)}>Back</button>
+		{/if}
+	</div>
+	{/if}
+	{#if s.agreement}
+	<div class="dash-card border-secondary mb-3 agree-banner">
+		{s.agreement.requestedBy === 1 ? s.p1Name : s.p2Name} wants to play a stage they already won on (DSR) — waiting for {s.agreement.requestedBy === 1 ? s.p2Name : s.p1Name} to agree on their phone.
+	</div>
+	{/if}
 	{/if}
 
 	<!-- LOBBY: guided start flow -->
@@ -156,14 +185,19 @@
 			<span class="guide-num">3</span>
 			<div class="guide-body">
 				<p class="guide-title">Enter player names and start</p>
+				<p class="guide-hint">Player 1 is the player on the lower controller port. Game winners are reported automatically from Slippi — the win buttons are only needed if a game wasn't recorded.</p>
 				<div class="form-row mt-1">
-					<input class="name-input" placeholder="Player 1" bind:value={p1Name} />
-					<input class="name-input" placeholder="Player 2" bind:value={p2Name} />
+					<input class="name-input" placeholder={tag1 || 'Player 1'} bind:value={p1Name} />
+					<input class="name-input" placeholder={tag2 || 'Player 2'} bind:value={p2Name} />
 				</div>
 				<div class="bo-row">
 					<button class="bo-btn" class:bo-active={bestOf === 3} on:click={() => bestOf = 3}>BO3</button>
 					<button class="bo-btn" class:bo-active={bestOf === 5} on:click={() => bestOf = 5}>BO5</button>
 				</div>
+				<label class="agree-row">
+					<input type="checkbox" bind:checked={allowAgreement} />
+					<span>Let players agree to replay a stage someone already won on (DSR)</span>
+				</label>
 				<button class="start-btn" on:click={startSet}>Start Set</button>
 			</div>
 		</div>
@@ -191,7 +225,7 @@
 	<div class="dash-card border-secondary">
 		<p class="dash-label">RPS Result</p>
 		<p class="phase-big">{s?.rps?.winner === 1 ? s?.p1Name : s?.p2Name} wins RPS</p>
-		<p class="phase-hint">Winner chooses strike order</p>
+		<p class="phase-hint">Winner chooses strike order (on their phone or here)</p>
 		<div class="btn-row mt-2">
 			<button class="action-btn" on:click={() => rpsWinnerOrder(s?.rps?.winner ?? 1)}>
 				{s?.rps?.winner === 1 ? s?.p1Name : s?.p2Name} strikes first
@@ -265,7 +299,7 @@
 		<p class="dash-label">Character Select — Double Blind</p>
 		{#if s?.finalStageId != null}
 		<div class="stage-preview">
-			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<img src="/image/stages/{s?.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
 			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
 		</div>
 		{/if}
@@ -288,7 +322,7 @@
 		<p class="dash-label">Character Lock — Game {s?.gameNum}</p>
 		{#if s?.finalStageId != null}
 		<div class="stage-preview">
-			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<img src="/image/stages/{s?.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
 			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
 		</div>
 		{/if}
@@ -298,7 +332,7 @@
 		{#if s?.characters?.p1 !== null || s?.characters?.p2 !== null}
 		<div class="char-reveal">
 			{#if s?.characters?.p1 !== null}
-			<img src="/image/characters/{s.characters.p1}/0/vs-left.png" alt="P1 char" class="char-img" />
+			<img src="/image/characters/{s?.characters?.p1}/0/vs-left.png" alt="P1 char" class="char-img" />
 			{/if}
 		</div>
 		{/if}
@@ -310,7 +344,7 @@
 		<p class="dash-label">Character Pick — Game {s?.gameNum}</p>
 		{#if s?.finalStageId != null}
 		<div class="stage-preview">
-			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
+			<img src="/image/stages/{s?.finalStageId}.png" alt={stageName(s.finalStageId)} class="stage-preview-img" />
 			<span class="stage-preview-name">{stageName(s.finalStageId)}</span>
 		</div>
 		{/if}
@@ -321,7 +355,7 @@
 		<div class="char-reveal">
 			{#if s.characters.p1 !== null}
 			<div class="char-lock-display">
-				<img src="/image/characters/{s.characters.p1}/0/vs-left.png" alt="P1" class="char-img" />
+				<img src="/image/characters/{s?.characters?.p1}/0/vs-left.png" alt="P1" class="char-img" />
 				<span>{s.p1Name}</span>
 			</div>
 			{/if}
@@ -342,7 +376,7 @@
 		<p class="dash-label">Game {s?.gameNum} — Playing</p>
 		{#if s?.finalStageId !== null}
 		<div class="playing-stage">
-			<img src="/image/stages/{s.finalStageId}.png" alt={stageName(s?.finalStageId ?? -1)} class="stage-img-large" />
+			<img src="/image/stages/{s?.finalStageId}.png" alt={stageName(s?.finalStageId ?? -1)} class="stage-img-large" />
 			<span class="stage-name">{stageName(s?.finalStageId ?? -1)}</span>
 		</div>
 		{/if}
@@ -350,7 +384,7 @@
 		<div class="playing-chars">
 			<div class="playing-char">
 				{#if s.characters.p1 !== null}
-				<img src="/image/characters/{s.characters.p1}/0/vs-left.png" alt="P1" class="char-img" />
+				<img src="/image/characters/{s?.characters?.p1}/0/vs-left.png" alt="P1" class="char-img" />
 				{/if}
 				<span>{s.p1Name}</span>
 			</div>
@@ -586,4 +620,7 @@
 	.history-winner { font-weight: 600; }
 
 	.player-name { font-size: 0.85rem; font-weight: 600; }
+	.agree-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; opacity: 0.7; margin-bottom: 0.75rem; }
+	.forfeit-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; }
+	.agree-banner { font-size: 0.8rem; color: #facc15; }
 </style>

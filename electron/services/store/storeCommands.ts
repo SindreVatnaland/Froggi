@@ -27,6 +27,7 @@ import { newId } from '../../utils/functions';
 import { ElectronLiveStatsStore } from './storeLiveStats';
 import { isNil } from 'lodash';
 import { getSubsetCommands } from '../../../frontend/src/lib/utils/controllerCommandHelper';
+import { pickForFormat } from '../../../frontend/src/lib/utils/commandFormat';
 import { OBSRequestTypes } from 'obs-websocket-js';
 import { ObsItem } from '../../../frontend/src/lib/models/types/obsTypes';
 
@@ -148,7 +149,8 @@ export class ElectronCommandStore {
 			(this.store.get('command.controller.enabled') as boolean) ?? false;
 	}
 
-	private getControllerIndex = (playerControllerInputs: PlayerController): number | undefined => {
+	/** Which controller drives commands: the current player, else the lowest port in game / first connected. */
+	getControllerIndex = (playerControllerInputs: PlayerController): number | undefined => {
 		const connectCode = this.storeSettings.getCurrentPlayerConnectCode();
 		const players = this.storePlayer.getCurrentPlayers();
 		const player = players?.find((player) => player.connectCode === connectCode);
@@ -180,8 +182,15 @@ export class ElectronCommandStore {
 
 		const buttonInputs = playerControllerInputs?.[controllerIndex]?.buttons;
 
-		const controllerCommands = getSubsetCommands(this.controllerCommands, buttonInputs);
-		if (!controllerCommands) return;
+		const matched = getSubsetCommands(this.controllerCommands, buttonInputs);
+		// Global / Singles / Doubles override per button combo (not across different combos).
+		const byCombo = new Map<string, ControllerCommand[]>();
+		for (const c of matched) {
+			const key = JSON.stringify(Object.entries(c.inputs).filter(([, on]) => on).map(([k]) => k).sort());
+			byCombo.set(key, [...(byCombo.get(key) ?? []), c]);
+		}
+		const controllerCommands = [...byCombo.values()].flatMap((group) => pickForFormat(group, this.isTeamsGame()));
+		if (!controllerCommands.length) return; // nothing matched — don't start the cooldown
 
 		controllerCommands.forEach(async (controllerCommand) => {
 			await this.executeCommand(
@@ -196,8 +205,11 @@ export class ElectronCommandStore {
 		}, 1000);
 	};
 
-	private handleSceneChangeCommands = async (commands: Command[]) => {
+	private isTeamsGame = () => !!this.storeLiveStats.getGameSettings()?.isTeams;
+
+	private handleSceneChangeCommands = async (allCommands: Command[]) => {
 		if (!this.getSceneSwitchCommandsState()) return;
+		const commands = pickForFormat(allCommands, this.isTeamsGame());
 		commands?.forEach(async (command) => {
 			await this.executeCommand(command.type, command.requestType, command.payload);
 		});

@@ -71,6 +71,7 @@ export enum CustomElement {
 
     InGamePlayerRadar = 3200,
     InGamePlayerRadarAnimated = 3201,
+    InGameLiveCamera = 3202,
 
     // String
     // Rank Data
@@ -751,6 +752,8 @@ export enum CustomElement {
 
     StrikePlayer1Character = 7200,
     StrikePlayer2Character = 7210,
+    StrikePlayer1Name = 7220,
+    StrikePlayer2Name = 7230,
 
     StrikeOrderDisplay = 7300,
     StrikeBansRemaining = 7310,
@@ -763,6 +766,14 @@ export enum CustomElement {
     StrikeStageDL  = 7530,  // Dream Land N64 (ID 28)
     StrikeStageYS  = 7540,  // Yoshi's Story (ID 8)
     StrikeStagePS  = 7550,  // Pokémon Stadium (ID 3, counterpick)
+
+    // Plain stage images — no built-in strike badges; colour them with layers + stage-state conditions
+    StrikeStageImageFoD = 7600,
+    StrikeStageImageBF  = 7610,
+    StrikeStageImageFD  = 7620,
+    StrikeStageImageDL  = 7630,
+    StrikeStageImageYS  = 7640,
+    StrikeStageImagePS  = 7650,
 
     // Action State — Current Player
     InGameCurrentPlayerActionStateName = 8000,

@@ -39,6 +39,8 @@
 		ngrokStatus,
 		obsProcessStatus,
 		strikeState,
+		strikeTokens,
+		flows,
 		webhookProfiles,
 		webhooksEnabled,
 		techniqueEvents,
@@ -382,6 +384,12 @@
 			case 'ObsProcessStatus':
 				obsProcessStatus.set(payload[0] as Parameters<MessageEvents['ObsProcessStatus']>[0]);
 				break;
+			case 'Flows':
+				flows.set(payload[0] as Parameters<MessageEvents['Flows']>[0]);
+				break;
+			case 'StrikePlayerTokens':
+				strikeTokens.set(payload[0] as Parameters<MessageEvents['StrikePlayerTokens']>[0]);
+				break;
 			case 'StrikeState':
 				strikeState.set(payload[0] as Parameters<MessageEvents['StrikeState']>[0]);
 				break;
@@ -597,6 +605,30 @@
 	// of spamming "Lost connection" every 3s.
 	let wsOpenedAt = 0;
 	let wsReconnectDelay = 3000;
+	// Phones suspend the page when locked: the socket can come back dead-but-"open", or a long
+	// backoff timer may be pending. On return (visible after a while hidden, or network back) we
+	// drop the old socket and connect straight away.
+	let currentSocketCleanup: (() => void) | null = null;
+	let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+	let hiddenAt = 0;
+	let reviveListening = false;
+	const reconnectNow = () => {
+		if (reconnectTimer) clearTimeout(reconnectTimer);
+		reconnectTimer = null;
+		currentSocketCleanup?.();
+		currentSocketCleanup = null;
+		wsReconnectDelay = 3000;
+		void initWebSocket();
+	};
+	const listenForRevive = () => {
+		if (reviveListening || typeof document === 'undefined') return;
+		reviveListening = true;
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+			else if (hiddenAt && Date.now() - hiddenAt > 5000) reconnectNow();
+		});
+		window.addEventListener('online', reconnectNow);
+	};
 
 	export const initElectronEvents = async () => {
 		console.log('Initializing electron');
@@ -642,6 +674,7 @@
 			: `ws://${_page.url.hostname}:${WEBSOCKET_PORT}`;
 		const socket = new WebSocket(wsUrl);
 		wsOpenedAt = Date.now();
+		listenForRevive();
 
 		const handleWebSocketMessage = ({ data }: { data: any }) => {
 			const parse = JSON.parse(data);
@@ -685,6 +718,7 @@
 		};
 
 		socket.onclose = () => {
+			if (currentSocketCleanup !== cleanup) return; // replaced by reconnectNow()
 			wsActive = false;
 			stopKeepAlive();
 			socket.removeEventListener('message', handleWebSocketMessage);
@@ -694,13 +728,16 @@
 			setTimeout(() => handleClose(lifetime), 500);
 		};
 
-		return () => {
+		const cleanup = () => {
 			wsActive = false;
 			stopKeepAlive();
+			socket.onclose = null;
 			socket.removeEventListener('message', handleWebSocketMessage);
 			_electronEmitter.offAny(emitElectronMessage);
 			socket.close();
 		};
+		currentSocketCleanup = cleanup;
+		return cleanup;
 	};
 
 	const handleClose = (lifetime: number) => {
@@ -714,6 +751,9 @@
 			wsReconnectDelay = 3000;
 			notifications.danger('Lost connection to Froggi', 2000);
 		}
-		setTimeout(() => initWebSocket(), wsReconnectDelay);
+		reconnectTimer = setTimeout(() => {
+			reconnectTimer = null;
+			void initWebSocket();
+		}, wsReconnectDelay);
 	};
 </script>

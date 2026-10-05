@@ -11,11 +11,15 @@ export enum CommandType {
     Overlay = "Overlay",
 }
 
+/** Which games a command runs in: 'any' = Global (both), unless a Singles/Doubles command overrides it. */
+export type CommandFormat = 'any' | 'singles' | 'doubles'
+
 export interface Command {
     id: string,
     type: CommandType,
     requestType: RequestType
     payload: PayloadType,
+    format?: CommandFormat,
 }
 
 export type RequestType = OverlayRequest | ObsCustomRequest | keyof OBSRequestTypes
@@ -30,6 +34,7 @@ export interface ControllerCommand {
     id: string,
     inputs: ControllerButtons,
     command: Command
+    format?: CommandFormat,
 }
 
 export interface SceneSwitchCommands {

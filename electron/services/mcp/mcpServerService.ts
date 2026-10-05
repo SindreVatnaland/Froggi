@@ -41,6 +41,10 @@ import { BingoService } from '../bingoService';
 import { IronManService } from '../ironmanService';
 import { AssetPackService } from '../assetPackService';
 import { registerAssetPackReadTools, registerAssetPackWriteTools } from './tools/assetPacks';
+import { registerWebhookReadTools } from './tools/webhooks';
+import { registerFlowReadTools, registerFlowWriteTools } from './tools/flows';
+import { FlowService } from '../flowService';
+import { ElectronWebhookStore } from '../store/storeWebhook';
 import { registerOverlayUndoTools } from './tools/overlayUndo';
 import { registerObsSetupTools } from './tools/obsSetup';
 import { registerObsAddSourceTools } from './tools/obsAddSource';
@@ -53,7 +57,7 @@ import { registerCrashDiagnosisReadTools, registerCrashDiagnosisWriteTools } fro
 /**
  * Embeds an MCP server inside Electron main so a local MCP client (Claude Desktop/Code)
  * can explain setup, diagnose problems, and — if the user allows it — edit overlays and
- * OBS automation. Bound to 127.0.0.1 only, never exposed over Tailscale/ngrok. Stateless
+ * OBS automation. Bound to 127.0.0.1; optionally served tailnet-only via `tailscale serve` (never ngrok/Funnel). Stateless
  * StreamableHTTP: a fresh McpServer + transport is built per request (SDK requirement),
  * which also means the registered tool set is recomputed from live settings on every
  * call — toggling mcpReadEnabled/mcpWriteEnabled takes effect on the very next request.
@@ -62,7 +66,7 @@ const MCP_INSTRUCTIONS = `You are connected to a running Froggi instance — a S
 
 When you build or edit an overlay, first read the overlay authoring guide tool, and prefer the shipped demo overlays as references (list_overlays / get_overlay).
 When the user refers to a game's look or HUD ("like Ultimate", "modernize the Melee HUD", "around the game HUD"), call get_game_hud_reference FIRST (list, then the matching game/HUD with the overlay's aspectRatio) and look at the screenshots — they show the layout (portrait, percent, name plate, stocks, timer, radar positions). Base your proposal on them instead of asking the user to describe positions or styles, and show the result with show_overlay_preview using that reference as background.
-Users describe overlays in plain language — don't ask them technical questions (grid units, CSS, easing, layer indexes). Pick sensible defaults from the guide (standard placement, readable sizes, the game HUD reference), build it, show the preview, then offer to adjust in plain terms ("bigger?", "move it to the top?"). Only ask when a choice really changes the result (e.g. which game/HUD placement, which players to show).
+Users describe overlays in plain language — don't ask them technical questions (grid units, CSS, easing, layer indexes). One question you DO ask before building a new overlay: its aspect ratio (stream canvas or game window — 16:9, 4:3, 73:60, 19:9, ultrawide…), unless they already said it. Pick sensible defaults from the guide (standard placement, readable sizes, the game HUD reference), build it, show the preview, then offer to adjust in plain terms ("bigger?", "move it to the top?"). Only ask when a choice really changes the result (e.g. which game/HUD placement, which players to show).
 Character asset packs (custom character art per character + skin) are mostly a human job on Overlays → Assets: use get_asset_pack to check which slots are filled and tell the user exactly which character/costume (skin id) is missing and where to click; the Character elements (6225/6235/6215, payload assetPack) show them.
 Fonts: when the look matters (a themed or esports-style overlay), ask once if they have a font in mind — a Google Fonts name or link, a font file, or let you suggest 2–3 that fit — then add it with add_overlay_font. Animations: new overlays already use "fly automatic" for scene changes. For elements whose value changes during play (score, percent, stocks, rank, set count), ask the user once whether they'd like a short animation when the value updates (recommend a quick fade or small fly-in) and apply it via the element's animationTrigger if they agree.
 
@@ -110,6 +114,8 @@ export class McpServerService {
 		@inject(delay(() => BingoService)) private bingoService: BingoService,
 		@inject(delay(() => IronManService)) private ironmanService: IronManService,
 		@inject(delay(() => AssetPackService)) private assetPackService: AssetPackService,
+		@inject(delay(() => ElectronWebhookStore)) private webhookStore: ElectronWebhookStore,
+		@inject(delay(() => FlowService)) private flowService: FlowService,
 	) {
 		this.log = scopedLog(this.log, 'MCP');
 		this.log.info('Initializing MCP Server Service');
@@ -133,6 +139,8 @@ export class McpServerService {
 		mcpContext.ironmanService = this.ironmanService;
 		mcpContext.clientEmitter = this.clientEmitter;
 		mcpContext.assetPackService = this.assetPackService;
+		mcpContext.webhookStore = this.webhookStore;
+		mcpContext.flowService = this.flowService;
 
 		void this.applyDesiredState();
 		this.clientEmitter.on('SetMcpReadEnabled', () => void this.applyDesiredState());
@@ -203,8 +211,11 @@ export class McpServerService {
 			registerAutomationReadTools(server);
 			registerOnlinePlayReadTools(server);
 			registerAssetPackReadTools(server);
+			registerWebhookReadTools(server);
+			registerFlowReadTools(server);
 		}
 		if (this.froggiStore.getMcpWriteEnabled()) {
+			registerFlowWriteTools(server);
 			registerOverlayWriteTools(server);
 			registerOverlayUndoTools(server);
 			registerObsSetupTools(server);

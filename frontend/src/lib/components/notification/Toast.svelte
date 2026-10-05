@@ -22,6 +22,8 @@
 		{#each $notifications as notification (notification.id)}
 			<button
 				on:click={() => deleteNotification(notification.id)}
+				on:mouseenter={() => notifications.hold(notification.id)}
+				on:mouseleave={() => notifications.release(notification.id, notification.timeout)}
 				animate:flip
 				class="toast"
 				style="--accent: {themes[notification.type]};"

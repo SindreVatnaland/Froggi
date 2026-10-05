@@ -43,6 +43,7 @@ import type { IronManStatePayload } from '../../frontend/src/lib/models/types/ir
 import { IRONMAN_CHAR_NAMES } from '../../frontend/src/lib/models/types/ironman';
 import type { IronManCharSlotWebhook } from '../../frontend/src/lib/models/types/webhook';
 import type { StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
+import { stageStatus, strikeTurn } from '../../frontend/src/lib/utils/strikeStageStatus';
 import type {
 	CurrentPlayer,
 	GameStartTypeExtended,
@@ -93,7 +94,7 @@ const DUMMY_RANK_PROFILE: StrippedRankProfile = {
 	characters: [{ characterId: 20, characterName: 'Falco', gameCount: 72 }],
 };
 
-const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
+export const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 	[WebhookEvent.GameStart]: DUMMY_GAME_START,
 	[WebhookEvent.GameEnd]: DUMMY_GAME_END,
 	[WebhookEvent.GameScore]: [1, 0],
@@ -113,6 +114,16 @@ const DUMMY_PAYLOADS: Record<WebhookEvent, unknown> = {
 		rps: { p1: 'rock', p2: 'scissors', winner: 1 },
 		characters: { p1: null, p2: null },
 		dsrStages: { p1: [], p2: [] }, lastWinner: null, games: [],
+		turn: { player: 2, name: 'Player 2', action: 'strike' },
+		stages: [
+			{ id: 2, name: 'Fountain of Dreams', status: 'struck' },
+			{ id: 8, name: "Yoshi's Story", status: 'available' },
+			{ id: 28, name: 'Dream Land N64', status: 'available' },
+			{ id: 31, name: 'Battlefield', status: 'available' },
+			{ id: 32, name: 'Final Destination', status: 'available' },
+			{ id: 3, name: 'Pokémon Stadium', status: 'locked' },
+		],
+		bans: [], agreement: null, setWinner: null,
 	} satisfies StrikeStatePayload,
 	[WebhookEvent.RankChange]: {
 		connectCode: 'TEST#001', displayName: 'Player 1',
@@ -179,7 +190,7 @@ const DEATH_DIRECTION_MAP: Record<number, PlayerStockDiff['deathDirection']> = {
 
 // 0 = send instantly (no throttle). >0 = leading+trailing throttle: fires immediately,
 // buffers further events, then sends the latest value once at the end of the window.
-const THROTTLE_MS: Partial<Record<WebhookEvent, number>> = {
+export const THROTTLE_MS: Partial<Record<WebhookEvent, number>> = {
 	[WebhookEvent.GameStart]:   0,
 	[WebhookEvent.GameEnd]:     0,
 	[WebhookEvent.GameScore]:   0,
@@ -397,6 +408,17 @@ export class WebhookService {
 				p2: state.dsrStages.p2.map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
 			},
 			lastWinner: state.lastWinner,
+			turn: (() => {
+				const turn = strikeTurn(state);
+				return { ...turn, name: turn.player === 1 ? state.p1Name : turn.player === 2 ? state.p2Name : null };
+			})(),
+			stages: [...state.starters, ...state.counterpicks].flatMap((id) => {
+				const info = this.stageInfo(id);
+				return info ? [{ ...info, status: stageStatus(state, id) as string }] : [];
+			}),
+			bans: (state.bans ?? []).map((id) => this.stageInfo(id)).filter((s): s is StageInfo => s !== null),
+			agreement: state.agreement ? { stage: this.stageInfo(state.agreement.stageId), requestedBy: state.agreement.requestedBy } : null,
+			setWinner: state.setWinner ?? null,
 			games: state.games
 				.filter((g) => !g.warmup)
 				.map((g) => ({
@@ -557,7 +579,17 @@ export class WebhookService {
 		}
 	}
 
+	/** Latest payload per event — flows can POST these ("send the current X payload"). */
+	private latestPayloads = new Map<WebhookEvent, unknown>();
+
+	getLatestPayload(eventName: WebhookEvent): unknown {
+		return this.latestPayloads.get(eventName) ?? null;
+	}
+
 	private dispatch<T>(eventName: WebhookEvent, payload: T) {
+		// Flows react to the same detected changes, whether or not any webhook is configured.
+		this.latestPayloads.set(eventName, payload);
+		this.localEmitter.emit('GameEvent', eventName, payload);
 		if (!this.webhookStore.getEnabled()) return;
 		const throttleMs = THROTTLE_MS[eventName] ?? 50;
 		const profiles = this.webhookStore

@@ -58,11 +58,14 @@
 	const isStringSettings = (elementId: number) => {
 		return (elementId >= 4000 && elementId < 6000) || elementId === CustomElement.CustomString;
 	};
+	// Plain stage images for striking overlays (7600–7699) style like images.
+	const isStrikeStageImage = (elementId: number) => elementId >= 7600 && elementId < 7700;
 	const isBoxSettings = (elementId: number) => {
-		return (elementId >= 7000 && elementId < 8000) || elementId === CustomElement.CustomBox;
+		return (elementId >= 7000 && elementId < 8000 && !isStrikeStageImage(elementId)) || elementId === CustomElement.CustomBox;
 	};
 	const isImageSettings = (elementId: number) => {
 		return (elementId >= 6000 && elementId < 7000)
+			|| isStrikeStageImage(elementId)
 			|| elementId === CustomElement.CustomImage
 			|| elementId === CustomElement.SlippiRankCurrentPlayerRatingGraph;
 	};

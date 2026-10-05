@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import { CHARACTERS_INTERNAL_EXTERNAL } from '$lib/models/constants/characterData';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
@@ -20,7 +21,7 @@
 		: CHARACTERS_INTERNAL_EXTERNAL[postFrame?.internalCharacterId ?? -1] ?? 0;
 	$: characterColorId = preview
 		? 0
-		: $gameSettings.players[player?.playerIndex ?? 0].characterColor ?? 0;
+		: findSettingsPlayer($gameSettings?.players, player?.playerIndex ?? 0)?.characterColor ?? 0;
 
 	let div: HTMLElement;
 </script>

@@ -50,10 +50,12 @@
 		$electronEmitter.emit('OverlayDownload', overlay.id);
 	}
 
+	// Same as delete: close first, add the copy after the close animation (see handleDelete).
 	const createDuplicateOverlay = () => {
 		if (!overlay) return;
-		duplicateOverlay(overlay);
+		const source = overlay;
 		open = false;
+		setTimeout(() => duplicateOverlay(source), MODAL_CLOSE_MS);
 	};
 
 	const injectOverlay = (overlayId: string | undefined) => {

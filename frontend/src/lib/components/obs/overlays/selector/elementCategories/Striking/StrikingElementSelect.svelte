@@ -8,6 +8,15 @@
 	function select(customElement: CustomEvent<CustomElement>) {
 		dispatch('select', customElement.detail);
 	}
+
+	const plainStages: { value: CustomElement; label: string }[] = [
+		{ value: CustomElement.StrikeStageImageFoD, label: 'Fountain of Dreams' },
+		{ value: CustomElement.StrikeStageImageBF, label: 'Battlefield' },
+		{ value: CustomElement.StrikeStageImageFD, label: 'Final Destination' },
+		{ value: CustomElement.StrikeStageImageDL, label: 'Dream Land' },
+		{ value: CustomElement.StrikeStageImageYS, label: "Yoshi's Story" },
+		{ value: CustomElement.StrikeStageImagePS, label: 'Pokémon Stadium' },
+	];
 </script>
 
 <div class="flex flex-col gap-2">
@@ -93,6 +102,20 @@
 
 	<p class="section-label">Characters</p>
 	<SelectOption
+		description="Player 1's name for the set — their tag when Froggi knows it"
+		value={CustomElement.StrikePlayer1Name}
+		on:select={select}
+	>
+		P1 Name
+	</SelectOption>
+	<SelectOption
+		description="Player 2's name for the set — their tag when Froggi knows it"
+		value={CustomElement.StrikePlayer2Name}
+		on:select={select}
+	>
+		P2 Name
+	</SelectOption>
+	<SelectOption
 		description="Player 1's selected character icon"
 		value={CustomElement.StrikePlayer1Character}
 		on:select={select}
@@ -106,6 +129,14 @@
 	>
 		P2 Character
 	</SelectOption>
+
+	<p class="section-label">Stage images</p>
+	<p class="text-xs opacity-50">Just the stage picture. Colour it per state with boxes on a layer above, shown by the "Stage state" conditions (Available / Locked / Struck / DSR / Picked).</p>
+	{#each plainStages as stage (stage.value)}
+		<SelectOption description="Plain stage image — {stage.label}" value={stage.value} on:select={select}>
+			{stage.label}
+		</SelectOption>
+	{/each}
 </div>
 
 <style>

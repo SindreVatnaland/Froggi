@@ -106,6 +106,7 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGameStage,
 	CustomElement.InGamePlayerRadar,
 	CustomElement.InGamePlayerRadarAnimated,
+	CustomElement.InGameLiveCamera,
 	// Action state — Current Player
 	CustomElement.InGameCurrentPlayerActionStateName,
 	CustomElement.InGameCurrentPlayerActionStateId,
@@ -748,6 +749,8 @@ export const STRIKING_ELEMENTS = new Set<CustomElement>([
 	CustomElement.StrikeStageSlot6,
 	CustomElement.StrikePlayer1Character,
 	CustomElement.StrikePlayer2Character,
+	CustomElement.StrikePlayer1Name,
+	CustomElement.StrikePlayer2Name,
 	CustomElement.StrikeOrderDisplay,
 	CustomElement.StrikeBansRemaining,
 	CustomElement.StrikeTimerSeconds,
@@ -757,4 +760,10 @@ export const STRIKING_ELEMENTS = new Set<CustomElement>([
 	CustomElement.StrikeStageDL,
 	CustomElement.StrikeStageYS,
 	CustomElement.StrikeStagePS,
+	CustomElement.StrikeStageImageFoD,
+	CustomElement.StrikeStageImageBF,
+	CustomElement.StrikeStageImageFD,
+	CustomElement.StrikeStageImageDL,
+	CustomElement.StrikeStageImageYS,
+	CustomElement.StrikeStageImagePS,
 ]);

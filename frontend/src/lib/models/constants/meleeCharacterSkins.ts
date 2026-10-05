@@ -38,3 +38,29 @@ export const MELEE_CHARACTER_SKINS: MeleeCharacterSkins[] = [
 	{ id: 24, name: "Pichu", skins: ["Default","Red","Blue","Green"] },
 	{ id: 25, name: "Ganondorf", skins: ["Default","Red","Blue","Green","Purple"] },
 ];
+
+/** Dot colour per costume name (team colour for accessory costumes). `null` = Default costume. */
+const SKIN_COLORS: Record<string, string | null> = {
+	Default: null,
+	Red: '#ef4444',
+	Blue: '#3b82f6',
+	Green: '#22c55e',
+	White: '#f5f5f5',
+	Black: '#1f1f1f',
+	Yellow: '#facc15',
+	Orange: '#f97316',
+	Pink: '#f472b6',
+	Purple: '#a855f7',
+	Cyan: '#22d3ee',
+	Daisy: '#f59e0b',
+	'Party Hat': '#3b82f6',
+	'Cowboy Hat': '#22c55e',
+	Headband: '#22c55e',
+	Crown: '#eab308',
+};
+
+/** Colour of a character's costume (skin id), or null for the default costume / unknown. */
+export const skinColor = (characterId: number, skinId: number): string | null => {
+	const name = MELEE_CHARACTER_SKINS.find((c) => c.id === characterId)?.skins[skinId];
+	return name ? SKIN_COLORS[name] ?? null : null;
+};

@@ -26,6 +26,9 @@ const NGROK_CANDIDATES = [
 	'/snap/bin/ngrok',
 ];
 
+/** Consecutive failed polls of ngrok's local API before the tunnel is reported down. */
+export const NGROK_DOWN_AFTER_MISSES = 3;
+
 @singleton()
 export class NgrokService {
 	private ngrokBin: string | undefined;
@@ -306,10 +309,15 @@ export class NgrokService {
 		});
 	}
 
+	// ngrok's local API sometimes answers slowly; one missed poll is not a dead tunnel.
+	private monitorMisses = 0;
+
 	private startContinuousMonitor() {
 		if (this.monitorInterval) return;
 		this.monitorInterval = setInterval(async () => {
 			const url = await this.fetchNgrokUrl();
+			if (url) this.monitorMisses = 0;
+			else if (++this.monitorMisses < NGROK_DOWN_AFTER_MISSES) return;
 			if (url) {
 				if (url !== this.status.url) {
 					this.send({ ...this.status, running: true, url });

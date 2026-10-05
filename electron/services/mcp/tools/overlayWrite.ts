@@ -51,7 +51,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			description: 'Create a new, empty custom overlay and return its id. The overlay ships with all stats scenes (WaitingForDolphin, Menu, InGame, PostGame, PostSet, RankChange, StrikePhase), each with one empty layer (index 0) and the "fly automatic" scene-switch animation already applied. Plan layers first (add_overlay_layer) when elements will sit close together, then add elements (start with statsScene "inGame"), then obs_add_overlay_browser_source to put it in OBS.',
 			inputSchema: {
 				title: z.string().optional().describe('Overlay name shown in Froggi. Defaults to an auto-generated name.'),
-				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Overlay aspect ratio, e.g. {width:16,height:9}. Defaults to 16:9.'),
+				aspectRatio: z.object({ width: z.number().positive(), height: z.number().positive() }).optional().describe('Overlay aspect ratio, e.g. {width:16,height:9}, {width:4,height:3}, {width:19,height:9}. Ask the user which ratio (stream canvas or game window) before creating — 16:9 only if they have no preference.'),
 			},
 		},
 		async ({ title, aspectRatio }) => {

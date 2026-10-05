@@ -18,9 +18,14 @@
 	import CharacterIcon from './CharacterIcon.svelte';
 	import Select from '$lib/components/input/Select.svelte';
 	import { cloneDeep } from 'lodash';
+	import { findSettingsPlayer } from '$lib/utils/gamePredicates';
 
 	export let open: boolean;
 	export let selectedGameIndex: number;
+
+	// Frames are keyed by port index — use the real ports (e.g. 1 + 3), not 0/1.
+	const p1Port = $currentPlayers.at(0)?.playerIndex ?? 0;
+	const p2Port = $currentPlayers.at(1)?.playerIndex ?? 1;
 
 	let game: GameStats = {
 		gameEnd: {
@@ -38,24 +43,22 @@
 			frame: 0,
 			followers: [],
 			players: {
-				[0]: {
+				[p1Port]: {
 					pre: {} as PreFrameUpdateType,
 					post: {
-						playerIndex: 0,
+						playerIndex: p1Port,
 						internalCharacterId: CHARACTERS_EXTERNAL_INTERNAL[Character.Falcon],
 						stocksRemaining: 1,
 					} as PostFrameUpdateType,
 				},
-				[1]: {
+				[p2Port]: {
 					pre: {} as PreFrameUpdateType,
 					post: {
-						playerIndex: 1,
+						playerIndex: p2Port,
 						internalCharacterId: CHARACTERS_EXTERNAL_INTERNAL[Character.Falcon],
 						stocksRemaining: 1,
 					} as PostFrameUpdateType,
 				},
-				[2]: null,
-				[3]: null,
 			},
 		},
 		postGameStats: null,
@@ -101,9 +104,9 @@
 
 	const handleCharacterChange = (playerIndex: number, event: CustomEvent<Character>) => {
 		const characterId = Number(event.detail);
-		if (!game.settings?.players?.[playerIndex] || !game.lastFrame?.players?.[playerIndex])
-			return;
-		game.settings.players[playerIndex].characterId = characterId;
+		const settingsPlayer = findSettingsPlayer(game.settings?.players, playerIndex);
+		if (!settingsPlayer || !game.lastFrame?.players?.[playerIndex]) return;
+		settingsPlayer.characterId = characterId;
 		game.lastFrame.players[playerIndex]!.post.internalCharacterId =
 			CHARACTERS_EXTERNAL_INTERNAL[characterId];
 	};
@@ -169,7 +172,7 @@
 					>
 						{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
 							<option
-								selected={id === `${game.settings?.players.at(p1Idx)?.characterId}`}
+								selected={id === `${findSettingsPlayer(game.settings?.players, p1Idx)?.characterId}`}
 								value={id}
 							>{name}</option>
 						{/each}
@@ -180,7 +183,7 @@
 					>
 						{#each Object.entries(Character).filter(([_, name]) => typeof name === 'string') as [id, name]}
 							<option
-								selected={id === `${game.settings?.players.at(p2Idx)?.characterId}`}
+								selected={id === `${findSettingsPlayer(game.settings?.players, p2Idx)?.characterId}`}
 								value={id}
 							>{name}</option>
 						{/each}

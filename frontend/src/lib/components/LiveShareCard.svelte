@@ -6,21 +6,17 @@
 	 *  - ngrok: temporary public URL (expires when ngrok stops).
 	 * Viewers only watch; sending commands still needs the host password.
 	 */
-	import { remoteAccess, urls } from '$lib/utils/store.svelte';
+	import { electronEmitter, isElectron, remoteAccess } from '$lib/utils/store.svelte';
+	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { Radio } from 'lucide-svelte';
-	// @ts-ignore - no types
-	import QrCode from 'svelte-qrcode';
 
 	const PATH = '/live';
 	const join = (base: string | undefined) => (base ? base.replace(/\/$/, '') + PATH : '');
 
 	$: tailscaleUrl = join($remoteAccess?.tailscale);
 	$: ngrokUrl = join($remoteAccess?.ngrok);
-	$: localUrl = join($urls?.local);
-	// QR points at the permanent (Tailscale Funnel) link when available.
-	$: qrUrl = tailscaleUrl || ngrokUrl || localUrl;
-	$: qrKind = tailscaleUrl ? 'Tailscale' : ngrokUrl ? 'ngrok' : 'Local';
-	$: qrNote = tailscaleUrl ? 'Permanent public link' : ngrokUrl ? 'Temporary public link' : 'Same network only';
+	// The permanent link names the machine on your tailnet — hidden until asked for (e.g. on stream).
+	let showTailscale = false;
 
 	let copied = '';
 	async function copy(url: string, id: string) {
@@ -28,8 +24,14 @@
 		await navigator.clipboard.writeText(url);
 		copied = id;
 		setTimeout(() => (copied = ''), 1500);
+		notifications.success('Live page link copied', 2500);
 	}
-	const open = (url: string) => url && window.open(url, '_blank');
+	// In the app, links open in the system browser (window.open is blocked in Electron).
+	const open = (url: string) => {
+		if (!url) return;
+		if ($isElectron) $electronEmitter.emit('OpenUrl', url);
+		else window.open(url, '_blank');
+	};
 </script>
 
 <div class="share-card border-secondary flex flex-col gap-3">
@@ -48,7 +50,12 @@
 			<p class="link-desc">Stable public link — nothing to install. Best for a link you reuse.</p>
 			{#if tailscaleUrl}
 				<div class="link-row">
-					<span class="link-url">{tailscaleUrl}</span>
+					{#if showTailscale}
+						<button class="link-url link-url--btn" on:click={() => open(tailscaleUrl)}>{tailscaleUrl}</button>
+					{:else}
+						<span class="link-url link-url--hidden">Hidden</span>
+					{/if}
+					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => (showTailscale = !showTailscale)}>{showTailscale ? 'Hide' : 'Show'}</button>
 					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => copy(tailscaleUrl, 'ts')}>{copied === 'ts' ? 'Copied' : 'Copy'}</button>
 					<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => open(tailscaleUrl)}>Open</button>
 				</div>
@@ -57,13 +64,6 @@
 			{/if}
 		</div>
 
-		{#if qrUrl}
-			<div class="qr-wrap">
-				<QrCode value={qrUrl} size="104" color="#0b0e13" background="#ffffff" />
-				<span class="qr-label">Scan · {qrKind}</span>
-				<span class="qr-note">{qrNote}</span>
-			</div>
-		{/if}
 	</div>
 
 	<!-- Temporary (ngrok) -->
@@ -75,7 +75,7 @@
 		<p class="link-desc">Temporary public link — stops when you close ngrok.</p>
 		{#if ngrokUrl}
 			<div class="link-row">
-				<span class="link-url">{ngrokUrl}</span>
+				<button class="link-url link-url--btn" on:click={() => open(ngrokUrl)}>{ngrokUrl}</button>
 				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => copy(ngrokUrl, 'ng')}>{copied === 'ng' ? 'Copied' : 'Copy'}</button>
 				<button class="btn text-xs h-7 px-3 border-secondary rounded" on:click={() => open(ngrokUrl)}>Open</button>
 			</div>
@@ -114,7 +114,7 @@
 	.link-url { flex: 1; min-width: 0; font-family: monospace; font-size: 0.72rem; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.link-empty { font-size: 0.72rem; opacity: 0.4; font-style: italic; }
 	.link-foot { font-size: 0.68rem; opacity: 0.4; }
-	.qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; background: #fff; padding: 0.55rem; border-radius: 0.5rem; }
-	.qr-label { font-size: 0.6rem; font-weight: 700; color: #0b0e13; text-transform: uppercase; letter-spacing: 0.05em; }
-	.qr-note { font-size: 0.55rem; color: #0b0e13; opacity: 0.6; text-align: center; max-width: 8rem; }
+	.link-url--btn { text-align: left; background: none; border: none; color: inherit; cursor: pointer; padding: 0; }
+	.link-url--btn:hover { text-decoration: underline; }
+	.link-url--hidden { font-style: italic; opacity: 0.4; font-family: inherit; }
 </style>

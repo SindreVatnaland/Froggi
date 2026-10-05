@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { assetPacks, electronEmitter, isElectron, urls } from '$lib/utils/store.svelte';
 	import { BUILTIN_ASSET_PACKS, resolvePackImage, type AssetPack } from '$lib/models/types/assetPack';
-	import { MELEE_CHARACTER_SKINS } from '$lib/models/constants/meleeCharacterSkins';
+	import { MELEE_CHARACTER_SKINS, skinColor } from '$lib/models/constants/meleeCharacterSkins';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	// Character asset packs: one image per Melee character per skin, used by the "Player N / Current
@@ -25,6 +25,9 @@
 		return pack.builtIn ? src : `${src}?v=${version}`;
 	};
 	const hasSlot = (pack: AssetPack, characterId: number, skinId: number) => pack.builtIn || !!pack.slots?.[characterId]?.[skinId];
+	// The original costume (built-in art of this exact skin) — shown on hover over an empty slot.
+	const originalSrc = (pack: AssetPack, characterId: number, skinId: number) =>
+		resolvePackImage([], pack.builtIn ? pack.id : pack.fallback, characterId, skinId);
 
 	let newTitle = '';
 	const createPack = () => {
@@ -123,6 +126,7 @@
 						</div>
 					</div>
 					<span class="text-xs opacity-50">{filled(selected)} / {TOTAL_SLOTS} skins · click a slot to upload · "Import folder" reads &lt;characterId&gt;/&lt;skinId&gt;.png</span>
+					<span class="text-xs opacity-50 w-full">Faded = not in this pack yet: it shows what overlays use instead — this character's skin 0 from this pack, or the built-in art if skin 0 is empty too. Hover an empty slot to see the costume it stands for; the dot is the costume colour.</span>
 				</div>
 			{/if}
 
@@ -143,7 +147,15 @@
 										title={selected.builtIn ? `${skinName} (skin ${skinId})` : `Upload ${character.name} — ${skinName} (skin ${skinId})`}
 										on:click={() => selected && $electronEmitter.emit('AssetPackSetSlot', selected.id, character.id, skinId)}
 									>
-										<img src={slotSrc(selected, character.id, skinId)} alt={skinName} />
+										<img class="slot-current" src={slotSrc(selected, character.id, skinId)} alt={skinName} />
+										{#if !present}
+											<img class="slot-original" src={originalSrc(selected, character.id, skinId)} alt="" />
+										{/if}
+										<span
+											class="skin-dot"
+											class:skin-dot--default={!skinColor(character.id, skinId)}
+											style:background={skinColor(character.id, skinId)}
+										/>
 									</button>
 									<span class="slot-label">{skinId} · {skinName}{skinId === 0 ? ' *' : ''}</span>
 									{#if !selected.builtIn && selected.slots?.[character.id]?.[skinId] && $isElectron}
@@ -289,6 +301,7 @@
 		width: 4.5rem;
 	}
 	.slot-img {
+		position: relative;
 		width: 4rem;
 		height: 4rem;
 		border-radius: 0.25rem;
@@ -303,9 +316,34 @@
 		height: 100%;
 		object-fit: contain;
 	}
-	.slot--empty .slot-img img {
+	.slot--empty .slot-img .slot-current {
 		opacity: 0.25;
 		filter: grayscale(1);
+	}
+	.slot-original {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+	.slot-img:hover .slot-original {
+		opacity: 1;
+	}
+	.slot--empty .slot-img:hover .slot-current {
+		opacity: 0 !important;
+	}
+	.skin-dot {
+		position: absolute;
+		right: 0.2rem;
+		bottom: 0.2rem;
+		width: 0.6rem;
+		height: 0.6rem;
+		border-radius: 50%;
+		box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+	}
+	.skin-dot--default {
+		background: transparent;
+		box-shadow: inset 0 0 0 1.5px var(--secondary-color), 0 0 0 1.5px rgba(0, 0, 0, 0.55);
 	}
 	.slot--required .slot-img {
 		border: 1px dashed var(--secondary-color);

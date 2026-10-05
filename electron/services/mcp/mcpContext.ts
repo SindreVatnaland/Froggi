@@ -15,6 +15,8 @@ import type { OverlayInjector } from '../injectOverlay';
 import type { ErrorReporter } from '../errorReporter';
 import type { BingoService } from '../bingoService';
 import type { AssetPackService } from '../assetPackService';
+import type { ElectronWebhookStore } from '../store/storeWebhook';
+import type { FlowService } from '../flowService';
 import type { IronManService } from '../ironmanService';
 import type { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 
@@ -46,4 +48,6 @@ export const mcpContext: {
 	ironmanService?: IronManService;
 	clientEmitter?: TypedEmitter;
 	assetPackService?: AssetPackService;
+	webhookStore?: ElectronWebhookStore;
+	flowService?: FlowService;
 } = {};

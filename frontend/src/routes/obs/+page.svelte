@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthorized } from '$lib/utils/store.svelte';
-	import { Layers, Trophy, Settings, BookOpen, Send, PlugZap } from 'lucide-svelte';
+	import { Layers, Trophy, Settings, BookOpen, Send, PlugZap, Workflow } from 'lucide-svelte';
 
 	const navItems = [
 		{
@@ -30,6 +30,13 @@
 			description: 'WebSocket connection, scene commands, controller bindings.',
 			path: '/obs/settings',
 			icon: Settings,
+			requiresAuth: true,
+		},
+		{
+			label: 'Flows',
+			description: 'When something happens in game, and conditions hold, then POST or control OBS.',
+			path: '/obs/flows',
+			icon: Workflow,
 			requiresAuth: true,
 		},
 		{

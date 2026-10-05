@@ -47,6 +47,18 @@ export enum AnimationTrigger {
     StrikeCurrentStrikerChange = "Strike: Current Striker Change",
     StrikePlayer1CharChange    = "Strike: Player 1 Character Change",
     StrikePlayer2CharChange    = "Strike: Player 2 Character Change",
+    // These were only ever declared on VisibilityOption, so the trigger picker and StrikeTriggers.ts
+    // read undefined and the triggers never fired.
+    StrikePlayer1RpsSelected = "Strike Player 1 RPS Selected",
+    StrikePlayer2RpsSelected = "Strike Player 2 RPS Selected",
+    StrikeEitherRpsSelected  = "Strike Either Player RPS Selected",
+    StrikeAnyStageStruck = "Strike: Any Stage Struck",
+    StrikeFoDStruck      = "Strike: Fountain of Dreams Struck (Trigger)",
+    StrikeBFStruck       = "Strike: Battlefield Struck (Trigger)",
+    StrikeFDStruck       = "Strike: Final Destination Struck (Trigger)",
+    StrikeDLStruck       = "Strike: Dream Land Struck (Trigger)",
+    StrikeYSStruck       = "Strike: Yoshis Story Struck (Trigger)",
+    StrikePSStruck       = "Strike: Pokemon Stadium Struck (Trigger)",
 }
 
 export enum VisibilityOption {
@@ -55,6 +67,8 @@ export enum VisibilityOption {
 
     InGameRunning = "Game Running",
     InGamePaused = "Game Paused",
+    InGameRadarLeft = "Radar Left",
+    InGameRadarRight = "Radar Right",
     InGameReady = "Game Ready",
     InGameGo = "Game Go",
     InGameCountdown = "Game Countdown",
@@ -67,6 +81,10 @@ export enum VisibilityOption {
     InGamePlayer1RightSide = "Player 1 Right Side",
     InGamePlayer2LeftSide = "Player 2 Left Side",
     InGamePlayer2RightSide = "Player 2 Right Side",
+    InGamePlayer1OffStageLeft = "Player 1 Off Stage Left",
+    InGamePlayer1OffStageRight = "Player 1 Off Stage Right",
+    InGamePlayer2OffStageLeft = "Player 2 Off Stage Left",
+    InGamePlayer2OffStageRight = "Player 2 Off Stage Right",
 
     InGamePlayer1Alive = "Player 1 Alive",
     InGamePlayer1Combo = "Player 1 Combo",
@@ -218,6 +236,45 @@ export enum VisibilityOption {
     StrikeIsDLDisabled  = "Strike: Dream Land Disabled",
     StrikeIsYSDisabled  = "Strike: Yoshis Story Disabled",
     StrikeIsPSDisabled  = "Strike: Pokemon Stadium Disabled",
+
+    StrikePhaseRpsResult = "Strike Phase: RPS Result",
+    StrikePhaseStageBan = "Strike Phase: Stage Ban",
+    StrikePhaseStagePick = "Strike Phase: Stage Pick",
+    StrikePhaseCharacterPick = "Strike Phase: Character Pick (game 2+)",
+    StrikeAgreementPending = "Strike: Stage Agreement Pending",
+    StrikeIsFirstGame = "Strike: Game 1",
+    // Per-stage display state (see strikeStageStatus.ts): one of Available / Locked / Struck Or Banned /
+    // DSR Blocked / Picked is true for each stage at any time.
+    StrikeFoDAvailable = "Strike: Fountain of Dreams Available",
+    StrikeFoDLocked = "Strike: Fountain of Dreams Locked",
+    StrikeFoDStruckState = "Strike: Fountain of Dreams Struck Or Banned",
+    StrikeFoDDsr = "Strike: Fountain of Dreams DSR Blocked",
+    StrikeFoDPicked = "Strike: Fountain of Dreams Picked",
+    StrikeBFAvailable = "Strike: Battlefield Available",
+    StrikeBFLocked = "Strike: Battlefield Locked",
+    StrikeBFStruckState = "Strike: Battlefield Struck Or Banned",
+    StrikeBFDsr = "Strike: Battlefield DSR Blocked",
+    StrikeBFPicked = "Strike: Battlefield Picked",
+    StrikeFDAvailable = "Strike: Final Destination Available",
+    StrikeFDLocked = "Strike: Final Destination Locked",
+    StrikeFDStruckState = "Strike: Final Destination Struck Or Banned",
+    StrikeFDDsr = "Strike: Final Destination DSR Blocked",
+    StrikeFDPicked = "Strike: Final Destination Picked",
+    StrikeDLAvailable = "Strike: Dream Land Available",
+    StrikeDLLocked = "Strike: Dream Land Locked",
+    StrikeDLStruckState = "Strike: Dream Land Struck Or Banned",
+    StrikeDLDsr = "Strike: Dream Land DSR Blocked",
+    StrikeDLPicked = "Strike: Dream Land Picked",
+    StrikeYSAvailable = "Strike: Yoshis Story Available",
+    StrikeYSLocked = "Strike: Yoshis Story Locked",
+    StrikeYSStruckState = "Strike: Yoshis Story Struck Or Banned",
+    StrikeYSDsr = "Strike: Yoshis Story DSR Blocked",
+    StrikeYSPicked = "Strike: Yoshis Story Picked",
+    StrikePSAvailable = "Strike: Pokemon Stadium Available",
+    StrikePSLocked = "Strike: Pokemon Stadium Locked",
+    StrikePSStruckState = "Strike: Pokemon Stadium Struck Or Banned",
+    StrikePSDsr = "Strike: Pokemon Stadium DSR Blocked",
+    StrikePSPicked = "Strike: Pokemon Stadium Picked",
 }
 
 export enum VisibilityCategory {

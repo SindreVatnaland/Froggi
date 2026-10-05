@@ -7,6 +7,7 @@
 	import TextElement from '../../element/TextElement.svelte';
 	import InGamePlayerRadar from '../../element/inGame/InGamePlayerRadar.svelte';
 	import InGamePlayerRadarAnimated from '../../element/inGame/InGamePlayerRadarAnimated.svelte';
+	import InGameLiveCamera from '../../element/inGame/InGameLiveCamera.svelte';
 	import { GameStartTypeExtended } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;
@@ -116,4 +117,6 @@
 			frame={gameFrame}
 		/>
 	{/key}
+{:else if dataItem?.elementId === CustomElement.InGameLiveCamera}
+	<InGameLiveCamera {style} {dataItem} {defaultPreview} settings={gameSettings} frame={gameFrame} />
 {/if}

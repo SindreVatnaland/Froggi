@@ -3,11 +3,39 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { strikeState, electronEmitter, isOverlayPage, urls } from '$lib/utils/store.svelte';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
+	import PhoneLiveGame from '$lib/components/set/PhoneLiveGame.svelte';
+
+	// The player's secret from their QR link (/set/p/N?t=…) — phones aren't authorised, so every
+	// striking action carries it. Without it (host browser) actions go through the host password.
+	const token = (): string | undefined => $page.url.searchParams.get('t') ?? undefined;
+
+	// Keep the phone screen on while striking. Wake Lock needs HTTPS (ngrok / Tailscale links);
+	// on plain-HTTP LAN links it isn't available and the screen may still dim.
+	let wakeLock: { release: () => Promise<void> } | null = null;
+	const requestWakeLock = async () => {
+		try {
+			wakeLock = (await (navigator as any).wakeLock?.request('screen')) ?? null;
+		} catch {
+			wakeLock = null;
+		}
+	};
+	// The lock is dropped whenever the page is hidden — take it again on return.
+	const onVisibility = () => {
+		if (document.visibilityState !== 'visible') return;
+		requestWakeLock();
+		$electronEmitter.emit('StrikePlayerConnect', playerNum, token());
+	};
 
 	onMount(() => {
 		isOverlayPage.set(true);
-		$electronEmitter.emit('StrikePlayerConnect', playerNum);
-		return () => isOverlayPage.set(false);
+		$electronEmitter.emit('StrikePlayerConnect', playerNum, token());
+		requestWakeLock();
+		document.addEventListener('visibilitychange', onVisibility);
+		return () => {
+			isOverlayPage.set(false);
+			document.removeEventListener('visibilitychange', onVisibility);
+			wakeLock?.release().catch(() => undefined);
+		};
 	});
 
 	const STAGE_NAMES: Record<number, string> = {
@@ -56,7 +84,7 @@
 
 	function rpsChoice(choice: 'rock' | 'paper' | 'scissors') {
 		if (myRps !== null && myRps !== undefined) return;
-		$electronEmitter.emit('RpsChoice', playerNum, choice);
+		$electronEmitter.emit('RpsChoice', playerNum, choice, token());
 	}
 
 	// Countdown derived from the backend's shared rpsDeadline so both phones stay in sync.
@@ -76,12 +104,42 @@
 
 	onDestroy(() => { if (rpsTickHandle) clearInterval(rpsTickHandle); });
 
+	$: firstStriker = s?.strikeOrder?.[0]?.[0];
+
+	function strikeOrder(first: 1 | 2) {
+		$electronEmitter.emit('RpsWinnerOrder', first, token());
+	}
+
+	// Stages the picker may not choose (they already won there) — still shown so players can agree.
+	$: myDsrStages = (s?.dsrStages?.[playerNum === 1 ? 'p1' : 'p2'] ?? []).filter(
+		(id) => !(s?.stages ?? []).includes(id) && !(s?.bans ?? []).includes(id),
+	);
+
+	let confirmAgreeStage: number | null = null;
+
+	// Get the opponent's attention when a request arrives (vibrate where supported).
+	let lastAgreementKey = '';
+	$: {
+		const a = s?.agreement;
+		const k = a ? `${a.requestedBy}-${a.stageId}` : '';
+		if (k && k !== lastAgreementKey && a?.requestedBy !== playerNum) navigator.vibrate?.([120, 60, 120]);
+		lastAgreementKey = k;
+	}
+
+	function requestAgreement(stageId: number) {
+		$electronEmitter.emit('StrikeAgreeRequest', playerNum, stageId, token());
+	}
+
+	function answerAgreement(accept: boolean) {
+		$electronEmitter.emit('StrikeAgreeResponse', playerNum, accept, token());
+	}
+
 	function strikeStage(stageId: number) {
-		$electronEmitter.emit('StrikeStage', stageId);
+		$electronEmitter.emit('StrikeStage', stageId, token());
 	}
 
 	function pickStage(stageId: number) {
-		$electronEmitter.emit('PickStage', stageId);
+		$electronEmitter.emit('PickStage', stageId, token());
 	}
 
 	let pendingChar: number | null = null;
@@ -92,7 +150,7 @@
 
 	function confirmChar() {
 		if (pendingChar === null) return;
-		$electronEmitter.emit('SelectCharacter', playerNum, pendingChar);
+		$electronEmitter.emit('SelectCharacter', playerNum, pendingChar, token());
 		pendingChar = null;
 	}
 
@@ -143,7 +201,7 @@
 					<span class="conn-state">{oppConnected ? 'Connected' : 'Not connected'}</span>
 				</div>
 			</div>
-			<p class="waiting-hint">Waiting for the TO to start the set.</p>
+			<p class="waiting-hint">{s ? 'Waiting for the TO to start the set.' : 'Connecting to Froggi…'}</p>
 		</div>
 
 		<!-- RPS -->
@@ -169,11 +227,27 @@
 			{/if}
 		</div>
 
+		<!-- RPS RESULT: winner chooses strike order -->
+		{:else if phase === 'rpsResult'}
+		<div class="phase-section">
+			{#if rpsWinner === playerNum}
+			<p class="phase-title">You won RPS</p>
+			<p class="phase-sub">Strike first or second?</p>
+			<div class="rps-btns">
+				<button class="rps-btn" on:click={() => strikeOrder(playerNum)}>1st<span>Strike first</span></button>
+				<button class="rps-btn" on:click={() => strikeOrder(playerNum === 1 ? 2 : 1)}>2nd<span>Strike second</span></button>
+			</div>
+			{:else}
+			<p class="phase-title">{oppName} won RPS</p>
+			<p class="phase-sub">Waiting for them to choose the strike order…</p>
+			{/if}
+		</div>
+
 		<!-- STRIKING (G1) -->
 		{:else if phase === 'striking'}
 		<div class="phase-section">
 			{#if s?.rps?.winner}
-			<p class="rps-result-hint">{s.rps.winner === playerNum ? 'You won RPS · striking first' : `${oppName} won RPS · striking first`}</p>
+			<p class="rps-result-hint">{firstStriker === playerNum ? 'You strike first' : `${oppName} strikes first`}</p>
 			{/if}
 			{#if isMyTurn}
 			<p class="phase-title">Strike a stage</p>
@@ -250,7 +324,21 @@
 		<!-- STAGE PICK -->
 		{:else if phase === 'stagePick'}
 		<div class="phase-section">
-			{#if isMyTurn}
+			{#if s?.agreement}
+				{#if s.agreement.requestedBy === playerNum}
+				<p class="phase-title">Waiting for {oppName}…</p>
+				<p class="phase-sub">You asked to play {stageName(s.agreement.stageId)}. {oppName} has to agree on their phone.</p>
+				<button class="undo-like" on:click={() => answerAgreement(false)}>Cancel request</button>
+				{:else}
+				<p class="phase-title">{oppName} wants to play {stageName(s.agreement.stageId)}</p>
+				<p class="phase-sub">They already won a game there, so the rules don't let them pick it — unless you agree. If you decline, they pick another stage.</p>
+				<img src="/image/stages/{s.agreement.stageId}.png" alt="" class="stage-display-img" />
+				<div class="rps-btns">
+					<button class="rps-btn" on:click={() => answerAgreement(true)}>✓<span>Agree</span></button>
+					<button class="rps-btn" on:click={() => answerAgreement(false)}>✕<span>Decline</span></button>
+				</div>
+				{/if}
+			{:else if isMyTurn}
 			<p class="phase-title">Pick a stage</p>
 			<div class="stage-grid-p">
 				{#each s?.stages ?? [] as stageId}
@@ -259,7 +347,26 @@
 					<span>{stageName(stageId)}</span>
 				</button>
 				{/each}
+				{#each myDsrStages as stageId}
+				<button class="stage-btn stage-btn--dsr" disabled={!s?.allowAgreement} on:click={() => (confirmAgreeStage = stageId)}>
+					<img src="/image/stages/{stageId}.png" alt={stageName(stageId)} class="stage-btn-img" />
+					<span>{stageName(stageId)}</span>
+					<span class="dsr-tag">{s?.allowAgreement ? 'You won here · ask' : 'You already won here'}</span>
+				</button>
+				{/each}
 			</div>
+			{#if myDsrStages.length}
+			<p class="phase-sub mt-2">Red: you already won a game there, so you can't pick it{s?.allowAgreement ? ` — unless ${oppName} agrees` : ''}.</p>
+			{/if}
+			{#if confirmAgreeStage !== null}
+			<div class="char-confirm-bar">
+				<span class="phase-sub">Ask {oppName} to play {stageName(confirmAgreeStage)}?</span>
+				<div class="char-confirm-btns">
+					<button class="char-confirm-ok" on:click={() => { requestAgreement(confirmAgreeStage ?? 0); confirmAgreeStage = null; }}>Ask</button>
+					<button class="char-confirm-cancel" on:click={() => (confirmAgreeStage = null)}>Cancel</button>
+				</div>
+			</div>
+			{/if}
 			{:else}
 			<p class="phase-title">Opponent is picking a stage…</p>
 			<div class="stage-grid-p stage-grid-p--passive">
@@ -406,6 +513,7 @@
 				</div>
 				{/if}
 			</div>
+			<PhoneLiveGame p1Name={s?.p1Name ?? 'Player 1'} p2Name={s?.p2Name ?? 'Player 2'} />
 		</div>
 
 		<!-- SET COMPLETE -->
@@ -637,4 +745,26 @@
 	.h-result { font-size: 0.65rem; font-weight: 800; text-align: right; }
 	.h-result--w { color: #4ade80; }
 	.h-result--l { color: rgba(255,255,255,0.25); }
+	.stage-btn--dsr {
+		position: relative;
+		outline: 2px solid #ef4444;
+		opacity: 0.85;
+	}
+	.stage-btn--dsr:disabled {
+		opacity: 0.4;
+	}
+	.dsr-tag {
+		font-size: 0.6rem;
+		font-weight: 700;
+		color: #ef4444;
+		text-transform: uppercase;
+	}
+	.undo-like {
+		margin-top: 0.8rem;
+		font-size: 0.8rem;
+		opacity: 0.6;
+		text-decoration: underline;
+		background: none;
+		color: inherit;
+	}
 </style>

@@ -24,10 +24,10 @@ export const strikeStateTrigger = (
 	if (option[AnimationTrigger.StrikePlayer2RpsSelected] && p2RpsChanged) return true;
 	if (option[AnimationTrigger.StrikeEitherRpsSelected] && (p1RpsChanged || p2RpsChanged)) return true;
 
-	const newlyStruck = (id: number) =>
-		(strikeState?.strikes?.includes(id) ?? false) &&
-		!(prevStrikeState?.strikes?.includes(id) ?? false);
-	const anyNewStrike = (strikeState?.strikes?.length ?? 0) > (prevStrikeState?.strikes?.length ?? 0);
+	// Struck in game 1 or banned for a later game.
+	const struck = (s: StrikeState | undefined) => [...(s?.strikes ?? []), ...(s?.bans ?? [])];
+	const newlyStruck = (id: number) => struck(strikeState).includes(id) && !struck(prevStrikeState).includes(id);
+	const anyNewStrike = struck(strikeState).some((id) => !struck(prevStrikeState).includes(id));
 	if (option[AnimationTrigger.StrikeAnyStageStruck] && anyNewStrike) return true;
 	if (option[AnimationTrigger.StrikeFoDStruck] && newlyStruck(2))  return true;
 	if (option[AnimationTrigger.StrikeBFStruck]  && newlyStruck(31)) return true;

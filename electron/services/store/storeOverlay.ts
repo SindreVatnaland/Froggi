@@ -949,6 +949,9 @@ export class ElectronOverlayStore {
 				const overlay: Overlay = { ...JSON.parse(overlayRaw), isDemo: true } as Overlay;
 				overlay.id = overlay.id || newId();
 				this.clearOverlay(overlay);
+				// Demo JSON may predate newer scenes (e.g. Strike Phase) — fill them so the editor and
+				// the scene switcher always find every scene.
+				fillOverlayDefaults(overlay);
 				await this.persistOverlay(overlay);
 			} catch (e) {
 				this.log.error(e)

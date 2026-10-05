@@ -97,6 +97,16 @@ export interface StrikeStatePayload {
 	dsrStages: { p1: StageInfo[]; p2: StageInfo[] };
 	lastWinner: 1 | 2 | null;
 	games: GameRecordPayload[];
+	/** Who must act now and what they must do (player null = both players, or nobody). */
+	turn: { player: 1 | 2 | null; name: string | null; action: string };
+	/** Every legal stage with its state: available | locked | struck | dsr | picked. */
+	stages: (StageInfo & { status: string })[];
+	/** Stages the previous winner banned for this game. */
+	bans: StageInfo[];
+	/** A pending request to play a stage the picker already won on. */
+	agreement: { stage: StageInfo | null; requestedBy: 1 | 2 } | null;
+	/** Winner of the set when it was ended by the host (null = no result). */
+	setWinner: 1 | 2 | null;
 }
 
 export interface StrippedRankProfile {

@@ -58,4 +58,20 @@ export interface StrikeState {
 
 	games: GameRecord[];
 	connectedPlayers: (1 | 2)[];
+
+	/** Stages the previous winner banned for the current game (cleared when it is reported). */
+	bans?: number[];
+	/** Players may agree to play a stage DSR blocks (both confirm on their phones). Default on. */
+	allowAgreement?: boolean;
+	/** Pending agreement: the picker asked to play a DSR-blocked stage; the other player must accept. */
+	agreement?: { stageId: number; requestedBy: 1 | 2 } | null;
+	/** The set's players, taken from its first Slippi game — later games only count if they match. */
+	setPlayers?: { connectCode: string; playerIndex: number }[] | null;
+	/** Set winner when the host ended the match early (for result reporting). */
+	setWinner?: 1 | 2 | null;
+	/** Last change (epoch ms) — a set idle for 3 hours ends on startup. */
+	updatedAt?: number;
 }
+
+/** How a stage looks right now in the striking UI / overlay conditions. */
+export type StageStatus = 'available' | 'locked' | 'struck' | 'dsr' | 'picked';

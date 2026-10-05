@@ -47,6 +47,7 @@
 	<!-- Command info -->
 	<div class="command-info">
 		<span class="command-type">{startCase(String(controllerCommand.command.requestType))}</span>
+		{#if controllerCommand.format && controllerCommand.format !== 'any'}<span class="format-tag">{controllerCommand.format}</span>{/if}
 		{#each Object.entries(controllerCommand.command.payload ?? {}) as [k, v]}
 			<span class="command-payload">{startCase(k)}: {v}</span>
 		{/each}
@@ -127,4 +128,5 @@
 	.delete-btn:hover {
 		opacity: 1;
 	}
+	.format-tag { font-size: 0.6rem; text-transform: uppercase; padding: 0 0.35rem; border-radius: 0.6rem; background: color-mix(in srgb, var(--secondary-color) 15%, transparent); }
 </style>

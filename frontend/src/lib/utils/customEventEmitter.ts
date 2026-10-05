@@ -32,11 +32,12 @@ import type {
 	SessionStats,
 } from '../models/types/slippiData';
 import type { RpsChoice, StrikeState } from '../models/types/stageStriking';
+import type { Flow } from '../models/types/flow';
 import type { FrameEntryType } from '@slippi/slippi-js';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
-import type { WebhookProfile, RankChangeDiff } from '../models/types/webhook';
+import type { WebhookProfile, RankChangeDiff, WebhookEvent } from '../models/types/webhook';
 import type { TechniqueDetectedPayload, ActionStateHistoryPayload } from '../models/types/actionState';
 import type { BingoSettings, BingoStatePayload, BingoChallengeUpdatePayload, BingoLobbyPayload, BingoSession, BingoSoloWinPayload, BingoLeaderboard, BingoVoteStates, BingoVoteActionType, BingoTileReplacedPayload, BingoTilesRollingPayload } from '../models/types/bingo';
 import type { IronManSettings, IronManSession, IronManStatePayload, IronManLobbyPayload, IronManGameResultPayload, IronManLeaderboard } from '../models/types/ironman';
@@ -182,13 +183,28 @@ export interface MessageEvents {
 
 	StrikeState: (state: StrikeState | undefined) => void;
 	StrikeStateUpdate: (state: StrikeState | undefined) => void;
-	StrikePlayerConnect: (player: 1 | 2) => void;
-	StartSet: (p1Name: string, p2Name: string, bestOf: 3 | 5) => void;
-	RpsChoice: (player: 1 | 2, choice: RpsChoice) => void;
-	RpsWinnerOrder: (firstStriker: 1 | 2) => void;
-	StrikeStage: (stageId: number) => void;
-	PickStage: (stageId: number) => void;
-	SelectCharacter: (player: 1 | 2, charId: number) => void;
+	StrikePlayerConnect: (player: 1 | 2, token?: string) => void;
+	StartSet: (p1Name: string, p2Name: string, bestOf: 3 | 5, allowAgreement?: boolean) => void;
+	StrikeAgreeRequest: (player: 1 | 2, stageId: number, token?: string) => void;
+	StrikeAgreeResponse: (player: 1 | 2, accept: boolean, token?: string) => void;
+	/** Host ends the match: a winner completes the set with that result, null cancels it. */
+	StrikeEndMatch: (winner: 1 | 2 | null) => void;
+	/** Host only (IPC): the per-player tokens for the phone links. */
+	StrikePlayerTokens: (tokens: { 1: string; 2: string }) => void;
+	StrikePlayerTokensRequest: () => void;
+	/** Electron-local: a detected game change (same names/payloads as the webhooks) — drives flows. */
+	GameEvent: (event: WebhookEvent, payload: unknown) => void;
+	Flows: (flows: Flow[]) => void;
+	FlowsRequest: () => void;
+	FlowSave: (flow: Flow) => void;
+	FlowDelete: (flowId: string) => void;
+	/** Run a flow's actions now (editor "Test" button), skipping trigger and conditions. */
+	FlowTest: (flowId: string) => void;
+	RpsChoice: (player: 1 | 2, choice: RpsChoice, token?: string) => void;
+	RpsWinnerOrder: (firstStriker: 1 | 2, token?: string) => void;
+	StrikeStage: (stageId: number, token?: string) => void;
+	PickStage: (stageId: number, token?: string) => void;
+	SelectCharacter: (player: 1 | 2, charId: number, token?: string) => void;
 	ReportWinner: (player: 1 | 2) => void;
 	UndoLastGame: () => void;
 	MarkWarmup: () => void;

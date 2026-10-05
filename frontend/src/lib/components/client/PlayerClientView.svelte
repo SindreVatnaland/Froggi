@@ -9,7 +9,7 @@
 	} from '$lib/utils/store.svelte';
 	import { InGameState } from '$lib/models/enum';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
-	import { getWinnerIndex } from '$lib/utils/gamePredicates';
+	import { getWinnerIndex, findSettingsPlayer } from '$lib/utils/gamePredicates';
 
 	export let playerNum: 1 | 2;
 
@@ -35,10 +35,10 @@
 	$: oppPercent = Math.floor(oppFrame?.percent ?? 0);
 	$: myStocks = myFrame?.stocksRemaining ?? 0;
 	$: oppStocks = oppFrame?.stocksRemaining ?? 0;
-	$: myCharId = $gameSettings?.players?.[myPIdx]?.characterId ?? 0;
-	$: oppCharId = $gameSettings?.players?.[oppPIdx]?.characterId ?? 0;
-	$: myColorId = $gameSettings?.players?.[myPIdx]?.characterColor ?? 0;
-	$: oppColorId = $gameSettings?.players?.[oppPIdx]?.characterColor ?? 0;
+	$: myCharId = findSettingsPlayer($gameSettings?.players, myPIdx)?.characterId ?? 0;
+	$: oppCharId = findSettingsPlayer($gameSettings?.players, oppPIdx)?.characterId ?? 0;
+	$: myColorId = findSettingsPlayer($gameSettings?.players, myPIdx)?.characterColor ?? 0;
+	$: oppColorId = findSettingsPlayer($gameSettings?.players, oppPIdx)?.characterColor ?? 0;
 	$: stageId = $gameSettings?.stageId ?? -1;
 	$: stageName = STAGE_DATA[stageId]?.name ?? '';
 	$: gameNum = $recentGames.length + 1;
@@ -154,10 +154,10 @@
 		<div class="history-list">
 			{#each $recentGames as game, i}
 				{@const wi = getWinnerIndex(game)}
-				{@const gc = game.settings?.players?.[myPIdx]?.characterId ?? 0}
-				{@const gcol = game.settings?.players?.[myPIdx]?.characterColor ?? 0}
-				{@const oc = game.settings?.players?.[oppPIdx]?.characterId ?? 0}
-				{@const ocol = game.settings?.players?.[oppPIdx]?.characterColor ?? 0}
+				{@const gc = findSettingsPlayer(game.settings?.players, myPIdx)?.characterId ?? 0}
+				{@const gcol = findSettingsPlayer(game.settings?.players, myPIdx)?.characterColor ?? 0}
+				{@const oc = findSettingsPlayer(game.settings?.players, oppPIdx)?.characterId ?? 0}
+				{@const ocol = findSettingsPlayer(game.settings?.players, oppPIdx)?.characterColor ?? 0}
 				{@const gs = STAGE_DATA[game.settings?.stageId ?? -1]?.name ?? '—'}
 				{@const iWon = wi === myPIdx}
 				<div class="history-row" class:history-row--win={iWon} class:history-row--loss={!iWon}>

@@ -3,6 +3,7 @@
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
+	import { colorOverlay } from '$lib/utils/colorOverlay';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;
@@ -24,6 +25,9 @@
 	$: p2Rps = strikeState?.rps?.p2;
 	$: rpsWinner = strikeState?.rps?.winner;
 	$: currentStriker = strikeState?.currentStriker;
+	// Set names (the players' tags when Froggi knows them).
+	const nameOf = (player: 1 | 2 | null | undefined) =>
+		!player ? '' : player === 1 ? strikeState?.p1Name || 'Player 1' : strikeState?.p2Name || 'Player 2';
 	$: stages = strikeState?.stages ?? [];
 	$: finalStageId = strikeState?.finalStageId ?? undefined;
 	$: finalStageName = finalStageId != null ? (STAGE_DATA[finalStageId]?.name ?? '') : '';
@@ -77,6 +81,16 @@
 
 	const FIXED_STAGE_IDS = new Set(Object.values(FIXED_STAGE_ID));
 
+	// Plain stage images: just the picture (styled as an image) — state comes from conditions.
+	const PLAIN_STAGE_ID: Partial<Record<CustomElement, number>> = {
+		[CustomElement.StrikeStageImageFoD]: 2,
+		[CustomElement.StrikeStageImageBF]: 31,
+		[CustomElement.StrikeStageImageFD]: 32,
+		[CustomElement.StrikeStageImageDL]: 28,
+		[CustomElement.StrikeStageImageYS]: 8,
+		[CustomElement.StrikeStageImagePS]: 3,
+	};
+
 	function isFixedStage(elementId: CustomElement): boolean {
 		return elementId in FIXED_STAGE_ID;
 	}
@@ -89,7 +103,17 @@
 	}
 </script>
 
-{#if id === CustomElement.StrikeRpsPlayer1Choice}
+{#if PLAIN_STAGE_ID[id] !== undefined}
+	<div class="w-full h-full flex {style.classValue}" style={`${style.cssValue}; ${dataItem?.data.advancedStyling ? dataItem?.data.css.customBox : ''}`}>
+		<img
+			use:colorOverlay={dataItem?.data.colorOverlay}
+			class="w-full h-full"
+			style={`object-fit: ${dataItem?.data.image?.objectFit ?? 'cover'}; ${dataItem?.data.advancedStyling ? dataItem?.data.css.customImage : ''}`}
+			src="/image/stages/{PLAIN_STAGE_ID[id]}.png"
+			alt={STAGE_DATA[PLAIN_STAGE_ID[id] ?? 0]?.name ?? ''}
+		/>
+	</div>
+{:else if id === CustomElement.StrikeRpsPlayer1Choice}
 	<div class="strike-text" style={style.cssValue}>
 		<span class={style.classValue}>
 			{defaultPreview ? 'Rock' : (p1Rps ? RPS_LABELS[p1Rps] : '')}
@@ -106,14 +130,21 @@
 {:else if id === CustomElement.StrikeRpsWinner}
 	<div class="strike-text" style={style.cssValue}>
 		<span class={style.classValue}>
-			{defaultPreview ? 'Player 1' : (rpsWinner ? `Player ${rpsWinner}` : '')}
+			{defaultPreview ? 'Player 1' : nameOf(rpsWinner)}
 		</span>
 	</div>
 
 {:else if id === CustomElement.StrikeCurrentStriker}
 	<div class="strike-text" style={style.cssValue}>
 		<span class={style.classValue}>
-			{defaultPreview ? 'Player 1' : (currentStriker ? `Player ${currentStriker}` : '')}
+			{defaultPreview ? 'Player 1' : nameOf(currentStriker)}
+		</span>
+	</div>
+
+{:else if id === CustomElement.StrikePlayer1Name || id === CustomElement.StrikePlayer2Name}
+	<div class="strike-text" style={style.cssValue}>
+		<span class={style.classValue}>
+			{defaultPreview ? (id === CustomElement.StrikePlayer1Name ? 'Player 1' : 'Player 2') : nameOf(id === CustomElement.StrikePlayer1Name ? 1 : 2)}
 		</span>
 	</div>
 

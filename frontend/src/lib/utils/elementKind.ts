@@ -11,6 +11,7 @@ export type ElementKind = 'text' | 'image' | 'box';
 export const getElementKind = (elementId: number): ElementKind | undefined => {
 	if ((elementId >= 1000 && elementId < 2000) || (elementId >= 4000 && elementId < 6000) || elementId === CustomElement.CustomString)
 		return 'text';
+	if (elementId >= 7600 && elementId < 7700) return 'image'; // plain stage images (stage striking)
 	if ((elementId >= 3000 && elementId < 4000) || (elementId >= 7000 && elementId < 8000) || elementId === CustomElement.CustomBox)
 		return 'box';
 	if ((elementId >= 2000 && elementId < 3000) || (elementId >= 6000 && elementId < 7000) || elementId === CustomElement.CustomImage || elementId === CustomElement.SlippiRankCurrentPlayerRatingGraph)

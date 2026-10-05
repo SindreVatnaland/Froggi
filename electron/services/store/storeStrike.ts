@@ -21,6 +21,15 @@ export class ElectronStrikeStore {
         return this.store.get(STORE_KEY) as StrikeState | undefined;
     }
 
+    /** Per-player secrets in the phone links (never part of the broadcast StrikeState). */
+    getPlayerTokens(): { 1: string; 2: string } | undefined {
+        return this.store.get('strike.tokens') as { 1: string; 2: string } | undefined;
+    }
+
+    setPlayerTokens(tokens: { 1: string; 2: string }) {
+        this.store.set('strike.tokens', tokens);
+    }
+
     setStrikeState(state: StrikeState | undefined) {
         if (state) {
             this.store.set(STORE_KEY, state);
