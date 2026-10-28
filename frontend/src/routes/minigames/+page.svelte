@@ -632,6 +632,7 @@
 		charOrder: 'fixed',
 		charSelection: 'pick',
 		randomSync: 'shared',
+		carryOver: false,
 	};
 	let imSettings = { ...defaultIronManSettings };
 	const imVariants: { value: IronManSettings['variant']; label: string; tip: string }[] = [
@@ -1432,6 +1433,19 @@
 							</div>
 						</div>
 					{/if}
+					{#if imSettings.variant === 'standard'}
+						<div class="settings-group">
+							<span class="settings-label">Carry-over</span>
+							<div class="pill-group">
+								<button class="pill" class:pill--active={!imSettings.carryOver}
+									on:click={() => imSettings = { ...imSettings, carryOver: false }}
+									use:tooltip={{ content: 'Every character starts with full stocks', placement: 'bottom', delay: [400, 0] }}>Off</button>
+								<button class="pill" class:pill--active={!!imSettings.carryOver}
+									on:click={() => imSettings = { ...imSettings, carryOver: true }}
+									use:tooltip={{ content: 'The winner keeps the stocks they lost:\nnext game they SD down to the stocks they kept', placement: 'bottom', delay: [400, 0] }}>On</button>
+							</div>
+						</div>
+					{/if}
 				{/if}
 			</div>
 		{/if}
@@ -1648,7 +1662,7 @@
 		{#if selectedGame === 'ironman' && imIsActive && imLocalRoster}
 			{#if imPendingCarry && imPendingCarry > 0}
 				<div class="carry-banner border-secondary" in:fly={{ y: -8, duration: 200 }}>
-					⚡ Carry: opponent must SD {imPendingCarry} time{imPendingCarry > 1 ? 's' : ''} before next game starts
+					⚡ Carry-over: the last winner SDs down to the stocks they kept at the start of the next game
 				</div>
 			{/if}
 

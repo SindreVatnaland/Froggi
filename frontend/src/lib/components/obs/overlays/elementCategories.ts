@@ -30,6 +30,9 @@ export const INGAME_ELEMENTS = new Set<CustomElement>([
 	CustomElement.InGameCurrentPlayerPercentDecimal,
 	CustomElement.InGamePlayer1PercentDecimal,
 	CustomElement.InGamePlayer2PercentDecimal,
+	CustomElement.InGameCurrentPlayerPercentRaw,
+	CustomElement.InGamePlayer1PercentRaw,
+	CustomElement.InGamePlayer2PercentRaw,
 	CustomElement.InGameCurrentPlayerPercentCustom,
 	CustomElement.InGamePlayer1PercentCustom,
 	CustomElement.InGamePlayer2PercentCustom,
@@ -740,6 +743,14 @@ export const BINGO_ELEMENTS = new Set<CustomElement>([
 
 export const IRONMAN_ELEMENTS = new Set<CustomElement>([
 	CustomElement.IronManRoster,
+	CustomElement.IronManPlayer1Roster,
+	CustomElement.IronManPlayer2Roster,
+	CustomElement.IronManPlayer1ProgressBar,
+	CustomElement.IronManPlayer2ProgressBar,
+	CustomElement.IronManPlayer1CharacterTotal,
+	CustomElement.IronManPlayer2CharacterTotal,
+	CustomElement.IronManPlayer1CharactersRemaining,
+	CustomElement.IronManPlayer2CharactersRemaining,
 ]);
 
 export const STRIKING_ELEMENTS = new Set<CustomElement>([

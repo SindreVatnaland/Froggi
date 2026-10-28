@@ -11,6 +11,8 @@
 
 	export let player: Player | undefined;
 	export let numberOfDecimals: number;
+	/** Just the number, no % (the "Percent Number" elements). */
+	export let raw = false;
 
 	$: isInGame = $gameState && [InGameState.Paused, InGameState.Running].includes($gameState);
 
@@ -73,7 +75,9 @@
 					style={`${style.cssValue}; ${dataItem?.data.advancedStyling}; color: ${percentageColor}; ${style.textStroke}`}
 					maxFont={1000}
 				>
-					{#if !numberOfDecimals}
+					{#if raw}
+						<span>{`${defaultPreview ? 300 : framePercent}`}</span>
+					{:else if !numberOfDecimals}
 						<span class="mr-[.3em]">
 							{`${defaultPreview ? 300 : framePercent}`}
 							<span class="text-[80%] mx-[-.2em]">%</span>

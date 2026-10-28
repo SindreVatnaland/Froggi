@@ -148,9 +148,9 @@ describe('IronManService', () => {
 	// ── Standard variant ──────────────────────────────────────────────────────
 
 	describe('standard variant', () => {
-		function session() {
+		function session(rules: Partial<IronManSettings> = {}) {
 			return makeSession({
-				settings: makeSettings('standard', { stocksPerChar: 4 }),
+				settings: makeSettings('standard', { stocksPerChar: 4, ...rules }),
 				localRoster: makeRoster([1, 2, 3]),
 				opponentRoster: makeRoster([4, 5, 6]),
 				role: 'host',
@@ -176,8 +176,16 @@ describe('IronManService', () => {
 			expect(s.localRoster.slots.find(sl => sl.characterId === 1)!.depleted).toBe(false);
 		});
 
-		it('win stores remaining stocks for carry-over', () => {
+		it('carry-over off (default) → no pendingCarryStocks', () => {
 			startSession(session());
+			localEmitter.emit('GameSettings', makeGameSettings(1, 4));
+			localEmitter.emit('PostGameStats', makePostGame(2, 0));
+
+			expect(lastState()!.pendingCarryStocks).toBeNull();
+		});
+
+		it('win stores remaining stocks for carry-over', () => {
+			startSession(session({ carryOver: true }));
 			localEmitter.emit('GameSettings', makeGameSettings(1, 4));
 			localEmitter.emit('PostGameStats', makePostGame(2, 0)); // local keeps 2 of 4 stocks
 
@@ -187,25 +195,40 @@ describe('IronManService', () => {
 		});
 
 		it('win with full stocks → no pendingCarryStocks', () => {
-			startSession(session());
+			startSession(session({ carryOver: true }));
 			localEmitter.emit('GameSettings', makeGameSettings(1, 4));
 			localEmitter.emit('PostGameStats', makePostGame(4, 0)); // kept all 4 stocks
 
 			const s = lastState()!;
-			expect(s.pendingCarryStocks).toBe(0);
+			expect(s.pendingCarryStocks).toBeNull();
 		});
 
-		it('loss clears pendingCarryStocks', () => {
-			startSession(session());
+		it('carry-over stays pending until the winner SDs down in the next game', () => {
+			startSession(session({ carryOver: true }));
+			const frame = (stocks: number) => ({ players: { [LOCAL_IDX]: { post: { stocksRemaining: stocks } } } });
+			localEmitter.emit('GameSettings', makeGameSettings(1, 4));
+			localEmitter.emit('PostGameStats', makePostGame(2, 0)); // kept 2
+			localEmitter.emit('GameFrame', frame(2) as any); // a late frame of the finished game: still pending
+			expect(lastState()!.pendingCarryStocks).toBe(2);
+			localEmitter.emit('GameSettings', makeGameSettings(1, 5)); // next game starts
+			localEmitter.emit('GameFrame', frame(4) as any);
+			localEmitter.emit('GameFrame', frame(3) as any);
+			expect(lastState()!.pendingCarryStocks).toBe(2);
+			localEmitter.emit('GameFrame', frame(2) as any); // SD'd down to the kept stocks
+			expect(lastState()!.pendingCarryStocks).toBeNull();
+		});
+
+		it("loss → the opponent's carry-over is pending", () => {
+			startSession(session({ carryOver: true }));
 			// First win (sets pending)
 			localEmitter.emit('GameSettings', makeGameSettings(1, 4));
 			localEmitter.emit('PostGameStats', makePostGame(2, 0));
 			// Then lose
 			localEmitter.emit('GameSettings', makeGameSettings(2, 5));
-			localEmitter.emit('PostGameStats', makePostGame(0, 2));
+			localEmitter.emit('PostGameStats', makePostGame(0, 2)); // opponent kept 2 of 4
 
 			const s = lastState()!;
-			expect(s.pendingCarryStocks).toBeNull();
+			expect(s.pendingCarryStocks).toBe(2);
 		});
 
 		it('all opponent chars depleted → local wins', () => {

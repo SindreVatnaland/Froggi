@@ -24,6 +24,7 @@
 	import RankPredictionVisibilitySelect from './RankPredictionVisibilitySelect.svelte';
 	import InGameNumberVisibilitySelect from './InGameNumberVisibilitySelect.svelte';
 	import StrikeVisibilitySelect from './StrikeVisibilitySelect.svelte';
+	import IronManVisibilitySelect from './IronManVisibilitySelect.svelte';
 
 	export let selectedVisibilityOption: SelectedVisibilityCondition;
 
@@ -125,6 +126,10 @@
 		},
 		{
 			category: VisibilityCategory.StageStriking,
+			visible: true,
+		},
+		{
+			category: VisibilityCategory.IronMan,
 			visible: true,
 		},
 	];
@@ -242,6 +247,11 @@
 			{#if selectedCategory === VisibilityCategory.StageStriking}
 				<div class="flex flex-col gap-2">
 					<StrikeVisibilitySelect on:select={select} {selectedVisibilityOption} />
+				</div>
+			{/if}
+			{#if selectedCategory === VisibilityCategory.IronMan}
+				<div class="flex flex-col gap-2">
+					<IronManVisibilitySelect on:select={select} {selectedVisibilityOption} />
 				</div>
 			{/if}
 		</div>

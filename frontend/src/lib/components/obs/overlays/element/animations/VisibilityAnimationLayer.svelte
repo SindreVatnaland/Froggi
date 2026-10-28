@@ -14,6 +14,7 @@
 		recentGames,
 		sessionStats,
 		strikeState,
+		ironManSession,
 	} from '$lib/utils/store.svelte';
 	import { onMount } from 'svelte';
 	import { inGameVisibilityOption } from './visibilityConditions/InGameVisibilityOptions.svelte';
@@ -40,6 +41,8 @@
 	} from '$lib/models/types/slippiData';
 	import { rankPredictionVisibilityOption } from './visibilityConditions/RankPredictionVisibilityOptions.svelte';
 	import { strikeVisibilityOption } from './visibilityConditions/StrikeVisibilityOptions.svelte';
+	import { ironManVisibilityOption } from './visibilityConditions/IronManVisibilityOptions.svelte';
+	import type { IronManSession } from '$lib/models/types/ironman';
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	export let animationIn: Function;
 	export let animationOut: Function;
@@ -62,6 +65,7 @@
 		currentPlayers: Player[],
 		sessionStats: SessionStats | undefined,
 		strikeStateVal: StrikeState | undefined,
+		ironMan: IronManSession | null,
 	) => {
 		// Previews show everything — except a screenshot of a frozen replay moment, which applies the conditions.
 		if (edit || (preview && !$previewFrozen)) return true;
@@ -120,7 +124,8 @@
 				rankVisibilityOption(option, currentPlayer) ||
 				rankPredictionVisibilityOption(option, currentPlayer, gameSettings) ||
 				sessionVisibilityOption(option, sessionStats) ||
-				strikeVisibilityOption(option, strikeStateVal)
+				strikeVisibilityOption(option, strikeStateVal) ||
+				ironManVisibilityOption(option, ironMan)
 			) {
 				return true;
 			}
@@ -141,6 +146,7 @@
 			$currentPlayers,
 			$sessionStats,
 			$strikeState,
+			$ironManSession,
 		);
 	}
 

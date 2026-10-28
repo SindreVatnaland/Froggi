@@ -24,12 +24,30 @@ const RANGE_LABELS: Array<{ min: number; max: number; label: string }> = [
 	{ min: 6000, max: 6299, label: 'Character & rank images' },
 	{ min: 7000, max: 7599, label: 'Stage striking' },
 	{ min: 8000, max: 8299, label: 'Action state' },
-	{ min: 9000, max: 9099, label: 'Minigames (Bingo board, Iron Man roster)' },
+	{ min: 9000, max: 9099, label: 'Minigames (Bingo board; Iron Man rosters, progress bars, character counts)' },
 	{ min: 9100, max: 9199, label: 'Rank graph' },
 	{ min: 9200, max: 9999, label: 'Misc' },
 ];
 
 const labelFor = (id: number) => RANGE_LABELS.find((r) => id >= r.min && id <= r.max)?.label ?? 'Other';
+
+/** Group of a condition label, for list_overlay_conditions' first step (labels are self-describing). */
+const CONDITION_GROUPS: [RegExp, string][] = [
+	[/^strike/i, 'Stage Striking'],
+	[/^iron man/i, 'Iron Man'],
+	[/^(team \d|doubles)/i, 'Doubles'],
+	[/^post ?game/i, 'Post Game / Recent Games'],
+	[/^player ?1/i, 'Player 1'],
+	[/^player ?2/i, 'Player 2'],
+	[/^current ?player/i, 'Current Player'],
+	[/^(rank|slippi stats)/i, 'Rank'],
+	[/^match/i, 'Match'],
+	[/^session/i, 'Session'],
+	[/^dolphin/i, 'Dolphin'],
+	[/^game \d/i, 'Game Number'],
+	[/^(game|radar)/i, 'Game State'],
+];
+const conditionGroup = (label: string) => CONDITION_GROUPS.find(([re]) => re.test(label))?.[1] ?? 'Other';
 
 /** { id, name, kind } for every CustomElement, from the enum reverse map. `kind` (text|image|box)
  *  is the render/styling class the editor uses — it tells you which payload options apply. */
@@ -105,13 +123,18 @@ Both carry \`{ in: AnimationSettings, out: AnimationSettings, selectedOptions }\
     New elements get \`[{source:"self", when:"change"}]\` by default (does nothing while in/out are "none").
   - \`selectedOptions\`: OBJECT mapping a named AnimationTrigger label → boolean, for game EVENTS that are
     not a shown value — e.g. "Player1 Percent Increase" to shake a character render on damage, stock loss,
-    countdown, technique, stage struck. Labels marked legacy in list_overlay_conditions ("value changed")
-    still work but are hidden in the editor — use an element trigger instead.
+    countdown, technique, stage struck. Legacy "value changed" labels (not listed by
+    list_overlay_conditions) still work in old overlays but are hidden in the editor — use an element trigger instead.
 - **extraAnimationTriggers**: optional array of more \`{ in, out, selectedOptions, elementTriggers }\` on the
   same element (animation 2, 3…), each with its own animation and triggers, nested so they can play at
   once (e.g. a pop on "self increase" + a shake on another element's change). A trigger (named label or
   source+when) belongs to ONE animation of an element — never repeat it across its animations.
 - An animation whose in and out are both "none" never replays.
+- \`in.type = "count"\` (trigger animations only): instead of replaying, the element's number COUNTS from
+  its old value to the new one over \`in.options.duration\` with \`in.options.easing\` (30 ticks/s, keeps
+  the new value's format). Only when old and new are both pure numbers (minus, digits, 1,500 grouping,
+  decimals, optional trailing %) — otherwise the value just switches. Use it with a trigger that fires on
+  the change, e.g. elementTriggers [{source:"self", when:"change"}] on a percent / score / rating element.
 - AnimationSettings = { type: Animation, options: { delay, duration, easing, start, x, y } }.
   x/y are used by fly/slide. duration/delay in ms.
 
@@ -125,7 +148,10 @@ There are two families of in-game percent element:
 - **Vanilla** — InGamePlayer1Percent (1002), InGamePlayer2Percent (1003), InGameCurrentPlayerPercent
   (1001), + Decimal (1004-1006). Plain text number with no built-in per-digit animation. Use this
   when you want to drive a *different* animation yourself via \`animationTrigger\`.
-Both support \`percent.startColor\`/\`percent.endColor\`. Percent reads as 0 when the player is dead or
+- **Number only** — InGamePlayer1PercentRaw (1014), InGamePlayer2PercentRaw (1015),
+  InGameCurrentPlayerPercentRaw (1013): the percent as a plain number without "%" (pair it with a
+  CustomString "%" or use a Count animation).
+All support \`percent.startColor\`/\`percent.endColor\`. Percent reads as 0 when the player is dead or
 not in game (the underlying value is null then).
 
 ## Default Smash HUD layout (Melee & modern Ultimate)
@@ -166,9 +192,17 @@ rename_overlay_layer) after what it holds — the user sees those names in the l
 **Minigames in an overlay** — minigames are overlay elements, so they can sit in a custom layout, in
 OBS or injected into Dolphin (Windows, set_overlay_injection):
 - BingoBoard (9000): the live board of the current Bingo session.
-- IronManRoster (9010): each player's Iron Man roster — name pill + progress count, character grid,
-  progress bar; the opponent's section appears in versus. Give it a tall box (e.g. a side column).
-Both show a sample in the editor and "No active … session" when nothing is running. The full-page
+- Iron Man, one element per piece (Player 1 = this Froggi's player, Player 2 = the opponent; Player 2
+  elements are empty in solo): IronManPlayer1Roster / IronManPlayer2Roster (9011/9012) — only the
+  characters and which are out; the icons fit the box (up to 96 px at 1080p, the grid reflows), so any box
+  shape works. IronManPlayer1/2ProgressBar (9013/9014, box: background/border around the bar; green /
+  red fill = characters done: depleted in Standard, completed in Full Roster / Challenge),
+  IronManPlayer1/2CharacterTotal (9015/9016) and IronManPlayer1/2CharactersRemaining (9017/9018) are text.
+  Names: use MatchPlayer1Tag / MatchPlayer2Tag (4420/4421, also listed under Iron Man in the editor) — they
+  follow the game's player order, not you/opponent. Conditions (group "Iron Man"): Iron Man Active, Mode Standard / Full Roster /
+  Challenge, Player 1 / Player 2 Won, Carry-over Pending. The old combined IronManRoster (9010) still
+  renders in existing overlays but isn't offered in the editor — don't add it to new overlays.
+The Bingo board shows a sample in the editor and "No active … session" when nothing is running. The full-page
 alternative is the "Game Preview" browser source (/obs/game-preview).
 
 **Game HUD references** — before placing in-game elements, call get_game_hud_reference (list, then
@@ -447,7 +481,7 @@ Froggi tracks each player's live action state and detects techniques from the ac
   (action state changed) and "Player1/Player2/Current Player Technique Change" (a new technique fired) —
   set on the element's animationTrigger.selectedOptions, e.g. put a scale on InGamePlayer1Technique with
   "Player1 Technique Change" so it pops each time a technique lands. Verify names via
-  list_overlay_conditions (kind:"trigger") / list_elements.
+  list_overlay_conditions (kind:"trigger", search:"Technique") / list_elements.
 
 ## Recipes (all shipped in the demo overlays — read them with get_overlay)
 - **Percent reddens as damage rises**: use a percent element (default to the Custom variant, e.g.
@@ -517,24 +551,40 @@ export function registerOverlaySchemaTools(server: McpServer) {
 	server.registerTool(
 		'list_overlay_conditions',
 		{
-			description: 'Condition options for showing elements and triggering animations. kind="visibility" → VisibilityOption values (element visible only while conditions hold; encoded as an array of {label: 0 Disabled|1 True|2 False} in data.visibility.selectedOptions). kind="trigger" → AnimationTrigger values (replay animation on event; encoded as {label: boolean} in data.animationTrigger.selectedOptions) + legacy labels + the element-trigger encoding. Omit kind for both.',
-			inputSchema: { kind: z.enum(['visibility', 'trigger']).optional() },
+			description: 'Condition options for showing elements and triggering animations, in two steps to keep answers small: without `group`/`search` it returns the encodings + the groups with counts; then pass `group` (a group name from that list) or `search` (a word, e.g. "stock", "Iron Man") for the labels. kind="visibility" → VisibilityOption labels (element visible only while conditions hold; encoded as an array of {label: 0 Disabled|1 True|2 False} in data.visibility.selectedOptions). kind="trigger" → AnimationTrigger labels (replay animation on event; encoded as {label: boolean} in data.animationTrigger.selectedOptions) + the element-trigger encoding. Omit kind for both.',
+			inputSchema: {
+				kind: z.enum(['visibility', 'trigger']).optional(),
+				group: z.string().optional(),
+				search: z.string().optional(),
+			},
 		},
-		async ({ kind }) => {
+		async ({ kind, group, search }) => {
+			const pick = (labels: string[]) => {
+				if (!group && !search) {
+					const groups: Record<string, number> = {};
+					for (const l of labels) groups[conditionGroup(l)] = (groups[conditionGroup(l)] ?? 0) + 1;
+					return { groups };
+				}
+				const q = search?.toLowerCase();
+				return {
+					options: labels.filter(
+						(l) => (!group || conditionGroup(l).toLowerCase() === group.toLowerCase()) && (!q || l.toLowerCase().includes(q)),
+					),
+				};
+			};
 			const out: Record<string, unknown> = {};
 			if (kind !== 'trigger') {
 				out.visibility = {
 					toggle: { Disabled: VisibilityToggle.Disabled, True: VisibilityToggle.True, False: VisibilityToggle.False },
 					encoding: 'data.visibility.selectedOptions = [ { "<label>": 1 }, ... ]',
-					options: Object.values(VisibilityOption),
+					...pick(Object.values(VisibilityOption)),
 				};
 			}
 			if (kind !== 'visibility') {
 				out.trigger = {
 					encoding: 'data.animationTrigger.selectedOptions = { "<label>": true }',
-					options: Object.values(AnimationTrigger).filter((t) => !LEGACY_TRIGGERS.has(t)),
-					legacy: [...LEGACY_TRIGGERS],
-					legacyNote: 'Legacy "value changed" triggers: still work, hidden in the editor. For a new overlay use data.animationTrigger.elementTriggers [{source: "self" | <item id>, when: "change" | "increase" | "decrease"}] instead.',
+					...pick(Object.values(AnimationTrigger).filter((t) => !LEGACY_TRIGGERS.has(t))),
+					legacyNote: 'Legacy "value changed" triggers (still work, hidden in the editor) are not listed. For a new overlay use data.animationTrigger.elementTriggers [{source: "self" | <item id>, when: "change" | "increase" | "decrease"}] instead.',
 					elementTriggers: 'data.animationTrigger.elementTriggers = [{ "source": "self", "when": "change" }] — see describe_element_options (section Animations).',
 				};
 			}

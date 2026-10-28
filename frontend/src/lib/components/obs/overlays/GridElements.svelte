@@ -50,6 +50,7 @@
 	} from './elementCategories';
 	import BingoBoard from './elementRender/BingoBoard.svelte';
 	import IronManRoster from './elementRender/IronManRoster.svelte';
+	import IronMan from './elementRender/IronMan.svelte';
 	import PackCharacter from './elementRender/PackCharacter.svelte';
 	import Striking from './elementRender/Striking.svelte';
 	import Teams from './elementRender/Teams.svelte';
@@ -237,7 +238,11 @@
 			{:else if BINGO_ELEMENTS.has(dataItem.elementId)}
 				<BingoBoard {defaultPreview} {style} session={$bingoSession} />
 			{:else if IRONMAN_ELEMENTS.has(dataItem.elementId)}
-				<IronManRoster {defaultPreview} {style} session={$ironManSession} currentChar={$ironManCurrentChar} />
+				{#if dataItem.elementId === CustomElement.IronManRoster}
+					<IronManRoster {defaultPreview} {style} session={$ironManSession} currentChar={$ironManCurrentChar} />
+				{:else}
+					<IronMan {dataItem} {defaultPreview} {style} session={$ironManSession} currentChar={$ironManCurrentChar} maxIcon={getRelativePixelSize(96, scaleH, scaleW)} />
+				{/if}
 			{/if}
 		</div>
 	{/if}

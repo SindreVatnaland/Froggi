@@ -213,7 +213,9 @@
 </script>
 
 {#if stageId != null}
-	<svg class="w-full h-full" {viewBox} preserveAspectRatio={fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'}>
+	<!-- stroke defaults: otherwise the host element's CSS (Outline: stroke #fff, width 3) is inherited by every
+	     shape without its own stroke — lasers, shields and KO effects got thick white outlines. -->
+	<svg class="w-full h-full" {viewBox} preserveAspectRatio={fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'} stroke="none" stroke-width="1">
 		<g class="-scale-y-100">
 			<g transform={cameraTransform}>
 			{#if showStage}

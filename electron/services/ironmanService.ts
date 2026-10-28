@@ -45,6 +45,8 @@ export class IronManService {
 	private currentGameLocalCharId: number | null = null;
 	private currentGameOppCharId: number | null = null;
 	private currentGameValid = true;
+	/** Carry-over: the last winner SDs down to the stocks they kept; `armed` once the next game starts. */
+	private carry: { playerIndex: number; stocks: number; armed: boolean } | null = null;
 
 	// Solo run tracking
 	private challengeStartTime: number | null = null;
@@ -315,6 +317,7 @@ export class IronManService {
 				: null;
 
 			this.currentGameValid = this.validateCurrentGame();
+			if (this.carry) this.carry.armed = true;
 
 			// Broadcast to frontend so roster grids can highlight the active char
 			this.messageHandler.sendMessage('IronManCurrentChar', {
@@ -328,6 +331,16 @@ export class IronManService {
 			}
 		});
 
+		// Carry-over is pending until the winner is down to the stocks they kept (SDs at the start of the game).
+		this.localEmitter.on('GameFrame', (frame: any) => {
+			if (!this.session || !this.carry?.armed) return;
+			const stocks = frame?.players?.[this.carry.playerIndex]?.post?.stocksRemaining;
+			if (stocks == null || stocks > this.carry.stocks) return;
+			this.carry = null;
+			this.session.pendingCarryStocks = null;
+			this.emitState();
+		});
+
 		this.localEmitter.on('PostGameStats', (game: GameStats | undefined) => {
 			if (!game || !this.session) return;
 			this.processGameEnd(game);
@@ -338,6 +351,7 @@ export class IronManService {
 
 	private startSession(session: IronManSession) {
 		this.session = session;
+		this.carry = null;
 		this.localPlayerIndex = session.localPlayerIndex;
 		this.pendingSettings = null;
 		this.currentGameLocalCharId = null;
@@ -377,6 +391,7 @@ export class IronManService {
 		}
 		this.closePeerConnection();
 		this.session = null;
+		this.carry = null;
 		this.lobby = null;
 		if (this.messageHandler.lobbyGame === 'ironman') this.messageHandler.lobbyGame = null;
 		this.challengeStartTime = null;
@@ -463,6 +478,12 @@ export class IronManService {
 
 		if (variant === 'standard') {
 			this.processStandard(didWin, myFinalStocks, oppFinalStocks);
+			// Carry-over (rule): the winner keeps the stocks they lost → SDs that many at the start of the next game.
+			const winnerIdx = didWin ? myIdx : oppIdx;
+			const kept = didWin ? myFinalStocks : oppFinalStocks;
+			const toSd = this.session.settings.carryOver && winnerIdx != null && kept > 0 ? this.session.settings.stocksPerChar - kept : 0;
+			this.carry = toSd > 0 ? { playerIndex: winnerIdx!, stocks: kept, armed: false } : null;
+			this.session.pendingCarryStocks = toSd > 0 ? toSd : null;
 		} else if (variant === 'full_roster') {
 			this.processFullRoster(didWin);
 		} else if (variant === 'challenge') {
@@ -484,9 +505,6 @@ export class IronManService {
 
 		if (didWin) {
 			mySlot.stocksRemaining = myFinalStocks;
-			this.session.pendingCarryStocks = myFinalStocks < this.session.settings.stocksPerChar
-				? this.session.settings.stocksPerChar - myFinalStocks
-				: 0;
 			// Deplete opponent's char
 			const oppCharId = this.currentGameOppCharId;
 			if (this.session.opponentRoster && oppCharId != null) {
@@ -495,7 +513,6 @@ export class IronManService {
 			}
 		} else {
 			mySlot.depleted = true;
-			this.session.pendingCarryStocks = null;
 			// Update opponent's carry stocks
 			const oppCharId = this.currentGameOppCharId;
 			if (this.session.opponentRoster && oppCharId != null) {

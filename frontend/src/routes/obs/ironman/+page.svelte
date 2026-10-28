@@ -355,7 +355,7 @@
 			<!-- Active game -->
 			{#if pendingCarry && pendingCarry > 0}
 				<div class="carry-banner border-secondary" in:fly={{ y: -8, duration: 200 }}>
-					⚡ Carry stocks: opponent must SD {pendingCarry} time{pendingCarry > 1 ? 's' : ''} before game starts
+					⚡ Carry-over: the last winner SDs down to the stocks they kept at the start of the next game
 				</div>
 			{/if}
 

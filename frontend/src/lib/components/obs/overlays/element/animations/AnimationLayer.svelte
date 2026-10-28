@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { GridContentItem, TriggerAnimation } from '$lib/models/types/overlay';
 	import { SELF, elementTriggerFires, hasTriggerAnimation } from '$lib/utils/elementTriggers';
+	import { Animation } from '$lib/models/enum';
+	import * as easingFunctions from 'svelte/easing';
+	import { onDestroy } from 'svelte';
+	import { startCount, type CountRun } from './elementCount';
 	import { elementValues } from '$lib/utils/store.svelte';
 	import {
 		localEmitter,
@@ -122,7 +126,7 @@
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		_techniqueEvents?: Record<number, TechniqueDetectedPayload | null>,
 	) => {
-		key = updateKeyValue(
+		const next = updateKeyValue(
 			gameFrame,
 			currentPlayer,
 			currentPlayers,
@@ -130,6 +134,7 @@
 			sessionStats,
 			gameScore,
 		);
+		if (next !== key) fire();
 		prevGameFrame = { ...(gameFrame ?? {}) } as FrameEntryType;
 		prevScore = { ...gameScore };
 		prevSettings = { ...gameSettings };
@@ -159,7 +164,58 @@
 		prevElementValues = Object.fromEntries(list.map((t) => [sourceOf(t.source), values[sourceOf(t.source)]]));
 		return fired && !!dataItem && !$isIframe && !$isElectron && hasTriggerAnimation(trigger);
 	};
-	$: if (elementTriggerFired($elementValues)) key = Math.random();
+
+	// A trigger fired: replay the element — or, for a Count animation, count its number to the new value
+	// when that value arrives (utils/countUp.ts; only when old and new are both pure numbers).
+	$: isCount = trigger?.in?.type === Animation.Count;
+	let contentEl: HTMLElement | undefined;
+	let pendingCountUntil = 0;
+	let countRun: CountRun | null = null;
+	const fire = () => {
+		if (isCount) pendingCountUntil = performance.now() + 250;
+		else key = Math.random();
+	};
+	const onValues = (values: Record<string, string>) => {
+		if (elementTriggerFired(values)) fire();
+	};
+	$: onValues($elementValues);
+
+	// Count elements watch their OWN text and start counting the moment it changes — before it is painted
+	// (via the per-frame published value the new number flashed for a frame first). Only Count elements do
+	// this; everything else keeps the per-frame publishing (an observer per element per mutation hung the HUD).
+	const shownText = (el: Element) => (el.textContent ?? '').trim();
+	let ownObserver: MutationObserver | null = null;
+	let lastOwnText: string | null = null;
+	const onOwnText = () => {
+		if (!contentEl) return;
+		const now = shownText(contentEl);
+		// While counting, the count's own watcher follows real changes (retarget); just track what is shown.
+		if (countRun?.running) {
+			lastOwnText = now;
+			return;
+		}
+		if (now === lastOwnText) return;
+		const prev = lastOwnText;
+		lastOwnText = now;
+		if (prev === null || $isIframe || $isElectron) return;
+		const selfFires = (trigger?.elementTriggers ?? []).some((t) => t.source === SELF && elementTriggerFires(t.when, prev, now));
+		if (!selfFires && performance.now() > pendingCountUntil) return;
+		pendingCountUntil = 0;
+		const holder = contentEl.querySelector('[style*="display: contents"]')?.firstElementChild ?? null;
+		const easing = (easingFunctions as unknown as Record<string, (t: number) => number>)[trigger.in.options.easing] ?? ((t: number) => t);
+		countRun = startCount(contentEl, holder, prev, now, Number(trigger.in.options.duration), Number(trigger.in.options.delay ?? 0), easing);
+	};
+	const watchOwn = (el: HTMLElement | undefined, on: boolean) => {
+		ownObserver?.disconnect();
+		ownObserver = null;
+		if (!el || !on) return;
+		lastOwnText = shownText(el);
+		ownObserver = new MutationObserver(onOwnText);
+		ownObserver.observe(el, { subtree: true, childList: true, characterData: true });
+	};
+	$: watchOwn(contentEl, isCount);
+	onDestroy(() => ownObserver?.disconnect());
+	onDestroy(() => countRun?.stop());
 
 	const replay = () => {
 		const tempTrigger = key;
@@ -193,6 +249,7 @@
 {:else}
 	{#key key}
 		<div
+			bind:this={contentEl}
 			class="w-full h-full absolute top-0 left-0"
 			in:animationIn|local
 			out:animationOut|local

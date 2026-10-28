@@ -8,6 +8,8 @@ export enum Animation {
 	Scale = 'scale',
 	Slide = 'slide',
 	Percent = 'percent',
+	/** Trigger animations only: a number counts from its old to its new value (utils/countUp.ts). */
+	Count = 'count',
 }
 
 export enum AutoUpdaterStatus {

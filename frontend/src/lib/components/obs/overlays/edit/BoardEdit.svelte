@@ -64,8 +64,14 @@
 			});
 	}
 
+	// The grid fires `change` every 100 ms while dragging / resizing and once more on release (right after
+	// its `pointerup`). Save only that last one, synchronously (the next update cycle can reset `items`):
+	// saving mid-drag sent each step to the app, and its echo replaced the items while the pointer was
+	// still moving — the box jumped between old and new sizes.
+	let released = false;
 	function updateScene() {
-		if (syncingFromServer) return;
+		if (syncingFromServer || !released) return;
+		released = false;
 		const items = updateItems();
 		updateOverlay(curOverlay, items, selectedLayerIndex, $statsScene);
 	}
@@ -80,10 +86,9 @@
 		overlay: Overlay | undefined,
 		statsScene: LiveStatsScene,
 		layerIndex: number,
-		items: GridContentItem[],
 	) {
 		if (!overlay) return [];
-		items = removeDuplicates(overlay[statsScene]?.layers[layerIndex ?? 0]?.items ?? []);
+		const items = removeDuplicates(overlay[statsScene]?.layers[layerIndex ?? 0]?.items ?? []);
 		items?.forEach((item: GridContentItem) => {
 			item[COL].draggable = true;
 			item[COL].resizable = true;
@@ -92,7 +97,8 @@
 	}
 	$: {
 		syncingFromServer = true;
-		items = updateLiveScene(curOverlay, $statsScene, selectedLayerIndex, items);
+		// Not a dependency on `items`: re-running on every grid update reset the dragged item to the saved state.
+		items = updateLiveScene(curOverlay, $statsScene, selectedLayerIndex);
 		tick().then(() => (syncingFromServer = false));
 	}
 
@@ -165,6 +171,7 @@
 							fastStart={true}
 							on:change={updateScene}
 							on:pointerup={(e) => {
+								released = true;
 								updateSelectedItemId(e.detail.id);
 							}}
 						>

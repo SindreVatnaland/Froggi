@@ -116,7 +116,7 @@
 								isDemo={!!demoItem}
 							>
 								<AnimationStack {dataItem} {boardHeight} {boardWidth} {edit} {preview} {overlayId} isDemo={!!demoItem}>
-									<div style="display: contents" use:elementValue={dataItem.id}>
+									<div style="display: contents" data-item-id={dataItem.id} use:elementValue={dataItem.id}>
 										<GridElements {dataItem} {preview} {designWidth} {designHeight} {overlayId} sceneFont={curScene?.font?.family} />
 									</div>
 								</AnimationStack>

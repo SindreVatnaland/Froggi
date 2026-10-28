@@ -54,6 +54,13 @@
 		Percent Decimal
 	</SelectOption>
 	<SelectOption
+		description="Player 2 Percent as a plain number — 24 (no %), e.g. for a Count animation"
+		value={CustomElement.InGamePlayer2PercentRaw}
+		on:select={select}
+	>
+		Percent Number
+	</SelectOption>
+	<SelectOption
 		description="Player 2 Percent - 24% - Pre Animated"
 		value={CustomElement.InGamePlayer2PercentCustom}
 		on:select={select}

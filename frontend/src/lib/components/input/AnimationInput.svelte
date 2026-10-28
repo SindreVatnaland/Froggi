@@ -10,6 +10,8 @@
 	export let animation: AnimationSettings;
 	export let label: string | undefined = undefined;
 	export let isSceneElementAnimation: boolean = false;
+	/** Trigger "In" animations can count numbers (Count) instead of replaying the element. */
+	export let allowCount: boolean = false;
 
 	const fixAnimationInputDelay = () => {
 		if (!animation?.options) return;
@@ -53,6 +55,9 @@
 						<option value={Animation.FlyAutomatic}>Fly Automatic</option>
 					{/if}
 					<option value={Animation.Slide}>Slide</option>
+					{#if allowCount}
+						<option value={Animation.Count}>Count (numbers)</option>
+					{/if}
 				</Select>
 			</div>
 

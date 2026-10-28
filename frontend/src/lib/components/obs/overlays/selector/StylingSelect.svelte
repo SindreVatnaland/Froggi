@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { IRONMAN_BOX_ELEMENTS, IRONMAN_TEXT_ELEMENTS } from '$lib/utils/elementKind';
 	import { PLAYER_SLOTS } from '$lib/utils/teams';
 	import { BUILTIN_ASSET_PACKS, DEFAULT_ASSET_PACK_ID } from '$lib/models/types/assetPack';
 	import { PACK_CHARACTER_ELEMENTS, STRIKE_CHARACTER_ELEMENTS } from '../elementCategories';
@@ -63,18 +64,20 @@
 
 	$: svgSettings = selectedElementId >= 3200 && selectedElementId <= 3200; // TODO: Add all buttons as svg
 
-	$: percentSettings = selectedElementId >= 1001 && selectedElementId <= 1006;
+	$: percentSettings = (selectedElementId >= 1001 && selectedElementId <= 1006) || (selectedElementId >= 1013 && selectedElementId <= 1015);
 	$: customPercentSettings = selectedElementId >= 1007 && selectedElementId <= 1012;
 
 	$: preAnimatedElement = customPercentSettings;
 
 	const isStringSettings = (elementId: number) => {
-		return (elementId >= 4000 && elementId < 6000) || elementId === CustomElement.CustomString;
+		return (elementId >= 4000 && elementId < 6000) || elementId === CustomElement.CustomString || IRONMAN_TEXT_ELEMENTS.has(elementId);
 	};
 	// Plain stage images for striking overlays (7600–7699) style like images.
 	const isStrikeStageImage = (elementId: number) => elementId >= 7600 && elementId < 7700;
 	const isBoxSettings = (elementId: number) => {
-		return (elementId >= 7000 && elementId < 8000 && !isStrikeStageImage(elementId)) || elementId === CustomElement.CustomBox;
+		return (elementId >= 7000 && elementId < 8000 && !isStrikeStageImage(elementId))
+			|| elementId === CustomElement.CustomBox
+			|| IRONMAN_BOX_ELEMENTS.has(elementId);
 	};
 	const isImageSettings = (elementId: number) => {
 		return (elementId >= 6000 && elementId < 7000)
@@ -621,12 +624,12 @@
 						{/if}
 						<div class="w-full flex gap-4" in:fly={{ duration: 250, x: 100 }}>
 							{#if animIndex === 0}
-								<AnimationInput bind:animation={payload.animationTrigger.in} label="In" max={ELEMENT_TRANSITION_LIMIT} />
+								<AnimationInput bind:animation={payload.animationTrigger.in} label="In" max={ELEMENT_TRANSITION_LIMIT} allowCount />
 								<AnimationInput bind:animation={payload.animationTrigger.out} label="Out" max={ELEMENT_TRANSITION_LIMIT} />
 							{:else}
 								{#each payload.extraAnimationTriggers ?? [] as extra, i}
 									{#if i + 1 === animIndex}
-										<AnimationInput bind:animation={extra.in} label="In" max={ELEMENT_TRANSITION_LIMIT} />
+										<AnimationInput bind:animation={extra.in} label="In" max={ELEMENT_TRANSITION_LIMIT} allowCount />
 										<AnimationInput bind:animation={extra.out} label="Out" max={ELEMENT_TRANSITION_LIMIT} />
 									{/if}
 								{/each}

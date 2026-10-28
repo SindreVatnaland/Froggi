@@ -313,6 +313,13 @@ export enum VisibilityOption {
     StrikePSStruckState = "Strike: Pokemon Stadium Struck Or Banned",
     StrikePSDsr = "Strike: Pokemon Stadium DSR Blocked",
     StrikePSPicked = "Strike: Pokemon Stadium Picked",
+    IronManActive = "Iron Man Active",
+    IronManModeStandard = "Iron Man Mode Standard",
+    IronManModeFullRoster = "Iron Man Mode Full Roster",
+    IronManModeChallenge = "Iron Man Mode Challenge",
+    IronManPlayer1Won = "Iron Man Player 1 Won",
+    IronManPlayer2Won = "Iron Man Player 2 Won",
+    IronManCarryOverPending = "Iron Man Carry-over Pending",
 }
 
 export enum VisibilityCategory {
@@ -335,6 +342,7 @@ export enum VisibilityCategory {
     RankStats = "Rank Stats",
     RankPrediction = "Rank Prediction",
     StageStriking = "Stage Striking",
+    IronMan = "Iron Man",
 }
 
 export enum AnimationTriggerCategory {

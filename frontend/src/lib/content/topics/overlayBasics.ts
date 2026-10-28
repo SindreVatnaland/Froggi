@@ -16,6 +16,7 @@ export const overlayBasicsTopics: ContentTopic[] = [
 					'Game event triggers stay: e.g. "Player1 Percent Increase" makes a character render shake on damage, plus stock loss, countdown, techniques and stage striking events.',
 					'Animation 1, 2, … (+ Add): each animation has its own in/out and its own triggers, and they can play together (a pop on the element\'s own change + a shake on damage). A trigger can be used by one animation of the element only.',
 					'New elements start with "This element changes" — nothing happens until you pick an animation type.',
+					'Count (numbers): pick "Count (numbers)" as the In animation and the number counts from the old value to the new one over the duration, with the easing you choose — e.g. a percent going 42% → 57%. It only counts when both values are plain numbers (decimals, 1,500 and a trailing % are fine); text just switches. "Percent Number" elements show the percent without the %.',
 					'Problems are marked in the editor: an element pointing at something that does not exist — a Video whose key no enabled flow sets, or a trigger watching a deleted element (e.g. after importing someone\'s overlay) — gets a red outline, a count on its layer and a note at the top of its settings.',
 					'Older overlays keep working: old "value changed" triggers (tag, score, rating, rank, session…) are hidden in the picker; where the element itself shows that value they were converted to "This element changes", anywhere else they stay and are marked legacy.',
 				],

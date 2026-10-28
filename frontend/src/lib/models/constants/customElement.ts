@@ -85,6 +85,10 @@ export enum CustomElement {
     InGameCurrentPlayerPercentDecimalCustom = 1010,
     InGamePlayer1PercentDecimalCustom = 1011,
     InGamePlayer2PercentDecimalCustom = 1012,
+    /** The percent as a plain number (no %), e.g. for a Count animation or your own suffix */
+    InGameCurrentPlayerPercentRaw = 1013,
+    InGamePlayer1PercentRaw = 1014,
+    InGamePlayer2PercentRaw = 1015,
 
     // Custom Image
     CustomImage = 2000,
@@ -921,6 +925,14 @@ export enum CustomElement {
 
     // Iron Man
     IronManRoster = 9010,
+    IronManPlayer1Roster = 9011,
+    IronManPlayer2Roster = 9012,
+    IronManPlayer1ProgressBar = 9013,
+    IronManPlayer2ProgressBar = 9014,
+    IronManPlayer1CharacterTotal = 9015,
+    IronManPlayer2CharacterTotal = 9016,
+    IronManPlayer1CharactersRemaining = 9017,
+    IronManPlayer2CharactersRemaining = 9018,
 
     // Rank Graph
     SlippiRankCurrentPlayerRatingGraph = 9100,

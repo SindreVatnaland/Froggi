@@ -53,6 +53,8 @@ export interface IronManSettings {
 	charOrder: IronManCharOrder;
 	charSelection: IronManCharSelection;
 	randomSync: IronManRandomSync;
+	/** Standard: the winner keeps the stocks they lost — next game they SD that many first. Off when unset. */
+	carryOver?: boolean;
 }
 
 export interface IronManSession {
@@ -66,7 +68,7 @@ export interface IronManSession {
 	opponentConnected: boolean;
 	startedAt: number;
 	winner: 'local' | 'opponent' | null;
-	/** For carry-over: how many stocks winner must SD at start of next game */
+	/** Carry-over: stocks the last winner still has to SD (null = nothing pending). Cleared once they're down. */
 	pendingCarryStocks: number | null;
 }
 

@@ -32,6 +32,8 @@
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimal}
 	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={1} {player} />
+{:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentRaw}
+	<PlayerPercent {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} raw />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentCustom}
 	<PlayerPercentCustom {style} {dataItem} {defaultPreview} numberOfDecimals={0} {player} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer1PercentDecimalCustom}

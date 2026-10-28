@@ -8,7 +8,18 @@ export type ElementKind = 'text' | 'image' | 'box';
  * runtime-agnostic lib) so the editor UI and the MCP schema tools share one source of truth instead
  * of duplicating the ranges.
  */
+/** Iron Man counts are text; its progress bars are boxes (background / border around the bar). */
+export const IRONMAN_TEXT_ELEMENTS = new Set<number>([
+	CustomElement.IronManPlayer1CharacterTotal,
+	CustomElement.IronManPlayer2CharacterTotal,
+	CustomElement.IronManPlayer1CharactersRemaining,
+	CustomElement.IronManPlayer2CharactersRemaining,
+]);
+export const IRONMAN_BOX_ELEMENTS = new Set<number>([CustomElement.IronManPlayer1ProgressBar, CustomElement.IronManPlayer2ProgressBar]);
+
 export const getElementKind = (elementId: number): ElementKind | undefined => {
+	if (IRONMAN_TEXT_ELEMENTS.has(elementId)) return 'text';
+	if (IRONMAN_BOX_ELEMENTS.has(elementId)) return 'box';
 	if ((elementId >= 1000 && elementId < 2000) || (elementId >= 4000 && elementId < 6000) || elementId === CustomElement.CustomString)
 		return 'text';
 	if (elementId >= 7600 && elementId < 7700) return 'image'; // plain stage images (stage striking)

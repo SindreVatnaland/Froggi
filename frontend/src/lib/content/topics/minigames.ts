@@ -34,6 +34,10 @@ export const minigamesTopics: ContentTopic[] = [
 				type: 'paragraph',
 				text: 'Each player works through a character roster. Win a game with your current character and you advance to the next one; lose, and that character is out. The exact win condition (clear the full roster first, deplete the opponent\'s roster, etc.) depends on the track/mode selected for the lobby.',
 			},
+			{
+				type: 'paragraph',
+				text: 'Carry-over (Standard, off by default — the host turns it on in the setup): the winner keeps the stocks they lost, so at the start of the next game they SD down to the stocks they kept. The overlay condition "Iron Man Carry-over Pending" is on from the win until they have.',
+			},
 		],
 	},
 	{
@@ -54,7 +58,7 @@ export const minigamesTopics: ContentTopic[] = [
 			},
 			{
 				type: 'note',
-				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The host finds the Share Code (and a join link) in the lobby; the friend pastes it in Minigames → Join. To show the game on stream, add the "Game Preview" URL from the Minigames page as an OBS browser source (800×1100). You can also add the Bingo Board or Iron Man Roster element (Add Element → Bingo / Iron Man) to a custom overlay and use it in OBS or inject it into Dolphin (Windows). The AI assistant can explain or help set up ngrok and the OBS source.',
+				text: 'Hosting remotely requires ngrok (free account) running on the HOST\'s machine — connect codes are built from the ngrok URL. Guests need nothing extra: just Froggi and the host\'s code or join link. The host finds the Share Code (and a join link) in the lobby; the friend pastes it in Minigames → Join. To show the game on stream, add the "Game Preview" URL from the Minigames page as an OBS browser source (800×1100). You can also add the Bingo Board or the Iron Man elements (Add Element → Bingo / Iron Man: Player 1 / Player 2 roster, progress bar, character total, characters remaining; conditions in the Iron Man group: active, mode, who won, carry-over pending) to a custom overlay and use it in OBS or inject it into Dolphin (Windows). The AI assistant can explain or help set up ngrok and the OBS source.',
 			},
 		],
 	},
