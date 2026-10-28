@@ -1,5 +1,6 @@
 import { isSetComplete } from '../../frontend/src/lib/utils/gamePredicates';
 import "reflect-metadata";
+import fs from "fs";
 import { ElectronGamesStore } from '../../electron/services/store/storeGames';
 import { StatsDisplay } from '../../electron/services/statsDisplay';
 import { GameEndType, GameStartType, SlippiGame, SlpParser, SlpStream } from '@slippi/slippi-js';
@@ -116,6 +117,9 @@ describe('ElectronGamesStore', () => {
 
         storeSettings = new ElectronSettingsStore(log, "", store, eventEmitter as TypedEmitter);
         storeSettings.getCurrentPlayerConnectCode = () => connectCode
+        // Pin the replay folder to the sample games: otherwise this machine's own Dolphin replay folder is used
+        // when it exists (stored paths then come out absolute on a dev Mac but relative on CI).
+        storeSettings.getReplayRootPath = () => `${__dirname}/../sample-games`
         storeSettings.getSlippiLauncherSettings = (): SlippiLauncherSettings => {
             return {
                 rootSlpPath: `${__dirname}/../sample-games`,
@@ -199,7 +203,11 @@ describe('ElectronGamesStore', () => {
             expect(isSetComplete(electronGamesStore.getGameScore(), storeLiveStats.getBestOf())).toBe(gameTest.expectedScene !== LiveStatsScene.PostGame);
             expect(firstRecentGame?.settings?.matchInfo.mode).toStrictEqual(gameTest.expectedMode);
             // Every stored game keeps a reference to its replay file (highlights point into it).
-            for (const g of recentGames ?? []) expect(g.replayPath).toMatch(/sample-games\/.+\.slp$/);
+            // Inside the replay folder → stored relative to it (e.g. "ranked-set-1/Replay 1 [W].slp").
+            for (const g of recentGames ?? []) {
+                expect(g.replayPath).toMatch(/^[^/]+\/.+\.slp$/);
+                expect(fs.existsSync(`${__dirname}/../sample-games/${g.replayPath}`)).toBe(true);
+            }
             if (currentGameSettings.matchInfo?.matchId) {
                 expect(currentGameSettings.matchInfo?.matchId).toStrictEqual(lastRecentGame?.settings?.matchInfo?.matchId);
             }
