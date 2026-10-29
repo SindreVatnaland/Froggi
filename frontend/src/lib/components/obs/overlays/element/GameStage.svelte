@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import type { Stage } from '@slippi/slippi-js';
+	import { type Stage } from '@slippi/slippi-js';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean = false;

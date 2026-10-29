@@ -1,4 +1,4 @@
-import type { FrameEntryType } from '@slippi/slippi-js';
+import type { FrameEntryType } from '../models/types/slippiTypes';
 import { playerKey, type TeamsPlayer } from './teams';
 
 /**

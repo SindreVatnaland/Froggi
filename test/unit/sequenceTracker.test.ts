@@ -1,15 +1,17 @@
 import path from 'path';
-import { SlippiGame, type FrameEntryType } from '@slippi/slippi-js';
+import { SlippiGame } from '@slippi/slippi-js/node';
+import type { FrameEntryType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { SequenceTracker, type SequenceEvent } from '../../electron/utils/sequenceTracker';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 /** Play a replay frame by frame through the tracker, as Froggi does live. */
 const play = (file: string) => {
 	const game = new SlippiGame(path.join(__dirname, '../sample-games', file));
-	const frames = game.getFrames();
+	const frames = nulled(game.getFrames());
 	let clock = 0;
 	const events: SequenceEvent[] = [];
 	const tracker = new SequenceTracker((e) => events.push(e), () => clock);
-	tracker.start(game.getSettings()!);
+	tracker.start(nulled(game.getSettings())!);
 	const numbers = Object.keys(frames).map(Number).sort((a, b) => a - b);
 	for (const n of numbers) {
 		clock = 1_000_000 + (n * 1000) / 60;

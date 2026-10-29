@@ -1,5 +1,5 @@
 import { VisibilityOption, VisibilityToggle, type SelectedVisibilityCondition } from '../models/types/animationOption';
-import type { FrameEntryType, PreFrameUpdateType } from '@slippi/slippi-js';
+import type { FrameEntryType, PreFrameUpdateType } from '../models/types/slippiTypes';
 import { getComboCount, getOffStageZone, hasStocksRemaining, isPlayerAlive } from './gamePredicates';
 
 /**

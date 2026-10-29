@@ -7,7 +7,7 @@
 	import CurrentPlayerController from './InGame/CurrentPlayerController.svelte';
 	import Player1Controller from './InGame/Player1Controller.svelte';
 	import Player2Controller from './InGame/Player2Controller.svelte';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../models/types/slippiTypes';
 	import { CurrentPlayer, GameStartTypeExtended, Player } from '$lib/models/types/slippiData';
 
 	export let dataItem: GridContentItem;

@@ -1,11 +1,12 @@
 import path from 'path';
-import { SlippiGame } from '@slippi/slippi-js';
+import { SlippiGame } from '@slippi/slippi-js/node';
 import { analyzeMatch } from '../../electron/utils/analyzeMatch';
 import type { GameStats } from '../../frontend/src/lib/models/types/slippiData';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 const load = (dir: string, file: string) => {
 	const slp = new SlippiGame(path.join(__dirname, '../sample-games', dir, file));
-	return { settings: slp.getSettings(), postGameStats: slp.getStats() } as unknown as GameStats;
+	return { settings: nulled(slp.getSettings()), postGameStats: nulled(slp.getStats()) } as unknown as GameStats;
 };
 
 describe('analyzeMatch', () => {

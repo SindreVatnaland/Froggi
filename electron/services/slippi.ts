@@ -1,11 +1,4 @@
-import {
-	DolphinConnection,
-	Ports,
-	ConnectionEvent,
-	DolphinMessageType,
-	ConnectionStatus,
-	SlpStream,
-} from '@slippi/slippi-js';
+import { DolphinConnection, Ports, ConnectionEvent, DolphinMessageType, ConnectionStatus, SlpStream } from '@slippi/slippi-js/node';
 import { inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { ConnectionState, NotificationType } from '../../frontend/src/lib/models/enum';
@@ -63,15 +56,16 @@ export class SlippiJs {
 			}
 		});
 
-		this.dolphinConnection.on(ConnectionEvent.MESSAGE, (message) => {
+		this.dolphinConnection.on(ConnectionEvent.MESSAGE, (raw) => {
+			const message = raw as { type: DolphinMessageType; payload?: string };
 			switch (message.type) {
 				case DolphinMessageType.CONNECT_REPLY:
 					this.log.info('Connected: ', message);
 					break;
 				case DolphinMessageType.GAME_EVENT:
 					{
-						const decoded = Buffer.from(message.payload, 'base64');
-						this.slpStream.write(decoded);
+						const decoded = Buffer.from(message.payload ?? '', 'base64');
+						this.slpStream.process(decoded);
 						break;
 					}
 			}
@@ -80,7 +74,7 @@ export class SlippiJs {
 		this.dolphinConnection.on(ConnectionEvent.ERROR, (err) => {
 			// Log the error messages we get from Dolphin
 			this.log.error('Dolphin connection error', err);
-			if (err.message.includes('Unexpected game data cursor')) {
+			if (String(err instanceof Error ? err.message : err).includes('Unexpected game data cursor')) {
 				this.messageHandler.sendMessage('Notification', "Dolphin connection seems unstable, consider restarting.", NotificationType.Danger, 5000);
 			}
 		});

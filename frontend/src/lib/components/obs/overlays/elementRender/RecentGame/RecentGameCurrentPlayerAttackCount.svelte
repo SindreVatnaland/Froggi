@@ -3,7 +3,7 @@
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import { isNil } from 'lodash';
-	import { StatsType } from '@slippi/slippi-js';
+	import type { StatsType } from '../../../../../models/types/slippiTypes';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;

@@ -1,16 +1,8 @@
-import {
-	SlpParserEvent,
-	SlippiGame,
-	SlpParser,
-	SlpStream,
-	FrameEntryType,
-	GameEndType,
-	GameStartType,
-	PlayerType,
-	GameEndMethod,
-	SlpStreamEvent,
-	SlpRawEventPayload,
-} from '@slippi/slippi-js';
+import { SlpParserEvent, SlpParser, GameEndMethod, SlpCommandEventPayload as SlpRawEventPayload } from '@slippi/slippi-js';
+import type { FrameEntryType as SlpFrameEntryType, GameEndType as SlpGameEndType } from '@slippi/slippi-js';
+import { SlippiGame, SlpStream, SlpStreamEvent } from '@slippi/slippi-js/node';
+import type { FrameEntryType, GameEndType, GameStartType, PlayerType } from '../../frontend/src/lib/models/types/slippiTypes';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 import type { ElectronLog } from 'electron-log';
 import { delay, inject, singleton } from 'tsyringe';
 import { Api } from './api';
@@ -144,16 +136,17 @@ export class StatsDisplay {
 				return;
 			}
 			if (event.command === Command.GAME_START) {
-				const gameSettings = this.slpParser.getSettings();
+				const gameSettings = nulled(this.slpParser.getSettings());
 				if (!gameSettings) return;
 				this.handleUndefinedPlayers(gameSettings);
 				await this.handleGameStart(gameSettings);
 			}
 		});
 
-		this.slpParser.on(SlpParserEvent.END, async (gameEnd: GameEndType) => {
-			const settings = this.slpParser.getSettings();
-			const latestFrame = this.slpParser.getLatestFrame();
+		this.slpParser.on(SlpParserEvent.END, async (rawGameEnd: SlpGameEndType) => {
+			const gameEnd = nulled(rawGameEnd);
+			const settings = nulled(this.slpParser.getSettings());
+			const latestFrame = nulled(this.slpParser.getLatestFrame());
 			if (isNil(settings) || isNil(latestFrame) || isNil(gameEnd)) return;
 			await this.handleGameEnd(gameEnd, latestFrame, settings);
 		});
@@ -161,8 +154,8 @@ export class StatsDisplay {
 		this.slpParser.on(
 			SlpParserEvent.FRAME,
 			debounce(
-				(frameEntry: FrameEntryType) => {
-					this.handleGameFrame(frameEntry);
+				(frameEntry: SlpFrameEntryType) => {
+					this.handleGameFrame(nulled(frameEntry));
 				},
 				2
 			)
@@ -229,7 +222,7 @@ export class StatsDisplay {
 		const previousGameSettings = recentGames.at(-1)?.settings;
 		const replay = await retryFunctionAsync(5, () => this.findGameFromSettings(settings));
 		this.log.debug("Replay:", replay);
-		const replaySettings = replay?.getSettings();
+		const replaySettings = nulled(replay?.getSettings());
 
 		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);
 		if (isReplay && replaySettings?.matchInfo) {
@@ -605,7 +598,7 @@ export class StatsDisplay {
 		const files = await this.getGameFiles();
 		if (!files || !files.length) return;
 		const file = files.find((file) => {
-			const fileSettings = new SlippiGame(file).getSettings();
+			const fileSettings = nulled(new SlippiGame(file).getSettings());
 			return matchId
 				? (
 					fileSettings?.matchInfo?.matchId === matchId &&
@@ -657,11 +650,11 @@ export class StatsDisplay {
 		gameEnd: GameEndType | undefined = undefined,
 	): GameStats | undefined {
 		if (!game) return;
-		const settings = game.getSettings();
+		const settings = nulled(game.getSettings());
 		const matchId = settings?.matchInfo?.matchId;
 		const gameStats = {
-			gameEnd: gameEnd ?? game?.getGameEnd(),
-			lastFrame: game.getLatestFrame(),
+			gameEnd: gameEnd ?? nulled(game.getGameEnd()),
+			lastFrame: nulled(game.getLatestFrame()),
 			postGameStats: this.enrichPostGameStats(game),
 			settings: {
 				...settings,
@@ -690,13 +683,13 @@ export class StatsDisplay {
 
 	private enrichPostGameStats(game: SlippiGame | null): StatsTypeExtended | null {
 		if (!game) return null;
-		const stats = game.getStats();
+		const stats = nulled(game.getStats());
 		if (!stats) return null;
 
-		const settings = game.getSettings();
+		const settings = nulled(game.getSettings());
 		const stageId = settings?.stageId ?? null;
 		const stageData = stageId != null ? (STAGE_DATA[stageId] ?? null) : null;
-		const frames = stageData ? game.getFrames() : null;
+		const frames = stageData ? nulled(game.getFrames()) : null;
 		const players = settings?.players ?? [];
 
 		const overall: OverallTypeExtended[] = (stats.overall ?? []).map(playerOverall => {
@@ -732,8 +725,8 @@ export class StatsDisplay {
 			this.messageHandler.sendMessage('Notification', 'No replay files found. Configure Slippi path in settings.', NotificationType.Warning, 3000);
 			return;
 		}
-		const settings = game.getSettings() as GameStartTypeExtended;
-		const frames = game.getFrames()
+		const settings = nulled(game.getSettings()) as GameStartTypeExtended | null;
+		const frames = nulled(game.getFrames());
 		if (!settings || !frames) return;
 		settings.isSimulated = true;
 		this.stopPauseInterval();
@@ -754,8 +747,8 @@ export class StatsDisplay {
 			if (err instanceof Error && err.message === 'Simulation canceled') return;
 			throw err;
 		}
-		const gameEnd = game.getGameEnd();
-		const latestFrame = game.getLatestFrame();
+		const gameEnd = nulled(game.getGameEnd());
+		const latestFrame = nulled(game.getLatestFrame());
 		if (!gameEnd) return;
 		await this.handleGameEnd(gameEnd, latestFrame, settings);
 	}
@@ -765,9 +758,9 @@ export class StatsDisplay {
 		if (liveStatsScene === LiveStatsScene.RankChange) return;
 		const game = await this.getRecentReplay();
 		if (!game) return;
-		const gameEnd = game.getGameEnd();
-		const latestFrame = game.getLatestFrame();
-		const settings = game.getSettings() as GameStartTypeExtended;
+		const gameEnd = nulled(game.getGameEnd());
+		const latestFrame = nulled(game.getLatestFrame());
+		const settings = nulled(game.getSettings()) as GameStartTypeExtended | null;
 		if (!gameEnd || !settings) return;
 		settings.isSimulated = true;
 		await this.handleGameEnd(gameEnd, latestFrame, settings);
@@ -862,7 +855,7 @@ export class StatsDisplay {
 			const keys = assignKeys(game.settings.players, !!game.settings.isTeams, games.at(-1)?.settings?.players);
 			game.settings.players = game.settings.players.map((p) => (p ? ({ ...p, froggiKey: keys[p.playerIndex] ?? null } as typeof p) : p));
 			games.push(game);
-			fight.push(fightStatsFromFrames(game.settings.players, !!game.settings.isTeams, slp.getFrames()));
+			fight.push(fightStatsFromFrames(game.settings.players, !!game.settings.isTeams, nulled(slp.getFrames())));
 		}
 		if (!games.length) return;
 		// The host chose which side is Player/Team 1 when picking the games.

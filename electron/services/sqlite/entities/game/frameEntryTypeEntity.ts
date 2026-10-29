@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { FrameEntryType, ItemUpdateType, PostFrameUpdateType, PreFrameUpdateType } from "@slippi/slippi-js";
+import type { FrameEntryType, ItemUpdateType, PostFrameUpdateType, PreFrameUpdateType } from '../../../../../frontend/src/lib/models/types/slippiTypes';
 import { GameStatsEntity } from "./gameStatsEntity";
 import { FrameStartTypeEntity } from "./frameStartTypeEntity";
 
@@ -13,7 +13,7 @@ export class FrameEntryTypeEntity implements FrameEntryType {
 
   @OneToOne(() => FrameStartTypeEntity, { cascade: true, onDelete: "CASCADE", eager: true })
   @JoinColumn()
-  start: FrameStartTypeEntity | undefined;
+  start?: FrameStartTypeEntity | null;
 
   @Column({ type: "simple-json", nullable: true })
   players: { [playerIndex: number]: { pre: PreFrameUpdateType; post: PostFrameUpdateType; } | null; };
@@ -22,7 +22,7 @@ export class FrameEntryTypeEntity implements FrameEntryType {
   followers: { [playerIndex: number]: { pre: PreFrameUpdateType; post: PostFrameUpdateType; } | null; };
 
   @Column({ type: "simple-json", nullable: true })
-  items: ItemUpdateType[] | undefined;
+  items?: ItemUpdateType[] | null;
 
   @OneToOne(() => GameStatsEntity, gameStats => gameStats.lastFrame)
   gameStats: GameStatsEntity | null;

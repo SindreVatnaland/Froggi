@@ -1,7 +1,8 @@
 import path from 'path';
-import { SlippiGame } from '@slippi/slippi-js';
+import { SlippiGame } from '@slippi/slippi-js/node';
 import { getTeamWinnerIndex, isLighterTeammate, orderTeams, playersForSlot, slotOrder, teamReference } from '../../frontend/src/lib/utils/teams';
 import type { GameStats } from '../../frontend/src/lib/models/types/slippiData';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 const p = (playerIndex: number, teamId: number, connectCode = '') => ({ playerIndex, port: playerIndex + 1, teamId, connectCode });
 
@@ -69,8 +70,8 @@ describe('teams: winner', () => {
 
 	it('the sample doubles replay: red (Fox + Fox, ports 2 + 3 = Team 2) wins', () => {
 		const slp = new SlippiGame(path.join(__dirname, '../sample-games/direct-doubles-set-1/Replay 1 [W].slp'));
-		const settings = slp.getSettings();
-		const stats = { settings, gameEnd: slp.getGameEnd(), lastFrame: slp.getLatestFrame() } as unknown as GameStats;
+		const settings = nulled(slp.getSettings());
+		const stats = { settings, gameEnd: nulled(slp.getGameEnd()), lastFrame: nulled(slp.getLatestFrame()) } as unknown as GameStats;
 		const teams = orderTeams(settings?.players ?? []);
 		expect(teams[0].color).toBe('blue');
 		expect(getTeamWinnerIndex(stats)).toBe(1);

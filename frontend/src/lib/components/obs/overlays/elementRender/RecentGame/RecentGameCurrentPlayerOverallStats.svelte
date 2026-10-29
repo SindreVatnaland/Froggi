@@ -4,7 +4,7 @@
 	import { currentPlayer, postGame } from '$lib/utils/store.svelte';
 	import TextElement from '$lib/components/obs/overlays/element/TextElement.svelte';
 	import { isNil } from 'lodash';
-	import { StatsType } from '@slippi/slippi-js';
+	import type { StatsType } from '../../../../../models/types/slippiTypes';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;

@@ -2,7 +2,7 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
-import { FrameEntryType, GameStartType } from '@slippi/slippi-js';
+import type { FrameEntryType, GameStartType } from '../../../frontend/src/lib/models/types/slippiTypes';
 import { BestOf, InGameState, LiveStatsScene } from '../../../frontend/src/lib/models/enum';
 import {
 	GameStartMode,

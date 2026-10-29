@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../models/types/slippiTypes';
 	import { secondsLeft, winChances, type SideState } from '$lib/utils/winProbability';
 	import { liveFightStats } from '$lib/utils/store.svelte';
-	import type { GameStartType } from '@slippi/slippi-js';
+	import type { GameStartType } from '../../../../models/types/slippiTypes';
 	import { WIN_CHANCE_ELEMENTS } from '../elementCategories';
 	import TextElement from '../element/TextElement.svelte';
 

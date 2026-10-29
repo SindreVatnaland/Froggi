@@ -1,5 +1,5 @@
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { FrameStartType } from "@slippi/slippi-js";
+import type { FrameStartType } from '../../../../../frontend/src/lib/models/types/slippiTypes';
 import { FrameEntryTypeEntity } from "./frameEntryTypeEntity";
 
 @Entity()

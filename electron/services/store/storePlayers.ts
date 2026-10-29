@@ -2,7 +2,7 @@ import type { Player, RankedNetplayProfile } from '../../../frontend/src/lib/mod
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
 import { MessageHandler } from '../messageHandler';
-import { PlayerType } from '@slippi/slippi-js';
+import type { PlayerType } from '../../../frontend/src/lib/models/types/slippiTypes';
 import { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 import { isNil } from 'lodash';
 import { createPlayer } from '../../utils/playerHelp';

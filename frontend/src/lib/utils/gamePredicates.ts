@@ -1,6 +1,6 @@
 import { STAGE_DATA, Stage } from "../../lib/models/constants/stageData";
 import type { GameStartMode, GameStats, Player } from "../../lib/models/types/slippiData";
-import type { GameEndType, GameStartType, PostFrameUpdateType } from "@slippi/slippi-js";
+import type { GameEndType, GameStartType, PostFrameUpdateType } from '../models/types/slippiTypes';
 import { isNil } from "lodash";
 import { getTeamWinnerIndex, setReference } from "./teams";
 

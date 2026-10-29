@@ -9,11 +9,7 @@
 	import { STAGE_DATA, Stage } from '$lib/models/constants/stageData';
 	import { Character } from '$lib/models/enum';
 	import { CHARACTERS_EXTERNAL_INTERNAL } from '$lib/models/constants/characterData';
-	import {
-		PlayerType,
-		PostFrameUpdateType,
-		PreFrameUpdateType,
-	} from '@slippi/slippi-js/dist/types';
+	import type { PlayerType, PostFrameUpdateType, PreFrameUpdateType } from '../../../models/types/slippiTypes';
 	import GameStage from './GameStage.svelte';
 	import CharacterIcon from './CharacterIcon.svelte';
 	import Select from '$lib/components/input/Select.svelte';

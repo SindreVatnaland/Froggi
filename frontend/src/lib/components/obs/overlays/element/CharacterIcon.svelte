@@ -4,7 +4,7 @@
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Character } from '$lib/models/enum';
 	import { isNil } from 'lodash';
-	import { PlayerType } from '@slippi/slippi-js';
+	import type { PlayerType } from '../../../../models/types/slippiTypes';
 	import { gameSettings, gameState, postGame } from '$lib/utils/store.svelte';
 	import { isLighterTeammate } from '$lib/utils/teams';
 

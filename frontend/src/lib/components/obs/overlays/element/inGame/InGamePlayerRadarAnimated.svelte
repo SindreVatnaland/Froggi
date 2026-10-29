@@ -4,7 +4,7 @@
 	 * character renders + projectiles (SlippiLab-style), in place of the dot radar.
 	 * Driven by the live frame/settings; the editor preview plays the demo clip.
 	 */
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { GameStartTypeExtended } from '$lib/models/types/slippiData';
 	import GameStateRender from '$lib/components/viewer/GameStateRender.svelte';

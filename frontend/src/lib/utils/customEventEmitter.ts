@@ -33,7 +33,7 @@ import type {
 } from '../models/types/slippiData';
 import type { RpsChoice, StrikeState } from '../models/types/stageStriking';
 import type { Flow } from '../models/types/flow';
-import type { FrameEntryType } from '@slippi/slippi-js';
+import type { FrameEntryType } from '../models/types/slippiTypes';
 import localEmitter from 'eventemitter2';
 import { LogType } from 'vite';
 import { Froggi } from '../models/types/froggiConfigTypes';
@@ -260,7 +260,7 @@ export interface MessageEvents {
 	StrikeSetName: (player: 1 | 2, name: string, token?: string) => void;
 	/** Electron-internal: a set was started from the Dashboard (flows trigger "Set starts"). */
 	/** A game ended but its replay was not found (no stats) — flows still get "Game ends". */
-	GameEndWithoutReplay: (gameEnd: import('@slippi/slippi-js').GameEndType) => void;
+	GameEndWithoutReplay: (gameEnd: import('../models/types/slippiTypes').GameEndType) => void;
 	/** Electron-internal: a player did a striking action on their phone (flows trigger). */
 	/** Something happened in stage striking (a player's choice, or event "change") — flows' "Stage Striking" trigger. */
 	StrikePlayerAction: (action: { event: import('../models/types/flow').StrikeEvent; player: 1 | 2 | null; playerName: string | null; phase: string; stage?: string | null; character?: string | null; rps?: string | null }) => void;

@@ -31,7 +31,7 @@
 	import { matchStatsVisibilityOption } from './visibilityConditions/MatchStatsVisibilityOptions.svelte';
 	import { rankVisibilityOption } from './visibilityConditions/RankVisibilityOptions.svelte';
 	import { InGameState } from '$lib/models/enum';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import {
 		CurrentPlayer,
 		GameStartTypeExtended,

@@ -11,7 +11,7 @@
 		isPlayerAlive,
 		isPlayerEnteringOnHalo,
 	} from '$lib/utils/gamePredicates';
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../../models/types/slippiTypes';
 	import { isNil } from 'lodash';
 
 	export const inGamePlayer1VisibilityOption = (

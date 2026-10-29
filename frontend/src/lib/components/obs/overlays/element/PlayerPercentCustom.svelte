@@ -3,7 +3,7 @@
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Player } from '$lib/models/types/slippiData';
 	import { gameFrame, gameState, localEmitter } from '$lib/utils/store.svelte';
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../models/types/slippiTypes';
 	import { createAnimation } from './animations/Animations.svelte';
 	import { onMount } from 'svelte';
 	import type { TransitionConfig } from 'svelte/transition';

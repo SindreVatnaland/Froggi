@@ -3,7 +3,7 @@
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { Player } from '$lib/models/types/slippiData';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import PlayerPercent from '../../element/PlayerPercent.svelte';
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
 	import TextElement from '../../element/TextElement.svelte';

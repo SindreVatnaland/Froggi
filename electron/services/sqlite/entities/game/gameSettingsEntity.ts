@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { GameMode, ItemSpawnType, Language, TimerType } from "@slippi/slippi-js";
+import { GameMode, Language, TimerType } from '@slippi/slippi-js';
+import type { ItemSpawnType } from '@slippi/slippi-js';
 import { GameStartTypeExtended } from "../../../../../frontend/src/lib/models/types/slippiData";
 import { PlayerTypeEntity } from "../player/playerEntity";
 import { MatchInfoEntity } from "./matchInfoEntity";

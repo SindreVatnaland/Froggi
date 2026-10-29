@@ -1,6 +1,7 @@
 import path from 'path';
-import { SlippiGame } from '@slippi/slippi-js';
+import { SlippiGame } from '@slippi/slippi-js/node';
 import { FightStatsTracker, avgDeathPercent, avgKoPercent, sumFightStats } from '../../frontend/src/lib/utils/fightStats';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 type P = [stocks: number, percent: number, lastHitBy?: number];
 const frame = (players: Record<number, P>) =>
@@ -81,10 +82,10 @@ describe('fight stats', () => {
 
 	it('matches slippi-js on a real replay (every frame)', () => {
 		const game = new SlippiGame(path.join(__dirname, '../sample-games/direct-set-1/Replay 1 [W].slp'));
-		const settings = game.getSettings()!;
+		const settings = nulled(game.getSettings())!;
 		const t = new FightStatsTracker();
 		t.startGame(settings.players, false, true);
-		const frames = game.getFrames();
+		const frames = nulled(game.getFrames());
 		for (const key of Object.keys(frames).map(Number).sort((a, b) => a - b)) t.frame(frames[key]);
 		const overall = game.getStats()!.overall;
 		for (const p of settings.players) {

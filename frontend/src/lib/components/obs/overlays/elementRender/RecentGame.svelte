@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { StatsType } from '@slippi/slippi-js';
+	import type { StatsType } from '../../../../models/types/slippiTypes';
 	import PlayerActionCount from './RecentGame/RecentGameCurrentPlayerActionCount.svelte';
 	import PlayerAttackCount from './RecentGame/RecentGameCurrentPlayerAttackCount.svelte';
 	import PlayerOverallStats from './RecentGame/RecentGameCurrentPlayerOverallStats.svelte';

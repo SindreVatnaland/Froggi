@@ -4,7 +4,7 @@
 	 * live frames with a camera that follows and zooms on the players. Empty when no game is
 	 * running (no waiting screen); the editor preview plays the demo clip.
 	 */
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { GameStartTypeExtended } from '$lib/models/types/slippiData';
 	import { InGameState } from '$lib/models/enum';

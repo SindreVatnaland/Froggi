@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { GameEndType, GameEndMethod, PlacementType } from "@slippi/slippi-js";
+import { GameEndMethod } from '@slippi/slippi-js';
+import type { GameEndType, PlacementType } from '../../../../../frontend/src/lib/models/types/slippiTypes';
 
 @Entity()
 export class GameEndTypeEntity implements GameEndType {

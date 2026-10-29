@@ -19,7 +19,7 @@
 	$: _cptechnique = $techniqueEvents[player?.playerIndex ?? 0]?.techniqueId ?? null;
 	import PlayerPercentCustom from '../../element/PlayerPercentCustom.svelte';
 	import { Player } from '$lib/models/types/slippiData';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 
 	export let dataItem: GridContentItem;
 	export let defaultPreview: boolean;

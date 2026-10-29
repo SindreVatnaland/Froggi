@@ -6,7 +6,7 @@
 	import ControllerDPadElement from '$lib/components/obs/overlays/element/ControllerDPadElement.svelte';
 	import ControllerButtonBackAnalogElement from '$lib/components/obs/overlays/element/ControllerButtonBackAnalogElement.svelte';
 	import ControllerStickAnalogElement from '$lib/components/obs/overlays/element/ControllerStickAnalogElement .svelte';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import { memoryReadController } from '$lib/utils/store.svelte';
 
 	export let dataItem: GridContentItem;

@@ -1,6 +1,6 @@
 import { delay, inject, singleton } from 'tsyringe';
 import type { ElectronLog } from 'electron-log';
-import type { FrameEntryType, GameStartType, PostFrameUpdateType, PreFrameUpdateType } from '@slippi/slippi-js';
+import type { FrameEntryType, GameStartType, PostFrameUpdateType, PreFrameUpdateType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { TypedEmitter } from '../../frontend/src/lib/utils/customEventEmitter';
 import {
 	getActionStateName,

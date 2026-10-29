@@ -3,7 +3,9 @@ import "reflect-metadata";
 import fs from "fs";
 import { ElectronGamesStore } from '../../electron/services/store/storeGames';
 import { StatsDisplay } from '../../electron/services/statsDisplay';
-import { GameEndType, GameStartType, SlippiGame, SlpParser, SlpStream } from '@slippi/slippi-js';
+import { SlpParser } from '@slippi/slippi-js';
+import { SlippiGame, SlpStream } from '@slippi/slippi-js/node';
+import type { GameEndType, GameStartType } from '../../frontend/src/lib/models/types/slippiTypes';
 import Store from "electron-store";
 import { Api } from "../../electron/services/api";
 import { ElectronSessionStore } from "../../electron/services/store/storeSession";
@@ -22,6 +24,7 @@ import { indexOf } from "lodash";
 import { MessageHandler } from "../../electron/services/messageHandler";
 import { TypedEmitter } from "../../frontend/src/lib/utils/customEventEmitter";
 import { isTiedGame, getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 
 //jest.mock("../../electron/services/api")
@@ -184,12 +187,12 @@ describe('ElectronGamesStore', () => {
             storeLiveStats.setBestOf(gameTest.setBestOf);
 
             const game = new SlippiGame(`${__dirname}/../sample-games/${gameTest.file}`);
-            const currentGameEnd = game.getGameEnd();
-            const currentGameSettings = game.getSettings();
+            const currentGameEnd = nulled(game.getGameEnd());
+            const currentGameSettings = nulled(game.getSettings());
             if (!currentGameEnd || !currentGameSettings) return;
 
             await statsDisplay.handleGameStart(currentGameSettings);
-            await statsDisplay.handleGameEnd(currentGameEnd, game.getLatestFrame(), currentGameSettings);
+            await statsDisplay.handleGameEnd(currentGameEnd, nulled(game.getLatestFrame()), currentGameSettings);
 
             const recentGames = await electronGamesStore.getRecentGames();
             const lastRecentGame = recentGames?.at(-1);
@@ -220,11 +223,11 @@ describe('ElectronGamesStore', () => {
         async function playGame(file: string) {
             statsDisplay["getGameFiles"] = async () => [`${__dirname}/../sample-games/${file}`];
             const game = new SlippiGame(`${__dirname}/../sample-games/${file}`);
-            const gameEnd = game.getGameEnd();
-            const settings = game.getSettings();
+            const gameEnd = nulled(game.getGameEnd());
+            const settings = nulled(game.getSettings());
             if (!gameEnd || !settings) return;
             await statsDisplay.handleGameStart(settings);
-            await statsDisplay.handleGameEnd(gameEnd, game.getLatestFrame(), settings);
+            await statsDisplay.handleGameEnd(gameEnd, nulled(game.getLatestFrame()), settings);
         }
 
         async function playSet(files: string[]) {
@@ -307,7 +310,7 @@ describe('ElectronGamesStore', () => {
             const realFind = statsDisplay["findGameFromSettings"];
             statsDisplay["findGameFromSettings"] = async () => new SlippiGame(path);
             const game = new SlippiGame(path);
-            const settings = structuredClone(game.getSettings()!);
+            const settings = nulled(game.getSettings())!;
             settings.matchInfo = { ...settings.matchInfo!, matchId };
             // The new session's replay carries the new match id (Froggi stores it unless the set continues).
             const realCreate = statsDisplay["createGameStats"].bind(statsDisplay);
@@ -317,7 +320,7 @@ describe('ElectronGamesStore', () => {
                 return stats;
             };
             await statsDisplay.handleGameStart(settings);
-            await statsDisplay.handleGameEnd(game.getGameEnd()!, game.getLatestFrame(), settings);
+            await statsDisplay.handleGameEnd(nulled(game.getGameEnd())!, nulled(game.getLatestFrame()), settings);
             statsDisplay["findGameFromSettings"] = realFind;
             statsDisplay["createGameStats"] = realCreate;
         }

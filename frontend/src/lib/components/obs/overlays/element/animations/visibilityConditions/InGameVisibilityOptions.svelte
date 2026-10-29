@@ -9,12 +9,8 @@
 	import { getOffStageZone } from '$lib/utils/gamePredicates';
 	import { nextRadarSide, type RadarSide } from '$lib/utils/radarSide';
 	import { gameSettings } from '$lib/utils/store.svelte';
-	import type {
-		FrameEntryType,
-		GameStartType,
-		PreFrameUpdateType,
-		Stage,
-	} from '@slippi/slippi-js';
+	import { type Stage } from '@slippi/slippi-js';
+	import type { FrameEntryType, GameStartType, PreFrameUpdateType } from '../../../../../../models/types/slippiTypes';
 	import { isNil } from 'lodash';
 
 	export const inGameVisibilityOption = (

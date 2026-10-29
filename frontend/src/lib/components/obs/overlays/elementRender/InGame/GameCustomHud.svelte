@@ -2,7 +2,7 @@
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import { Stage } from '$lib/models/constants/stageData';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
-	import { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import GameStage from '../../element/GameStage.svelte';
 	import TextElement from '../../element/TextElement.svelte';
 	import InGamePlayerRadar from '../../element/inGame/InGamePlayerRadar.svelte';

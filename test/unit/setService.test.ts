@@ -6,6 +6,7 @@ import type { GameStats } from '../../frontend/src/lib/models/types/slippiData';
 import { stageStatus } from '../../frontend/src/lib/utils/strikeStageStatus';
 import { isAllowedUnauthenticated } from '../../frontend/src/lib/utils/websocketAuthentication';
 import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
+import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
 const log = { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
@@ -542,12 +543,12 @@ describe('Stage striking — doubles teams', () => {
 
 describe('Stage striking — loading previous games', () => {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const { SlippiGame } = require('@slippi/slippi-js');
+	const { SlippiGame } = require('@slippi/slippi-js/node');
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const path = require('path');
 	const load = (dir: string, file: string) => {
 		const slp = new SlippiGame(path.join(__dirname, '../sample-games', dir, file));
-		return { settings: slp.getSettings(), gameEnd: slp.getGameEnd(), lastFrame: slp.getLatestFrame(), postGameStats: null } as unknown as GameStats;
+		return { settings: nulled(slp.getSettings()), gameEnd: nulled(slp.getGameEnd()), lastFrame: nulled(slp.getLatestFrame()), postGameStats: null } as unknown as GameStats;
 	};
 	const set1 = ['Replay 1 [W].slp', 'Replay 2 [W].slp', 'Replay 3 [L].slp'].map((f) => load('direct-set-1', f));
 

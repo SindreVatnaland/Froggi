@@ -19,7 +19,7 @@
 		Player,
 		SessionStats,
 	} from '$lib/models/types/slippiData';
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../models/types/slippiTypes';
 	import type { PlayerController } from '$lib/models/types/controller';
 	import { TypedEmitter } from './customEventEmitter';
 	import type { Obs, ObsConnection } from '$lib/models/types/obsTypes';

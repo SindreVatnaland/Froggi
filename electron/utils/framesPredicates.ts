@@ -1,4 +1,4 @@
-import { FrameEntryType } from "@slippi/slippi-js";
+import type { FrameEntryType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { STAGE_DATA } from "../../frontend/src/lib/models/constants/stageData"
 
 export function isGrabbed(

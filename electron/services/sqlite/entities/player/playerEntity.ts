@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PlayerType } from "@slippi/slippi-js";
+import type { PlayerType } from '../../../../../frontend/src/lib/models/types/slippiTypes';
 import { GameSettingsEntity } from "../game/gameSettingsEntity";
 
 

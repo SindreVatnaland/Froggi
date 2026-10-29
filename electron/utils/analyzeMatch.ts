@@ -1,4 +1,4 @@
-import { ActionCountsType, OverallType } from "@slippi/slippi-js";
+import type { ActionCountsType, OverallType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { EdgeGuard, GameStats, MatchStats, OverallTypeExtended } from "../../frontend/src/lib/models/types/slippiData";
 import { playerKey } from "../../frontend/src/lib/utils/teams";
 

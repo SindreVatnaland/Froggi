@@ -1,4 +1,7 @@
-import { ComboComputer, ConversionComputer, Stats, moves, type ComboType, type ConversionType, type FrameEntryType, type GameStartType } from '@slippi/slippi-js';
+import { ComboComputer, ConversionComputer, Stats, moves } from '@slippi/slippi-js';
+import type { ComboType as SlpComboType, FrameEntryType as SlpFrameEntryType, GameStartType as SlpGameStartType } from '@slippi/slippi-js';
+import type { ComboType, ConversionType, FrameEntryType, GameStartType } from '../../frontend/src/lib/models/types/slippiTypes';
+import { nulled, unnulled } from '../../frontend/src/lib/models/types/slippiTypes';
 import { isOffStage } from './framesPredicates';
 import { STAGE_DATA } from '../../frontend/src/lib/models/constants/stageData';
 
@@ -69,15 +72,16 @@ export class SequenceTracker {
 		const combos = new ComboComputer();
 		// The event carries the LAST sequence in the list, which can be another player's when two overlap —
 		// so report every one that has ended since.
-		const reported = new Set<ComboType>();
-		const flush = (kind: SequenceEvent['kind'], list: ComboType[]) => {
-			for (const c of list) if (c.endFrame != null && !reported.has(c)) (reported.add(c), this.report(kind, c));
+		// slippi-js objects: reported by identity, converted to Froggi's shape (null for missing) when reported.
+		const reported = new Set<SlpComboType>();
+		const flush = (kind: SequenceEvent['kind'], list: SlpComboType[]) => {
+			for (const c of list) if (c.endFrame != null && !reported.has(c)) (reported.add(c), this.report(kind, nulled(c) as ComboType));
 		};
 		conversions.on('CONVERSION', () => flush('punish', conversions.fetch())); // fetch fills in openingType
 		combos.on('COMBO_END', () => flush('combo', combos.fetch()));
 		this.stats = new Stats({ processOnTheFly: true });
 		this.stats.register(conversions, combos); // before setup — setup sets up the registered computers
-		this.stats.setup(settings);
+		this.stats.setup(unnulled<SlpGameStartType>(settings));
 		if ((settings.players?.length ?? 0) > 2) this.everyPair(settings, conversions, combos);
 	}
 
@@ -95,7 +99,7 @@ export class SequenceTracker {
 		this.snapshots.set(frame.frame, snap);
 		this.times.set(frame.frame, this.now());
 		this.latestFrame = frame.frame;
-		this.stats.addFrame(frame);
+		this.stats.addFrame(unnulled<SlpFrameEntryType>(frame));
 	}
 
 	/** When a frame arrived (frames Froggi missed: estimated at 60 fps from the newest one). */
@@ -114,7 +118,7 @@ export class SequenceTracker {
 		for (const c of computers) {
 			const internals = c as unknown as { playerPermutations: unknown[]; state: Map<unknown, unknown> };
 			internals.playerPermutations = pairs;
-			internals.state = new Map(pairs.map((p) => [p, { conversion: null, combo: null, move: null, resetCounter: 0, lastHitAnimation: null, event: null }]));
+			internals.state = new Map(pairs.map((p) => [p, { conversion: undefined, combo: undefined, move: undefined, resetCounter: 0, lastHitAnimation: undefined, event: undefined }]));
 		}
 	}
 

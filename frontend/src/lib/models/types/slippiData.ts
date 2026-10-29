@@ -1,4 +1,4 @@
-import type { ActionCountsType, FrameEntryType, GameEndType, GameStartType, OverallType, PlayerType, PostFrameUpdateType, PreFrameUpdateType, StatsType } from "@slippi/slippi-js";
+import type { ActionCountsType, FrameEntryType, GameEndType, GameStartType, OverallType, PlayerType, PostFrameUpdateType, PreFrameUpdateType, StatsType } from './slippiTypes';
 import type { BestOf } from "../enum";
 import type { Rating } from "openskill";
 

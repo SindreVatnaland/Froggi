@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Stage } from '@slippi/slippi-js';
+	import { type Stage } from '@slippi/slippi-js';
 
 	export { _class as class };
 	export let objectFit: 'contain' | 'cover' = 'contain';

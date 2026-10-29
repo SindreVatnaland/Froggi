@@ -7,7 +7,7 @@ import type {
 	GameStartTypeExtended,
 	Player,
 } from '$lib/models/types/slippiData';
-import type { FrameEntryType } from '@slippi/slippi-js';
+import type { FrameEntryType } from '../../../../../../models/types/slippiTypes';
 
 export const inGameStateTrigger = (
 	option: SelectedAnimationTriggerCondition,

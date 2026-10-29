@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { ElectronLog } from 'electron-log';
 import { inject, injectable } from 'tsyringe';
 import { Character, Player, RankedNetplayProfile, SlippiCharacter } from '../../frontend/src/lib/models/types/slippiData';
-import { PlayerType } from '@slippi/slippi-js';
+import type { PlayerType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { CHARACTERS } from '../../frontend/src/lib/models/constants/characterData';
 import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
 import { dateTimeNow } from '../utils/functions';

@@ -3,7 +3,7 @@
 	import { colorOverlay } from '$lib/utils/colorOverlay';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import type { Character } from '$lib/models/enum';
-	import { PlayerType } from '@slippi/slippi-js';
+	import type { PlayerType } from '../../../../models/types/slippiTypes';
 	import { gameSettings } from '$lib/utils/store.svelte';
 	import { isNil } from 'lodash';
 

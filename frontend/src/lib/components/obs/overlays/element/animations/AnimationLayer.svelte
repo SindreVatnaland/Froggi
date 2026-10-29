@@ -31,7 +31,7 @@
 	import type { TechniqueDetectedPayload } from '$lib/models/types/actionState';
 	import { rankStateTrigger } from '$lib/components/obs/overlays/element/animations/animationTriggers/RankChangeTriggers';
 	import { matchStateTrigger } from '$lib/components/obs/overlays/element/animations/animationTriggers/MatchChangeTriggers';
-	import type { FrameEntryType } from '@slippi/slippi-js';
+	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import {
 		CurrentPlayer,
 		GameStartTypeExtended,

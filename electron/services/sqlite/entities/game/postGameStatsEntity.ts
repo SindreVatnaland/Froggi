@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { ActionCountsType, ComboType, ConversionType, OverallType, StatsType, StockType } from "@slippi/slippi-js";
+import type { ActionCountsType, ComboType, ConversionType, OverallType, StatsType, StockType } from '../../../../../frontend/src/lib/models/types/slippiTypes';
 
 @Entity()
 export class PostGameStatsEntity implements StatsType {

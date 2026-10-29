@@ -27,7 +27,7 @@
 		urls,
 		isElectron,
 	} from '$lib/utils/store.svelte';
-	import type { FrameEntryType, GameStartType } from '@slippi/slippi-js';
+	import type { FrameEntryType, GameStartType } from '../models/types/slippiTypes';
 	import type { Page } from '@sveltejs/kit';
 	import type { TypedEmitter } from './customEventEmitter';
 	import type { Obs } from '$lib/models/types/obsTypes';
