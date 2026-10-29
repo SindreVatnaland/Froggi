@@ -86,6 +86,39 @@ describe('tied games', () => {
 		const g = game([[0, 1, 10], [1, 3, 140]], { method: 1, first: [1] });
 		expect(getGameScore([g])).toEqual([0, 1]);
 	});
+
+	it('offline timeout: Melee calls equal stocks a tie (→ sudden death), but the lower shown percent wins', () => {
+		const g = game([[0, 2, 30.7], [1, 2, 90.1]], { method: 1, first: [0, 1] });
+		expect(isTiedGame(g)).toBe(false);
+		expect(getWinnerIndex(g)).toBe(0);
+		expect(getGameScore([g])).toEqual([1, 0]);
+	});
+
+	it('timeout: only the shown percent counts — 45.2% vs 45.9% is a tie', () => {
+		const g = game([[0, 2, 45.2], [1, 2, 45.9]], { method: 1, first: [0] });
+		expect(isTiedGame(g)).toBe(true);
+		expect(getWinnerIndex(g)).toBeUndefined();
+	});
+});
+
+describe('offline: the sudden death (bomb rain) game never counts', () => {
+	const bombRain = (winner: number) => {
+		const g = game([[0, winner === 0 ? 1 : 0, 300], [1, winner === 1 ? 1 : 0, 300]], { first: [winner] });
+		(g.settings as unknown as { gameInfoBlock: { bombRainEnabled: boolean } }).gameInfoBlock = { bombRainEnabled: true };
+		return g;
+	};
+
+	it('timeout won on percent, then sudden death: the timeout winner keeps the point', () => {
+		const timeout = game([[0, 2, 30], [1, 2, 90]], { method: 1, first: [0, 1] });
+		expect(getGameScore([timeout, bombRain(1)])).toEqual([1, 0]);
+	});
+
+	it('tied timeout, then sudden death: nobody scores — the next game counts', () => {
+		const tie = game([[0, 2, 45], [1, 2, 45]], { method: 1, first: [0, 1] });
+		const next = game([[0, 0, 120], [1, 1, 40]], { first: [1] });
+		expect(getGameScore([tie, bombRain(0)])).toEqual([0, 0]);
+		expect(getGameScore([tie, bombRain(0), next])).toEqual([0, 1]);
+	});
 });
 
 describe('ranked: tie → 1-stock tiebreaker', () => {
@@ -115,5 +148,33 @@ describe('ranked: tie → 1-stock tiebreaker', () => {
 		const tie2 = game([[0, 0, 0], [1, 0, 0]], { tiebreaker: 1, code: true });
 		const tiebreakerP1 = game([[0, 1, 5], [1, 0, 70]], { first: [0], tiebreaker: 2, code: true });
 		expect(getGameScore([tie, tie2, tiebreakerP1])).toEqual([1, 0]);
+	});
+});
+
+describe('ranked: Slippi replays a tie as a tiebreaker game (same game number)', () => {
+	// The replay spec: one session, game numbers from 1, tiebreaker number 0 unless it's a tiebreaker.
+	const inSession = (g: GameStats, session: string, gameNumber: number, tiebreaker = 0) => {
+		g.settings!.matchInfo = { ...g.settings!.matchInfo!, sessionId: session, gameNumber, tiebreakerNumber: tiebreaker };
+		return g;
+	};
+	// Froggi's rule gives this timeout to port 1 (30% vs 31.5%) — but Slippi saw a tie and played a tiebreaker.
+	const timeout = () => inSession(game([[0, 2, 30], [1, 2, 31.5]], { method: 1, first: [0, 1], code: true }), 'S1', 1);
+	const tiebreakerP2 = () => inSession(game([[0, 0, 60], [1, 1, 20]], { first: [1], code: true }), 'S1', 1, 1);
+
+	it('the game the tiebreaker settles scores nothing; the tiebreaker winner gets the point', () => {
+		expect(getGameScore([timeout()])).toEqual([1, 0]); // no tiebreaker (yet): Froggi's rule
+		expect(getGameScore([timeout(), tiebreakerP2()])).toEqual([0, 1]);
+	});
+
+	it("per-game scores see the whole set (the store's prefixes): the tied game's own score is corrected", () => {
+		const games = [timeout(), tiebreakerP2()];
+		expect(getGameScore(games.slice(0, 1), games)).toEqual([0, 0]);
+	});
+
+	it('only the same session + game number: another session’s tiebreaker, or offline games, change nothing', () => {
+		const otherSession = inSession(game([[0, 0, 60], [1, 1, 20]], { first: [1], code: true }), 'S2', 1, 1);
+		expect(getGameScore([timeout(), otherSession])).toEqual([1, 1]);
+		const offline = game([[0, 2, 30], [1, 2, 31.5]], { method: 1, first: [0, 1] }); // no session id
+		expect(getGameScore([offline, game([[0, 0, 60], [1, 1, 20]], { first: [1], tiebreaker: 1 })])).toEqual([1, 1]);
 	});
 });

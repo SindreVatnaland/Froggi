@@ -33,6 +33,7 @@ const labelFor = (id: number) => RANGE_LABELS.find((r) => id >= r.min && id <= r
 
 /** Group of a condition label, for list_overlay_conditions' first step (labels are self-describing). */
 const CONDITION_GROUPS: [RegExp, string][] = [
+	[/^(current player|player ?[12]) controller /i, 'Controller'],
 	[/^strike/i, 'Stage Striking'],
 	[/^iron man/i, 'Iron Man'],
 	[/^(team \d|doubles)/i, 'Doubles'],
@@ -423,6 +424,12 @@ element renders its own live state from the game's controller input automaticall
 pressed art when held, sticks move, triggers fill by depth. In the demos EVERY controller element has
 animationTrigger.in = none and NO visibility conditions. Just place the element — do NOT add an
 animationTrigger or a "pressed" visibility condition; that's already built in.
+
+**Controller conditions (group "Controller") are for OTHER elements** — show a text/image only while a
+player holds something: "<Current Player|Player 1|Player 2> Controller <check>", checks: A/B/X/Y/Z/Start
+Pressed, D-Pad Up/Down/Left/Right, L/R Analog Pressed (past the dead zone) / Fully Pressed / Clicked, Stick
+and C-Stick Up/Down/Left/Right (past 0.3 — Melee's dead zone is 0.2875; diagonals turn on both directions).
+Live game input, else Froggi's memory read (menus).
 
 **Elements.** Per player there's Player1 (3120-…), Player2, and CurrentPlayer variants. Current player:
 A 3100, B 3101, X 3102, Y 3103, DPad 3104, main analog stick 3160, C-stick 3161, Z 3108, Analog trigger

@@ -87,7 +87,11 @@ export class ElectronGamesStore {
 			this.pendingSides = null;
 		}
 		games = [...games, newGame].sort((a, b) => (new Date(a.timestamp ?? 0).getTime()) - (new Date(b.timestamp ?? 0).getTime()));
+		const before = games.map((g) => JSON.stringify(g.score));
 		this.applyGamesScore(games);
+		// A tiebreaker unscores the tied game before it: save that game's corrected score too.
+		const changed = games.filter((g, i) => g !== newGame && JSON.stringify(g.score) !== before[i]);
+		if (changed.length) await this.sqliteGame.updateGameScores(changed);
 		await this.sqliteGame.addGameStats(games.at(-1) ?? newGame);
 	}
 
@@ -180,7 +184,7 @@ export class ElectronGamesStore {
 
 	private applyGamesScore(games: GameStats[]) {
 		for (let i = 0; i < games.length; i++) {
-			games[i].score = getGameScore(games.slice(0, i + 1));
+			games[i].score = getGameScore(games.slice(0, i + 1), games);
 		}
 		this.setGameScore(games.at(-1)?.score ?? [0, 0]);
 		return games;

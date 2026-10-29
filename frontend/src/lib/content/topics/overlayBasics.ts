@@ -2,6 +2,25 @@ import type { ContentTopic } from '../types';
 
 export const overlayBasicsTopics: ContentTopic[] = [
 	{
+		id: 'overlay-controller-conditions',
+		title: 'Show an element while a button is held (controller conditions)',
+		category: 'overlays',
+		summary: 'Visibility → Controller: show any element only while Player 1, Player 2 or you hold a button, press L/R, or push a stick in a direction.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'Per player (Current Player, Player 1, Player 2):',
+				items: [
+					'Buttons: A, B, X, Y, Z, Start and the D-pad directions — on while held.',
+					'L and R: Analog Pressed (pressed past the dead zone), Fully Pressed (all the way) and Clicked (the digital click at the bottom).',
+					'Stick and C-Stick: Up, Down, Left, Right — past the dead zone only, so a resting stick never counts. Diagonals turn on both directions (up-right = Up + Right).',
+					'Works in a game, and in menus when Froggi reads the controller from Dolphin.',
+					'The controller elements already show presses themselves — these conditions are for other elements (a text, an image, a callout).',
+				],
+			},
+		],
+	},
+	{
 		id: 'overlay-animation-triggers',
 		title: 'Animation triggers (replay an animation when something changes)',
 		category: 'overlays',

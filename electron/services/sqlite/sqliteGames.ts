@@ -139,6 +139,15 @@ export class SqliteGame {
     this.messageHandler.sendMessage('RecentGames', games);
   }
 
+  /** Save corrected scores only (no broadcast: the caller sends the full list next). */
+  async updateGameScores(games: GameStats[]): Promise<void> {
+    await this.sqlite.initializing;
+    for (const game of games) {
+      const id = (game as GameStatsEntity).id;
+      if (id) await this.gameStatsRepo.update(id, { score: game.score });
+    }
+  }
+
   /** Save the host's side swaps on a set's first game. */
   async setGameSides(id: number, sides: GameStats['sides']): Promise<void> {
     await this.sqlite.initializing;

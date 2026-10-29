@@ -25,6 +25,7 @@
 	import InGameNumberVisibilitySelect from './InGameNumberVisibilitySelect.svelte';
 	import StrikeVisibilitySelect from './StrikeVisibilitySelect.svelte';
 	import IronManVisibilitySelect from './IronManVisibilitySelect.svelte';
+	import ControllerVisibilitySelect from './ControllerVisibilitySelect.svelte';
 
 	export let selectedVisibilityOption: SelectedVisibilityCondition;
 
@@ -130,6 +131,10 @@
 		},
 		{
 			category: VisibilityCategory.IronMan,
+			visible: true,
+		},
+		{
+			category: VisibilityCategory.Controller,
 			visible: true,
 		},
 	];
@@ -247,6 +252,11 @@
 			{#if selectedCategory === VisibilityCategory.StageStriking}
 				<div class="flex flex-col gap-2">
 					<StrikeVisibilitySelect on:select={select} {selectedVisibilityOption} />
+				</div>
+			{/if}
+			{#if selectedCategory === VisibilityCategory.Controller}
+				<div class="flex flex-col gap-2">
+					<ControllerVisibilitySelect on:select={select} {selectedVisibilityOption} />
 				</div>
 			{/if}
 			{#if selectedCategory === VisibilityCategory.IronMan}

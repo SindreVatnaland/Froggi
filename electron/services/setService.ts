@@ -9,7 +9,7 @@ import { scopedLog } from '../utils/logger';
 import type { GameRecord, RpsChoice, StageLogEntry, StrikeRuleset, StrikeState } from '../../frontend/src/lib/models/types/stageStriking';
 import { STRIKE_RULESETS } from '../../frontend/src/lib/models/types/stageStriking';
 import type { GameStats } from '../../frontend/src/lib/models/types/slippiData';
-import { getPlayerSlot, getWinnerIndex } from '../../frontend/src/lib/utils/gamePredicates';
+import { getPlayerSlot, getWinnerIndex, isSettledByTiebreaker } from '../../frontend/src/lib/utils/gamePredicates';
 import { applyTeamOrder, getTeamWinnerIndex, orderTeams, setReference, type TeamsPlayer } from '../../frontend/src/lib/utils/teams';
 import { MessageHandler } from './messageHandler';
 import { CHARACTER_NAMES_BY_ID, STAGE_NAMES_BY_ID } from './webhookService';
@@ -666,6 +666,7 @@ export class ElectronSetService {
 			...(first.settings?.isTeams ? { teamMembers: teamMembersOf(players) } : {}),
 		});
 		for (const game of games) {
+			if (isSettledByTiebreaker(game, games)) continue;
 			const { winner, chars } = setSlotResult(game, first);
 			if (winner === undefined) continue;
 			this.setState({
@@ -721,6 +722,7 @@ export class ElectronSetService {
 		const first = setGames[0];
 		const records: GameRecord[] = [];
 		for (const g of setGames) {
+			if (isSettledByTiebreaker(g, setGames)) continue; // a tie Slippi replayed as a tiebreaker
 			const { winner, chars } = setSlotResult(g, first);
 			if (winner === undefined) continue; // a tie / no result doesn't count
 			records.push({

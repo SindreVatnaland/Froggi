@@ -244,7 +244,7 @@ export class WebhookService {
 		this.localEmitter.on('GameSettings', (settings) => {
 			if (!settings) return;
 			// Once per game start: offline games repeat matchId/gameNumber, so use the start id when there is one.
-			const gameId = (settings as GameStartTypeExtended).gameStartId ?? `${settings.matchInfo?.matchId}-${settings.matchInfo?.gameNumber}`;
+			const gameId = (settings as GameStartTypeExtended).gameStartId ?? `${settings.matchInfo?.matchId}-${settings.matchInfo?.gameNumber}-${settings.matchInfo?.tiebreakerNumber ?? 0}`;
 			if (gameId === this.lastGameSettingsId) return;
 			this.lastGameSettingsId = gameId;
 			this.prevFrameState.clear();

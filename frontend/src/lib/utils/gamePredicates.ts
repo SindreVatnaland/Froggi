@@ -28,14 +28,32 @@ export const getWinnerIndex = (game: GameStats | undefined): number | undefined 
         return others.length === 1 ? others[0].playerIndex : undefined
     }
 
+    if (game.gameEnd.gameEndMethod === TIME) return timeoutWinnerIndex(game)
     const placements = game.gameEnd.placements;
     if (placements.filter(placement => placement.position === 0).length >= 2) return
     return placements.find(placement => placement.position === 0)?.playerIndex
 }
 
+const TIME = 1 // GameEndMethod.TIME
+
+/** Timeout: more stocks wins, then the lower percent as the game SHOWS it (decimals cut off). Equal = tie.
+ *  Melee's own placements are ignored here: offline it calls equal stocks a tie whatever the percent
+ *  (→ sudden death, which Froggi never stores); the next game counts. Teams: getTeamWinnerIndex, same rule. */
+export const timeoutWinnerIndex = (game: GameStats): number | undefined => {
+    const players = Object.values(game.lastFrame?.players ?? {})
+        .filter((player) => player?.post)
+        .map((player) => ({ index: player!.post.playerIndex ?? -1, stocks: player!.post.stocksRemaining ?? 0, percent: Math.trunc(player!.post.percent ?? 0) }))
+        .sort((a, b) => b.stocks - a.stocks || a.percent - b.percent)
+    const [top, next] = players
+    if (!top || top.index < 0) return
+    if (next && next.stocks === top.stocks && next.percent === top.percent) return
+    return top.index
+}
+
 export const isTiedGame = (game: GameStats | undefined | null) => {
     if (!game) return false
     if (hasGameBombRain(game)) return true
+    if (game.gameEnd?.gameEndMethod === TIME) return timeoutWinnerIndex(game) === undefined
     const placements = game.gameEnd.placements ?? [];
     if (placements.length >= 2 && placements.filter(p => p.position === 0).length >= 2) return true;
     const players = Object.values(game.lastFrame?.players ?? {})
@@ -68,8 +86,21 @@ export const getPlayerSlot = (
     return byPort >= 0 ? byPort : players.indexOf(player);
 }
 
-/** Running set score [Player 1 wins, Player 2 wins] — indexed by player slot, not by port. */
-export const getGameScore = (recentGames: GameStats[]) => {
+/** Slippi replays a tie as a tiebreaker game: same session, same game number, higher tiebreaker number
+ *  (Slippi replay spec). One existing proves the game before it was a tie — whatever its last frame says
+ *  (e.g. a timeout that Froggi's percent rule gave to a player). */
+export const isSettledByTiebreaker = (game: GameStats | undefined, setGames: (GameStats | undefined)[]): boolean => {
+    const info = game?.settings?.matchInfo;
+    if (!info?.sessionId || isNil(info.gameNumber)) return false;
+    return setGames.some((other) => {
+        const o = other?.settings?.matchInfo;
+        return !!o && o.sessionId === info.sessionId && o.gameNumber === info.gameNumber && (o.tiebreakerNumber ?? 0) > (info.tiebreakerNumber ?? 0);
+    });
+}
+
+/** Running set score [Player 1 wins, Player 2 wins] — indexed by player slot, not by port.
+ *  `setGames` = the whole set when scoring only its first games (a later tiebreaker can unscore one). */
+export const getGameScore = (recentGames: GameStats[], setGames: GameStats[] = recentGames) => {
     // Sides from the set's first game, with the host's swaps (setReference).
     const reference = setReference(recentGames.find((game) => game?.settings?.players?.length)).players;
     // Doubles: score per TEAM slot; teams keep their slot from the set's first game (see teams.ts).
@@ -82,6 +113,7 @@ export const getGameScore = (recentGames: GameStats[]) => {
             if (forced === 0 || forced === 1) score[forced] += 1
             return score
         }
+        if (isSettledByTiebreaker(game, setGames)) return score
         if (game.settings?.isTeams) {
             const team = getTeamWinnerIndex(game, teamRef)
             if (team === 0 || team === 1) score[team] += 1

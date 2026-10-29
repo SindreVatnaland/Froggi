@@ -15,6 +15,7 @@
 		sessionStats,
 		strikeState,
 		ironManSession,
+		memoryReadController,
 	} from '$lib/utils/store.svelte';
 	import { onMount } from 'svelte';
 	import { inGameVisibilityOption } from './visibilityConditions/InGameVisibilityOptions.svelte';
@@ -42,6 +43,8 @@
 	import { rankPredictionVisibilityOption } from './visibilityConditions/RankPredictionVisibilityOptions.svelte';
 	import { strikeVisibilityOption } from './visibilityConditions/StrikeVisibilityOptions.svelte';
 	import { ironManVisibilityOption } from './visibilityConditions/IronManVisibilityOptions.svelte';
+	import { controllerVisibilityOption } from './visibilityConditions/ControllerVisibilityOptions.svelte';
+	import type { PlayerController } from '$lib/models/types/controller';
 	import type { IronManSession } from '$lib/models/types/ironman';
 	import type { StrikeState } from '$lib/models/types/stageStriking';
 	export let animationIn: Function;
@@ -66,6 +69,7 @@
 		sessionStats: SessionStats | undefined,
 		strikeStateVal: StrikeState | undefined,
 		ironMan: IronManSession | null,
+		memory: PlayerController | undefined,
 	) => {
 		// Previews show everything — except a screenshot of a frozen replay moment, which applies the conditions.
 		if (edit || (preview && !$previewFrozen)) return true;
@@ -125,13 +129,18 @@
 				rankPredictionVisibilityOption(option, currentPlayer, gameSettings) ||
 				sessionVisibilityOption(option, sessionStats) ||
 				strikeVisibilityOption(option, strikeStateVal) ||
-				ironManVisibilityOption(option, ironMan)
+				ironManVisibilityOption(option, ironMan) ||
+				controllerVisibilityOption(option, gameFrame, currentPlayers, currentPlayer, memory)
 			) {
 				return true;
 			}
 			return false;
 		});
 	};
+
+	// The memory read updates often: only elements with a controller condition re-check on it.
+	$: usesController = (dataItem?.data?.visibility?.selectedOptions ?? []).some((o) => Object.keys(o ?? {}).some((k) => k.includes(' Controller ')));
+	$: controllerMemory = usesController ? $memoryReadController : undefined;
 
 	$: {
 		updateVisibilityValue(
@@ -147,6 +156,7 @@
 			$sessionStats,
 			$strikeState,
 			$ironManSession,
+			controllerMemory,
 		);
 	}
 
