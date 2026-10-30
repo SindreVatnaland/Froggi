@@ -3,6 +3,7 @@ import type { AnimationSettings, ElementPayload } from '../models/types/overlay'
 import type { SelectedAnimationTriggerCondition } from '../models/types/animationOption';
 import { SCENE_TRANSITION_DELAY } from '../models/const';
 import { defaultElementTriggers } from './elementTriggers';
+import { CONTROLLER_STYLE_DEFAULTS } from './controllerStyle';
 
 export function getDefaultAnimations(delay: number = 0): AnimationSettings {
 	return {
@@ -62,6 +63,7 @@ export function getDefaultElementPayload(): ElementPayload {
 			src: undefined,
 			objectFit: 'contain',
 		},
+		controller: { ...CONTROLLER_STYLE_DEFAULTS },
 		colorOverlay: {
 			enabled: false,
 			color: '#ffffff',

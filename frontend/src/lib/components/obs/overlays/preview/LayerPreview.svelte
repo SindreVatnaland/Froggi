@@ -64,7 +64,9 @@
 					cols={[[COL, COL]]}
 					fastStart={true}
 				>
-					<GridContent preview={true} {dataItem} curScene={scene} />
+					<!-- The thumbnail's own size: borders, shadows and text strokes scale to it (else a full-size border
+					     inflates a thin element — a rounded L/R bar became a ball). -->
+					<GridContent preview={true} {dataItem} curScene={scene} designWidth={windowWidth} designHeight={windowHeight} />
 				</Grid>
 			</div>
 			<div class="w-full h-full absolute" />

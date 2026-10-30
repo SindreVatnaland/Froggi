@@ -7,10 +7,10 @@
 	const select = (e: CustomEvent<CustomElement>) => dispatch('select', e.detail);
 
 	const items = [
-		{ value: CustomElement.WinChanceGamePlayer1, label: 'Player 1 Win Chance · this game', tip: 'From stocks, percent and the time left (doubles: Player 1\'s team). Empty when no game runs.' },
-		{ value: CustomElement.WinChanceGamePlayer2, label: 'Player 2 Win Chance · this game', tip: 'From stocks, percent and the time left (doubles: Player 2\'s team). Empty when no game runs.' },
-		{ value: CustomElement.WinChanceSetPlayer1, label: 'Player 1 Win Chance · set', tip: 'This game\'s chance plus the set score (later games counted as 50/50).' },
-		{ value: CustomElement.WinChanceSetPlayer2, label: 'Player 2 Win Chance · set', tip: 'This game\'s chance plus the set score (later games counted as 50/50).' },
+		{ value: CustomElement.WinChanceGamePlayer1, label: 'Team 1 / Player 1 Win Chance · this game', tip: 'From stocks and percent (against each player\'s average death % this set) and the time left. Empty when no game runs.' },
+		{ value: CustomElement.WinChanceGamePlayer2, label: 'Team 2 / Player 2 Win Chance · this game', tip: 'From stocks and percent (against each player\'s average death % this set) and the time left. Empty when no game runs.' },
+		{ value: CustomElement.WinChanceSetPlayer1, label: 'Team 1 / Player 1 Win Chance · set', tip: 'This game\'s chance plus the set score (later games counted as 50/50).' },
+		{ value: CustomElement.WinChanceSetPlayer2, label: 'Team 2 / Player 2 Win Chance · set', tip: 'This game\'s chance plus the set score (later games counted as 50/50).' },
 	];
 </script>
 

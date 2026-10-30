@@ -1,4 +1,4 @@
-import { gameWinChance, gameWinChanceWithClock, remainingLife, secondsLeft, setWinChance, stockPace, timeoutWinChance, winChances } from '../../frontend/src/lib/utils/winProbability';
+import { playerKoPercent, gameWinChance, gameWinChanceWithClock, remainingLife, secondsLeft, setWinChance, stockPace, timeoutWinChance, winChances } from '../../frontend/src/lib/utils/winProbability';
 
 describe('win probability', () => {
 	it('remaining life: stocks minus progress into the current stock; teams sum', () => {
@@ -55,5 +55,20 @@ describe('win probability', () => {
 		expect(gameWinChanceWithClock([{ stocks: 4, percent: 0 }], [{ stocks: 1, percent: 0 }], { secondsLeft: 8 })).toBe(1);
 		// Even stocks, percent lead, little time → leader favoured over the stocks-only 50/50... by percent
 		expect(gameWinChanceWithClock([{ stocks: 1, percent: 10 }], [{ stocks: 1, percent: 100 }], { secondsLeft: 5 })).toBeGreaterThan(gameWinChance(remainingLife([{ stocks: 1, percent: 10 }]), remainingLife([{ stocks: 1, percent: 100 }])));
+	});
+});
+
+describe('per-player death percent (set average)', () => {
+	it('starts at 120% and moves toward the player\'s own average as they lose stocks', () => {
+		expect(playerKoPercent({})).toBe(120);
+		expect(playerKoPercent({ deaths: 2, deathPercent: 120 })).toBe(90); // avg 60%, two virtual 120% deaths
+		expect(playerKoPercent({ deaths: 10, deathPercent: 600 })).toBeCloseTo(70); // avg 60% dominates
+	});
+
+	it('the same percent costs a light character (dies early) more of a stock than a heavy one', () => {
+		const light = remainingLife([{ stocks: 2, percent: 60, deaths: 6, deathPercent: 360 }]); // dies ~60%
+		const heavy = remainingLife([{ stocks: 2, percent: 60, deaths: 6, deathPercent: 1080 }]); // dies ~180%
+		expect(light).toBeLessThan(heavy);
+		expect(gameWinChance(heavy, light)).toBeGreaterThan(0.5);
 	});
 });

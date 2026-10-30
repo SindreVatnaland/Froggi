@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { setContext } from 'svelte';
+	import { CONTROLLER_PREVIEW, controllerPreviewStore } from '../element/controllerPreview';
+	// The Controller styling section's "Show pressed" switch drives this window's preview only.
+	setContext(CONTROLLER_PREVIEW, controllerPreviewStore());
 	import { page } from '$app/stores';
 	import Modal from '$lib/components/modal/Modal.svelte';
 	import type {

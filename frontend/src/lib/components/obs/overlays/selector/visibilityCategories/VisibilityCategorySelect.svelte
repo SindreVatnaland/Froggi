@@ -164,10 +164,13 @@
 		{/each}
 	</div>
 	<h1 class="text-lg font-medium">Options</h1>
+	<!-- The leaving and the arriving options share one grid cell (no stacking); the new ones wait for the old to leave. -->
+	<div class="grid" style="align-content: start">
 	{#key selectedCategory}
 		<div
-			in:fly={{ duration: 250, x: 50, delay: 250 }}
-			out:fly={{ duration: 250, x: 50 }}
+			style="grid-area: 1 / 1"
+			in:fly={{ duration: 150, x: 16, delay: 100 }}
+			out:fly={{ duration: 100, x: -16 }}
 			class="overflow-auto"
 		>
 			{#if selectedCategory === VisibilityCategory.Session}
@@ -267,4 +270,5 @@
 		</div>
 		<br />
 	{/key}
+	</div>
 </div>

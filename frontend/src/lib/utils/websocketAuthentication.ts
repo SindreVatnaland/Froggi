@@ -1,8 +1,9 @@
 import { MessageEvents, TypedEmitter } from "./customEventEmitter";
 import { Worker } from 'worker_threads';
 
-// HighlightReelShown: OBS browser sources have no host password; it only starts a reel's shared clock once.
-const unauthorized: (keyof MessageEvents)[] = ["InitData", "InitElectron", "InitAuthentication", "Ping", "HighlightReelShown"];
+// HighlightReelShown / HighlightFramesRequest: OBS browser sources have no host password; the first only starts a
+// reel's shared clock once, the second reads the frames of a highlight id (random, checked) the overlay already shows.
+const unauthorized: (keyof MessageEvents)[] = ["InitData", "InitElectron", "InitAuthentication", "Ping", "HighlightReelShown", "HighlightFramesRequest"];
 
 /** Stage-striking actions a player's phone may send without the host password — but only with the
  *  player's link token as the last argument; setService checks the token against the player/turn. */

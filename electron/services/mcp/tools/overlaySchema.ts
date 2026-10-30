@@ -10,6 +10,7 @@ import {
 } from '../../../../frontend/src/lib/models/types/animationOption';
 import { getDefaultElementPayload } from '../../../../frontend/src/lib/utils/overlayElementDefaults';
 import { getElementKind, ELEMENT_KIND_OPTIONS } from '../../../../frontend/src/lib/utils/elementKind';
+import { canonicalPlayerElement, playerVariants } from '../../../../frontend/src/lib/utils/playerVariants';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 
@@ -52,8 +53,8 @@ const conditionGroup = (label: string) => CONDITION_GROUPS.find(([re]) => re.tes
 
 /** { id, name, kind } for every CustomElement, from the enum reverse map. `kind` (text|image|box)
  *  is the render/styling class the editor uses — it tells you which payload options apply. */
-// Digital controller L/R buttons ship no artwork (render blank) — hide them from the catalog so the
-// model can't pick them; the Analog L/R elements are the supported way to show triggers.
+// Digital controller L/R buttons are hidden from the catalog: the Analog L/R elements (a fill bar that
+// also fills on the click) are the supported way to show triggers.
 const HIDDEN_ELEMENT_IDS = new Set<number>([
 	CustomElement.InGameCurrentPlayerControllerButtonL, CustomElement.InGameCurrentPlayerControllerButtonR,
 	CustomElement.InGamePlayer1ControllerButtonL, CustomElement.InGamePlayer1ControllerButtonR,
@@ -65,6 +66,25 @@ const ALL_ELEMENTS = Object.entries(CustomElement)
 	.filter(([, v]) => typeof v === 'number')
 	.filter(([, v]) => !HIDDEN_ELEMENT_IDS.has(v as number))
 	.map(([name, id]) => ({ id: id as number, name, kind: getElementKind(id as number), category: labelFor(id as number) }));
+
+/** The catalog lists each player element ONCE (like the editor): name with <Player>, the id per player. */
+const CATALOG = (() => {
+	const seen = new Set<number>();
+	const out: { id: number; name: string; kind: ReturnType<typeof getElementKind>; category: string; players?: Partial<Record<'current' | 'p1' | 'p2', number>> }[] = [];
+	for (const e of ALL_ELEMENTS) {
+		const v = playerVariants(e.id);
+		const ids = v ? Object.values(v.ids) : [];
+		if (!v || ids.length < 2) {
+			out.push(e);
+			continue;
+		}
+		if (ids.some((id) => seen.has(id))) continue;
+		ids.forEach((id) => seen.add(id));
+		const id = canonicalPlayerElement(e.id);
+		out.push({ ...e, id, name: e.name.replace(/CurrentPlayer|Player1|Player2/, '<Player>'), players: v.ids });
+	}
+	return out;
+})();
 
 const AUTHORING_GUIDE = `# Froggi overlay element authoring
 
@@ -119,8 +139,8 @@ Both carry \`{ in: AnimationSettings, out: AnimationSettings, selectedOptions }\
     shows. \`source\` = "self" (this element) or another element's item id; \`when\` = "change" | "increase"
     | "decrease" (increase/decrease compare the first number the element shows, e.g. percent going up vs
     resetting to 0 on respawn). An element that is not shown has no value: appearing never fires (scene
-    animations / visibility conditions handle appearing). The Video element fires on a new reel for its
-    key, not on every clip. This covers EVERY element (win chance, fight/edge stats, video, characters…).
+    animations / visibility conditions handle appearing). The Media / Highlight Replay elements fire when their key gets new
+    media, not on every clip. This covers EVERY element (win chance, fight/edge stats, video, characters…).
     New elements get \`[{source:"self", when:"change"}]\` by default (does nothing while in/out are "none").
   - \`selectedOptions\`: OBJECT mapping a named AnimationTrigger label → boolean, for game EVENTS that are
     not a shown value — e.g. "Player1 Percent Increase" to shake a character render on damage, stock loss,
@@ -225,14 +245,19 @@ the backdrop's color over a panel for a "hole punch" look.
 to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
 with payload \`{"image":{"name":fileName,"objectFit":"contain"}}\`, or a scene background via
 configure_overlay_scene \`background {type:"Custom Image", customImage:{name:fileName, objectFit:"cover"}}\`.
-**Video** (2100, any scene) — plays what a flow points \`key\` at, payload \`{"video":{"key":"game","volume":0}}\`
-(volume 0–100, 0 = muted; flow card setVideoVolume overrides it): a highlight reel (buildHighlightReel — clips of
-OBS replay-buffer files, no cutting, in order, looping) or one whole file (setHighlightVideo {key, path}). Every
-screen plays the same position (shared clock); the next 2 clips are loaded ahead. The installed, off-by-default flow
-"highlights" builds keys "game" (best 5 of the game), "set" (the set, game by game) and "tournament" (shuffled);
-demo overlay "Highlights" shows them; the Game & set stats demo has "game"/"set" below its stats. MP4/MOV (OBS format
-Hybrid MP4 recommended). The element DEPENDS on a flow: until an enabled flow builds a reel / sets a file for its
-key it shows nothing (the "highlights" flow ships OFF — turn it on, or build one, when adding Video).
+**Media** (2100, any scene) — payload \`{"video":{"key":"game","volume":0,"fit":"cover"}}\` shows what a flow's
+setHighlightVideo ("Set media") puts on \`key\`: ONE thing at a time — a video or image file, a web link, or a highlight's
+OBS replay-buffer clip (with an optional start/end). Or \`{"video":{"source":"file","file":fileName}}\` shows an uploaded
+file (the user uploads it in the element settings, ≤ 50 MB; stored in the overlay, shared with it) on loop. volume 0–100
+(0 = muted; flow card setVideoVolume overrides it in key mode), fit cover | contain. Every screen plays the same
+position (shared clock). Empty (also in the editor) until a flow sets its key. The installed, off-by-default flow
+"highlights" loops keys "game" (best 5 of the game), "set" (best 15 of the set) and "daily" (today's top) clip by clip.
+Old elements' \`{"highlight":{key, sound}}\` still read.
+**Highlight Replay** (2101, any scene) — payload \`{"video":{"key":"replay-game"}}\`: the highlights a flow's
+setReplayList puts on the key, redrawn from the game replays (no video, no OBS needed), one after another, looping,
+transparent background. Also plays the highlight a Set media card put on its key. Empty until the key is filled and the
+games are stored. The "highlights" flow fills "replay-game" / "replay-set" / "replay-daily". Demo overlay "Highlights"
+shows both kinds. Both DEPEND on a flow — turn "highlights" on (or build one) when adding them.
 **Videos** — an .mp4/.webm stored the same way plays muted on a loop in a CustomImage element (not as a
 scene background: for a moving background use a full-size CustomImage on the bottom layer). The live
 overlay preloads its images and videos (current scene first, thin bar at the top while loading).
@@ -434,8 +459,16 @@ Live game input, else Froggi's memory read (menus).
 **Elements.** Per player there's Player1 (3120-…), Player2, and CurrentPlayer variants. Current player:
 A 3100, B 3101, X 3102, Y 3103, DPad 3104, main analog stick 3160, C-stick 3161, Z 3108, Analog trigger
 L 3150 / R 3151. (Player1: A/B/X/Y 3120-3123, Z 3124, DPad 3128, sticks 3160.., Analog L/R 3152/3153.)
-There is no Start-button element. For L/R ALWAYS use the Analog trigger elements (a fill bar) — the
-digital ControllerButtonL/R ship no art and are hidden from the catalog.
+There is no Start-button element. For L/R ALWAYS use the Analog trigger elements (a fill bar — full on
+the click) — the digital ControllerButtonL/R are hidden from the catalog.
+
+**Look (SVG, ControllerGraphic).** \`payload.controller\` = {outline, outlinePressed, fill, fillPressed,
+width} — colours #rrggbbaa per state: lines in outline/outlinePressed, the body in fill/fillPressed;
+width = line thickness (% of the part, default 6). Defaults = the classic look: white lines, hollow when
+released (fill #00000000), white when pressed. Sticks count as pressed past the dead zone (the whole cap
+fills); the D-pad fills the pressed arm. The Analog L/R bar is a plain bar: its pressed part in
+fillPressed, the track = css.background, border + rounding = the css.border* / class.rounded options.
+The drop shadow is the element's own \`shadow\` option.
 
 **Layout (physical GameCube arrangement).** Read the demo "Current Player Controller" (or "Player1
 Controller") with get_overlay for exact coords — replicate that relative arrangement. From the demo
@@ -521,17 +554,17 @@ export function registerOverlaySchemaTools(server: McpServer) {
 	server.registerTool(
 		'list_element_types',
 		{
-			description: 'Catalog of CustomElement types (the elementId for add_overlay_element). ~700 exist; pass a filter substring (e.g. "percent", "controller", "stock", "player1", "timer") to narrow. Names are self-describing. Omit filter to get the category legend + counts.',
+			description: 'Catalog of CustomElement types (the elementId for add_overlay_element). Player elements are listed ONCE as "…<Player>…" with `players` = the elementId per player (current = you / the connect code in Settings, p1, p2 — in doubles each team\'s first player; a team\'s second player = the p1 id + payload.playerSlot "t1p2" / "t2p2"). Pass a filter substring (e.g. "percent", "controller", "stock", "timer") to narrow; names are self-describing. Omit filter to get the category legend + counts.',
 			inputSchema: { filter: z.string().optional() },
 		},
 		async ({ filter }) => {
 			if (!filter) {
 				const byCat: Record<string, number> = {};
-				for (const e of ALL_ELEMENTS) byCat[e.category] = (byCat[e.category] ?? 0) + 1;
-				return text({ hint: 'Pass a filter substring to list matching elements.', categories: byCat, total: ALL_ELEMENTS.length });
+				for (const e of CATALOG) byCat[e.category] = (byCat[e.category] ?? 0) + 1;
+				return text({ hint: 'Pass a filter substring to list matching elements.', categories: byCat, total: CATALOG.length });
 			}
-			const f = filter.toLowerCase();
-			const matches = ALL_ELEMENTS.filter((e) => e.name.toLowerCase().includes(f)).map(({ id, name, kind }) => ({ id, name, kind }));
+			const f = filter.toLowerCase().replace(/player ?[12]|currentplayer/g, '<player>');
+			const matches = CATALOG.filter((e) => e.name.toLowerCase().includes(f)).map(({ id, name, kind, players }) => ({ id, name, kind, ...(players ? { players } : {}) }));
 			return text(matches.length ? matches : `No element names match "${filter}".`);
 		},
 	);

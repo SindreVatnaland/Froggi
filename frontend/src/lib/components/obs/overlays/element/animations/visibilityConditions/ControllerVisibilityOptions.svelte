@@ -4,6 +4,7 @@
 	import type { PlayerController } from '$lib/models/types/controller';
 	import type { FrameEntryType } from '../../../../../../models/types/slippiTypes';
 	import { CONTROLLER_CHECKS, controllerState } from '$lib/utils/controllerConditions';
+	import { getControllerIndex } from '$lib/utils/controllerCommandHelper';
 
 	// "<player> Controller <check>" labels (VisibilityOption) → the player + CONTROLLER_CHECKS entry.
 	const PLAYERS: [string, 'current' | 0 | 1][] = [
@@ -26,7 +27,9 @@
 			if (!player || !check) continue;
 			const index = player[1] === 'current' ? currentPlayer?.playerIndex : currentPlayers?.[player[1]]?.playerIndex;
 			if (index === undefined || index === null) continue;
-			const on = check(controllerState(gameFrame?.players?.[index]?.pre, memory?.[index]));
+			// Menus: your own controller is found by its controller port, like the controller elements do.
+			const memIndex = player[1] === 'current' && memory ? getControllerIndex(memory) : index;
+			const on = check(controllerState(gameFrame?.players?.[index]?.pre, memory?.[memIndex]));
 			if ((toggle === VisibilityToggle.True && on) || (toggle === VisibilityToggle.False && !on)) return true;
 		}
 		return false;

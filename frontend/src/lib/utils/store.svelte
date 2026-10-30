@@ -126,6 +126,8 @@
 	/** Automation flows (SQLite, run in Electron). */
 	export const flows = writable<import('$lib/models/types/flow').Flow[]>([]);
 	export const highlightReels = writable<import('$lib/utils/highlightReel').HighlightReels>({});
+	/** Highlight frames the Highlight Replay element asked for (id → frames, null = no replay for it). */
+	export const highlightFrames = writable<Record<string, import('$lib/utils/highlightReel').HighlightFrames | null>>({});
 	/** Video volumes set by flows (key → 0–100); overrides the Video element's own volume. */
 	export const videoVolumes = writable<Record<string, number>>({});
 	/** Server clock − this device's clock (ms), so every device plays a reel at the same position. */

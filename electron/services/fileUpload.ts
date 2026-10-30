@@ -30,6 +30,13 @@ export class FileHandler {
 			return
 		};
 		const fileExtension = path.extname(filePaths[0]);
+		// Files are embedded in .froggi exports — keep them sensible (same caps as the AI's add_overlay_image).
+		const isVideo = /^\.(mp4|webm|mov|m4v)$/i.test(fileExtension);
+		const max = (isVideo ? 50 : 15) * 1024 * 1024;
+		if (fs.statSync(filePaths[0]).size > max) {
+			this.messageHandler.sendMessage("Notification", isVideo ? "Video too large (over 50 MB) — trim or compress it" : "Image too large (over 15 MB)", NotificationType.Danger);
+			return;
+		}
 		const saveDir = path.join(this.appDir, "public", "custom", overlayId, directory)
 		if (!fs.existsSync(saveDir)) {
 			fs.mkdirSync(saveDir, { recursive: true });

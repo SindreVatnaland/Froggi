@@ -17,6 +17,21 @@ describe('flow lists', () => {
 		expect(game.map((i) => i.id)).toEqual(['h1', 'h3', 'h4', 'h5', 'h6']); // 90, 70, 55, 80, 60
 	});
 
+	it('next rotates a list (a loop plays first, then the rest); limitPer keeps the first N per field value', () => {
+		const list: ListItem[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+		const once = applyListOp(list, 'next', {});
+		expect(once.map((i) => i.id)).toEqual(['b', 'c', 'a']);
+		expect(applyListOp(applyListOp(once, 'next', {}), 'next', {}).map((i) => i.id)).toEqual(['a', 'b', 'c']);
+		expect(applyListOp([], 'next', {})).toEqual([]);
+		// Daily: best first, at most 3 per game, then the top 5 % with 10–30.
+		let day: ListItem[] = Array.from({ length: 40 }, (_, i) => ({ id: `h${i}`, score: 100 - i, game: i < 20 ? 1 : 2 + (i % 10) }));
+		day = applyListOp(day, 'limitPer', { field: 'game', count: 3 });
+		expect(day.filter((i) => i.game === 1).map((i) => i.id)).toEqual(['h0', 'h1', 'h2']);
+		const count = evaluateFormula('max(10, min(30, round(count(dayList) * 0.05)))', {}, { dayList: day });
+		expect(count).toBe(10);
+		expect(applyListOp(day, 'limit', { count }).length).toBe(10);
+	});
+
 	it('filter and map with formulas; addList; shuffle', () => {
 		const set = applyListOp(applyListOp([], 'addList', { from: [{ id: 'a', score: 30, kill: true }] }), 'addList', { from: [{ id: 'b', score: 80, kill: false }, { id: 'c', score: 50, kill: true }] });
 		expect(applyListOp(set, 'filter', { formula: '{{item.kill}} && {{item.score}} >= 40', evaluate }).map((i) => i.id)).toEqual(['c']);

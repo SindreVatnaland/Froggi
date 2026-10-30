@@ -36,15 +36,15 @@ export const ACTIONS: { type: FlowAction['type']; group: string; label: string; 
 	{ type: 'obsScene', group: 'OBS', label: 'OBS: switch scene', make: () => ({ type: 'obsScene', sceneName: '' }) },
 	{ type: 'obsToggleSource', group: 'OBS', label: 'OBS: show/hide source', make: () => ({ type: 'obsToggleSource', sourceName: '' }) },
 	{ type: 'obsVolume', group: 'OBS', label: 'OBS: set volume', make: () => ({ type: 'obsVolume', inputName: '', volume: 1 }) },
-	{ type: 'obsSaveReplay', group: 'OBS', label: 'OBS: save replay', make: () => ({ type: 'obsSaveReplay' }) },
+	{ type: 'obsSaveReplay', group: 'OBS', label: 'OBS: save replay', make: () => ({ type: 'obsSaveReplay', highlight: '' }) },
 	{ type: 'obsReplayBufferSettings', group: 'OBS', label: 'OBS: replay buffer settings', make: () => ({ type: 'obsReplayBufferSettings', seconds: 30, format: 'hybrid_mp4' }) },
 	{ type: 'calculate', group: 'Math', label: 'Calculate', make: () => ({ type: 'calculate', key: 'total', formula: '{{damage}} * 2' }) },
 	{ type: 'markHighlight', group: 'Highlights', label: 'Mark highlight moment', make: () => ({ type: 'markHighlight', before: 2, after: 2, maxSeconds: 10, score: '{{total}}' }) },
-	{ type: 'buildHighlightReel', group: 'Highlights', label: 'Build highlight reel (video ← list)', make: () => ({ type: 'buildHighlightReel', key: 'game', list: 'gameList' }) },
+	{ type: 'setReplayList', group: 'Highlights', label: 'Set replay list (animated replay ← list)', make: () => ({ type: 'setReplayList', key: 'game', list: 'gameList', field: 'id' }) },
 	{ type: 'list', group: 'Math', label: 'List', make: () => ({ type: 'list', key: 'gameList', op: 'add', fields: [{ name: 'id', value: '{{highlight}}' }, { name: 'score', value: '{{total}}' }] }) },
 	{ type: 'clearValues', group: 'Math', label: 'Clear values', make: () => ({ type: 'clearValues', keys: '' }) },
-	{ type: 'setHighlightVideo', group: 'Video', label: 'Set video (key ← file)', make: () => ({ type: 'setHighlightVideo', key: 'game', path: '{{path}}' }) },
-	{ type: 'setVideoVolume', group: 'Video', label: 'Set video volume', make: () => ({ type: 'setVideoVolume', key: 'game', volume: 50 }) },
+	{ type: 'setHighlightVideo', group: 'Media', label: 'Set media (key ← file / link / highlight)', make: () => ({ type: 'setHighlightVideo', key: 'game', path: '{{clipPath}}', start: '', end: '' }) },
+	{ type: 'setVideoVolume', group: 'Media', label: 'Set media volume', make: () => ({ type: 'setVideoVolume', key: 'game', volume: 50 }) },
 	{ type: 'setScene', group: 'Froggi', label: 'Set Froggi scene', make: () => ({ type: 'setScene', scene: LiveStatsScene.InGame }) },
 	{ type: 'timer', group: 'Timer', label: 'Timer — wait, then continue', make: () => ({ type: 'timer', key: 'timer', seconds: 10 }) },
 	{ type: 'cancelTimer', group: 'Timer', label: 'Cancel timer', make: () => ({ type: 'cancelTimer', key: 'timer' }) },
@@ -109,8 +109,9 @@ export function describe(node: FlowNode): string {
 		case 'rankChange': return 'Rank changes';
 		case 'setStart': return 'A set starts';
 		case 'obsReplaySaved': return 'OBS saved a replay';
-		case 'setHighlightVideo': return `Video "${d.key || 'game'}" ← ${d.path || '…'}`;
-		case 'setVideoVolume': return `Video "${d.key || 'game'}" volume ${d.volume ?? 0}`;
+		case 'setHighlightVideo': return d.path ? `Media "${d.key || 'game'}" ← ${d.path}${d.start || d.end ? ` (${d.start || '0'}–${d.end || 'end'} s)` : ''}` : `Clear media "${d.key || 'game'}"`;
+		case 'setReplayList': return `Replay "${d.key || 'replay'}" ← highlights in ${d.list || '…'}`;
+		case 'setVideoVolume': return `Media "${d.key || 'game'}" volume ${d.volume ?? 0}`;
 		case 'calculate': return `${d.key || '…'} = ${d.formula || '…'}`;
 		case 'clearValues': return `Clear ${d.keys || '…'}`;
 		case 'sequence': return `${who(d.player as string)} ${d.kind === 'combo' ? 'combo' : 'punish'} ends`;
@@ -125,6 +126,8 @@ export function describe(node: FlowNode): string {
 				: d.op === 'filter' ? `keep where ${d.formula || '…'}`
 				: d.op === 'map' ? `every item: ${d.field || '…'} = ${d.formula || '…'}`
 				: d.op === 'limit' ? `keep the first ${d.count ?? 0}`
+				: d.op === 'limitPer' ? `keep the first ${d.count ?? 0} per ${d.field || '…'}`
+				: d.op === 'next' ? 'next (first → end)'
 				: 'shuffle';
 			return `${d.key || '…'}: ${what}`;
 		}
@@ -149,7 +152,7 @@ export function describe(node: FlowNode): string {
 		case 'httpPost': return `${(d.method || 'POST').toUpperCase()} ${(d.url as string)?.match(/^https?:\/\/([^/?#]+)/)?.[1] || '…'}`;
 		case 'obsToggleSource': return `Toggle "${d.sourceName || '…'}"`;
 		case 'obsVolume': return `Volume "${d.inputName || '…'}" → ${Math.round((d.volume as number) * 100)}%`;
-		case 'obsSaveReplay': return 'Save replay buffer';
+		case 'obsSaveReplay': return d.highlight ? `Save replay buffer · clip of ${d.highlight}` : 'Save replay buffer';
 		case 'note': return (d.text as string) || '…';
 	}
 	return '';

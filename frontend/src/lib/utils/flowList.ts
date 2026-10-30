@@ -1,14 +1,15 @@
 /**
  * Flow lists (the "List" card): a list of items — objects with named fields (e.g. { id, score, game }) plus
  * `added` (when the item was added, ms). Every change is a visible card: add an item, add all of another
- * list, sort / filter / map with a formula over {{item.<field>}}, keep the first N, shuffle; a Clear values
+ * list, sort / filter / map with a formula over {{item.<field>}}, keep the first N (per field value), move
+ * the first to the end (next — a playlist), shuffle; a Clear values
  * card empties it. Formulas read lists with count / sum / avg / lowest / highest / find (utils/formula.ts).
  */
 
 export type ListValue = string | number | boolean | null;
 export type ListItem = Record<string, ListValue>;
 
-export type ListOp = 'add' | 'addList' | 'sort' | 'filter' | 'map' | 'limit' | 'shuffle';
+export type ListOp = 'add' | 'addList' | 'sort' | 'filter' | 'map' | 'limit' | 'limitPer' | 'next' | 'shuffle';
 /** Sort order of the sort formula's value. */
 export type ListOrder = 'high' | 'low';
 
@@ -25,6 +26,8 @@ export const LIST_OPS: { value: ListOp; label: string }[] = [
 	{ value: 'filter', label: 'Keep items where a formula holds' },
 	{ value: 'map', label: 'Set a field of every item' },
 	{ value: 'limit', label: 'Keep the first N' },
+	{ value: 'limitPer', label: 'Keep the first N per field value' },
+	{ value: 'next', label: 'Next (move the first item to the end)' },
 	{ value: 'shuffle', label: 'Shuffle' },
 ];
 
@@ -71,6 +74,20 @@ export function applyListOp(
 			return args.field ? list.map((item) => ({ ...item, [args.field!]: evaluate(item) })) : list;
 		case 'limit':
 			return list.slice(0, Math.max(0, Math.round(args.count ?? list.length)));
+		case 'limitPer': {
+			// At most N items with the same value of `field` (e.g. 3 highlights per game), in list order.
+			const max = Math.max(0, Math.round(args.count ?? list.length));
+			const seen = new Map<ListValue, number>();
+			return list.filter((item) => {
+				const v = args.field ? (item[args.field] ?? null) : null;
+				const n = (seen.get(v) ?? 0) + 1;
+				seen.set(v, n);
+				return n <= max;
+			});
+		}
+		case 'next':
+			// Playlists: the first item goes to the end — {{list.first}} is now the next one.
+			return list.length > 1 ? [...list.slice(1), list[0]] : list;
 		case 'shuffle': {
 			const random = args.random ?? Math.random;
 			const out = [...list];

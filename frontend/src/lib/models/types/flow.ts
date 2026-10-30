@@ -78,7 +78,12 @@ export type FlowAction =
 	 *  other (PUT, PATCH, DELETE…). GET/HEAD send no body; {{keys}} in the URL are filled. */
 	| { type: 'httpPost'; method?: string; url: string; bearerToken?: string; oauth?: FlowOAuth; headers?: FlowHeader[]; body: FlowPostBody; template?: string }
 	/** Show one whole video file (usually {{path}} from "OBS saved a replay") as highlight reel `key`. */
-	| { type: 'setHighlightVideo'; key?: string; path: string }
+	/** "Set media": ONE thing on media key `key` — `path` = a file path, a web link (http/https) or a highlight id;
+	 *  `start` / `end` = seconds from the start (empty = all; numbers or formulas). Empty path = clear the key.
+	 *  Images show as images. `delay` = seconds the stream video runs behind the game (highlights). */
+	| { type: 'setHighlightVideo'; key?: string; path: string; start?: string | number; end?: string | number; delay?: number }
+	/** The highlight replay element on `key` plays every highlight in list `list` (each item's `field`, default id). */
+	| { type: 'setReplayList'; key: string; list: string; field?: string }
 	/** Remember a highlight: the sequence that fired the flow (or now) with `before`/`after` seconds around
 	 *  it; `maxSeconds` keeps only the end of a longer one; `score` = formula, e.g. {{total}} from Calculate cards (higher = better). */
 	| { type: 'markHighlight'; before: number; after: number; maxSeconds?: number; score: string }
@@ -89,7 +94,7 @@ export type FlowAction =
 	/** List card (utils/flowList.ts): change list `key` — add an item (`fields`, {{keys}} filled), add all of
 	 *  list `from`, sort by / keep where (`formula` over {{item.<field>}}, sort `order`), set `field` of
 	 *  every item to `formula` (map), keep the first `count`, or shuffle. Lists stay until Clear values. */
-	| { type: 'list'; key: string; op: import('../../utils/flowList').ListOp; fields?: import('../../utils/flowList').ListField[]; from?: string; formula?: string; order?: import('../../utils/flowList').ListOrder; field?: string; count?: number; /** What the list holds — shown when hovering its key in later cards. */ description?: string }
+	| { type: 'list'; key: string; op: import('../../utils/flowList').ListOp; fields?: import('../../utils/flowList').ListField[]; from?: string; formula?: string; order?: import('../../utils/flowList').ListOrder; field?: string; /** A number or a formula. */ count?: number | string; /** What the list holds — shown when hovering its key in later cards. */ description?: string }
 	/** Clear values: empty these values / lists (names, comma-separated) — put it after any event. */
 	| { type: 'clearValues'; keys: string }
 	/** Calculate: {{key}} = the formula's result. The value belongs to this flow and stays (also for its next
@@ -104,7 +109,8 @@ export type FlowAction =
 	| { type: 'setScene'; scene: LiveStatsScene }
 	/** Timer card: the cards after it run when it fires (their conditions are checked then). Starting a
 	 *  timer whose key is already running restarts it. Keys are shared by all flows. */
-	| { type: 'timer'; key: string; seconds: number }
+	/** `seconds`: a number or a formula, e.g. {{clips.first.seconds}}. */
+	| { type: 'timer'; key: string; seconds: number | string }
 	| { type: 'cancelTimer'; key: string }
 	/** Debug: a toast in Froggi; {{keys}} filled. */
 	| { type: 'notify'; message: string }
@@ -113,7 +119,8 @@ export type FlowAction =
 	| { type: 'obsScene'; sceneName: string }
 	| { type: 'obsToggleSource'; sourceName: string }
 	| { type: 'obsVolume'; inputName: string; volume: number }
-	| { type: 'obsSaveReplay' };
+	/** With `highlight` ({{highlight}}): waits for the file and hands on {{path}} {{start}} {{end}} {{seconds}} — where it sits in it. */
+	| { type: 'obsSaveReplay'; highlight?: string };
 
 export type FlowNode =
 	| { id: string; kind: 'trigger'; position: { x: number; y: number }; data: FlowTrigger }
@@ -151,7 +158,10 @@ export const FLOW_TOKEN_ACTIONS: FlowAction['type'][] = ['calculate', 'list', 'c
 
 /** Keys every flow can use besides its triggers' and Calculate / List cards' keys: the last error, and the
  *  highlight Mark highlight just marked (its id — add it to a list). */
-export const FLOW_RUN_KEYS = ['error', 'highlight'];
+export const HIGHLIGHT_KEYS = ['highlight', 'highlightSeconds', 'highlightGame'];
+/** OBS: save replay with a highlight → where the highlight sits in the saved file. */
+export const CLIP_KEYS = ['clipPath', 'clipStart', 'clipEnd', 'clipSeconds'];
+export const FLOW_RUN_KEYS = ['error', ...HIGHLIGHT_KEYS, ...CLIP_KEYS];
 
 
 /** A Calculate card's key: a plain name (letters, digits, _), not a {{state.…}} path. */

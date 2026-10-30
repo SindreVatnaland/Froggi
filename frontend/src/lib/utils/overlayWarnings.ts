@@ -6,20 +6,22 @@ import { SELF, triggerAnimations } from './elementTriggers';
 
 /**
  * Things an overlay points at that don't exist — e.g. after importing someone else's overlay:
- *  - a Video element whose key no ENABLED flow sets a video for (Set video / Build highlight reel);
+ *  - a Media element (key mode) whose key no ENABLED flow sets (Set media / Build highlight reel), or a
+ *    Highlight Replay element whose key no enabled flow fills (Set replay list / Set media with a highlight);
  *  - an element trigger watching an element that is no longer in the scene.
  * Shown in the editor (red outline, layer count, element settings) and to the AI (get_overlay).
  */
 
-/** Video keys the enabled flows set (Set video / Build highlight reel). */
+/** Keys the enabled flows fill: "media:<key>" (Set media / Build highlight reel), "replay:<key>" (Set replay list / Set media). */
 export function flowVideoKeys(flows: Flow[]): Set<string> {
 	const keys = new Set<string>();
 	for (const f of flows) {
 		if (!f.enabled) continue;
 		for (const n of f.nodes) {
 			if (n.kind !== 'action') continue;
-			if (n.data.type === 'setHighlightVideo') keys.add(n.data.key?.trim() || 'game');
-			if (n.data.type === 'buildHighlightReel' && n.data.key?.trim()) keys.add(n.data.key.trim());
+			if (n.data.type === 'setHighlightVideo') (keys.add(`media:${n.data.key?.trim() || 'game'}`), keys.add(`replay:${n.data.key?.trim() || 'game'}`));
+			if (n.data.type === 'buildHighlightReel' && n.data.key?.trim()) keys.add(`media:${n.data.key.trim()}`);
+			if (n.data.type === 'setReplayList') keys.add(`replay:${n.data.key?.trim() || 'replay'}`);
 		}
 	}
 	return keys;
@@ -35,8 +37,10 @@ export function sceneWarnings(scene: Scene | undefined, videoKeys: Set<string>):
 	const out: Record<string, string[]> = {};
 	const add = (id: string, w: string) => (out[id] = [...(out[id] ?? []), w]);
 	for (const item of items) {
-		if (item.elementId === CustomElement.PostGameHighlightVideo && !videoKeys.has(videoKey(item)))
-			add(item.id, `Video key "${videoKey(item)}": no enabled flow sets a video for it (Flows → Set video / Build highlight reel).`);
+		if (item.elementId === CustomElement.PostGameHighlightVideo && item.data?.video?.source !== 'file' && !videoKeys.has(`media:${videoKey(item)}`))
+			add(item.id, `Media key "${videoKey(item)}": no enabled flow sets it (Flows → Set media).`);
+		if (item.elementId === CustomElement.HighlightReplay && !videoKeys.has(`replay:${videoKey(item)}`))
+			add(item.id, `Replay key "${videoKey(item)}": no enabled flow fills it (Flows → Set replay list).`);
 		triggerAnimations(item.data).forEach((t, i) => {
 			const missing = (t.elementTriggers ?? []).filter((e) => e.source !== SELF && !ids.has(e.source));
 			if (missing.length) add(item.id, `Animation ${i + 1} watches ${missing.length > 1 ? `${missing.length} elements that are` : 'an element that is'} no longer in this scene.`);

@@ -5,7 +5,6 @@
 		currentOverlayEditor,
 		electronEmitter,
 		isElectron,
-		isOverlayPage,
 		overlays,
 		statsScene,
 		gameFrame,
@@ -111,16 +110,16 @@
 	$: boardAspectH = overlay?.aspectRatio?.height ?? 9;
 	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 0);
 
-	// Fixed-position navbar sidebars: w-16 = 64px each side (hidden on overlay pages).
-	// Board canvas padding: 8px each side = 16px total.
-	const NAVBAR_W = 64;
+	// Board canvas padding: 8px each side.
 	const BOARD_PAD = 8;
-	$: navbarReserved = $isOverlayPage ? 0 : NAVBAR_W * 2;
-	$: sidebarWidth = displayPreview ? 260 : 0;
-	$: availableWidth = innerWidth - sidebarWidth - navbarReserved - BOARD_PAD * 2;
+	// The board fits the canvas area as it really is (measured): the bars above/below can be taller than a
+	// fixed guess (wrapping scene buttons, the position fields), which pushed the board under them.
+	let canvasWidth = 0;
+	let canvasHeight = 0;
+	$: availableWidth = Math.max(0, canvasWidth - BOARD_PAD * 2);
 
 	const selectedEditorHeight = 52;
-	$: availableHeight = innerHeight - 42 - selectedEditorHeight - 42 - BOARD_PAD * 2;
+	$: availableHeight = Math.max(0, canvasHeight - BOARD_PAD * 2);
 
 	$: horizontalWidth = availableWidth;
 	$: horizontalHeight = Math.floor((horizontalWidth / boardAspectW) * boardAspectH);
@@ -154,7 +153,7 @@
 	style="padding: 0;"
 	in:fade={{ delay: 50, duration: 150 }}
 >
-	{#if overlay && constrainedBoardHeight && constrainedBoardWidth}
+	{#if overlay}
 		<div class="w-full h-full flex overflow-hidden">
 
 			<!-- Left sidebar: live preview + layer toggles -->
@@ -232,7 +231,8 @@
 				</div>
 
 				<!-- Board canvas -->
-				<div class="flex-1 flex items-center justify-center overflow-hidden" style="padding: 8px;">
+				<div class="flex-1 min-h-0 flex items-center justify-center overflow-hidden" style="padding: 8px;" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
+					{#if constrainedBoardHeight && constrainedBoardWidth}
 					<div
 						class="border-secondary bg-cover relative"
 						style="
@@ -244,6 +244,7 @@
 					>
 						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} {showDemo} />
 					</div>
+					{/if}
 				</div>
 
 				<!-- Bottom toolbar -->

@@ -12,7 +12,7 @@
 
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button A Press"
+		description="Button A Press"
 		value={CustomElement.InGamePlayer1ControllerButtonA}
 		on:select={select}
 	>
@@ -21,7 +21,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button B Press"
+		description="Button B Press"
 		value={CustomElement.InGamePlayer1ControllerButtonB}
 		on:select={select}
 	>
@@ -30,7 +30,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button X Press"
+		description="Button X Press"
 		value={CustomElement.InGamePlayer1ControllerButtonX}
 		on:select={select}
 	>
@@ -39,7 +39,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button Y Press"
+		description="Button Y Press"
 		value={CustomElement.InGamePlayer1ControllerButtonY}
 		on:select={select}
 	>
@@ -48,7 +48,7 @@
 </div>
 <!-- <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button L Press"
+		description="Button L Press"
 		value={CustomElement.InGamePlayer1ControllerButtonL}
 		on:select={select}
 	>
@@ -57,7 +57,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button R Press"
+		description="Button R Press"
 		value={CustomElement.InGamePlayer1ControllerButtonR}
 		on:select={select}
 	>
@@ -66,7 +66,7 @@
 </div> -->
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button Z Press"
+		description="Button Z Press"
 		value={CustomElement.InGamePlayer1ControllerButtonZ}
 		on:select={select}
 	>
@@ -75,7 +75,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Button D-Pad Press"
+		description="Button D-Pad Press"
 		value={CustomElement.InGamePlayer1ControllerDPad}
 		on:select={select}
 	>
@@ -84,7 +84,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Back L-Analog"
+		description="Back L-Analog"
 		value={CustomElement.InGamePlayer1ControllerAnalogL}
 		on:select={select}
 	>
@@ -93,7 +93,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Back R-Analog"
+		description="Back R-Analog"
 		value={CustomElement.InGamePlayer1ControllerAnalogR}
 		on:select={select}
 	>
@@ -102,7 +102,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Left Analog Stick"
+		description="Left Analog Stick"
 		value={CustomElement.InGamePlayer1ControllerAnalogStickL}
 		on:select={select}
 	>
@@ -111,7 +111,7 @@
 </div>
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player1 Right Analog Stick"
+		description="Right Analog Stick"
 		value={CustomElement.InGamePlayer1ControllerAnalogStickR}
 		on:select={select}
 	>

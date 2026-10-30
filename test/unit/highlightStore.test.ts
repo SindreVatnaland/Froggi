@@ -98,6 +98,36 @@ describe('highlight reels (store)', () => {
 		expect(() => store.show('game', path.join(dir, 'nope.mp4'))).toThrow(/No file/);
 	});
 
+	it('Set media: one thing per key — a highlight\'s clip, a file with a range, an image, a link; empty clears', async () => {
+		const { store } = make();
+		const t = Date.now() - 50_000;
+		const id = store.mark({ start: t + 32_000, end: t + 42_000 }, 1);
+		store.requestedSave(t + 42_500);
+		const file = video('media.mp4');
+		store.saved(file);
+		// OBS: save replay with a highlight → where it sits in the file, from the file's start.
+		expect(await store.clipFor(id)).toEqual({ path: file, start: 19.5, end: 29.5, seconds: 10 });
+		expect(await store.clipFor('h-00000000')).toBeNull();
+
+		const hl = await store.setMedia('game', id);
+		expect(hl).toMatchObject({ kind: 'video', highlight: id, clips: [{ fromEnd: 10.5, toEnd: 0.5 }] });
+		const ranged = await store.setMedia('game', file, { start: 19.5, end: 29.5 });
+		expect(ranged?.clips[0]).toMatchObject({ fromEnd: 10.5, toEnd: 0.5 }); // same clip, from a path + range
+		expect((await store.setMedia('game', file))?.clips[0]).toMatchObject({ fromEnd: 30, toEnd: 0 }); // whole video
+		const png = path.join(dir, 'pic.png');
+		fs.writeFileSync(png, 'x');
+		expect(await store.setMedia('game', png)).toMatchObject({ kind: 'image' });
+		expect((await store.setMedia('game', 'https://example.com/a.mp4', { start: 3 }))?.clips[0]).toEqual({ url: 'https://example.com/a.mp4', fromEnd: 0, toEnd: 0, start: 3, end: null });
+		await expect(store.setMedia('game', path.join(dir, 'gone.mp4'))).rejects.toThrow(/No file/);
+		expect(await store.setMedia('game', '')).toBeNull();
+		expect(store.current().game).toBeUndefined();
+
+		store.setReplayList('replay-game', [id]);
+		expect(store.current()['replay-game']).toMatchObject({ highlights: [id], clips: [] });
+		store.setReplayList('replay-game', []);
+		expect(store.current()['replay-game']).toBeUndefined();
+	});
+
 	it('this game\'s marks become game highlights (frames + score)', () => {
 		const { store } = make();
 		store.mark({ start: 1, end: 2, frames: { start: 100, end: 400 } }, 80); // before this game

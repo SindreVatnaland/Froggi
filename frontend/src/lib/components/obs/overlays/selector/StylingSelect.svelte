@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { IRONMAN_BOX_ELEMENTS, IRONMAN_TEXT_ELEMENTS } from '$lib/utils/elementKind';
-	import { PLAYER_SLOTS } from '$lib/utils/teams';
+	import { canonicalPlayerElement, playerOptions, selectedPlayerOption } from '$lib/utils/playerVariants';
 	import { BUILTIN_ASSET_PACKS, DEFAULT_ASSET_PACK_ID } from '$lib/models/types/assetPack';
 	import { PACK_CHARACTER_ELEMENTS, STRIKE_CHARACTER_ELEMENTS } from '../elementCategories';
 	import Select from '$lib/components/input/Select.svelte';
@@ -8,6 +8,9 @@
 	import type { ElementPayload } from '$lib/models/types/overlay';
 	import { Animation, StyleSetting } from '$lib/models/enum';
 	import ColorInput from '$lib/components/input/ColorInput.svelte';
+	import { CONTROLLER_STYLE_DEFAULTS } from '$lib/utils/controllerStyle';
+	import { CONTROLLER_PREVIEW, type ControllerPreview } from '../element/controllerPreview';
+	import { getContext } from 'svelte';
 	import SliderInput from '$lib/components/input/SliderInput.svelte';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import CodeInput from '$lib/components/input/CodeInput.svelte';
@@ -42,6 +45,10 @@
 	$: customStringSettings = isCustomStringSettings(selectedElementId);
 	$: customBoxSettings = isCustomBoxSettings(selectedElementId);
 	$: customImageSettings = isCustomImageSettings(selectedElementId);
+	// Media element (2100): payload.video {source, key, file, fit, volume}; older ones: payload.highlight {key, sound}.
+	type MediaSettings = { source?: 'key' | 'file'; key?: string; file?: string; fit?: 'cover' | 'contain'; volume?: number };
+	$: mediaSettings = (payload?.video ?? (payload?.highlight ? { key: payload.highlight.key, volume: payload.highlight.sound ? 100 : 0 } : {})) as MediaSettings;
+	const setMedia = (patch: MediaSettings) => (payload.video = { key: 'game', volume: 0, ...mediaSettings, ...patch });
 	$: stringSettings = isStringSettings(selectedElementId);
 	$: imageSettings = isImageSettings(selectedElementId);
 	$: isPackCharacter = PACK_CHARACTER_ELEMENTS.has(selectedElementId) || STRIKE_CHARACTER_ELEMENTS.has(selectedElementId);
@@ -63,6 +70,15 @@
 	$: controllerAnalogStickSettings = selectedElementId >= 3160 && selectedElementId < 3170;
 
 	$: svgSettings = selectedElementId >= 3200 && selectedElementId <= 3200; // TODO: Add all buttons as svg
+	// Controller graphics (ControllerGraphic): outline + fill colours; elements made before get today's look.
+	$: controllerSettings = selectedElementId >= 3100 && selectedElementId < 3170;
+	// Fill in fields elements made before this option had (older payloads lack the pressed colours).
+	$: if (controllerSettings && payload && (!payload.controller || payload.controller.fillPressed === undefined))
+		payload.controller = { ...CONTROLLER_STYLE_DEFAULTS, ...(payload.controller ?? {}) };
+	$: isTriggerBar = selectedElementId >= 3150 && selectedElementId < 3160;
+	$: isStick = selectedElementId >= 3160 && selectedElementId < 3170;
+	// Set by the style window (ElementModal): show the controller preview pressed.
+	const controllerPreview = getContext<ControllerPreview | undefined>(CONTROLLER_PREVIEW);
 
 	$: percentSettings = (selectedElementId >= 1001 && selectedElementId <= 1006) || (selectedElementId >= 1013 && selectedElementId <= 1015);
 	$: customPercentSettings = selectedElementId >= 1007 && selectedElementId <= 1012;
@@ -219,13 +235,20 @@
 		t.elementTriggers = event.detail.elementTriggers;
 		payload = payload;
 	};
-	// Player-bound elements (names contain Player1 / Player2) can show any doubles slot.
-	$: elementName = CustomElement[selectedElementId] ?? '';
-	$: isPlayerElement = /Player[12]/.test(elementName);
-	$: isPlayer2Element = /Player2/.test(elementName);
+	// Player dropdown (utils/playerVariants): the players this element exists for + doubles' second
+	// players. Picking one switches the element id (and the doubles slot) — styling stays.
+	$: playerChoices = playerOptions(selectedElementId);
+	$: playerChoice = selectedPlayerOption(selectedElementId, payload?.playerSlot);
+	const pickPlayer = (value: string) => {
+		const choice = playerChoices.find((o) => o.value === value);
+		if (!choice) return;
+		payload.playerSlot = choice.slot;
+		prevSelectedElementId = choice.elementId;
+		selectedElementId = choice.elementId;
+	};
 </script>
 
-{#key selectedElementId}
+{#key canonicalPlayerElement(selectedElementId)}
 	{#key loadTrigger}
 		<div
 			class="w-full my-2 flex flex-col gap-5"
@@ -276,31 +299,68 @@
 
 			{#if selectedElementId === CustomElement.PostGameHighlightVideo}
 				<section class="styling-section">
-					<p class="section-label">Video</p>
+					<p class="section-label">Media</p>
+					<div class="pill-group mb-2">
+						<button class="pill" class:pill--active={mediaSettings.source !== 'file'} on:click={() => setMedia({ source: 'key' })}>Key (set by a flow)</button>
+						<button class="pill" class:pill--active={mediaSettings.source === 'file'} on:click={() => setMedia({ source: 'file' })}>File</button>
+					</div>
+					{#if mediaSettings.source === 'file'}
+						<FileUpload
+							fileName={`${selectedItemId}-media`}
+							directory="image"
+							label="Video or image"
+							acceptedExtensions={['mp4', 'webm', 'jpg', 'jpeg', 'png', 'gif', 'webp']}
+							on:change={(event) => setMedia({ file: event.detail })}
+						/>
+						<p class="text-xs opacity-50 mt-1">{mediaSettings.file ?? 'No file yet'} · videos up to 50 MB, loop. Shared with the overlay.</p>
+					{:else}
+						<label class="flex flex-col gap-1 text-sm mb-2">
+							Key
+							<input
+								value={mediaSettings.key ?? 'game'}
+								on:change={(e) => setMedia({ key: e.currentTarget.value.trim() || 'game' })}
+								class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
+							/>
+						</label>
+					{/if}
 					<label class="flex flex-col gap-1 text-sm mb-2">
+						Fit
+						<select
+							value={mediaSettings.fit ?? 'cover'}
+							on:change={(e) => setMedia({ fit: e.currentTarget.value === 'contain' ? 'contain' : 'cover' })}
+							class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
+						>
+							<option value="cover">Fill (crop)</option>
+							<option value="contain">Fit (whole picture)</option>
+						</select>
+					</label>
+					<label class="flex flex-col gap-1 text-sm">
+						Volume · {mediaSettings.volume ?? 0}
+						<input type="range" min="0" max="100" step="5" value={mediaSettings.volume ?? 0} on:change={(e) => setMedia({ volume: Number(e.currentTarget.value) })} />
+					</label>
+					<p class="text-xs opacity-50 mt-2 leading-relaxed">
+						{mediaSettings.source === 'file'
+							? 'Shows this file on loop.'
+							: 'Shows what a flow\'s "Set media" card puts on this key — a video or image file, a web link, or a highlight\'s replay-buffer clip. Empty until a flow sets it. Every screen (OBS, a phone, a remote device) shows the same moment at the same time; a flow\'s "Set media volume" for this key overrides the volume.'}
+						0 = muted.
+					</p>
+				</section>
+			{/if}
+
+			{#if selectedElementId === CustomElement.HighlightReplay}
+				<section class="styling-section">
+					<p class="section-label">Highlight Replay</p>
+					<label class="flex flex-col gap-1 text-sm">
 						Key
 						<input
-							value={payload.video?.key ?? payload.highlight?.key ?? 'game'}
-							on:change={(e) => (payload.video = { key: e.currentTarget.value.trim() || 'game', volume: payload.video?.volume ?? (payload.highlight?.sound ? 100 : 0) })}
+							value={payload.video?.key ?? 'game'}
+							on:change={(e) => (payload.video = { volume: 0, ...payload.video, key: e.currentTarget.value.trim() || 'game' })}
 							class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
 						/>
 					</label>
-					<label class="flex flex-col gap-1 text-sm">
-						Volume · {payload.video?.volume ?? (payload.highlight?.sound ? 100 : 0)}
-						<input
-							type="range"
-							min="0"
-							max="100"
-							step="5"
-							value={payload.video?.volume ?? (payload.highlight?.sound ? 100 : 0)}
-							on:change={(e) => (payload.video = { key: payload.video?.key ?? payload.highlight?.key ?? 'game', volume: Number(e.currentTarget.value) })}
-						/>
-					</label>
 					<p class="text-xs opacity-50 mt-2 leading-relaxed">
-						Plays what a flow points this key at: a highlight reel ("Build highlight reel" — the best moments, cut
-						from OBS's replay buffer, looping) or one video file ("Set video"). Every screen (OBS, a phone, a
-						remote device) shows the same moment at the same time. 0 = muted; a flow's "Set video volume" for
-						this key overrides it. A new set clears the reels.
+						Plays the highlights a flow's "Set replay list" card puts on this key, redrawn from the game replays (no
+						OBS needed), one after another. Empty until a flow sets it and the games are stored.
 					</p>
 				</section>
 			{/if}
@@ -353,12 +413,12 @@
 				</section>
 			{/if}
 
-			{#if isPlayerElement}
+			{#if playerChoices.length}
 				<section class="styling-section">
 					<p
 						class="section-label"
 						use:tooltip={{
-							content: 'Which player this element shows. Default = its own player (Player 1 / Player 2; in doubles each team\'s first player). Pick a team slot to show any of the four doubles players.',
+							content: 'Which player this element shows: you (your connect code), Player 1 / 2 — in doubles each team\'s first player — or a team\'s second player.',
 							placement: 'top-start',
 							offset: 15,
 							delay: [200, 0],
@@ -366,10 +426,9 @@
 					>
 						Player
 					</p>
-					<Select bind:selected={payload.playerSlot}>
-						<option value={undefined} selected={!payload.playerSlot}>Default ({isPlayer2Element ? 'Player 2 / Team 2 · Player 1' : 'Player 1 / Team 1 · Player 1'})</option>
-						{#each PLAYER_SLOTS as slot (slot.value)}
-							<option value={slot.value} selected={payload.playerSlot === slot.value}>{slot.label}</option>
+					<Select selected={playerChoice} on:change={(e) => pickPlayer(e.detail)}>
+						{#each playerChoices as choice (choice.value)}
+							<option value={choice.value} selected={playerChoice === choice.value}>{choice.label}</option>
 						{/each}
 					</Select>
 				</section>
@@ -453,6 +512,66 @@
 							<ColorInput bind:valueConcat={payload.textStroke.color} opacity={true} />
 						</div>
 					</div>
+				</section>
+			{/if}
+
+			{#if controllerSettings && payload.controller}
+				<section class="styling-section">
+					<div class="flex items-center justify-between">
+						<p class="section-label">Controller</p>
+						{#if controllerPreview}
+							<label class="flex items-center gap-1 text-xs cursor-pointer">
+								<input type="checkbox" bind:checked={$controllerPreview} />
+								Show pressed
+							</label>
+						{/if}
+					</div>
+					{#if isTriggerBar}
+						<!-- The analog L/R bar: border + rounding come from the Border section, the track from Background. -->
+						<div>
+							<p class="field-label">Bar color (pressed part)</p>
+							<ColorInput bind:valueConcat={payload.controller.fillPressed} opacity={true} />
+						</div>
+					{:else if isStick}
+						<!-- Sticks have no pressed state: one outline + one fill (the whole cap). -->
+						<div class="grid grid-cols-2 gap-3 items-end">
+							<div>
+								<p class="field-label">Outline</p>
+								<ColorInput bind:valueConcat={payload.controller.outline} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Fill (cap)</p>
+								<ColorInput bind:valueConcat={payload.controller.fill} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Outline width · {payload.controller.width}</p>
+								<NumberInput bind:value={payload.controller.width} min={0} max={20} step={0.5} />
+							</div>
+						</div>
+					{:else}
+						<div class="grid grid-cols-2 gap-3 items-end">
+							<div>
+								<p class="field-label">Outline · released</p>
+								<ColorInput bind:valueConcat={payload.controller.outline} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Outline · pressed</p>
+								<ColorInput bind:valueConcat={payload.controller.outlinePressed} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Fill · released</p>
+								<ColorInput bind:valueConcat={payload.controller.fill} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Fill · pressed</p>
+								<ColorInput bind:valueConcat={payload.controller.fillPressed} opacity={true} />
+							</div>
+							<div>
+								<p class="field-label">Outline width · {payload.controller.width}</p>
+								<NumberInput bind:value={payload.controller.width} min={0} max={20} step={0.5} />
+							</div>
+						</div>
+					{/if}
 				</section>
 			{/if}
 

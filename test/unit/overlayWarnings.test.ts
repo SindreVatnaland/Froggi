@@ -8,12 +8,13 @@ import { overlayWarnings } from '../../frontend/src/lib/utils/overlayWarnings';
 const load = (file: string) => JSON.parse(fs.readFileSync(path.join(__dirname, '../../../demo-overlays', file), 'utf8')) as Overlay;
 
 describe('overlay warnings (editor + AI)', () => {
-	it('Video elements: warned while no ENABLED flow sets a video for their key', () => {
+	it('Media / Highlight Replay elements: warned while no ENABLED flow fills their key', () => {
 		const overlay = load('Highlights.json');
 		const off = overlayWarnings(overlay, [{ ...HIGHLIGHTS_FLOW, enabled: false }]);
 		const messages = Object.values(off).flatMap((s) => Object.values(s ?? {}).flat());
-		expect(messages.join(' ')).toMatch(/Video key "game"/);
-		expect(messages.join(' ')).toMatch(/Video key "tournament"/);
+		expect(messages.join(' ')).toMatch(/Media key "game"/);
+		expect(messages.join(' ')).toMatch(/Media key "daily"/);
+		expect(messages.join(' ')).toMatch(/Replay key "replay-daily"/);
 		expect(overlayWarnings(overlay, [{ ...HIGHLIGHTS_FLOW, enabled: true }])).toEqual({});
 	});
 

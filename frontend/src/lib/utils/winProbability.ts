@@ -1,8 +1,9 @@
 /**
  * Win chance from what is on screen: stocks and percent (game), plus the set score (set).
  *
- * A side's remaining "life" = stocks left − how far into the current stock it is (percent ÷ the percent a
- * stock is typically lost at). Game chance = Lₐ² / (Lₐ² + L_b²) — squaring makes a lead count for more
+ * A side's remaining "life" = stocks left − how far into the current stock it is (percent ÷ the percent THIS
+ * player loses stocks at: their average death percent over the set's games, pulled toward KO_PERCENT while
+ * they have few deaths). Game chance = Lₐ² / (Lₐ² + L_b²) — squaring makes a lead count for more
  * than a plain ratio. Set chance = this game's chance, then every later game 50/50, against the score
  * needed to win the best-of. Doubles: each team's players are summed.
  *
@@ -11,8 +12,6 @@
  * per stock this set). Hard floor: after the leader's current stock, every further stock takes at least
  * an instant SD (SD_STOCK_SECONDS), so a lead that can't be erased in time is a sure win.
  *
- * ponytail: one fixed KO percent for every character; per-character / per-player averages are the
- * upgrade if the numbers feel off for floaties or fast fallers.
  */
 
 /** Percent a stock is typically lost at in Melee. */
@@ -21,11 +20,20 @@ export const KO_PERCENT = 120;
 export interface SideState {
 	stocks: number;
 	percent: number;
+	/** This player's deaths and summed percent at death over the set so far (live fight stats, match). */
+	deaths?: number;
+	deathPercent?: number;
+}
+
+/** The percent this player loses a stock at: their set average, pulled toward KO_PERCENT by two virtual deaths. */
+export function playerKoPercent(s: Pick<SideState, 'deaths' | 'deathPercent'>): number {
+	const deaths = Math.max(0, s.deaths ?? 0);
+	return ((deaths ? (s.deathPercent ?? 0) : 0) + 2 * KO_PERCENT) / (deaths + 2);
 }
 
 /** Stocks left minus how far into the current stock this side is (never below a sliver while alive). */
-export function remainingLife(sides: SideState[], koPercent = KO_PERCENT): number {
-	return sides.reduce((sum, s) => (s.stocks > 0 ? sum + s.stocks - Math.min(Math.max(s.percent, 0) / koPercent, 0.95) : sum), 0);
+export function remainingLife(sides: SideState[]): number {
+	return sides.reduce((sum, s) => (s.stocks > 0 ? sum + s.stocks - Math.min(Math.max(s.percent, 0) / playerKoPercent(s), 0.95) : sum), 0);
 }
 
 /** Chance side A wins the running game (0–1). */

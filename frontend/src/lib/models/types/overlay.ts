@@ -101,14 +101,17 @@ export interface ElementPayload {
 	colorOverlay?: ColorOverlay;
 	/** Character elements: asset pack id (see models/types/assetPack). Default: built-in stock icons. */
 	assetPack?: string;
+	/** Controller elements: outline colour + width and the fill colour of pressed parts / stick cap / trigger bar. */
+	controller?: import('../../utils/controllerStyle').ControllerStyle;
 	/** Which player this Player 1/2 element shows (doubles slots); unset = its own player. */
 	playerSlot?: import('../../utils/teams').PlayerSlot;
 	/** RPS icon elements: your own icon file per hand (uploaded to the overlay's image folder); unset = built-in SVG. */
 	rpsIcons?: { rock?: string; paper?: string; scissors?: string };
 	/** Built-in RPS hands: "outline" (element text colour, default) or "color" (full-colour emoji). */
 	rpsIconStyle?: 'outline' | 'color';
-	/** Video element: the key a flow points at a video / highlight reel, and its volume (0–100). */
-	video?: { key: string; volume: number };
+	/** Media element (2100): a file uploaded to the overlay (`source: 'file'`, in its image folder) or the key a
+	 *  flow's "Set media" card points at (default); fit (cover default) and volume (0–100). */
+	video?: { key: string; volume: number; source?: 'key' | 'file'; file?: string; fit?: 'cover' | 'contain' };
 	/** Older Video elements (before volume): read as video {key, volume 100 | 0}. */
 	highlight?: { key: string; sound: boolean };
 }

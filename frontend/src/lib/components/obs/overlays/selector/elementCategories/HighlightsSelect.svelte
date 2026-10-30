@@ -8,11 +8,10 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<p class="text-xs opacity-50">
-		Plays the video a flow points a key at — a highlight reel from OBS's replay buffer (flow "Highlights")
-		or any video file ("Set video"). In sync on every screen.
-	</p>
-	<SelectOption description="A video by key: a highlight reel or a file a flow sets — every screen plays it in sync" value={CustomElement.PostGameHighlightVideo} on:select={select}>
-		Video
+	<SelectOption description="A video or image file, or what a flow's Set media card puts on a key (a file, a web link, a highlight clip from the OBS replay buffer) — every screen in sync" value={CustomElement.PostGameHighlightVideo} on:select={select}>
+		Media
+	</SelectOption>
+	<SelectOption description="Highlights redrawn from their game replays — no OBS needed. Plays the list a flow's Set replay list card puts on a key, transparent background" value={CustomElement.HighlightReplay} on:select={select}>
+		Highlight Replay
 	</SelectOption>
 </div>

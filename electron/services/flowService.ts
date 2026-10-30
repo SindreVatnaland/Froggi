@@ -1,5 +1,6 @@
 import { delay, inject, singleton } from 'tsyringe';
 import Store from 'electron-store';
+import { debounce } from 'lodash';
 import type { ElectronLog } from 'electron-log';
 import type { Repository } from 'typeorm';
 import { scopedLog } from '../utils/logger';
@@ -14,7 +15,7 @@ import { ElectronStrikeStore } from './store/storeStrike';
 import { ElectronCommandStore } from './store/storeCommands';
 import { CHARACTER_NAMES_BY_ID, STAGE_NAMES_BY_ID, WebhookService } from './webhookService';
 import { ElectronGamesStore } from './store/storeGames';
-import { ElectronHighlightStore } from './store/storeHighlights';
+import { ElectronHighlightStore, HIGHLIGHT_ID } from './store/storeHighlights';
 import { ElectronObsStore } from './store/storeObs';
 import { ObsWebSocket } from './obs';
 import { CommandType } from '../../frontend/src/lib/models/types/commandTypes';
@@ -47,8 +48,10 @@ const oauthKey = (o: FlowOAuth) => `${o.tokenUrl}|${o.clientId}|${o.clientSecret
 
 /** electron-store flag: the default Scene switching flow was installed once. */
 const SCENE_FLOW_SEEDED = 'migrations.sceneFlowInstalled';
+/** electron-store: every flow's values + lists (Calculate / List cards), kept across restarts. */
+const FLOW_VALUES_KEY = 'flows.values';
 // v2: the rule-card version (replaces the first, never-released one once).
-const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV2';
+const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV3';
 
 /** Minimum time between two runs of the same flow (damage events can come in bursts). */
 const FLOW_COOLDOWN_MS = 250;
@@ -89,6 +92,7 @@ export class FlowService {
 	) {
 		this.log = scopedLog(this.log, 'Flows');
 		this.log.info('Initializing Flow Service');
+		this.loadValues();
 		void this.load();
 		this.initListeners();
 	}
@@ -122,6 +126,8 @@ export class FlowService {
 	private async seedHighlightsFlow() {
 		const store = new Store();
 		if (store.get(HIGHLIGHTS_FLOW_SEEDED)) return;
+		// V3 (Media + loops): replaces the earlier one only while it is off — a flow the user turned on is theirs.
+		if (this.getFlow(HIGHLIGHTS_FLOW.id)?.enabled) return void store.set(HIGHLIGHTS_FLOW_SEEDED, true);
 		const result = await this.saveFlow(HIGHLIGHTS_FLOW);
 		if (!result.ok) return this.log.error('Could not install the Highlights flow:', result.problems);
 		store.set(HIGHLIGHTS_FLOW_SEEDED, true);
@@ -240,8 +246,8 @@ export class FlowService {
 			this.handle({ type: 'dolphinConnection', connected, tokens: { connected } });
 		});
 		this.localEmitter.on('ObsReplaySaved', (file) => this.handle({ type: 'obsReplaySaved', payload: { path: file }, tokens: { path: file, fileName: path.basename(file) } }));
-		// Highlights belong to the running set: a Dashboard set start or a game in a new set clears them.
-		// The game just stored gets its highlights (frames + score), so its replay can show them later.
+		// The game just stored gets its highlights (frames + score), so its replay can show them later; the
+		// saved highlights learn their game's replay + set (the highlight replay element reads them).
 		this.localEmitter.on('RecentGames', (games) => {
 			const last = games?.at(-1);
 			const highlights = this.storeHighlights.gameHighlights();
@@ -249,8 +255,19 @@ export class FlowService {
 			if (new Date(last.timestamp ?? 0).getTime() < this.storeHighlights.gameStart) return; // an older game
 			last.highlights = highlights;
 			void this.storeGames.setGameHighlights(last, highlights);
+			const root = this.storeSettings.getReplayRootPath();
+			const replay = last.replayPath ? (path.isAbsolute(last.replayPath) || !root ? last.replayPath : path.join(root, last.replayPath)) : null;
+			this.storeHighlights.linkGame(this.storeHighlights.gameStart, replay, last.settings?.matchInfo?.matchId ?? null);
 		});
 		this.clientEmitter.on('HighlightReelShown', (key, id) => this.storeHighlights.started(key, id));
+		// The highlight replay element asks for a highlight's frames (sent once; every client caches them).
+		this.clientEmitter.on('HighlightFramesRequest', (id) => {
+			if (!HIGHLIGHT_ID.test(String(id))) return;
+			void this.storeHighlights
+				.replayFrames(String(id))
+				.catch((err) => (this.log.warn(`Highlight ${id}: could not read its replay`, err), null))
+				.then((frames) => this.messageHandler.sendMessage('HighlightFrames', String(id), frames));
+		});
 		this.localEmitter.on('StrikePlayerAction', (a) => this.handle({ type: 'strikeAction', event: a.event, payload: a, tokens: { event: a.event, player: a.player ? `p${a.player}` : null, playerName: a.playerName, phase: a.phase, stage: a.stage ?? null, character: a.character ?? null, rps: a.rps ?? null } }));
 		// No replay found after a game: still "Game ends" (the scene flow moves on from In Game).
 		this.localEmitter.on('GameEndWithoutReplay', (gameEnd) => this.handle({ type: 'gameEnd', payload: gameEnd, tokens: { stage: null, method: null, score: null } }));
@@ -285,9 +302,14 @@ export class FlowService {
 		const victim = who(e.victimIndex);
 		const side = (attacker.slot - 1) % 2; // slots 1 + 3 = Player 1's side
 		const score = this.storeGames.getGameScore() ?? [];
-		const stockSeconds = this.storeLiveStats.fightStats.snapshot().stockSeconds?.match ?? [];
+		const fightSnap = this.storeLiveStats.fightStats.snapshot();
+		const stockSeconds = fightSnap.stockSeconds?.match ?? [];
 		const odds = (snap: Record<number, PlayerSnapshot>, frame: number) => {
-			const sideOf = (s: number) => slots.flatMap((p, i) => (p && i % 2 === s && snap[p.playerIndex] ? [{ stocks: snap[p.playerIndex].stocks, percent: snap[p.playerIndex].percent }] : []));
+			const sideOf = (s: number) => slots.flatMap((p, i) => {
+				if (!p || i % 2 !== s || !snap[p.playerIndex]) return [];
+				const set = fightSnap.match?.[playerKey(p)];
+				return [{ stocks: snap[p.playerIndex].stocks, percent: snap[p.playerIndex].percent, deaths: set?.deaths, deathPercent: set?.deathPercent }];
+			});
 			const left = secondsLeft(settings, frame);
 			const c = winChances(sideOf(0), sideOf(1), [score[0] ?? 0, score[1] ?? 0], this.storeLiveStats.getBestOf(), left != null ? { secondsLeft: left, stockSeconds } : null);
 			return { game: Math.round(c.game[side] * 100), set: Math.round(c.set[side] * 100) };
@@ -496,8 +518,8 @@ export class FlowService {
 	}
 
 	// ── Values (Calculate / List cards) ────────────────────────────────────────────────────────
-	/** flow id → name → number / list. A value stays (also for the flow's next runs) until a Clear values
-	 *  card clears it — nothing resets on its own. Each flow has its own values; memory only. */
+	/** flow id → name → number / list. A value stays (also for the flow's next runs, and restarts) until a
+	 *  Clear values card clears it — nothing resets on its own. Each flow has its own values. */
 	private values = new Map<string, Record<string, number | ListItem[]>>();
 
 	/** The flow's values as keys: every name its Calculate / List cards set — unset or cleared reads as
@@ -531,6 +553,25 @@ export class FlowService {
 		if (value === undefined) delete values[key];
 		else values[key] = value;
 		this.values.set(flow.id, values);
+		this.saveValues();
+	}
+
+	/** Values + lists are kept across restarts (a daily highlight list must survive one) — electron-store. */
+	private saveValues = debounce(() => {
+		try {
+			new Store().set(FLOW_VALUES_KEY, Object.fromEntries(this.values));
+		} catch (err) {
+			this.log.warn('Could not save flow values', err);
+		}
+	}, 1000);
+
+	private loadValues() {
+		try {
+			const saved = new Store().get(FLOW_VALUES_KEY) as Record<string, Record<string, number | ListItem[]>> | undefined;
+			for (const [flowId, values] of Object.entries(saved ?? {})) this.values.set(flowId, values);
+		} catch (err) {
+			this.log.warn('Could not load flow values', err);
+		}
 	}
 
 	// ── Timer cards ──────────────────────────────────────────────────────────────────────────────
@@ -540,14 +581,23 @@ export class FlowService {
 	private startTimer(flow: Flow, nodeId: string, timer: Extract<FlowAction, { type: 'timer' }>, event: FlowEventWithTokens) {
 		const key = timer.key.trim();
 		this.cancelTimer(key);
-		this.log.info(`Flow "${flow.name}": timer "${key}" ${timer.seconds}s`);
+		// A number, or a formula — e.g. {{clips.first.seconds}} to wait as long as a highlight plays.
+		let seconds = 0;
+		try {
+			seconds = evaluateFormula(String(timer.seconds ?? 0), { ...event.tokens, ...this.valueTokens(flow) }, this.lists(flow));
+		} catch (err) {
+			this.log.warn(`Flow "${flow.name}": timer "${key}" — ${err instanceof Error ? err.message : err}`);
+		}
+		this.log.info(`Flow "${flow.name}": timer "${key}" ${seconds}s`);
+		// ponytail: at least 0.1 s, so a loop whose time reads 0 can't spin.
+		seconds = Math.max(0.1, Number(seconds) || 0);
 		this.timers.set(key, setTimeout(() => {
 			this.timers.delete(key);
 			const current = this.getFlow(flow.id); // edited or turned off meanwhile → use what is saved now
 			if (!current) return;
 			const tokens = { ...event.tokens, ...this.stateTokens(), ...this.valueTokens(current) };
 			void this.runSteps(current, stepsAfter(current, nodeId, this.context(), tokens), { ...event, tokens });
-		}, Math.max(0, timer.seconds) * 1000));
+		}, Math.max(0, seconds) * 1000));
 	}
 
 	private cancelTimer(key: string) {
@@ -562,15 +612,32 @@ export class FlowService {
 	private async runAction(flow: Flow, action: FlowAction, event: FlowEventWithTokens): Promise<string | void> {
 		switch (action.type) {
 			case 'setHighlightVideo': {
-				const file = fillTemplate(action.path ?? '', event.tokens, '').trim();
+				// "Set media": ONE thing on the key — a file path, a web link or a highlight id, with an optional
+				// start / end (seconds, empty = all). Empty source = clear the key.
 				const key = action.key?.trim() || 'game';
-				const reel = this.storeHighlights.show(key, file);
-				return `Highlight "${key}": ${reel.clips[0]?.url}`;
+				const source = fillTemplate(action.path ?? '', event.tokens, '').trim();
+				const seconds = (v: string | number | undefined) => {
+					const text = fillTemplate(String(v ?? ''), event.tokens, '').trim();
+					return text === '' ? null : evaluateFormula(text, event.tokens ?? {}, this.lists(flow));
+				};
+				const reel = await this.storeHighlights.setMedia(key, source, { start: seconds(action.start), end: seconds(action.end) }, Number(action.delay) || 0);
+				if (!reel) return `Media "${key}" cleared`;
+				if (reel.highlight) return `Media "${key}": highlight ${reel.highlight}${reel.clips.length ? '' : ' (no replay-buffer footage)'}`;
+				return `Media "${key}": ${reel.kind === 'image' ? 'image' : 'video'} ${source}`;
+			}
+			case 'setReplayList': {
+				// The highlight replay element on this key plays every highlight in the list (their frames), in order.
+				const key = action.key?.trim() || 'replay';
+				const ids = this.list(flow, action.list).map((i) => String(i[action.field?.trim() || 'id'] ?? '')).filter(Boolean);
+				this.storeHighlights.setReplayList(key, ids);
+				return `Replay "${key}": ${ids.length} highlight(s) from list ${action.list}`;
 			}
 			case 'markHighlight': {
 				const score = evaluateFormula(action.score || '0', event.tokens ?? {}, this.lists(flow));
-				const id = this.storeHighlights.mark(momentWindow(event.tokens ?? {}, Number(action.before) || 0, Number(action.after) || 0, Number(action.maxSeconds) || undefined, Date.now(), this.storeLiveStats.getGameFrame()?.frame), score);
-				event.tokens = { ...event.tokens, highlight: id };
+				const window = momentWindow(event.tokens ?? {}, Number(action.before) || 0, Number(action.after) || 0, Number(action.maxSeconds) || undefined, Date.now(), this.storeLiveStats.getGameFrame()?.frame);
+				const id = this.storeHighlights.mark(window, score);
+				// {{highlightSeconds}} = how long it plays (a Timer waits that long); {{highlightGame}} = its game.
+				event.tokens = { ...event.tokens, highlight: id, highlightSeconds: Math.round((window.end - window.start) / 100) / 10, highlightGame: String(this.storeHighlights.gameStart) };
 				return `Highlight ${id} marked (score ${score})`;
 			}
 			case 'list': {
@@ -583,7 +650,8 @@ export class FlowService {
 					formula: action.formula,
 					order: action.order,
 					field: action.field?.trim(),
-					count: Number(action.count),
+					// A number or a formula (e.g. 5% of the list, at least 10, at most 30).
+					count: action.count === undefined || action.count === '' ? undefined : evaluateFormula(String(action.count), event.tokens ?? {}, lists),
 					evaluate: (formula, item) => evaluateFormula(formula, { ...event.tokens, ...itemTokens(item) } as FlowTokens, lists),
 				});
 				this.setValue(flow, key, items);
@@ -641,8 +709,16 @@ export class FlowService {
 				return this.obsResult(await this.storeCommands.executeCommand(CommandType.ObsCustom, 'ToggleSceneItem', { itemName: action.sourceName }), `Toggled "${action.sourceName}"`);
 			case 'obsVolume':
 				return this.obsResult(await this.storeCommands.executeCommand(CommandType.Obs, 'SetInputVolume', { inputName: action.inputName, inputVolumeMul: action.volume }), `Volume of "${action.inputName}" set`);
-			case 'obsSaveReplay':
-				return this.obsResult(await this.storeCommands.executeCommand(CommandType.Obs, 'SaveReplayBuffer', undefined), 'Replay saved');
+			case 'obsSaveReplay': {
+				this.obsResult(await this.storeCommands.executeCommand(CommandType.Obs, 'SaveReplayBuffer', undefined), 'Replay saved');
+				// With a highlight: wait for the file and hand on where the highlight sits in it.
+				const id = fillTemplate(action.highlight ?? '', event.tokens, '').trim();
+				if (!id) return 'Replay saved';
+				const clip = await this.storeHighlights.clipFor(id);
+				if (!clip) throw new Error(`OBS saved the replay, but highlight ${id} isn't in it (buffer too short, or not saved in time)`);
+				event.tokens = { ...event.tokens, clipPath: clip.path, clipStart: clip.start, clipEnd: clip.end, clipSeconds: clip.seconds };
+				return `Highlight ${id}: ${path.basename(clip.path)} ${clip.start}–${clip.end} s`;
+			}
 			case 'httpPost':
 				return this.request(flow, action, event);
 		}
@@ -837,7 +913,11 @@ export class FlowService {
 			obs: { scene: ctx.obsScene ?? null, replayBuffer: !!ctx.replayBufferActive },
 			odds: (() => {
 				// Slot order: Player 1's side = slots 1 + 3, Player 2's side = slots 2 + 4.
-				const side = (s: 0 | 1) => slots.flatMap((p, i) => (p && i % 2 === s && p.stocks !== null ? [{ stocks: p.stocks, percent: p.percent ?? 0 }] : []));
+				const side = (s: 0 | 1) => slots.flatMap((p, i) => {
+					if (!p || i % 2 !== s || p.stocks === null) return [];
+					const set = p.fight?.match;
+					return [{ stocks: p.stocks, percent: p.percent ?? 0, deaths: set?.deaths, deathPercent: set?.deathPercent }];
+				});
 				const left = secondsLeft(settings, frame?.frame);
 				const stockSeconds = fight.stockSeconds?.match ?? [];
 				const c = winChances(side(0), side(1), [score[0] ?? 0, score[1] ?? 0], this.storeLiveStats.getBestOf(), left != null ? { secondsLeft: left, stockSeconds } : null);
@@ -852,6 +932,7 @@ export class FlowService {
 			})(),
 			highlight: { reels: Object.fromEntries(Object.values(this.storeHighlights.current()).map((r) => [r.key, r.clips.length])) },
 			links: { tailscale: this.messageHandler.getTailscaleUrl() ?? null, ngrok: this.messageHandler.getNgrokUrl() ?? null },
+			time: { now: Date.now(), today: new Date().setHours(0, 0, 0, 0) },
 		};
 	}
 

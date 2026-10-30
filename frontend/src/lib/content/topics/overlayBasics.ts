@@ -52,7 +52,7 @@ export const overlayBasicsTopics: ContentTopic[] = [
 				type: 'list',
 				text: 'How it is estimated:',
 				items: [
-					'Remaining life per side = stocks left minus how far into the current stock it is (percent ÷ 120, the typical KO percent). Doubles add the teammates together.',
+					'Remaining life per side = stocks left minus how far into the current stock it is: percent ÷ the percent THAT player loses stocks at — their average death percent over the set\'s games (starts at 120% and moves to their own average as they lose stocks). Doubles add the teammates together.',
 					'Game chance = life² ÷ (life² + opponent life²) — squaring makes a lead count for more than a plain ratio. Empty when no game runs.',
 					'Timer: as the clock runs down, the game chance leans toward whoever would win on time (more stocks, then lower percent). How fast it leans depends on how long stocks have lasted this set (avg seconds per stock; 40 s until a few stocks are taken). A stock lead that can\'t be erased in time — even if the leader self-destructed every stock after this one (5 s each) — is a 100% win.',
 					'Set chance = this game\'s chance combined with the set score and the best-of, every later game counted as 50/50.',
@@ -73,7 +73,7 @@ export const overlayBasicsTopics: ContentTopic[] = [
 				items: [
 					'Team 1 is the team with the lowest port in the set\'s first game (colour doesn\'t matter) and keeps its place for the whole set, even when teams swap colours. Within a team the lower port is Player 1. Wrong way round? Dashboard → Fix set… → Swap teams / Swap players in a team (singles: Swap Player 1 ↔ 2) — names, score, overlays and the striking phones follow; when loading replays there, pick which team is Team 1 before loading.',
 					'Team names: typed on the Dashboard (or at Start Set), else "Tag & Tag" when both players have a tag, else Team 1 / Team 2. Start Set (doubles) also takes each player\'s tag — overlays and the phones use them for the whole set.',
-					'Player 1 elements show Team 1 · Player 1, Player 2 elements Team 2 · Player 1. Styling → Player switches any Player 1/2 element to another player (e.g. Team 1 · Player 2).',
+					'Player elements are listed once in Add Element (Player HUD, Player Controller Inputs, Player Slippi Rank…); Styling → Player picks who it shows: Current Player (you), Player 1 / Team 1 · Player 1, Player 2 / Team 2 · Player 1, Team 1 · Player 2, Team 2 · Player 2 — only the players the element exists for.',
 					'Add Element → "Doubles & Ports": team names (rename on the Dashboard), team stocks, your/opponent team, port numbers, and fight stats.',
 					'Visibility → Doubles: Doubles Game, second-player stocks/alive/combo/off-stage, team alive, and "Team N Stocks <= X".',
 					'Teammates on the same character: the higher port is drawn a bit lighter, so viewers can tell them apart.',

@@ -200,7 +200,7 @@ describe('flow engine', () => {
 
 describe('timer cards and the scene switching flow', () => {
 	const sceneFlow = { ...SCENE_SWITCHING_FLOW, enabled: true };
-	const scenesOf = (steps: { action: { type: string; scene?: string; seconds?: number } }[]) =>
+	const scenesOf = (steps: { action: { type: string; scene?: string; seconds?: number | string } }[]) =>
 		steps.map((s) => (s.action.type === 'setScene' ? s.action.scene : s.action.type === 'timer' ? `timer ${s.action.seconds}` : s.action.type));
 	const end = (state: Record<string, unknown>) => ({ type: 'gameEnd' as const, tokens: state as never });
 
@@ -340,13 +340,15 @@ describe('keys a card can use (editor chips)', () => {
 		expect(at('save-failed')).toContain('error');
 		expect(at('save')).not.toContain('error');
 		expect(at('sort-score')).toEqual(expect.arrayContaining(['item.id', 'item.score', 'item.game', 'item.added'])); // its list's item fields
-		expect(at('add-tournament')).toEqual(expect.arrayContaining(['item.score'])); // fields come along with addList
+		expect(at('set-sort')).toEqual(expect.arrayContaining(['item.score', 'item.seconds'])); // fields come along with addList
+		expect(at('wait-game')).toEqual(expect.arrayContaining(['gameList.count'])); // the loop's timer reads the list
 	});
 
 	it('tooltips name the card that makes a key and what it means (nearest before)', () => {
 		const origins = keyOrigins(HIGHLIGHTS_FLOW, 'add-game');
 		expect(origins.total).toMatchObject({ kind: 'action', type: 'calculate', detail: expect.stringMatching(/^total = /) });
-		expect(origins.highlight).toMatchObject({ type: 'markHighlight', meaning: expect.stringMatching(/id of the moment/) });
+		expect(origins.highlight).toMatchObject({ type: 'markHighlight', meaning: expect.stringMatching(/id of the highlight/) });
+		expect(origins.highlightSeconds).toMatchObject({ type: 'markHighlight' });
 		expect(origins.didKill).toEqual({ kind: 'trigger', type: 'sequence' }); // When keys: meaning from KEY_INFO
 		expect(keyOrigins(HIGHLIGHTS_FLOW, 'sort-score')['item.score'].meaning).toMatch(/Each item's "score"/);
 		expect(keyOrigins(HIGHLIGHTS_FLOW, 'calc-kill').total).toBeUndefined();

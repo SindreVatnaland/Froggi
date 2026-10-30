@@ -68,6 +68,8 @@ export interface FlowGameState {
 	highlight: { reels: Record<string, number> };
 	/** This computer's public addresses (Tailscale Funnel = permanent, ngrok = temporary), null when off. */
 	links: { tailscale: string | null; ngrok: string | null };
+	/** Now and the start of today (local midnight), ms — e.g. keep list items added today: item.added >= state.time.today. */
+	time: { now: number; today: number };
 }
 
 export const TEAM_COLORS = ['Red', 'Blue', 'Green'];
@@ -139,6 +141,7 @@ export const SAMPLE_GAME_STATE: FlowGameState = {
 	obs: { scene: 'Game', replayBuffer: true },
 	odds: { game: { 1: 64, 2: 36 }, set: { 1: 82, 2: 18 }, secondsLeft: 214, stockSeconds: { avg: 38.5, min: 12.3, max: 71.0, count: 5 } },
 	highlight: { reels: { game: 5, set: 5 } },
+	time: { now: 1791753170000, today: 1791720000000 },
 	links: { tailscale: 'https://my-pc.tail1234.ts.net', ngrok: 'https://abc123.ngrok-free.app' },
 };
 

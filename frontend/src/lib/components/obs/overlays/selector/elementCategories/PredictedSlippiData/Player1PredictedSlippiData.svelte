@@ -12,42 +12,42 @@
 
 <div class="flex flex-col gap-2">
 	<SelectOption
-		description="Player 1 Predicted Win Slippi Rank Icon"
+		description="Predicted Win Slippi Rank Icon"
 		value={CustomElement.SlippiRankPlayer1PredictedWinRankIcon}
 		on:select={select}
 	>
 		Rank Icon - Win
 	</SelectOption>
 	<SelectOption
-		description="Player 1 Predicted Win Slippi Rank - Text"
+		description="Predicted Win Slippi Rank - Text"
 		value={CustomElement.SlippiRankPlayer1PredictedWinRankText}
 		on:select={select}
 	>
 		Rank Text - Win
 	</SelectOption>
 	<SelectOption
-		description="Player 1 Predicted Win Slippi Rating"
+		description="Predicted Win Slippi Rating"
 		value={CustomElement.SlippiRankPlayer1PredictedWinRating}
 		on:select={select}
 	>
 		Rating - Win
 	</SelectOption>
 	<SelectOption
-		description="Player 1 Predicted Loss Slippi Rank Icon"
+		description="Predicted Loss Slippi Rank Icon"
 		value={CustomElement.SlippiRankPlayer1PredictedLossRankIcon}
 		on:select={select}
 	>
 		Rank Icon - Loss
 	</SelectOption>
 	<SelectOption
-		description="Player 1 Predicted Loss Slippi Rank - Text"
+		description="Predicted Loss Slippi Rank - Text"
 		value={CustomElement.SlippiRankPlayer1PredictedLossRankText}
 		on:select={select}
 	>
 		Rank Text - Loss
 	</SelectOption>
 	<SelectOption
-		description="Player 1 Predicted Loss Slippi Rating"
+		description="Predicted Loss Slippi Rating"
 		value={CustomElement.SlippiRankPlayer1PredictedLossRating}
 		on:select={select}
 	>

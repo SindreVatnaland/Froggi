@@ -92,8 +92,10 @@ export enum CustomElement {
 
     // Custom Image
     CustomImage = 2000,
-    // Newest highlight video (flow card "Set highlight video") of this game / the set
+    // Media: a file, or what a flow's "Set media" card puts on a key (video / image / web link / highlight clip)
     PostGameHighlightVideo = 2100,
+    // Highlight Replay: highlights redrawn from their game replays (frames), a list set by "Set replay list"
+    HighlightReplay = 2101,
     InGameCurrentPlayerCharacterRenderLeft = 2001,
     InGameCurrentPlayerCharacterRenderRight = 2002,
     InGamePlayer1CharacterRenderLeft = 2003,

@@ -11,17 +11,33 @@ export interface HighlightClip {
 	/** Seconds before the end of the file where the clip starts / stops. */
 	fromEnd: number;
 	toEnd: number;
+	/** Web links (length unknown to Froggi): seconds from the start instead; null = from the start / to the end. */
+	start?: number | null;
+	end?: number | null;
 }
 
 export interface HighlightReel {
 	id: string;
 	key: string;
 	clips: HighlightClip[];
+	/** The highlight on this key (Set media with a highlight) — the replay view plays its frames. */
+	highlight?: string;
+	/** What the key shows: a video (default) or an image (Set media with an image file / link). */
+	kind?: 'video' | 'image';
+	/** Set replay list: the highlights the replay element plays, in order (their frames). */
+	highlights?: string[];
 	/** Server time (ms) the first client showed it; null until then. */
 	startedAt: number | null;
 }
 
 export type HighlightReels = Record<string, HighlightReel>;
+
+/** A highlight's frames from its replay (slimmed), for the highlight replay element — sent once per highlight. */
+export interface HighlightFrames {
+	id: string;
+	settings: import('./viewer/renderData').ViewerSettings;
+	frames: import('./viewer/renderData').ViewerFrame[];
+}
 
 /** A moment worth showing: the wall-clock window (ms) to show, and how good it is. */
 export interface HighlightMoment {

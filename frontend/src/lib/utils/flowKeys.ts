@@ -124,7 +124,13 @@ export const KEY_INFO: Record<FlowTrigger['type'], Record<string, string>> = {
 /** Keys every flow can have besides trigger keys. */
 export const RUN_KEY_INFO: Record<string, string> = {
 	error: 'Why the card before failed (only behind an Error output).',
-	highlight: 'The id of the highlight Mark highlight just marked (put it in a list).',
+	highlight: 'The id of the highlight Mark highlight just marked — store it in a list; Set media / Set replay list show it.',
+	highlightSeconds: 'How long the marked moment is (seconds) — a Timer can wait that long while it plays.',
+	highlightGame: 'Which game the moment is from (an id) — e.g. keep at most 3 per game.',
+	clipPath: 'The replay-buffer file OBS saved that holds the highlight.',
+	clipStart: 'Where the highlight starts in that file (seconds from its start).',
+	clipEnd: 'Where the highlight ends in that file (seconds from its start).',
+	clipSeconds: 'How long the clip plays (seconds).',
 };
 
 /** What a key means where it is used: from the flow's triggers, a run key, a list item field, a list count. */
@@ -179,7 +185,19 @@ export function triggerSchema(type: FlowTrigger['type'], samples: Record<string,
 
 /** What an action card hands to the cards after it (none for most). */
 export function actionSchema(action: { type: string; key?: string }, itemFields: string[] = []): SchemaRow[] {
-	if (action.type === 'markHighlight') return [{ key: 'highlight', type: 'text', meaning: RUN_KEY_INFO.highlight, example: 'h12' }];
+	if (action.type === 'markHighlight')
+		return [
+			{ key: 'highlight', type: 'text', meaning: RUN_KEY_INFO.highlight, example: 'h-1a2b3c4d' },
+			{ key: 'highlightSeconds', type: 'number', meaning: RUN_KEY_INFO.highlightSeconds, example: 8.5 },
+			{ key: 'highlightGame', type: 'text', meaning: RUN_KEY_INFO.highlightGame, example: '1791753170000' },
+		];
+	if (action.type === 'obsSaveReplay')
+		return [
+			{ key: 'clipPath', type: 'text', meaning: RUN_KEY_INFO.clipPath, example: 'C:/Videos/Replay 2026-10-30.mp4' },
+			{ key: 'clipStart', type: 'number', meaning: RUN_KEY_INFO.clipStart, example: 21.5 },
+			{ key: 'clipEnd', type: 'number', meaning: RUN_KEY_INFO.clipEnd, example: 30 },
+			{ key: 'clipSeconds', type: 'number', meaning: RUN_KEY_INFO.clipSeconds, example: 8.5 },
+		];
 	if (action.type === 'calculate' && action.key) return [{ key: action.key, type: 'number', meaning: 'The formula\'s result — stays until a Clear values card clears it.', example: 42 }];
 	if (action.type === 'list' && action.key) {
 		const k = action.key;

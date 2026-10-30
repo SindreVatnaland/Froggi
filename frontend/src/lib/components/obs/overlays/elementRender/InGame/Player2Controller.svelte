@@ -1,11 +1,8 @@
 <script lang="ts">
+	import ControllerGraphic from '$lib/components/obs/overlays/element/ControllerGraphic.svelte';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { getButtonPressesGame } from '$lib/utils/helper';
-	import ControllerInputElement from '$lib/components/obs/overlays/element/ControllerInputElement.svelte';
-	import ControllerDPadElement from '$lib/components/obs/overlays/element/ControllerDPadElement.svelte';
-	import ControllerButtonBackAnalogElement from '$lib/components/obs/overlays/element/ControllerButtonBackAnalogElement.svelte';
-	import ControllerStickAnalogElement from '$lib/components/obs/overlays/element/ControllerStickAnalogElement .svelte';
 	import type { FrameEntryType } from '../../../../../models/types/slippiTypes';
 	import { memoryReadController } from '$lib/utils/store.svelte';
 
@@ -27,83 +24,27 @@
 </script>
 
 {#if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonA}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isAPressed}
-		button="A"
-	/>
+	<ControllerGraphic {dataItem} {style} part="A" pressed={!!buttonPresses?.isAPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonB}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isBPressed}
-		button="B"
-	/>
+	<ControllerGraphic {dataItem} {style} part="B" pressed={!!buttonPresses?.isBPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonX}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isXPressed}
-		button="X"
-	/>
+	<ControllerGraphic {dataItem} {style} part="X" pressed={!!buttonPresses?.isXPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonY}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isYPressed}
-		button="Y"
-	/>
+	<ControllerGraphic {dataItem} {style} part="Y" pressed={!!buttonPresses?.isYPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonL}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isLPressed}
-		button="L"
-	/>
+	<ControllerGraphic {dataItem} {style} part="L" pressed={!!buttonPresses?.isLPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonR}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isRPressed}
-		button="R"
-	/>
+	<ControllerGraphic {dataItem} {style} part="R" pressed={!!buttonPresses?.isRPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerButtonZ}
-	<ControllerInputElement
-		{dataItem}
-		{style}
-		isButtonPressed={buttonPresses?.isZPressed}
-		button="Z"
-	/>
+	<ControllerGraphic {dataItem} {style} part="Z" pressed={!!buttonPresses?.isZPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerDPad}
-	<ControllerDPadElement {dataItem} {style} {buttonPresses} />
+	<ControllerGraphic {dataItem} {style} part="DPad" buttons={buttonPresses} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogL}
-	<ControllerButtonBackAnalogElement
-		{dataItem}
-		{style}
-		analogValue={analogL}
-		isButtonPressed={buttonPresses?.isLPressed}
-	/>
+	<ControllerGraphic {dataItem} {style} part="Trigger" analog={analogL} pressed={!!buttonPresses?.isLPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogR}
-	<ControllerButtonBackAnalogElement
-		{dataItem}
-		{style}
-		analogValue={analogR}
-		isButtonPressed={buttonPresses?.isRPressed}
-	/>
+	<ControllerGraphic {dataItem} {style} part="Trigger" analog={analogR} pressed={!!buttonPresses?.isRPressed} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickL}
-	<ControllerStickAnalogElement
-		{dataItem}
-		{style}
-		analogXValue={joystickX}
-		analogYValue={joystickY}
-		ribs={true}
-	/>
+	<ControllerGraphic {dataItem} {style} part="Stick" x={joystickX} y={joystickY} />
 {:else if dataItem?.elementId === CustomElement.InGamePlayer2ControllerAnalogStickR}
-	<ControllerStickAnalogElement
-		{dataItem}
-		{style}
-		analogXValue={cStickX}
-		analogYValue={cStickY}
-	/>
+	<ControllerGraphic {dataItem} {style} part="CStick" x={cStickX} y={cStickY} />
 {/if}

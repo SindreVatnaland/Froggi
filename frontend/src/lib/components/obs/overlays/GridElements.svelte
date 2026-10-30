@@ -58,6 +58,7 @@
 	import EdgeStats from './elementRender/EdgeStats.svelte';
 	import WinChance from './elementRender/WinChance.svelte';
 	import HighlightVideo from './elementRender/HighlightVideo.svelte';
+	import HighlightReplay from './elementRender/HighlightReplay.svelte';
 	import { CustomElement } from '$lib/models/constants/customElement';
 	import { strikeState } from '$lib/utils/store.svelte';
 
@@ -224,7 +225,9 @@
 			{:else if SESSION_ELEMENTS.has(dataItem.elementId)}
 				<Session {dataItem} {defaultPreview} {style} />
 			{:else if dataItem.elementId === CustomElement.PostGameHighlightVideo}
-				<HighlightVideo {dataItem} {style} {defaultPreview} {preview} />
+				<HighlightVideo {dataItem} {style} {preview} overlayId={_overlayId} />
+			{:else if dataItem.elementId === CustomElement.HighlightReplay}
+				<HighlightReplay {dataItem} {style} {preview} />
 			{:else if WIN_CHANCE_ELEMENTS.has(dataItem.elementId)}
 				<WinChance {dataItem} {defaultPreview} {style} allPlayers={$currentPlayers} frame={$gameFrame} score={$gameScore} bestOf={$gameSettings?.matchInfo?.bestOf ?? 3} gameSettings={$gameSettings} />
 			{:else if EDGE_STAT_ELEMENTS.has(dataItem.elementId)}

@@ -238,6 +238,10 @@ export interface MessageEvents {
 	HighlightReels: (reels: import('./highlightReel').HighlightReels, serverNow: number, volumes: Record<string, number>) => void;
 	/** A client shows reel `key` — starts its shared clock once (allowed without the host password). */
 	HighlightReelShown: (key: string, id: string) => void;
+	/** The highlight replay element asks for a highlight's frames; Froggi answers with HighlightFrames. */
+	HighlightFramesRequest: (id: string) => void;
+	/** null: the highlight's game isn't stored yet, or its replay is gone. */
+	HighlightFrames: (id: string, frames: import('./highlightReel').HighlightFrames | null) => void;
 	/** A game started in a different set than the last one (statsDisplay: recent games are cleared). */
 	NewSetDetected: () => void;
 	/** Electron-internal: OBS saved its replay buffer to this file. */
