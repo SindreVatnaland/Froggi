@@ -235,11 +235,22 @@
 
 	// ── KO effects (utils/viewer/koEffects.ts): Melee-style blast off the sides / bottom, star off the top ──
 	export let koEffects = true;
+	/** The last frame there is (a highlight's window): a star KO still in flight twinkles there instead of never. */
+	export let lastFrame: number | null = null;
+	/** True while a star twinkles — a highlight replay holds its last frame until it is done. */
+	export let twinkling = false;
+	$: twinkling = effects.some((e) => e.kind === 'star');
 	/** size = scale of the effect (blasts: world size 1; stars: same size on screen at any zoom). */
 	type Effect = { id: number; kind: KoKind; x: number; y: number; angle: number; color: string; size: number };
 	let effects: Effect[] = [];
 	let effectId = 0;
 	let prevActions: Record<number, number | undefined> = {};
+	/** Each player's stocks on the previous frame — a star KO twinkles when the game takes the stock. */
+	let prevStocks: Record<number, number | null | undefined> = {};
+	const stockLost = (p: { playerIndex: number; stocks: number | null }) => {
+		const before = prevStocks[p.playerIndex];
+		return before != null && p.stocks != null && p.stocks < before;
+	};
 	/** Star KOs: player → where and when the flight started, and whether the star has twinkled (it then
 	 *  stays here, the player hidden, until they leave the dead state). */
 	type StarStart = { frame: number; x: number; y: number; end: { x: number; y: number }; twinkled?: boolean };
@@ -273,7 +284,7 @@
 	$: if (frame && koEffects) {
 		const players = Object.entries(frame.players ?? {})
 			.filter(([, p]) => p?.post)
-			.map(([i, p]) => ({ playerIndex: Number(i), actionStateId: p!.post!.actionStateId ?? -1, x: p!.post!.positionX ?? 0, y: p!.post!.positionY ?? 0 }));
+			.map(([i, p]) => ({ playerIndex: Number(i), actionStateId: p!.post!.actionStateId ?? -1, x: p!.post!.positionX ?? 0, y: p!.post!.positionY ?? 0, stocks: p!.post!.stocksRemaining ?? null }));
 		const now = frame.frame ?? 0;
 		const due: KoStart[] = [];
 		for (const ko of detectKos(prevActions, players)) {
@@ -290,20 +301,25 @@
 		for (const [i, start] of Object.entries(starStarts)) {
 			const p = players.find((x) => x.playerIndex === Number(i));
 			const flying = !!p && koKind(p.actionStateId) === 'star';
+			const twinkle = () => {
+				start.twinkled = true;
+				due.push({ playerIndex: Number(i), actionStateId: 4, ...start.end, kind: 'star' });
+			};
 			if (now < start.frame || !flying) {
 				// Jumped back (a replay loops) or back from the dead (respawn): the KO is over.
-				if (now >= start.frame && p && !start.twinkled) due.push({ ...p, kind: 'star' });
+				if (now >= start.frame && !start.twinkled) twinkle();
 				delete starStarts[Number(i)];
-			} else if (!start.twinkled && now - start.frame >= STAR_FRAMES) {
-				start.twinkled = true;
-				due.push({ ...p!, ...start.end, kind: 'star' });
+			} else if (!start.twinkled && (stockLost(p!) || now - start.frame >= STAR_FRAMES || (lastFrame != null && now >= lastFrame))) {
+				// The game takes the stock (on the last one: game end) — the star twinkles on that very frame. Also when
+				// that frame isn't seen: the flight's length is up, or the frames end first (the end of a highlight).
+				twinkle();
 			}
 		}
 		for (const ko of due) {
 			const at = koPlacement(ko, visible, blastZone);
 			const color = renderDatas.find((rd) => rd.playerState.playerIndex === ko.playerIndex)?.innerColor ?? PALETTE[ko.playerIndex] ?? '#ffffff';
 			// Blasts are world-sized (like Melee's beam from the blast zone); stars keep one size on screen.
-			const size = ko.kind === 'blast' ? 0.65 : ((visible.xMax - visible.xMin) / 700) * 0.8;
+			const size = ko.kind === 'blast' ? 0.65 : ((visible.xMax - visible.xMin) / 700) * 0.64;
 			const effect: Effect = { id: ++effectId, kind: ko.kind, ...at, color, size };
 			effects = [...effects, effect];
 			const t = setTimeout(() => {
@@ -313,6 +329,7 @@
 			timers.add(t);
 		}
 		prevActions = Object.fromEntries(players.map((p) => [p.playerIndex, p.actionStateId]));
+		prevStocks = Object.fromEntries(players.map((p) => [p.playerIndex, p.stocks]));
 		prevPositions = Object.fromEntries(players.map((p) => [p.playerIndex, { x: p.x, y: p.y }]));
 	}
 	// ── Magnifying glass (like Melee's): a player completely off screen shows in a bubble glued to the screen's edge,

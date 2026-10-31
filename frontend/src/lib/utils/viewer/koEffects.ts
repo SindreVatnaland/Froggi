@@ -10,15 +10,18 @@ export type KoKind = 'blast' | 'star';
 export const koKind = (actionStateId: number | null | undefined): KoKind | null =>
 	actionStateId == null || actionStateId < 0 ? null : actionStateId <= 3 ? 'blast' : actionStateId <= 5 ? 'star' : null;
 
-/** Frames a star KO flies into the background before it twinkles. Melee keeps the player in the star state for
- *  176 frames (moving until ~128); 90 + the twinkle (KO_DURATION_MS.star ≈ 42 frames) ends well before the respawn. */
-export const STAR_FRAMES = 90;
+/** Frames a star KO flies into the background before it twinkles — Melee takes the stock (and ends the game on
+ *  the last one) exactly 131 frames after the star KO starts (measured on the sample replays); the player stays
+ *  in the star state for 176, so the twinkle (KO_DURATION_MS.star ≈ 42 frames) ends just before the respawn.
+ *  The viewer twinkles on the frame the stock count drops; this is the fallback when that isn't seen. */
+export const STAR_FRAMES = 131;
 
-/** A star-KO'd player is already far into the background when the flight starts: about 20 % of full size. */
-export const STAR_START_SCALE = 0.2;
+/** A star-KO'd player's size over the flight: 60 % of full size at the start, 20 % when the star twinkles. */
+export const STAR_START_SCALE = 0.6;
+export const STAR_END_SCALE = 0.2;
 
 /** Turns (degrees) a star-KO'd player spins like a wheel over the whole flight. */
-export const STAR_SPIN = 720;
+export const STAR_SPIN = 1080;
 
 /**
  * Where a star-KO'd player is drawn `t` frames into the flight, from where they were KO'd to `end`
@@ -30,8 +33,9 @@ export function starFlight(start: { x: number; y: number }, end: { x: number; y:
 	return {
 		x: start.x + (end.x - start.x) * ease,
 		y: start.y + (end.y - start.y) * ease,
-		scale: STAR_START_SCALE * (1 - ease),
-		angle: STAR_SPIN * ease * (facing < 0 ? -1 : 1),
+		scale: STAR_START_SCALE + (STAR_END_SCALE - STAR_START_SCALE) * ease,
+		// The spin keeps one speed (only the fall slows down).
+		angle: STAR_SPIN * p * (facing < 0 ? -1 : 1),
 	};
 }
 

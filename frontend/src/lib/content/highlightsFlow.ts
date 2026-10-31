@@ -10,7 +10,7 @@ export const HIGHLIGHTS_FLOW_ID = 'highlights';
  *    (Highlight Replay elements) → 1.5 s later OBS saves its replay buffer → where the moment is in that file
  *    goes into the replayBuffer lists (Media elements)
  *  - game end → each kind: game = best 5, set = best 15 (time order), daily = today's top 20 % (20–100, at
- *    most 3 per game, best first); Media keys game / set / daily loop their list with an index
+ *    most 5 per game, best first); Media keys game / set / daily loop their list with an index
  *  - a game start stops the loops and clears the game lists; a new set clears the set lists
  */
 
@@ -83,10 +83,10 @@ const picks = (prefix: string, first: boolean): Step[] => [
 	list(`${prefix}-set-limit`, `${prefix}Set`, op({ op: 'limit', count: '15' })),
 	list(`${prefix}-set-time`, `${prefix}Set`, op({ op: 'sort', formula: '{{item.added}}', order: 'low' })),
 	list(`${prefix}-today`, `${prefix}Today`, op({ op: 'filter', formula: '{{item.added}} >= {{state.time.today}}' }), first ? 'Today only: drop the ones from before midnight.' : undefined),
-	{ id: `${prefix}-daily-clear`, data: { type: 'clearValues', keys: `${prefix}Daily` }, note: first ? 'Daily: today\'s top 20 % — at least 20 (fewer only when today has fewer), at most 100, at most 3 per game — best first.' : undefined },
+	{ id: `${prefix}-daily-clear`, data: { type: 'clearValues', keys: `${prefix}Daily` }, note: first ? 'Daily: today\'s top 20 % — at least 20 (fewer only when today has fewer), at most 100, at most 5 per game — best first.' : undefined },
 	list(`${prefix}-daily-add`, `${prefix}Daily`, op({ op: 'addList', from: `${prefix}Today` })),
 	list(`${prefix}-daily-sort`, `${prefix}Daily`, op({ op: 'sort', formula: '{{item.score}}', order: 'high' })),
-	list(`${prefix}-daily-per-game`, `${prefix}Daily`, op({ op: 'limitPer', field: 'game', count: '3' })),
+	list(`${prefix}-daily-per-game`, `${prefix}Daily`, op({ op: 'limitPer', field: 'game', count: '5' })),
 	list(`${prefix}-daily-limit`, `${prefix}Daily`, op({ op: 'limit', count: `max(20, min(100, round(count(${prefix}Today) * 0.2)))` })),
 ];
 const GAME_END: Step[] = [

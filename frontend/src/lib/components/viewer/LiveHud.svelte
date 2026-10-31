@@ -89,7 +89,11 @@
 		display: flex; flex-direction: column; align-items: center; gap: 0.3cqmin;
 		font-family: 'Rajdhani', system-ui, sans-serif;
 	}
-	.hud-bottom { position: absolute; left: 0; right: 0; bottom: 2.5cqmin; height: 15cqmin; font-family: 'Rajdhani', system-ui, sans-serif; }
+	/* Players stay within a 73:60 (the game's) width in the middle — a wide box doesn't scatter them. */
+	.hud-bottom {
+		position: absolute; left: 50%; transform: translateX(-50%); width: min(100cqw, calc(100cqh * 73 / 60));
+		bottom: 2.5cqmin; height: 15cqmin; font-family: 'Rajdhani', system-ui, sans-serif;
+	}
 	.hud-player {
 		position: absolute; bottom: 0; transform: translateX(-50%);
 		display: flex; flex-direction: column; align-items: center; gap: 0.4cqmin;

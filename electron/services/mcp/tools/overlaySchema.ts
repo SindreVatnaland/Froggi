@@ -241,6 +241,11 @@ Image) takes \`colorOverlay: {enabled:true, color:"#ffffff", strength:100}\`: 10
 that color (white/black/team color stock icons), lower = tint that keeps detail. Layer a silhouette in
 the backdrop's color over a panel for a "hole punch" look.
 
+**Embed** (CustomBoxIframe, 3001, any scene) — shows any web page: payload \`{"url":"https://…"}\`. Use it for stream
+alerts (the StreamElements / Streamlabs alert-box URL — the same one OBS takes; it identifies the account, keep it private),
+Twitch chat (https://www.twitch.tv/embed/<channel>/chat?parent=localhost&darkpopout), now-playing widgets or another tool's
+scoreboard. Display-only (no clicks). Injected into Dolphin (Windows) it is drawn in-game — alerts and chat while playing,
+no second monitor; its sound plays from Froggi (OBS desktop audio picks it up). explain_topic overlay-embed-url.
 **Images** — store the image first with add_overlay_image (url, local filePath, base64, or picker:true
 to let the user choose a file in Froggi), then use the returned fileName: a CustomImage element (2000)
 with payload \`{"image":{"name":fileName,"objectFit":"contain"}}\`, or a scene background via

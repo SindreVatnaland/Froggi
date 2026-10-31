@@ -51,7 +51,7 @@ const SCENE_FLOW_SEEDED = 'migrations.sceneFlowInstalled';
 /** electron-store: every flow's values + lists (Calculate / List cards), kept across restarts. */
 const FLOW_VALUES_KEY = 'flows.values';
 // v2: the rule-card version (replaces the first, never-released one once).
-const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV4';
+const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV5';
 
 /** Minimum time between two runs of the same flow (damage events can come in bursts). */
 const FLOW_COOLDOWN_MS = 250;
@@ -126,7 +126,7 @@ export class FlowService {
 	private async seedHighlightsFlow() {
 		const store = new Store();
 		if (store.get(HIGHLIGHTS_FLOW_SEEDED)) return;
-		// V4 (generic lists + index loops): replaces the earlier one only while it is off — a flow the user turned on is theirs.
+		// V5 (daily: 5 per game): replaces the earlier one only while it is off — a flow the user turned on is theirs.
 		if (this.getFlow(HIGHLIGHTS_FLOW.id)?.enabled) return void store.set(HIGHLIGHTS_FLOW_SEEDED, true);
 		const result = await this.saveFlow(HIGHLIGHTS_FLOW);
 		if (!result.ok) return this.log.error('Could not install the Highlights flow:', result.problems);

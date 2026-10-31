@@ -315,15 +315,17 @@ try {
 		showLookUpSelection: false,
 		showSearchWithGoogle: false,
 		showCopyImage: false,
-		prepend: (defaultActions, params, browserWindow) => [
-			{
-				label: 'Dev',
-				click: () => {
-					mainWindow.webContents.openDevTools();
-					console.log(defaultActions, params, browserWindow);
-				},
-			},
-		],
+		// "Dev" (DevTools) only while developing — never in the built app.
+		showInspectElement: dev,
+		prepend: () =>
+			dev
+				? [
+						{
+							label: 'Dev',
+							click: () => mainWindow.webContents.openDevTools(),
+						},
+					]
+				: [],
 	});
 
 	function loadVite(port: string) {

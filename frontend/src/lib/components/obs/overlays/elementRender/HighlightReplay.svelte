@@ -65,6 +65,8 @@
 	/** What the clock is on — published, so element triggers fire once per highlight. */
 	let clockKey = '';
 	let raf: number | null = null;
+	/** A star KO twinkling on the window's last frame: the next highlight waits until it is done. */
+	let twinkling = false;
 
 	function update() {
 		const pos = position();
@@ -83,6 +85,8 @@
 			frame = own.frames.at(-1) ?? null;
 			return;
 		}
+		// Hold the last frame while a star KO twinkles there (the next highlight then starts a moment in).
+		if (twinkling && shownKey && shownKey !== clockKey && frames.length) return void (frame = frames.at(-1) ?? null);
 		const loaded = $highlightFrames[clockKey];
 		if (!loaded?.frames.length) return void ((frame = null), (shownKey = ''));
 		ownKey ??= clockKey;
@@ -129,7 +133,7 @@
 <div class="replay {style.classValue}" style={`${style.cssValue}; ${dataItem?.data.advancedStyling ? dataItem?.data.css.customBox : ''}`} data-trigger-value={clockKey}>
 	{#if frame && settings}
 		{#key shownKey}
-			<GameStateRender {settings} {frame} {getStateOnFrame} camera="live" fit="cover" />
+			<GameStateRender {settings} {frame} {getStateOnFrame} camera="live" fit="cover" lastFrame={frames.at(-1)?.frame ?? null} bind:twinkling />
 		{/key}
 		<!-- Context for the moment: players centred with percent + stocks, the timer and its last-5-seconds countdown -->
 		<LiveHud {settings} {frame} showScore={false} showNames={false} />
