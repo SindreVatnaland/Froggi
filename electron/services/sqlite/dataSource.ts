@@ -16,7 +16,7 @@ import { CurrentPlayerEntity } from './entities/currentPlayer/currentPlayerEntit
 import { CurrentPlayerRankEntity } from './entities/currentPlayer/currentPlayerRankEntity';
 import { GameInfoTypeEntity } from './entities/game/gameInfoBlockEntity';
 import { FlowEntity } from './entities/flow/flowEntity';
-import { HighlightEntity } from './entities/highlight/highlightEntity';
+import { MediaFileEntity } from './entities/media/mediaFileEntity';
 import { ControllerCommandEntity, SceneCommandEntity, WebhookProfileEntity } from './entities/automation/automationEntities';
 
 // Single source of truth for the entity set + DataSource config, shared by the utilityProcess
@@ -29,7 +29,7 @@ export const ENTITIES = [
 	GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, MatchInfoEntity,
 	PostGameStatsEntity, FrameEntryTypeEntity, FrameStartTypeEntity, GameInfoTypeEntity,
 	FlowEntity, WebhookProfileEntity, ControllerCommandEntity, SceneCommandEntity,
-	HighlightEntity,
+	MediaFileEntity,
 ];
 
 export const createDataSource = (dbPath: string): DataSource =>

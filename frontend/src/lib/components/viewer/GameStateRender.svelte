@@ -9,6 +9,7 @@
 	 * are layered on later; this component is the no-HUD building block.
 	 */
 	import { STAGE_DATA } from '$lib/models/constants/stageData';
+	import { getOffStageZone } from '$lib/utils/gamePredicates';
 	import StageRender from '$lib/components/obs/overlays/element/inGame/StageRender.svelte';
 	import ViewerItem from './ViewerItem.svelte';
 	import { fetchAnimations, prefetchAnimations, type CharacterAnimations } from '$lib/utils/viewer/animationCache';
@@ -22,8 +23,8 @@
 		type ViewerSettings,
 	} from '$lib/utils/viewer/renderData';
 	import { characterNameByExternalId, characterNameByInternalId } from '$lib/utils/viewer/ids';
-	import { detectKos, koPlacement, KO_DURATION_MS, type KoKind, type Rect } from '$lib/utils/viewer/koEffects';
-	import { onDestroy } from 'svelte';
+	import { detectKos, koKind, koPlacement, KO_DURATION_MS, STAR_FRAMES, starEnd, starFlight, type KoKind, type KoStart, type Rect } from '$lib/utils/viewer/koEffects';
+	import { onDestroy, onMount } from 'svelte';
 
 	export let settings: ViewerSettings | null | undefined;
 	export let frame: ViewerFrame | null | undefined;
@@ -34,8 +35,22 @@
 	export let camera: 'static' | 'live' = 'static';
 	/** Extra zoom multiplier applied on top of the live camera. */
 	export let zoom = 1;
-	/** 'contain' letterboxes to fit; 'cover' fills the container (crops overflow). */
+	/** 'contain' letterboxes to fit; 'cover' fills the container (crops overflow). The live camera always frames
+	 *  a 73:60 view (the game's own) and a wider or taller box shows more around it, outside the camera limits. */
 	export let fit: 'contain' | 'cover' = 'contain';
+	$: aspect = camera === 'live' || fit === 'contain' ? 'xMidYMid meet' : 'xMidYMid slice';
+
+	// The box's size (px) — what is on screen beyond the 73:60 frame.
+	let svgEl: SVGSVGElement | undefined;
+	let boxW = 0;
+	let boxH = 0;
+	onMount(() => {
+		const ro = new ResizeObserver(([e]) => ((boxW = e.contentRect.width), (boxH = e.contentRect.height)));
+		const watch = () => svgEl && ro.observe(svgEl);
+		watch();
+		const t = setInterval(() => svgEl && (watch(), clearInterval(t)), 200);
+		return () => (ro.disconnect(), clearInterval(t));
+	});
 
 	$: stageId = settings?.stageId ?? null;
 	$: stageData = stageId != null ? STAGE_DATA[stageId] : undefined;
@@ -46,8 +61,17 @@
 	// Causal bounding-box follow: smooth center + scale toward the players each
 	// frame (no future-frame lookahead, so it works in realtime).
 	const smooth = (from: number, to: number, byPercent: number) => from + (to - from) * byPercent;
+	/** Dead action states 0–10 (DeadDown … DeadUpFallHitCameraIce). */
+	const isDead = (state: number | null | undefined) => state != null && state >= 0 && state <= 10;
+	/** The camera's centre moves like a damped spring toward where it should look: a fast move can swing a little
+	 *  past its target (≈ 10 %) and settle back — but never past the off-stage zone's edge. */
+	const CAMERA_SPRING = 0.025;
+	const CAMERA_DAMPING = 0.82;
+	/** The star twinkle (KO_DURATION_MS.star) in frames — the camera keeps a star KO in view until it is over. */
+	const STAR_TWINKLE_FRAMES = Math.ceil((KO_DURATION_MS.star / 1000) * 60);
 	let camCenter: [number, number] | null = null;
 	let camScale: number | null = null;
+	let camVelocity: [number, number] = [0, 0];
 	let camStageId: number | null = null;
 
 	$: if (camera === 'live' && frame) {
@@ -56,16 +80,31 @@
 			camStageId = stageId ?? null;
 			camCenter = null;
 			camScale = null;
+			camVelocity = [0, 0];
 		}
 		const FOLLOW = 0.04;
 		const PAD = 25;
 		const MIN = 100;
 		const xs: number[] = [];
 		const ys: number[] = [];
-		for (const p of Object.values(frame.players ?? {})) {
+		// Players still alive — and a star-KO'd one flying into the background, where they are drawn (until the
+		// star has twinkled; the flight ends inside the off-stage zone); a KO'd player's last spot (e.g. below a low
+		// stage) doesn't pull the camera.
+		for (const [i, p] of Object.entries(frame.players ?? {})) {
 			if (!p?.post) continue;
-			xs.push(p.post.positionX ?? 0);
-			ys.push(p.post.positionY ?? 0);
+			const state = p.post.actionStateId;
+			let x = p.post.positionX ?? 0;
+			let y = p.post.positionY ?? 0;
+			if (koKind(state) === 'star') {
+				const start = starStartOf(Number(i));
+				const t = (frame.frame ?? 0) - (start?.frame ?? 0);
+				if (!start || t > STAR_FRAMES + STAR_TWINKLE_FRAMES) continue;
+				const at = starFlight(start, start.end, t);
+				x = at.x;
+				y = at.y;
+			} else if (isDead(state)) continue;
+			xs.push(x);
+			ys.push(y);
 		}
 		if (xs.length) {
 			const xMin = Math.min(...xs) - PAD;
@@ -77,8 +116,31 @@
 			const xRange = Math.max(xMax - xMin, MIN);
 			const yRange = Math.max(yMax - yMin, MIN);
 			const scaling = Math.min(640 / xRange, 480 / yRange);
-			camCenter = [smooth(camCenter?.[0] ?? ncx, ncx, FOLLOW), smooth(camCenter?.[1] ?? ncy, ncy, FOLLOW)];
 			camScale = zoom * smooth(camScale ?? 5, scaling, FOLLOW);
+			// Like Melee's camera, the 73:60 view aims inside the off-stage zone (the inner border drawn on the
+			// radar — utils/gamePredicates.ts getOffStageZone), never out at the blast zones.
+			// The centre's limits: the view's edges on the zone's edges.
+			let lim: { x: [number, number]; y: [number, number] } | null = null;
+			const zone = stageId != null ? getOffStageZone(stageId) : undefined;
+			if (zone) {
+				const [[left, bottom], [right, top]] = zone;
+				camScale = Math.max(camScale, 730 / (right - left), 600 / (top - bottom)); // never bigger than the zone
+				const hw = 365 / camScale;
+				const hh = 300 / camScale;
+				lim = { x: [left + hw, right - hw], y: [bottom + hh, top - hh] };
+			}
+			const keep = (v: number, [lo, hi]: [number, number]) => Math.min(hi, Math.max(lo, v));
+			const target: [number, number] = lim ? [keep(ncx, lim.x), keep(ncy, lim.y)] : [ncx, ncy];
+			const from = camCenter ?? target;
+			camVelocity = [camVelocity[0] * CAMERA_DAMPING + (target[0] - from[0]) * CAMERA_SPRING, camVelocity[1] * CAMERA_DAMPING + (target[1] - from[1]) * CAMERA_SPRING];
+			camCenter = [from[0] + camVelocity[0], from[1] + camVelocity[1]];
+			// The view never leaves the zone: on its edge the camera stops there (no swing past).
+			if (lim) {
+				const [x, y] = camCenter;
+				camCenter = [keep(x, lim.x), keep(y, lim.y)];
+				if (camCenter[0] !== x) camVelocity[0] = 0;
+				if (camCenter[1] !== y) camVelocity[1] = 0;
+			}
 		}
 	}
 
@@ -148,8 +210,22 @@
 			const anims = animationsByPlayer[playerIndex];
 			if (!anims) continue;
 			const teamId = settings?.players?.find((p) => p?.playerIndex === playerIndex)?.teamId ?? undefined;
-			const state = toViewerState(player.post, player.pre ?? undefined, frame.frame ?? 0);
+			const dying = koKind(player.post.actionStateId) === 'star';
+			const start = starStartOf(playerIndex);
+			const t = (frame.frame ?? 0) - (start?.frame ?? 0);
+			// Star KO: not drawn once the star has twinkled (until the respawn), nor when the flight's start wasn't seen.
+			if (dying && (!start || t >= STAR_FRAMES)) continue;
+			const raw = toViewerState(player.post, player.pre ?? undefined, frame.frame ?? 0);
+			// The flight has no animation here: a still tumble pose (DamageFlyN, 88) that spins like a wheel instead.
+			const state = dying ? { ...raw, actionStateId: 88, actionStateFrameCounter: 0 } : raw;
 			const rd = computeRenderData(state, anims, { ...renderOptions, teamId: teamId ?? undefined });
+			if (rd && dying && start) {
+				const x = player.post.positionX ?? 0;
+				const y = player.post.positionY ?? 0;
+				const at = starFlight(start, start.end, t, raw.facingDirection);
+				// Feet → origin, spin around the body's middle (0, 8), shrink, then to where the flight has got to.
+				rd.transforms = [`translate(${at.x} ${at.y}) scale(${at.scale}) rotate(${at.angle} 0 8) translate(${-x} ${-y})`, ...rd.transforms];
+			}
 			if (rd) out.push(rd);
 		}
 		return out;
@@ -164,6 +240,12 @@
 	let effects: Effect[] = [];
 	let effectId = 0;
 	let prevActions: Record<number, number | undefined> = {};
+	/** Star KOs: player → where and when the flight started, and whether the star has twinkled (it then
+	 *  stays here, the player hidden, until they leave the dead state). */
+	type StarStart = { frame: number; x: number; y: number; end: { x: number; y: number }; twinkled?: boolean };
+	const starStarts: Record<number, StarStart> = {};
+	// Read through a function: the render must not re-run on (or depend on) the KO block's bookkeeping.
+	const starStartOf = (i: number) => starStarts[i] as StarStart | undefined;
 	/** Each player's position on the previous frame — a KO effect appears where the player last was. */
 	let prevPositions: Record<number, { x: number; y: number }> = {};
 	const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -178,8 +260,10 @@
 	$: viewNumbers = viewBox.split(' ').map(Number);
 	$: visible = ((): Rect => {
 		if (camera === 'live' && camCenter && camScale) {
-			const hw = 365 / camScale;
-			const hh = 300 / camScale;
+			// meet: the 730 × 600 frame fits the box; the rest of the box shows more world around it.
+			const fitScale = boxW && boxH ? Math.min(boxW / 730, boxH / 600) : 1;
+			const hw = (boxW && boxH ? boxW / fitScale / 2 : 365) / camScale;
+			const hh = (boxW && boxH ? boxH / fitScale / 2 : 300) / camScale;
 			return { xMin: camCenter[0] - hw, xMax: camCenter[0] + hw, yMin: camCenter[1] - hh, yMax: camCenter[1] + hh };
 		}
 		const [vx, vy, vw, vh] = viewNumbers;
@@ -190,11 +274,36 @@
 		const players = Object.entries(frame.players ?? {})
 			.filter(([, p]) => p?.post)
 			.map(([i, p]) => ({ playerIndex: Number(i), actionStateId: p!.post!.actionStateId ?? -1, x: p!.post!.positionX ?? 0, y: p!.post!.positionY ?? 0 }));
+		const now = frame.frame ?? 0;
+		const due: KoStart[] = [];
 		for (const ko of detectKos(prevActions, players)) {
-			const at = koPlacement({ ...ko, ...(prevPositions[ko.playerIndex] ?? {}) }, visible, blastZone);
+			if (ko.kind === 'star') {
+				const from = prevPositions[ko.playerIndex] ?? { x: ko.x, y: ko.y };
+				// Where the flight ends: toward the middle, inside the off-stage zone (no stage data: the view).
+				const z = stageId != null ? getOffStageZone(stageId) : undefined;
+				const zone = z ? { xMin: z[0][0], yMin: z[0][1], xMax: z[1][0], yMax: z[1][1] } : visible;
+				starStarts[ko.playerIndex] = { frame: now, ...from, end: starEnd(from, zone) };
+			}
+			else due.push({ ...ko, ...(prevPositions[ko.playerIndex] ?? {}) });
+		}
+		// A star twinkles where the player ended up, once the flight is over (or the player is back).
+		for (const [i, start] of Object.entries(starStarts)) {
+			const p = players.find((x) => x.playerIndex === Number(i));
+			const flying = !!p && koKind(p.actionStateId) === 'star';
+			if (now < start.frame || !flying) {
+				// Jumped back (a replay loops) or back from the dead (respawn): the KO is over.
+				if (now >= start.frame && p && !start.twinkled) due.push({ ...p, kind: 'star' });
+				delete starStarts[Number(i)];
+			} else if (!start.twinkled && now - start.frame >= STAR_FRAMES) {
+				start.twinkled = true;
+				due.push({ ...p!, ...start.end, kind: 'star' });
+			}
+		}
+		for (const ko of due) {
+			const at = koPlacement(ko, visible, blastZone);
 			const color = renderDatas.find((rd) => rd.playerState.playerIndex === ko.playerIndex)?.innerColor ?? PALETTE[ko.playerIndex] ?? '#ffffff';
 			// Blasts are world-sized (like Melee's beam from the blast zone); stars keep one size on screen.
-			const size = ko.kind === 'blast' ? 0.65 : (visible.xMax - visible.xMin) / 700;
+			const size = ko.kind === 'blast' ? 0.65 : ((visible.xMax - visible.xMin) / 700) * 0.8;
 			const effect: Effect = { id: ++effectId, kind: ko.kind, ...at, color, size };
 			effects = [...effects, effect];
 			const t = setTimeout(() => {
@@ -206,6 +315,35 @@
 		prevActions = Object.fromEntries(players.map((p) => [p.playerIndex, p.actionStateId]));
 		prevPositions = Object.fromEntries(players.map((p) => [p.playerIndex, { x: p.x, y: p.y }]));
 	}
+	// ── Magnifying glass (like Melee's): a player completely off screen shows in a bubble glued to the screen's edge,
+	// with a pointer toward them. Not for KO'd players (incl. a star KO's flight). ──
+	const MAG_RADIUS = 34; // viewBox units — the same size on screen at any zoom
+	const BODY = { halfWidth: 10, height: 22 };
+	const uid = Math.random().toString(36).slice(2, 8);
+	type Magnifier = { rd: RenderData; key: number; bx: number; by: number; r: number; m: number; cx: number; cy: number; angle: number };
+	$: magnifiers = ((): Magnifier[] => {
+		if (camera !== 'live' || !camScale) return [];
+		const r = MAG_RADIUS / camScale;
+		const inset = r * 1.25;
+		return renderDatas.flatMap((rd) => {
+			const s = rd.playerState;
+			// The game's own state (a star KO is drawn with a stand-in pose): gone the moment the player is KO'd, and
+			// none while they come back on the respawn platform (Rebirth 12 / RebirthWait 13, above the screen).
+			const own = frame?.players?.[s.playerIndex]?.post?.actionStateId;
+			if (!rd.path || isDead(own) || own === 12 || own === 13) return [];
+			const x = s.xPosition;
+			const y = s.yPosition;
+			const off = x + BODY.halfWidth < visible.xMin || x - BODY.halfWidth > visible.xMax || y + BODY.height < visible.yMin || y > visible.yMax;
+			if (!off) return [];
+			const cx = x;
+			const cy = y + BODY.height / 2;
+			const bx = Math.min(visible.xMax - inset, Math.max(visible.xMin + inset, cx));
+			const by = Math.min(visible.yMax - inset, Math.max(visible.yMin + inset, cy));
+			// The player at a size that fits the bubble; the pointer aims at where they really are.
+			return [{ rd, key: s.playerIndex, bx, by, r, m: (r * 1.3) / BODY.height, cx, cy, angle: (Math.atan2(cy - by, cx - bx) * 180) / Math.PI }];
+		});
+	})();
+
 	// The blast's beams: [tilt in degrees, size, opacity] — the main one + two smaller, fainter ones tilted to each side.
 	const BEAMS: [number, number, number][] = [[-17, 0.6, 0.6], [17, 0.6, 0.6], [0, 1, 1]];
 	// Sparks along the beam: [x, y, delay ms, size].
@@ -215,7 +353,7 @@
 {#if stageId != null}
 	<!-- stroke defaults: otherwise the host element's CSS (Outline: stroke #fff, width 3) is inherited by every
 	     shape without its own stroke — lasers, shields and KO effects got thick white outlines. -->
-	<svg class="w-full h-full" {viewBox} preserveAspectRatio={fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'} stroke="none" stroke-width="1">
+	<svg bind:this={svgEl} class="w-full h-full" {viewBox} preserveAspectRatio={aspect} stroke="none" stroke-width="1">
 		<g class="-scale-y-100">
 			<g transform={cameraTransform}>
 			{#if showStage}
@@ -225,6 +363,14 @@
 			{/if}
 
 			{#each renderDatas as rd (rd.playerState.playerIndex)}
+				{#if rd.playerState.actionStateId === 12 || rd.playerState.actionStateId === 13}
+					<!-- The respawn platform: under the player's feet while they stand on it -->
+					<g transform={`translate(${rd.playerState.xPosition} ${rd.playerState.yPosition})`}>
+						<ellipse cx="0" cy="-1.5" rx="13" ry="3.2" fill={rd.innerColor} opacity="0.35" />
+						<rect x="-11" y="-2.6" width="22" height="2.6" rx="1.3" fill="#ffffff" opacity="0.9" />
+						<rect x="-11" y="-2.6" width="22" height="1" rx="0.5" fill={rd.innerColor} opacity="0.8" />
+					</g>
+				{/if}
 				{#if rd.path}
 					<path
 						class:char-invuln={rd.invulnerable}
@@ -241,7 +387,12 @@
 			{/each}
 
 			{#each items as item, i (i)}
-				<ViewerItem {item} />
+				<ViewerItem
+					{item}
+					ownerX={item.owner != null ? frame?.players?.[item.owner]?.post?.positionX ?? null : null}
+					ownerY={item.owner != null ? frame?.players?.[item.owner]?.post?.positionY ?? null : null}
+					ownerFacing={(item.owner != null ? frame?.players?.[item.owner]?.post?.facingDirection : 1) ?? 1}
+				/>
 			{/each}
 
 			{#each effects as e (e.id)}
@@ -276,6 +427,23 @@
 					{/if}
 				</g>
 			{/each}
+
+			{#each magnifiers as g (g.key)}
+				<g class="magnifier">
+					<clipPath id={`mag-${uid}-${g.key}`}><circle cx={g.bx} cy={g.by} r={g.r} /></clipPath>
+					<circle cx={g.bx} cy={g.by} r={g.r} fill="#0b1220" opacity="0.55" />
+					<g clip-path={`url(#mag-${uid}-${g.key})`}>
+						<g transform={`translate(${g.bx} ${g.by}) scale(${g.m}) translate(${-g.cx} ${-g.cy})`}>
+							<path transform={g.rd.transforms.join(' ')} d={g.rd.path} fill={g.rd.innerColor} stroke={g.rd.outerColor} stroke-width="2" />
+						</g>
+					</g>
+					<circle cx={g.bx} cy={g.by} r={g.r} fill="none" stroke="#ffffff" stroke-width={g.r * 0.09} />
+					<!-- pointer toward the player: starts on the rim, drawn over it (nothing of it inside the lens) -->
+					<g transform={`translate(${g.bx} ${g.by}) rotate(${g.angle})`}>
+						<path d={`M${g.r * 0.96} ${-g.r * 0.28} L${g.r * 1.32} 0 L${g.r * 0.96} ${g.r * 0.28} Z`} fill="#ffffff" />
+					</g>
+				</g>
+			{/each}
 			</g>
 		</g>
 	</svg>
@@ -301,13 +469,11 @@
 		30% { transform: scale(1.3) rotate(30deg); opacity: 1; }
 		100% { transform: scale(0) rotate(90deg); opacity: 0; }
 	}
-	.ko-star { transform-box: fill-box; transform-origin: center; animation: ko-star 1.4s ease-in-out forwards; }
+	.ko-star { transform-box: fill-box; transform-origin: center; animation: ko-star 0.7s ease-in-out forwards; }
 	@keyframes ko-star {
 		0% { transform: scale(0) rotate(0deg); opacity: 0; }
-		18% { transform: scale(1.6) rotate(20deg); opacity: 1; }
-		45% { transform: scale(0.8) rotate(45deg); opacity: 1; }
-		70% { transform: scale(1.2) rotate(70deg); opacity: 0.9; }
-		100% { transform: scale(0) rotate(110deg); opacity: 0; }
+		35% { transform: scale(1.6) rotate(25deg); opacity: 1; }
+		100% { transform: scale(0) rotate(60deg); opacity: 0; }
 	}
 
 	/* Invulnerable / intangible (e.g. respawn platform) — vague opacity blink. */

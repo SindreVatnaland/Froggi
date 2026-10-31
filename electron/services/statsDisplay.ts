@@ -47,6 +47,7 @@ import { getPlayerRank } from '../../frontend/src/lib/utils/playerRankHelper';
 import { didPlayerWin, getGameMode, isDisconnectEnding, isSetComplete } from '../../frontend/src/lib/utils/gamePredicates';
 import { applyTeamOrder, orderTeams, setReference, slotOrder } from '../../frontend/src/lib/utils/teams';
 import { fightStatsFromFrames } from '../../frontend/src/lib/utils/fightStats';
+import { ElectronHighlightStore } from './store/storeHighlights';
 import { ElectronSetService } from './setService';
 
 function computeEdgeguardStats(
@@ -117,6 +118,7 @@ export class StatsDisplay {
 		@inject(delay(() => MessageHandler)) private messageHandler: MessageHandler,
 		@inject(PacketCapture) private packetCapture: PacketCapture,
 		@inject(delay(() => ElectronSetService)) private setService: ElectronSetService,
+		@inject(delay(() => ElectronHighlightStore)) private storeHighlights: ElectronHighlightStore,
 	) {
 		this.log = scopedLog(this.log, 'Stats');
 		this.initStatDisplay();
@@ -222,6 +224,8 @@ export class StatsDisplay {
 		const previousGameSettings = recentGames.at(-1)?.settings;
 		const replay = await retryFunctionAsync(5, () => this.findGameFromSettings(settings));
 		this.log.debug("Replay:", replay);
+		// Flows get it as {{state.replay.file}} (highlights point into it while the game is played).
+		this.storeHighlights.setLiveReplay(replay?.getFilePath() ?? null);
 		const replaySettings = nulled(replay?.getSettings());
 
 		const isReplay = Boolean(replaySettings?.matchInfo?.matchId && !settings.matchInfo?.matchId);

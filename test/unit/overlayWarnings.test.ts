@@ -14,7 +14,7 @@ describe('overlay warnings (editor + AI)', () => {
 		const messages = Object.values(off).flatMap((s) => Object.values(s ?? {}).flat());
 		expect(messages.join(' ')).toMatch(/Media key "game"/);
 		expect(messages.join(' ')).toMatch(/Media key "daily"/);
-		expect(messages.join(' ')).toMatch(/Replay key "replay-daily"/);
+		expect(messages.join(' ')).toMatch(/Replay list "slippiReplayDaily"/);
 		expect(overlayWarnings(overlay, [{ ...HIGHLIGHTS_FLOW, enabled: true }])).toEqual({});
 	});
 

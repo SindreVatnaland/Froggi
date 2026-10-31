@@ -121,7 +121,7 @@ export interface GameStats {
     /** On the set's first game: the host swapped sides (Player/Team 1 ↔ 2) and/or the two players inside a team
      *  (Dashboard → Fix set…). Everything that works out sides from the first game follows (utils/teams.ts setReference). */
     sides?: SetSides | null;
-    /** Highlights marked in this game (flow card Mark highlight): frames in the .slp + score — watchable later from the replay. */
+    /** Highlights of this game (frames in the .slp + score). Not written any more — flows keep highlights in lists. */
     highlights?: GameHighlight[] | null;
     /** The game's replay file: relative to the Slippi replay folder (e.g. "2026-10/Game_20261020T1200.slp"),
      *  absolute when it lives elsewhere. With `highlights` it points at every highlight (daily highlights, viewer). */

@@ -33,7 +33,7 @@ const animSettingsSchema = z.object({
 // Loose passthrough — MCP tool callers supply a partial payload; the shape is merged over
 // getDefaultElementPayload() before use, so no field here needs to be required.
 /** New element defaults: "this element changes" as animation 1's trigger, unless the payload sets its own animationTrigger. */
-const newPayloadBase = (payload: unknown) => ((payload as { animationTrigger?: unknown } | undefined)?.animationTrigger ? getDefaultElementPayload() : getNewElementPayload());
+const newPayloadBase = (payload: unknown, elementId?: number) => ((payload as { animationTrigger?: unknown } | undefined)?.animationTrigger ? getDefaultElementPayload() : getNewElementPayload(elementId));
 const partialPayloadSchema = z.record(z.string(), z.unknown()).optional();
 
 // Grid placement. The overlay grid is 512 columns × 288 rows (COL × ROW) for EVERY aspect ratio — it
@@ -292,7 +292,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			// Deep-merge over defaults so a partial nested payload (e.g. animationTrigger with only
 			// `in`) can't clobber the rest of the structure and leave the editor with an undefined
 			// animation slot. Matches updateItemInLayer's merge semantics.
-			const merged: ElementPayload = merge(newPayloadBase(payload), payload as Partial<ElementPayload> | undefined);
+			const merged: ElementPayload = merge(newPayloadBase(payload, elementId), payload as Partial<ElementPayload> | undefined);
 			const itemId = newId();
 			merged.font = withCustomFontFamily(merged.font, itemId);
 			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, itemId, position);
@@ -325,7 +325,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 
 			const items = elements.map((e) => {
 				const id = newId();
-				const payload: ElementPayload = merge(newPayloadBase(e.payload), e.payload as Partial<ElementPayload> | undefined);
+				const payload: ElementPayload = merge(newPayloadBase(e.payload, e.elementId), e.payload as Partial<ElementPayload> | undefined);
 				payload.font = withCustomFontFamily(payload.font, id);
 				return { id, layerIndex: e.layerIndex ?? 0, elementId: e.elementId as CustomElement, payload, position: e.position };
 			});

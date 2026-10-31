@@ -13,6 +13,9 @@
 	export let p1Index = 0;
 	export let p2Index = 1;
 	export let score: number[] = [0, 0];
+	/** Off for a lighter HUD (highlight replays): no set score, no names — players, percent, stocks, timer. */
+	export let showScore = true;
+	export let showNames = true;
 
 	// Melee's layout, centred (like the centred-HUD gecko code): players along the bottom in PORT order,
 	// grouped around the middle; stock icons over a big percent; port colours (team colours in doubles).
@@ -41,13 +44,18 @@
 	}
 	$: clock = timeSeconds(settings?.startingTimerSeconds, frame?.frame);
 	$: clockText = `${Math.floor(clock / 60)}:${String(Math.floor(clock % 60)).padStart(2, '0')}`;
+	/** The last 5 seconds of a timed game: 5 … 1, big in the middle. */
+	$: countdown = settings?.startingTimerSeconds && clock > 0 && clock <= 5 ? Math.ceil(clock) : null;
 </script>
 
 <div class="live-hud-container">
 	<div class="hud-top">
 		<div class="hud-timer">{clockText}</div>
-		<div class="hud-score">{score?.[0] ?? 0} – {score?.[1] ?? 0}</div>
+		{#if showScore}<div class="hud-score">{score?.[0] ?? 0} – {score?.[1] ?? 0}</div>{/if}
 	</div>
+	{#if countdown}
+		{#key countdown}<div class="hud-countdown">{countdown}</div>{/key}
+	{/if}
 	<div class="hud-bottom">
 		{#each players as p, i (p.playerIndex)}
 			<div class="hud-player" style="left: {50 + (i - (players.length - 1) / 2) * 22}%; --c: {p.color}">
@@ -61,7 +69,7 @@
 					{/each}
 				</span>
 				{#key pct(p.post)}<span class="hud-percent">{pct(p.post)}<span class="hud-pct-sign">%</span></span>{/key}
-				<span class="hud-name">{p.name}</span>
+				{#if showNames}<span class="hud-name">{p.name}</span>{/if}
 			</div>
 		{/each}
 	</div>
@@ -72,6 +80,9 @@
 	   (full /live page or the small preview), not the viewport. */
 	.live-hud-container {
 		position: absolute; inset: 0; container-type: size; pointer-events: none;
+		/* An overlay element's text outline (-webkit-text-stroke) is inherited — on fonts whose glyphs overlap
+		   inside (6, 9 …) it draws lines through the numbers. The HUD has its own shadows instead. */
+		-webkit-text-stroke: 0;
 	}
 	.hud-top {
 		position: absolute; top: 2cqmin; left: 0; right: 0;
@@ -107,6 +118,19 @@
 		font-size: 2.6cqmin; font-weight: 700; opacity: 0.95; color: #fff;
 		font-variant-numeric: tabular-nums; letter-spacing: 0.08em;
 		text-shadow: 0 0 0.8cqmin rgba(0,0,0,0.6);
+	}
+
+	.hud-countdown {
+		position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+		font-family: 'Rajdhani', system-ui, sans-serif; font-size: 18cqmin; font-weight: 800; color: #fff; line-height: 1;
+		text-shadow: 0 0 2cqmin rgba(0,0,0,0.6), 0 0.6cqmin 1.2cqmin rgba(0,0,0,0.5);
+		animation: countdown-pop 1s ease-out forwards;
+	}
+	@keyframes countdown-pop {
+		0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+		15% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+		80% { opacity: 1; }
+		100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
 	}
 
 	/* Quick pop + shake when the percent changes (re-mounted via {#key}). */

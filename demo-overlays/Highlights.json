@@ -1,6 +1,6 @@
 {
   "isDemo": true,
-  "description": "What the \"Highlights\" flow shows: Post Game = the game's best 5, Post Set = the set's best 15, Menu = today's best. Left: the OBS replay-buffer clips (Media, keys game / set / daily); right: the same highlights redrawn from the replays (Highlight Replay, keys replay-game / replay-set / replay-daily — no OBS needed). Turn the flow on in Automation → Flows.",
+  "description": "What the \"Highlights\" flow shows: Post Game = the game's best 5, Post Set = the set's best 15, Menu = today's best. Left: the OBS replay-buffer clips (Media, keys game / set / daily); right: the same highlights redrawn from the replays (Highlight Replay, lists slippiReplayGame / slippiReplaySet / slippiReplayDaily — no OBS needed). Turn the flow on in Automation → Flows.",
   "froggiVersion": "2.0.0-beta.90",
   "id": "highlights",
   "aspectRatio": {
@@ -827,9 +827,8 @@
                   "y": 0
                 }
               },
-              "video": {
-                "key": "replay-game",
-                "volume": 0
+              "replay": {
+                "list": "slippiReplayGame"
               }
             }
           }
@@ -1659,9 +1658,8 @@
                   "y": 0
                 }
               },
-              "video": {
-                "key": "replay-set",
-                "volume": 0
+              "replay": {
+                "list": "slippiReplaySet"
               }
             }
           }
@@ -2491,9 +2489,8 @@
                   "y": 0
                 }
               },
-              "video": {
-                "key": "replay-daily",
-                "volume": 0
+              "replay": {
+                "list": "slippiReplayDaily"
               }
             }
           }

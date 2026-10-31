@@ -20,6 +20,8 @@
 	export let designWidth: number | undefined = undefined;
 	export let designHeight: number | undefined = undefined;
 	export let overlayId: string | undefined = undefined;
+	/** The overlay is being rebuilt at a new size: the old copy goes at once (no scene out-animation). */
+	export let skipOut = false;
 
 	function updateDemoData() {
 		if (demoItem) dataItem = demoItem;
@@ -53,7 +55,7 @@
 		const { curScene, dataItem } = args;
 		// Previews (thumbnails, preview pages) skip scene in/out animations: Svelte 3 waits on these
 		// (incl. still-delayed intros) before removing a card, so deleted/filtered overlays stayed in the list.
-		if (edit || preview || !curScene) return fly(node, { duration: 0 });
+		if (edit || preview || skipOut || !curScene) return fly(node, { duration: 0 });
 		return createAnimation(node, curScene.animation.out, boardHeight, boardWidth, 0, dataItem);
 	};
 

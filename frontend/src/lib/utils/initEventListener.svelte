@@ -46,6 +46,7 @@
 		flowFailures,
 		highlightReels,
 		highlightFrames,
+		replayLists,
 		serverClockOffset,
 		videoVolumes,
 		teamNames,
@@ -421,9 +422,14 @@
 				videoVolumes.set((payload[2] as Record<string, number>) ?? {});
 				break;
 			case 'HighlightFrames': {
-				const [id, frames] = payload as Parameters<MessageEvents['HighlightFrames']>;
-				// ponytail: keeps the 40 newest — enough for a set's list; older ones are asked for again.
-				highlightFrames.update((all) => Object.fromEntries([...Object.entries(all).filter(([k]) => k !== id), [id, frames]].slice(-40)));
+				const [key, frames] = payload as Parameters<MessageEvents['HighlightFrames']>;
+				// ponytail: keeps the 60 newest — enough for a day's list; older ones are asked for again.
+				highlightFrames.update((all) => Object.fromEntries([...Object.entries(all).filter(([k]) => k !== key), [key, frames]].slice(-60)));
+				break;
+			}
+			case 'ReplayList': {
+				const list = payload[0] as Parameters<MessageEvents['ReplayList']>[0];
+				replayLists.update((all) => ({ ...all, [list.name]: list }));
 				break;
 			}
 			case 'FlowFailures':

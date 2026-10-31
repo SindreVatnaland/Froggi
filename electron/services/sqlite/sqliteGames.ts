@@ -154,12 +154,6 @@ export class SqliteGame {
     await this.gameStatsRepo.update(id, { sides: sides ?? null });
   }
 
-  /** Save a stored game's highlights (frames + score). */
-  async setGameHighlights(id: number, highlights: GameStats['highlights']): Promise<void> {
-    await this.sqlite.initializing;
-    await this.gameStatsRepo.update(id, { highlights: highlights ?? null });
-  }
-
   private async sendRecentGames() {
     const recentGameId = this.storeGames.getRecentGameId()
     const recentGames = await this.getGamesById(recentGameId)

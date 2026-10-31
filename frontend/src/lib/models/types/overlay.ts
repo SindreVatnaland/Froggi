@@ -112,6 +112,8 @@ export interface ElementPayload {
 	/** Media element (2100): a file uploaded to the overlay (`source: 'file'`, in its image folder) or the key a
 	 *  flow's "Set media" card points at (default); fit (cover default) and volume (0–100). */
 	video?: { key: string; volume: number; source?: 'key' | 'file'; file?: string; fit?: 'cover' | 'contain' };
+	/** Highlight Replay element (2101): the flow list it plays (items with replay, startFrame, endFrame). */
+	replay?: { list: string };
 	/** Older Video elements (before volume): read as video {key, volume 100 | 0}. */
 	highlight?: { key: string; sound: boolean };
 }

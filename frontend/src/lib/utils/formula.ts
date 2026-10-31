@@ -2,7 +2,7 @@ import type { FlowTokens } from '../models/types/flow';
 import { itemTokens, resolveIndexKey, type ListItem } from './flowList';
 
 /**
- * Flow formulas (Calculate, Mark highlight's score, List sort / filter / map). Two ways to write the same:
+ * Flow formulas (Calculate, Timer seconds, List sort / filter / map / count, Set media From / To). Two ways to write the same:
  *   Froggi style  {{total}} >= 40 && {{didKill}}          JavaScript style  total >= 40 && didKill
  * Numbers, keys ({{key}} or a bare name / path: total, state.players.1.percent, gameList[-1].score,
  * gameList.length), "text" / 'text', + − * / %, ( ), == != === !== < <= > >= (→ 1 / 0; text compares as
@@ -24,7 +24,7 @@ export interface FormulaOptions {
 }
 
 const own = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
-const IDENT = /^[A-Za-z_$][\w$]*(?:\.(?:[A-Za-z_$][\w$]*|\d+)|\[-?\d+\])*/;
+const IDENT = /^[A-Za-z_$][\w$]*(?:\.(?:[A-Za-z_$][\w$]*|\d+)|\[(?:-?\d+|[A-Za-z_$][\w$]*)\])*/;
 const LAMBDA = /^\s*(?:\(\s*([A-Za-z_$][\w$]*)\s*\)|([A-Za-z_$][\w$]*))\s*=>/;
 
 /** `lists`: the flow's lists by name (undefined = only check the syntax; list functions give 0). */

@@ -17,19 +17,22 @@ describe('flow lists', () => {
 		expect(game.map((i) => i.id)).toEqual(['h1', 'h3', 'h4', 'h5', 'h6']); // 90, 70, 55, 80, 60
 	});
 
-	it('next rotates a list (a loop plays first, then the rest); limitPer keeps the first N per field value', () => {
-		const list: ListItem[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
-		const once = applyListOp(list, 'next', {});
-		expect(once.map((i) => i.id)).toEqual(['b', 'c', 'a']);
-		expect(applyListOp(applyListOp(once, 'next', {}), 'next', {}).map((i) => i.id)).toEqual(['a', 'b', 'c']);
-		expect(applyListOp([], 'next', {})).toEqual([]);
-		// Daily: best first, at most 3 per game, then the top 5 % with 10–30.
+	it('limitPer keeps the first N per field value; positions may come from a key', () => {
+		// Daily: best first, at most 3 per game, then the top 20 % with 20–100.
 		let day: ListItem[] = Array.from({ length: 40 }, (_, i) => ({ id: `h${i}`, score: 100 - i, game: i < 20 ? 1 : 2 + (i % 10) }));
 		day = applyListOp(day, 'limitPer', { field: 'game', count: 3 });
 		expect(day.filter((i) => i.game === 1).map((i) => i.id)).toEqual(['h0', 'h1', 'h2']);
-		const count = evaluateFormula('max(10, min(30, round(count(dayList) * 0.05)))', {}, { dayList: day });
-		expect(count).toBe(10);
-		expect(applyListOp(day, 'limit', { count }).length).toBe(10);
+		const count = evaluateFormula('max(20, min(100, round(count(dayList) * 0.2)))', {}, { dayList: day });
+		expect(count).toBe(20);
+		expect(applyListOp(day, 'limit', { count }).length).toBe(20);
+		expect(applyListOp(day.slice(0, 7), 'limit', { count }).length).toBe(7); // fewer than 20 today: all of them
+		expect(evaluateFormula('max(20, min(100, round(count(d) * 0.2)))', {}, { d: Array.from({ length: 300 }, () => ({})) })).toBe(60);
+		expect(evaluateFormula('max(20, min(100, round(count(d) * 0.2)))', {}, { d: Array.from({ length: 900 }, () => ({})) })).toBe(100);
+		// {{list[i].field}}: the position from a key (a loop counts i up), 0-based like [0]
+		const tokens = { ...listTokens('day', day), i: 2 };
+		expect(fillTemplate('{{day[i].id}}', tokens)).toBe(String(day[2].id));
+		expect(evaluateFormula('{{day[i].score}} + 1', tokens)).toBe(Number(day[2].score) + 1);
+		expect(evaluateFormula('day[i].score', tokens)).toBe(Number(day[2].score));
 	});
 
 	it('filter and map with formulas; addList; shuffle', () => {

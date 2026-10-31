@@ -3,11 +3,11 @@
 	import { page } from '$app/stores';
 	import type { GridContentItem, GridContentItemStyle } from '$lib/models/types/overlay';
 	import { electronEmitter, highlightReels, isElectron, serverClockOffset, urls, videoVolumes } from '$lib/utils/store.svelte';
-	import { clipSeconds, type HighlightClip, type HighlightReel } from '$lib/utils/highlightReel';
+	import type { HighlightClip, HighlightReel } from '$lib/utils/highlightReel';
 	import { isVideoFile } from '$lib/utils/overlayAssets';
 
 	// Media: a file uploaded to the element (plays / shows on loop), or what a flow puts on `key` ("Set media":
-	// a video or image file, a web link, a highlight's replay-buffer clip; older flows: a reel of clips).
+	// a video or image file — /media/<id> — or a web link, with an optional window).
 	// Every device plays the same position: (server now − startedAt) mod length. Three <video>s: one plays
 	// while the next clips are loaded and seeked ahead, then they swap — a clip only shows once ready; one that
 	// fails is skipped. Nothing on the key = nothing shown (also in the editor).
@@ -53,15 +53,15 @@
 	/** Per clip: start / end in its video (s), once its video's length is known. */
 	let bounds: ({ start: number; end: number } | null)[] = [];
 
-	/** Where a clip starts / ends in its video: seconds from the start (links, ranges) or from the end (replay buffers). */
+	/** Where a clip starts / ends in its video (seconds; empty = the start / the end of the video). */
 	const boundsOf = (clip: HighlightClip, duration: number) => {
-		const start = clip.start ?? (clip.fromEnd ? Math.max(0, duration - clip.fromEnd) : 0);
-		const end = clip.end ?? (Number.isFinite(duration) ? duration - (clip.toEnd ?? 0) : start);
-		return { start, end: Math.max(start, end) };
+		const start = Math.max(0, Math.min(clip.start ?? 0, Number.isFinite(duration) ? duration : Infinity));
+		const end = Math.min(clip.end ?? duration, Number.isFinite(duration) ? duration : Infinity);
+		return { start, end: Number.isFinite(end) ? Math.max(start, end) : start };
 	};
-	/** A clip's length before its video loaded: known for replay-buffer clips and full ranges. */
+	/** A clip's length before its video loaded: known when both ends are set. */
 	const knownLength = (clip: HighlightClip, i: number) =>
-		bounds[i] ? bounds[i]!.end - bounds[i]!.start : clipSeconds(clip) > 0 ? clipSeconds(clip) : clip.start != null && clip.end != null ? clip.end - clip.start : null;
+		bounds[i] ? bounds[i]!.end - bounds[i]!.start : clip.start != null && clip.end != null ? Math.max(0, clip.end - clip.start) : null;
 	const elapsed = (r: HighlightReel) => (Date.now() + $serverClockOffset - (r.startedAt ?? 0)) / 1000;
 
 	/** Drop the videos right away (reel replaced, cleared, or element gone) — frees the files. */
@@ -84,7 +84,7 @@
 		reelId = r?.id ?? null;
 		reset();
 		if (!r || preview) return;
-		if (r.startedAt === null && (r.clips.length || r.highlights?.length)) $electronEmitter.emit('HighlightReelShown', r.key, r.id);
+		if (r.startedAt === null && r.clips.length) $electronEmitter.emit('HighlightReelShown', r.key, r.id);
 	}
 
 	const once = (v: HTMLVideoElement, event: string) =>

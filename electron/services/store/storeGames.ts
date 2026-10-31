@@ -169,12 +169,6 @@ export class ElectronGamesStore {
 		return true;
 	}
 
-	/** Save the highlights marked in a stored game (no RecentGames re-send). */
-	async setGameHighlights(game: GameStats, highlights: GameStats['highlights']) {
-		const id = (game as { id?: number }).id;
-		if (id) await this.sqliteGame.setGameHighlights(id, highlights);
-	}
-
 	async clearRecentGames() {
 		this.pendingSides = null;
 		await this.sqliteGame.deleteLocalGameStats();

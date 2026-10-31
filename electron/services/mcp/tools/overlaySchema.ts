@@ -250,14 +250,15 @@ setHighlightVideo ("Set media") puts on \`key\`: ONE thing at a time — a video
 OBS replay-buffer clip (with an optional start/end). Or \`{"video":{"source":"file","file":fileName}}\` shows an uploaded
 file (the user uploads it in the element settings, ≤ 50 MB; stored in the overlay, shared with it) on loop. volume 0–100
 (0 = muted; flow card setVideoVolume overrides it in key mode), fit cover | contain. Every screen plays the same
-position (shared clock). Empty (also in the editor) until a flow sets its key. The installed, off-by-default flow
-"highlights" loops keys "game" (best 5 of the game), "set" (best 15 of the set) and "daily" (today's top) clip by clip.
+position (shared clock). Empty (also in the editor) until a flow sets its key; a new element fades when it changes. The
+installed, off-by-default flow "highlights" loops keys "game" (best 5 of the game), "set" (best 15 of the set) and "daily"
+(today's top) clip by clip.
 Old elements' \`{"highlight":{key, sound}}\` still read.
-**Highlight Replay** (2101, any scene) — payload \`{"video":{"key":"replay-game"}}\`: the highlights a flow's
-setReplayList puts on the key, redrawn from the game replays (no video, no OBS needed), one after another, looping,
-transparent background. Also plays the highlight a Set media card put on its key. Empty until the key is filled and the
-games are stored. The "highlights" flow fills "replay-game" / "replay-set" / "replay-daily". Demo overlay "Highlights"
-shows both kinds. Both DEPEND on a flow — turn "highlights" on (or build one) when adding them.
+**Highlight Replay** (2101, any scene) — payload \`{"replay":{"list":"slippiReplayGame"}}\`: plays a flow LIST by name
+(any List card's list; items need replay = {{state.replay.file}}, startFrame, endFrame), redrawn from the game replays (no
+video, no OBS needed), one after another, looping, transparent background; a new element fades between highlights.
+Empty while the list is empty. The "highlights" flow fills slippiReplayGame / slippiReplaySet / slippiReplayDaily. Demo
+overlay "Highlights" shows both kinds. Both DEPEND on a flow — turn "highlights" on (or build one) when adding them.
 **Videos** — an .mp4/.webm stored the same way plays muted on a loop in a CustomImage element (not as a
 scene background: for a moving background use a full-size CustomImage on the bottom layer). The live
 overlay preloads its images and videos (current scene first, thin bar at the top while loading).

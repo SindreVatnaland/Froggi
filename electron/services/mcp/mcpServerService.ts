@@ -90,6 +90,8 @@ Playing minigames online: only the HOST needs ngrok; guests just need Froggi and
 
 When the user reports something broken, crashing, or not showing up, call diagnose_errors (it covers the last few sessions, including the one before a crash). Fix "local" issues with the user; ignore "benign" ones. If an error needs the developer, explain why and ASK whether to send a crash report — only call submit_crash_report after they say yes (it needs write access; if unavailable, point them to Settings → Feedback → Bug report).
 
+Automation flows (WHEN → AND → THEN cards) do scene switching, highlights, OBS control, web requests and more. Ready-made demo flows exist for common wishes — list_flows returns them under demoFlows (id, name, description; get_flow "<demo id>" gives one in full): e.g. demo-highlights (score punishes → best of the game / set / day, for Media videos from the OBS replay buffer AND Highlight Replay elements redrawn from the replays), demo-scene-switching (the default scene rules), saving a replay with a controller combo, game scenes per singles/doubles, smart-home webhooks, a striking display. When someone asks for something like that ("custom highlights", "save clips of my combos"…), start from the matching demo, adapt its cards to what they describe, explain it in plain words, and save_flow it with a new id (off unless they want it on).
+
 Ask before destructive edits (deleting overlays/elements). delete_overlay only moves an overlay to Deleted Overlays (restore_overlay brings it back); you can never permanently delete anything. Keep changes reversible (undo/revert tools exist).`;
 
 @singleton()

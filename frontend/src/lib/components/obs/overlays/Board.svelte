@@ -8,7 +8,7 @@
 	import BoardContainer from '$lib/components/obs/overlays/BoardContainer.svelte';
 	import { updateFont } from './CustomFontHandler.svelte';
 	import { debounce, isNil } from 'lodash';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
 	export let curOverlay: Overlay;
 	export let layerIds: number[] | undefined;
@@ -95,9 +95,18 @@
 		if (!$isElectron) location.reload();
 	};
 
-	const handleResize = (e: UIEvent & { currentTarget: EventTarget & Window }) => {
-		innerHeight = e.currentTarget.window.innerHeight;
-		innerWidth = e.currentTarget.window.innerWidth;
+	/** True while the overlay is rebuilt at a new window size: the old copies leave without out-animations. */
+	let resizing = false;
+	let resizeEnd: ReturnType<typeof setTimeout>;
+	const handleResize = async (e: UIEvent & { currentTarget: EventTarget & Window }) => {
+		const { innerHeight: h, innerWidth: w } = e.currentTarget.window;
+		if (h === innerHeight && w === innerWidth) return;
+		resizing = true;
+		await tick();
+		innerHeight = h;
+		innerWidth = w;
+		clearTimeout(resizeEnd);
+		resizeEnd = setTimeout(() => (resizing = false), 500);
 	};
 
 	onMount(() => {
@@ -120,6 +129,8 @@
 		/>
 		{#each fixedLayers.slice().reverse() as layer, i}
 			<div class="w-full h-full z-2 absolute" id={`layer-${layer.id}`}>
+				<!-- svelte-grid reads rowHeight only when it is created — a new height (window resized) needs a new grid. -->
+				{#key rowHeight}
 				<Grid
 					items={layer.items}
 					bind:rowHeight
@@ -139,12 +150,14 @@
 								{designWidth}
 								{designHeight}
 								{overlayId}
+								skipOut={resizing}
 								additionalDelay={SCENE_TRANSITION_DELAY +
 									curScene.animation.layerRenderDelay * i}
 							/>
 						</div>
 					{/key}
 				</Grid>
+				{/key}
 			</div>
 		{/each}
 		<div class="w-full h-full z-8 absolute" />

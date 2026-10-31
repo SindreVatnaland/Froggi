@@ -73,11 +73,13 @@ export const KEY_INFO: Record<FlowTrigger['type'], Record<string, string>> = {
 		lastMove: 'The last move, e.g. "Uair".',
 		offstage: 'true when the victim was off stage at the last hit (an edgeguard).',
 		victimStocksLeft: 'The victim\'s stocks after the sequence.',
+		gameStocksLeft: 'Every player\'s stocks left after the sequence, added up — with gameStocksTotal: how deep into the game it is.',
+		gameStocksTotal: 'Every player\'s stocks at the start of the game, added up (2 players × 4 = 8).',
 		winChanceBefore: 'The attacker side\'s chance to win the game before it, in percent.',
 		winChanceAfter: 'The attacker side\'s chance to win the game after it, in percent.',
 		winChanceSwing: 'winChanceAfter − winChanceBefore (percent points).',
 		setChanceSwing: 'How much the attacker side\'s chance to win the set changed (percent points).',
-		startTime: 'When it started — wall clock, ms (Mark highlight uses it).',
+		startTime: 'When it started — wall clock, ms (where the moment is in a replay-buffer file).',
 		endTime: 'When it ended — wall clock, ms.',
 		startFrame: 'Game frame of the first hit (60 per second; saved with highlights).',
 		endFrame: 'Game frame of the end.',
@@ -124,13 +126,10 @@ export const KEY_INFO: Record<FlowTrigger['type'], Record<string, string>> = {
 /** Keys every flow can have besides trigger keys. */
 export const RUN_KEY_INFO: Record<string, string> = {
 	error: 'Why the card before failed (only behind an Error output).',
-	highlight: 'The id of the highlight Mark highlight just marked — store it in a list; Set media / Set replay list show it.',
-	highlightSeconds: 'How long the marked moment is (seconds) — a Timer can wait that long while it plays.',
-	highlightGame: 'Which game the moment is from (an id) — e.g. keep at most 3 per game.',
-	clipPath: 'The replay-buffer file OBS saved that holds the highlight.',
-	clipStart: 'Where the highlight starts in that file (seconds from its start).',
-	clipEnd: 'Where the highlight ends in that file (seconds from its start).',
-	clipSeconds: 'How long the clip plays (seconds).',
+	file: 'The id of the file OBS: save replay saved — store it in a list; Set media shows it (never a path).',
+	path: 'Where that file is on this computer.',
+	fileSeconds: 'How long the saved file is (seconds) — the buffer length, shorter early in a game.',
+	savedAt: 'When the saved file ends (wall clock, ms — the moment Froggi asked OBS to save).',
 };
 
 /** What a key means where it is used: from the flow's triggers, a run key, a list item field, a list count. */
@@ -185,18 +184,12 @@ export function triggerSchema(type: FlowTrigger['type'], samples: Record<string,
 
 /** What an action card hands to the cards after it (none for most). */
 export function actionSchema(action: { type: string; key?: string }, itemFields: string[] = []): SchemaRow[] {
-	if (action.type === 'markHighlight')
-		return [
-			{ key: 'highlight', type: 'text', meaning: RUN_KEY_INFO.highlight, example: 'h-1a2b3c4d' },
-			{ key: 'highlightSeconds', type: 'number', meaning: RUN_KEY_INFO.highlightSeconds, example: 8.5 },
-			{ key: 'highlightGame', type: 'text', meaning: RUN_KEY_INFO.highlightGame, example: '1791753170000' },
-		];
 	if (action.type === 'obsSaveReplay')
 		return [
-			{ key: 'clipPath', type: 'text', meaning: RUN_KEY_INFO.clipPath, example: 'C:/Videos/Replay 2026-10-30.mp4' },
-			{ key: 'clipStart', type: 'number', meaning: RUN_KEY_INFO.clipStart, example: 21.5 },
-			{ key: 'clipEnd', type: 'number', meaning: RUN_KEY_INFO.clipEnd, example: 30 },
-			{ key: 'clipSeconds', type: 'number', meaning: RUN_KEY_INFO.clipSeconds, example: 8.5 },
+			{ key: 'file', type: 'text', meaning: RUN_KEY_INFO.file, example: '3f9a1c27b0e4' },
+			{ key: 'path', type: 'text', meaning: RUN_KEY_INFO.path, example: 'C:/Videos/Froggi game 2 2026-10-30.mp4' },
+			{ key: 'fileSeconds', type: 'number', meaning: RUN_KEY_INFO.fileSeconds, example: 30 },
+			{ key: 'savedAt', type: 'number', meaning: RUN_KEY_INFO.savedAt, example: 1791753170000 },
 		];
 	if (action.type === 'calculate' && action.key) return [{ key: action.key, type: 'number', meaning: 'The formula\'s result — stays until a Clear values card clears it.', example: 42 }];
 	if (action.type === 'list' && action.key) {

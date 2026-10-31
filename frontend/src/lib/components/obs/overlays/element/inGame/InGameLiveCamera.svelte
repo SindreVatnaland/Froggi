@@ -35,8 +35,14 @@
 
 <style>
 	.live-camera {
+		position: relative;
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
+	}
+	/* Out of the flow: the game view takes the box's size and never sets it (it kept its first height on resize). */
+	.live-camera > :global(svg) {
+		position: absolute;
+		inset: 0;
 	}
 </style>

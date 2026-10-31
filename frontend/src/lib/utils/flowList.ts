@@ -9,7 +9,7 @@
 export type ListValue = string | number | boolean | null;
 export type ListItem = Record<string, ListValue>;
 
-export type ListOp = 'add' | 'addList' | 'sort' | 'filter' | 'map' | 'limit' | 'limitPer' | 'next' | 'shuffle';
+export type ListOp = 'add' | 'addList' | 'sort' | 'filter' | 'map' | 'limit' | 'limitPer' | 'shuffle';
 /** Sort order of the sort formula's value. */
 export type ListOrder = 'high' | 'low';
 
@@ -27,7 +27,6 @@ export const LIST_OPS: { value: ListOp; label: string }[] = [
 	{ value: 'map', label: 'Set a field of every item' },
 	{ value: 'limit', label: 'Keep the first N' },
 	{ value: 'limitPer', label: 'Keep the first N per field value' },
-	{ value: 'next', label: 'Next (move the first item to the end)' },
 	{ value: 'shuffle', label: 'Shuffle' },
 ];
 
@@ -85,9 +84,6 @@ export function applyListOp(
 				return n <= max;
 			});
 		}
-		case 'next':
-			// Playlists: the first item goes to the end — {{list.first}} is now the next one.
-			return list.length > 1 ? [...list.slice(1), list[0]] : list;
 		case 'shuffle': {
 			const random = args.random ?? Math.random;
 			const out = [...list];
@@ -112,10 +108,11 @@ export const listTokens = (key: string, items: ListItem[]) => {
 	return tokens;
 };
 
-/** {{list[0].score}} → {{list.1.score}}, {{list[-1].score}} → the last item (0-based, negative = from the end). */
+/** {{list[0].score}} → {{list.1.score}}, {{list[-1].score}} → the last item (0-based, negative = from the end);
+ *  the position may be a key: {{list[i].score}} with {{i}} = 2 → the 3rd item (loops count i up). */
 export function resolveIndexKey(key: string, tokens: Record<string, unknown>): string {
-	return key.replace(/^([A-Za-z_]\w*)\[(-?\d+)\]/, (_m, name: string, index: string) => {
-		const n = Number(index);
+	return key.replace(/^([A-Za-z_]\w*)\[(-?\d+|[A-Za-z_]\w*)\]/, (_m, name: string, index: string) => {
+		const n = /^-?\d+$/.test(index) ? Number(index) : Math.round(Number(tokens[index]) || 0);
 		const count = Number(tokens[`${name}.count`] ?? 0);
 		return `${name}.${n < 0 ? count + n + 1 : n + 1}`;
 	});

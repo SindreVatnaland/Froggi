@@ -64,8 +64,9 @@ export interface FlowGameState {
 		/** How long stocks lasted this set (respawn included): avg (pulled toward 40 s while few), min, max, count. */
 		stockSeconds: { avg: number | null; min: number | null; max: number | null; count: number };
 	};
-	/** Clips in each built highlight reel (by video key). */
-	highlight: { reels: Record<string, number> };
+	/** The running game's .slp as a file id (found at game start) — store it in a list with frames, the
+	 *  Highlight Replay element plays that window. Null before the first game. */
+	replay: { file: string | null };
 	/** This computer's public addresses (Tailscale Funnel = permanent, ngrok = temporary), null when off. */
 	links: { tailscale: string | null; ngrok: string | null };
 	/** Now and the start of today (local midnight), ms — e.g. keep list items added today: item.added >= state.time.today. */
@@ -140,7 +141,7 @@ export const SAMPLE_GAME_STATE: FlowGameState = {
 	lastGame: { score: [1, 0], stage: { id: 8, name: "Yoshi's Story" }, mode: 'direct', gameEndMethod: 'GAME', lrasInitiatorIndex: null, timestamp: '2026-10-06T18:04:12.000Z' },
 	obs: { scene: 'Game', replayBuffer: true },
 	odds: { game: { 1: 64, 2: 36 }, set: { 1: 82, 2: 18 }, secondsLeft: 214, stockSeconds: { avg: 38.5, min: 12.3, max: 71.0, count: 5 } },
-	highlight: { reels: { game: 5, set: 5 } },
+	replay: { file: '3f9a1c27b0e4' },
 	time: { now: 1791753170000, today: 1791720000000 },
 	links: { tailscale: 'https://my-pc.tail1234.ts.net', ngrok: 'https://abc123.ngrok-free.app' },
 };

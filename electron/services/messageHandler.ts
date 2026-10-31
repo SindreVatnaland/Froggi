@@ -41,6 +41,9 @@ import { newId } from '../utils/functions';
 import { BingoService } from './bingoService';
 import { IronManService } from './ironmanService';
 
+/** Messages that don't need the client's state sent again (see the Express WS message handler). */
+const PASSIVE_TOPICS = new Set(['AuthorizationKey', 'MatchId', 'Ping', 'HighlightReelShown', 'ReplayListRequest', 'HighlightFramesRequest']);
+
 @singleton()
 export class MessageHandler {
 	private app: any = express();
@@ -116,10 +119,11 @@ export class MessageHandler {
 				res.json(state);
 			});
 
-			// Highlight videos registered by flows ("Set highlight video") — only those files, by id.
-			this.app.get('/highlights/:id', (req: express.Request, res: express.Response) => {
-				const file = container.resolve(ElectronHighlightStore).file(String(req.params.id));
-				if (!file) return void res.status(404).end();
+			// Files flows registered (OBS clips, Set media) — only those, by id; Range requests, so an overlay
+			// playing a few seconds of a clip loads about that part.
+			this.app.get('/media/:id', async (req: express.Request, res: express.Response) => {
+				const file = await container.resolve(ElectronHighlightStore).path(String(req.params.id));
+				if (!file || file.toLowerCase().endsWith('.slp')) return void res.status(404).end();
 				res.setHeader('Access-Control-Allow-Origin', '*');
 				res.sendFile(file);
 			});
@@ -226,7 +230,10 @@ export class MessageHandler {
 						// "unauthorized" UI state (Settings → Authorization explains it). No popup
 						// on connect; active command feedback is handled client-side.
 					}
-					this.initData(socketId);
+					// Keep-alives and an overlay's media requests change nothing for this client — no full state
+					// re-send (it made every Highlight Replay request reload the whole overlay data).
+					const passive = Object.keys(data).every((k) => PASSIVE_TOPICS.has(k));
+					if (!passive) this.initData(socketId);
 					this.sendAuthorizedMessage(socketId, authKey, matchId);
 				} catch (err) {
 					this.log.error('Express WS message error:', err);
@@ -385,6 +392,8 @@ export class MessageHandler {
 		}
 	}
 
+	private overlaysLoading: ReturnType<ElectronOverlayStore['getOverlays']> | null = null;
+
 	private async initData(socketId: string | undefined = undefined) {
 		// Cheap + time-critical first: a player's phone shows the striking state straight away instead
 		// of waiting for the overlay list etc. to load.
@@ -405,7 +414,10 @@ export class MessageHandler {
 		this.sendInitMessage(socketId, 'GameSettings', this.storeLiveStats.getGameSettings());
 		this.sendInitMessage(socketId, 'GameState', this.storeLiveStats.getGameState());
 		this.sendInitMessage(socketId, 'LiveStatsSceneChange', this.storeLiveStats.getStatsScene());
-		this.sendInitMessage(socketId, 'Overlays', await this.storeOverlay.getOverlays());
+		// Many clients start at once (the app window, overlay pages, OBS sources) — one overlay read serves them all
+		// (it reads and parses every overlay: ~1.5 s with many big overlays).
+		this.overlaysLoading ??= this.storeOverlay.getOverlays().finally(() => (this.overlaysLoading = null));
+		this.sendInitMessage(socketId, 'Overlays', await this.overlaysLoading);
 		this.sendInitMessage(socketId, 'AssetPacks', this.assetPackService.getPacks());
 		this.sendInitMessage(socketId, 'Obs', this.storeObs.getObs());
 		this.sendInitMessage(

@@ -77,20 +77,10 @@ export type FlowAction =
 	/** HTTP request (type name kept from when it was POST-only). method: POST (default), GET, or any
 	 *  other (PUT, PATCH, DELETE…). GET/HEAD send no body; {{keys}} in the URL are filled. */
 	| { type: 'httpPost'; method?: string; url: string; bearerToken?: string; oauth?: FlowOAuth; headers?: FlowHeader[]; body: FlowPostBody; template?: string }
-	/** Show one whole video file (usually {{path}} from "OBS saved a replay") as highlight reel `key`. */
-	/** "Set media": ONE thing on media key `key` — `path` = a file path, a web link (http/https) or a highlight id;
-	 *  `start` / `end` = seconds from the start (empty = all; numbers or formulas). Empty path = clear the key.
-	 *  Images show as images. `delay` = seconds the stream video runs behind the game (highlights). */
-	| { type: 'setHighlightVideo'; key?: string; path: string; start?: string | number; end?: string | number; delay?: number }
-	/** The highlight replay element on `key` plays every highlight in list `list` (each item's `field`, default id). */
-	| { type: 'setReplayList'; key: string; list: string; field?: string }
-	/** Remember a highlight: the sequence that fired the flow (or now) with `before`/`after` seconds around
-	 *  it; `maxSeconds` keeps only the end of a longer one; `score` = formula, e.g. {{total}} from Calculate cards (higher = better). */
-	| { type: 'markHighlight'; before: number; after: number; maxSeconds?: number; score: string }
-	/** Build video `key` from the highlights in list `list`, in the list's order (each item's `field`,
-	 *  default "id" = a {{highlight}} id from Mark highlight) — a playlist of replay-buffer clips, no cutting, nothing deleted.
-	 *  delay: seconds the stream video runs behind the game. */
-	| { type: 'buildHighlightReel'; key: string; list: string; field?: string; delay?: number }
+	/** "Set media": ONE thing on media key `key` — `path` = a file id ({{file}} from OBS: save replay), a file
+	 *  path or a web link (http/https); `start` / `end` = seconds into the video (empty = all; numbers or
+	 *  formulas). Empty path = clear the key. Images show as images. */
+	| { type: 'setHighlightVideo'; key?: string; path: string; start?: string | number; end?: string | number }
 	/** List card (utils/flowList.ts): change list `key` — add an item (`fields`, {{keys}} filled), add all of
 	 *  list `from`, sort by / keep where (`formula` over {{item.<field>}}, sort `order`), set `field` of
 	 *  every item to `formula` (map), keep the first `count`, or shuffle. Lists stay until Clear values. */
@@ -100,7 +90,7 @@ export type FlowAction =
 	/** Calculate: {{key}} = the formula's result. The value belongs to this flow and stays (also for its next
 	 *  runs) until a Clear values card clears it; never set / cleared reads as empty (0 in a formula). */
 	| { type: 'calculate'; key: string; formula: string; /** What the value means — shown when hovering its key in later cards. */ description?: string }
-	/** Volume (0–100) for the Video elements showing `key` — overrides the element's own volume. */
+	/** Volume (0–100) for the Media elements showing `key` — overrides the element's own volume. */
 	| { type: 'setVideoVolume'; key: string; volume: number }
 	/** OBS replay buffer length (s), file format and file name prefix ({{keys}} filled, no folders);
 	 *  nothing happens when already set. */
@@ -108,8 +98,8 @@ export type FlowAction =
 	/** Switch Froggi's scene (what overlays show). Works with automatic scene switching on or off. */
 	| { type: 'setScene'; scene: LiveStatsScene }
 	/** Timer card: the cards after it run when it fires (their conditions are checked then). Starting a
-	 *  timer whose key is already running restarts it. Keys are shared by all flows. */
-	/** `seconds`: a number or a formula, e.g. {{clips.first.seconds}}. */
+	 *  timer whose key is already running restarts it. Keys are shared by all flows and may hold {{keys}}
+	 *  (e.g. save-{{startFrame}}: one timer per punish). `seconds`: a number or a formula. */
 	| { type: 'timer'; key: string; seconds: number | string }
 	| { type: 'cancelTimer'; key: string }
 	/** Debug: a toast in Froggi; {{keys}} filled. */
@@ -119,8 +109,9 @@ export type FlowAction =
 	| { type: 'obsScene'; sceneName: string }
 	| { type: 'obsToggleSource'; sourceName: string }
 	| { type: 'obsVolume'; inputName: string; volume: number }
-	/** With `highlight` ({{highlight}}): waits for the file and hands on {{path}} {{start}} {{end}} {{seconds}} — where it sits in it. */
-	| { type: 'obsSaveReplay'; highlight?: string };
+	/** Saves the replay buffer, waits for OBS's file and hands on SAVE_KEYS: {{file}} (its id), {{path}},
+	 *  {{fileSeconds}} (its length) and {{savedAt}} (when it ends — the save request, wall clock ms). */
+	| { type: 'obsSaveReplay' };
 
 export type FlowNode =
 	| { id: string; kind: 'trigger'; position: { x: number; y: number }; data: FlowTrigger }
@@ -152,16 +143,15 @@ export interface FlowFailure {
 export const REPLAY_FORMATS: Record<string, string> = { hybrid_mp4: 'Hybrid MP4', mp4: 'MP4', hybrid_mov: 'Hybrid MOV', mov: 'MOV' };
 
 /** Actions that can fail: an Error output ({{error}} = the reason). */
-export const FLOW_ERROR_ACTIONS: FlowAction['type'][] = ['httpPost', 'setHighlightVideo', 'buildHighlightReel', 'obsReplayBufferSettings', 'obsScene', 'obsToggleSource', 'obsVolume', 'obsSaveReplay'];
+export const FLOW_ERROR_ACTIONS: FlowAction['type'][] = ['httpPost', 'setHighlightVideo', 'obsReplayBufferSettings', 'obsScene', 'obsToggleSource', 'obsVolume', 'obsSaveReplay'];
 /** Actions that change {{keys}} for the cards after them. */
-export const FLOW_TOKEN_ACTIONS: FlowAction['type'][] = ['calculate', 'list', 'clearValues', 'markHighlight'];
+export const FLOW_TOKEN_ACTIONS: FlowAction['type'][] = ['calculate', 'list', 'clearValues'];
 
-/** Keys every flow can use besides its triggers' and Calculate / List cards' keys: the last error, and the
- *  highlight Mark highlight just marked (its id — add it to a list). */
-export const HIGHLIGHT_KEYS = ['highlight', 'highlightSeconds', 'highlightGame'];
-/** OBS: save replay with a highlight → where the highlight sits in the saved file. */
-export const CLIP_KEYS = ['clipPath', 'clipStart', 'clipEnd', 'clipSeconds'];
-export const FLOW_RUN_KEYS = ['error', ...HIGHLIGHT_KEYS, ...CLIP_KEYS];
+/** What "OBS: save replay" hands on. */
+export const SAVE_KEYS = ['file', 'path', 'fileSeconds', 'savedAt'];
+/** Keys every flow can use besides its triggers' and Calculate / List cards' keys: the last error, and
+ *  what OBS: save replay hands on. */
+export const FLOW_RUN_KEYS = ['error', ...SAVE_KEYS];
 
 
 /** A Calculate card's key: a plain name (letters, digits, _), not a {{state.…}} path. */
@@ -194,7 +184,9 @@ export type FlowEvent =
 	| { type: 'obsReplaySaved'; payload?: unknown };
 
 /** Event + the keys it exposes to actions. */
-export type FlowEventWithTokens = FlowEvent & { tokens?: FlowTokens };
+/** One run of a flow (a trigger firing): its own copy of the keys, and the Calculate keys this run set itself
+ *  — those stay the run's own across timers; other values are read as they are now. */
+export type FlowEventWithTokens = FlowEvent & { tokens?: FlowTokens; computed?: Set<string> };
 
 /** Game state the conditions read. Players are Player 1 / Player 2 (slot order). */
 export interface FlowContext {

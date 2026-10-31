@@ -4,6 +4,9 @@
 	import { gameFrame } from '$lib/utils/store.svelte';
 	import { isNil } from 'lodash';
 
+	/** Draw the blast zones and the off-stage zone. The live camera stays inside the off-stage zone, so they only
+	 *  show in a box wider / taller than its 73:60 view. */
+	export let showBounds = true;
 	export let stageId: number;
 	/**
 	 * Frame to read dynamic stage state from (FoD platform heights, Randall).
@@ -68,12 +71,14 @@
 </script>
 
 {#if !isNil(stage)}
+	{#if showBounds}
 	<rect
 		x={stage.blastZones[0][0]}
 		y={stage.blastZones[0][1]}
 		width={stage.blastZones[1][0] - stage.blastZones[0][0]}
 		height={stage.blastZones[1][1] - stage.blastZones[0][1]}
 	/>
+	{/if}
 	<polyline points={stage.mainStage.join(' ')} />
 	{#each platforms as platform}
 		<polyline points={platform.join(' ')} />
@@ -82,7 +87,7 @@
 		<polyline points={stage?.getRandallPosition(effFrame?.frame ?? 0)?.join(' ')} />
 	{/if}
 
-	{#if offStageZone}
+	{#if offStageZone && showBounds}
 		<rect
 			class="opacity-50"
 			x={offStageZone[0][0]}
@@ -92,3 +97,4 @@
 		/>
 	{/if}
 {/if}
+

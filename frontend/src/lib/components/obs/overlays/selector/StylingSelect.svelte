@@ -161,7 +161,7 @@
 
 	function updateStyle() {
 		if (getSettingsType(selectedElementId) === getSettingsType(prevSelectedElementId)) return;
-		payload = getNewElementPayload();
+		payload = getNewElementPayload(selectedElementId);
 		prevSelectedElementId = selectedElementId;
 	}
 	$: selectedElementId, updateStyle();
@@ -351,16 +351,17 @@
 				<section class="styling-section">
 					<p class="section-label">Highlight Replay</p>
 					<label class="flex flex-col gap-1 text-sm">
-						Key
+						List
 						<input
-							value={payload.video?.key ?? 'game'}
-							on:change={(e) => (payload.video = { volume: 0, ...payload.video, key: e.currentTarget.value.trim() || 'game' })}
+							value={payload.replay?.list ?? 'slippiReplayHighlights'}
+							on:change={(e) => (payload.replay = { list: e.currentTarget.value.trim() || 'slippiReplayHighlights' })}
 							class="w-full border-secondary text-secondary-color background-primary-color text-sm rounded block px-3 py-2"
 						/>
 					</label>
 					<p class="text-xs opacity-50 mt-2 leading-relaxed">
-						Plays the highlights a flow's "Set replay list" card puts on this key, redrawn from the game replays (no
-						OBS needed), one after another. Empty until a flow sets it and the games are stored.
+						Plays a flow list by name, one highlight after another, redrawn from the game replays (no OBS
+						needed). Each item needs replay ({'{{state.replay.file}}'}), startFrame and endFrame. Empty until the
+						list has items.
 					</p>
 				</section>
 			{/if}

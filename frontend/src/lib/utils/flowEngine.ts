@@ -2,7 +2,7 @@ import { flattenState, isStateKey, SAMPLE_GAME_STATE, type FlowGameState } from 
 import { formulaKeys, formulaProblem } from './formula';
 import { resolveIndexKey } from './flowList';
 import { RUN_KEY_INFO } from './flowKeys';
-import { CALC_KEY, CLIP_KEYS, HIGHLIGHT_KEYS, FLOW_ERROR_ACTIONS, FLOW_RUN_KEYS, FLOW_TOKEN_ACTIONS, type Flow, type FlowAction, type FlowCompare, type FlowCompareOp, type FlowCondition, type FlowContext, type FlowEdge, type FlowEvent, type FlowEventWithTokens, type FlowNode, type FlowPlayer, type FlowTokens, type FlowTrigger } from '../models/types/flow';
+import { CALC_KEY, SAVE_KEYS, FLOW_ERROR_ACTIONS, FLOW_RUN_KEYS, FLOW_TOKEN_ACTIONS, type Flow, type FlowAction, type FlowCompare, type FlowCompareOp, type FlowCondition, type FlowContext, type FlowEdge, type FlowEvent, type FlowEventWithTokens, type FlowNode, type FlowPlayer, type FlowTokens, type FlowTrigger } from '../models/types/flow';
 
 const playerMatches = (wanted: FlowPlayer | undefined, player: 1 | 2, isCurrentPlayer: boolean) =>
 	!wanted || wanted === 'any' || (wanted === 'current' ? isCurrentPlayer : wanted === `p${player}`);
@@ -178,8 +178,6 @@ export function validateFlow(flow: Flow): string[] {
 		// A time: a number over 0, or a formula (checked when it runs) — e.g. {{clips.first.seconds}}.
 		if (n.kind === 'action' && n.data.type === 'timer' && (!n.data.key?.trim() || (typeof n.data.seconds === 'number' ? !(n.data.seconds > 0) : !String(n.data.seconds ?? '').trim()))) problems.push('Timer needs a key and a time over 0 seconds');
 		if (n.kind === 'action' && n.data.type === 'cancelTimer' && !n.data.key?.trim()) problems.push('Cancel timer needs the key of the timer to cancel');
-		if (n.kind === 'action' && n.data.type === 'buildHighlightReel' && !n.data.key?.trim()) problems.push('Build highlight reel needs a video key');
-		if (n.kind === 'action' && n.data.type === 'markHighlight' && !(n.data.before >= 0 && n.data.after >= 0)) problems.push('Mark highlight needs seconds before/after the moment');
 		if (n.kind === 'action' && n.data.type === 'calculate' && !CALC_KEY.test(n.data.key ?? '')) problems.push(`Calculate needs a key name (letters, digits, _): "${n.data.key ?? ''}"`);
 		if (n.kind === 'action' && n.data.type === 'calculate' && !n.data.formula?.trim()) problems.push(`Calculate ${n.data.key || ''} needs a formula`);
 		if (n.kind === 'action' && n.data.type === 'list') {
@@ -195,15 +193,13 @@ export function validateFlow(flow: Flow): string[] {
 			const problem = (d.op === 'sort' || d.op === 'filter' || d.op === 'map') && d.formula?.trim() ? formulaProblem(d.formula, templateKeys(d.formula)) : null;
 			if (problem) problems.push(problem);
 		}
-		if (n.kind === 'action' && n.data.type === 'buildHighlightReel' && !CALC_KEY.test(n.data.list ?? '')) problems.push('Build highlight reel needs the list to play');
-		if (n.kind === 'action' && n.data.type === 'setReplayList' && !CALC_KEY.test(n.data.list ?? '')) problems.push('Set replay list needs the list to play');
 		if (n.kind === 'action' && n.data.type === 'clearValues') {
 			const keys = clearKeys(n.data.keys);
 			if (!keys.length) problems.push('Clear values needs the names to clear');
 			const known = new Set(calcKeys(flow));
 			for (const k of keys) if (!known.has(k)) problems.push(`Clear values: no Calculate or List card in this flow sets "${k}"`);
 		}
-		for (const f of n.kind === 'action' && n.data.type === 'calculate' ? [n.data.formula] : n.kind === 'action' && n.data.type === 'markHighlight' && n.data.score ? [n.data.score] : []) {
+		for (const f of n.kind === 'action' && n.data.type === 'calculate' ? [n.data.formula] : []) {
 			const problem = f?.trim() ? formulaProblem(f, templateKeys(f)) : null;
 			if (problem) problems.push(problem);
 		}
@@ -215,7 +211,7 @@ export function validateFlow(flow: Flow): string[] {
 		}
 		if (n.kind === 'action' && n.data.type === 'httpPost' && n.data.headers?.some((h) => !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(h.name ?? ''))) problems.push('Header names may only use letters, numbers and - _ .');
 		// Formulas may also name keys JavaScript-style (total, item.score) — check those too.
-		const formulas = n.kind !== 'action' ? [] : n.data.type === 'calculate' ? [n.data.formula] : n.data.type === 'markHighlight' ? [n.data.score] : n.data.type === 'list' ? [n.data.formula, typeof n.data.count === 'string' ? n.data.count : ''] : n.data.type === 'timer' && typeof n.data.seconds === 'string' ? [n.data.seconds] : n.data.type === 'setHighlightVideo' ? [String(n.data.start ?? ''), String(n.data.end ?? '')] : [];
+		const formulas = n.kind !== 'action' ? [] : n.data.type === 'calculate' ? [n.data.formula] : n.data.type === 'list' ? [n.data.formula, typeof n.data.count === 'string' ? n.data.count : ''] : n.data.type === 'timer' && typeof n.data.seconds === 'string' ? [n.data.seconds] : n.data.type === 'setHighlightVideo' ? [String(n.data.start ?? ''), String(n.data.end ?? '')] : [];
 		const unknown = [...nodeTexts(n).flatMap((t) => templateKeys(t)), ...formulas.flatMap((f) => (f?.trim() ? formulaKeys(f) : []))].filter((k) => !isKnown(k));
 		if (unknown.length) problems.push(`Unknown key${unknown.length > 1 ? 's' : ''}: ${[...new Set(unknown)].map((k) => `{{${k}}}`).join(', ')}`);
 	}
@@ -227,7 +223,7 @@ export function validateFlow(flow: Flow): string[] {
 export const SEQUENCE_KEYS = [
 	'kind', 'player', 'playerName', 'character', 'isCurrentPlayer', 'victim', 'victimName', 'victimCharacter',
 	'hits', 'damage', 'startPercent', 'endPercent', 'seconds', 'hitsPerSecond', 'didKill', 'gameEnding', 'teamKills',
-	'openingType', 'moves', 'lastMove', 'offstage', 'victimStocksLeft',
+	'openingType', 'moves', 'lastMove', 'offstage', 'victimStocksLeft', 'gameStocksLeft', 'gameStocksTotal',
 	'winChanceBefore', 'winChanceAfter', 'winChanceSwing', 'setChanceSwing', 'startTime', 'endTime', 'startFrame', 'endFrame',
 ];
 
@@ -257,7 +253,7 @@ export const TRIGGER_TOKENS: Record<FlowTrigger['type'], string[]> = {
 export const hasNoBody = (method: string | undefined) => /^(GET|HEAD)$/i.test(method ?? 'POST');
 
 /** {{key}}, {{a.b.1}}, and list positions {{list[-1].score}}. */
-const KEY_RE = /\{\{\s*([\w.]+(?:\[-?\d+\][\w.]*)?)\s*\}\}/g;
+const KEY_RE = /\{\{\s*([\w.]+(?:\[(?:-?\d+|[A-Za-z_]\w*)\][\w.]*)?)\s*\}\}/g;
 
 /** Fill {{key}} placeholders. Strings are inserted as-is (put quotes in the template for JSON strings).
  *  `missing` = what an unknown/empty key becomes (null for JSON bodies). */
@@ -278,9 +274,8 @@ const nodeTexts = (n: FlowNode): string[] => {
 	if (d.type === 'httpPost') return [d.url as string, d.body === 'custom' && !hasNoBody(d.method as string | undefined) ? (d.template as string) : '', ...((d.headers as { value: string }[] | undefined) ?? []).map((h) => h.value)];
 	if (d.type === 'notify' || d.type === 'log') return [d.message as string];
 	if (d.type === 'setHighlightVideo') return [d.path as string, String(d.start ?? ''), String(d.end ?? '')];
-	if (d.type === 'obsSaveReplay') return [(d.highlight as string) ?? ''];
-	if (d.type === 'timer') return [String(d.seconds ?? '')];
-	if (d.type === 'markHighlight') return [d.score as string];
+	if (d.type === 'timer') return [String(d.seconds ?? ''), d.key as string];
+	if (d.type === 'cancelTimer') return [d.key as string];
 	if (d.type === 'calculate') return [d.formula as string];
 	if (d.type === 'list') return d.op === 'add' ? ((d.fields as { value: string }[] | undefined) ?? []).map((f) => f.value) : [d.formula as string, String(d.count ?? '')];
 	if (d.type === 'obsReplayBufferSettings') return [d.fileName as string];
@@ -291,7 +286,7 @@ const nodeTexts = (n: FlowNode): string[] => {
 /** Keys the flow's Calculate cards set. */
 /**
  * The keys a card can use, from the cards before it (its ancestors): the When cards' keys, the values of
- * Calculate / List cards ({{list}}, {{list.count}}), {{highlight}} after Mark highlight, {{error}} behind
+ * Calculate / List cards ({{list}}, {{list.count}}), {{file}} etc. after OBS: save replay, {{error}} behind
  * an Error output. A Calculate card also sees its own key (its value from the last run).
  */
 export function keysBefore(flow: Pick<Flow, 'nodes' | 'edges'>, nodeId: string): string[] {
@@ -302,8 +297,7 @@ export function keysBefore(flow: Pick<Flow, 'nodes' | 'edges'>, nodeId: string):
 		if (n.kind === 'trigger') (TRIGGER_TOKENS[n.data.type] ?? []).forEach((k) => keys.add(k));
 		else if (n.kind === 'action' && n.data.type === 'calculate' && n.data.key) keys.add(n.data.key.trim());
 		else if (n.kind === 'action' && n.data.type === 'list' && n.data.key) (keys.add(n.data.key.trim()), keys.add(`${n.data.key.trim()}.count`));
-		else if (n.kind === 'action' && n.data.type === 'markHighlight') HIGHLIGHT_KEYS.forEach((k) => keys.add(k));
-		else if (n.kind === 'action' && n.data.type === 'obsSaveReplay' && n.data.highlight?.trim()) CLIP_KEYS.forEach((k) => keys.add(k));
+		else if (n.kind === 'action' && n.data.type === 'obsSaveReplay') SAVE_KEYS.forEach((k) => keys.add(k));
 	};
 	const self = byId.get(nodeId);
 	if (self?.kind === 'action' && self.data.type === 'calculate') produced(self);
@@ -351,7 +345,7 @@ export interface KeyOrigin {
 
 /**
  * Where every key the card `nodeId` can use comes from — the nearest card before it that makes it
- * (When cards, Calculate, List, Mark highlight; item fields: the List cards that set them). Chip tooltips.
+ * (When cards, Calculate, List, OBS: save replay; item fields: the List cards that set them). Chip tooltips.
  */
 export function keyOrigins(flow: Pick<Flow, 'nodes' | 'edges'>, nodeId: string): Record<string, KeyOrigin> {
 	const byId = new Map(flow.nodes.map((n) => [n.id, n]));
@@ -373,8 +367,7 @@ export function keyOrigins(flow: Pick<Flow, 'nodes' | 'edges'>, nodeId: string):
 			put(list, { kind: 'action', type: 'list', detail: `"${list}"`, meaning: d.description?.trim() || 'A list of items kept by this flow until a Clear values card clears it.' });
 			put(`${list}.count`, { kind: 'action', type: 'list', detail: `"${list}"`, meaning: `How many items "${list}" has.` });
 		}
-		if (d.type === 'markHighlight') for (const k of HIGHLIGHT_KEYS) put(k, { kind: 'action', type: 'markHighlight', detail: `score ${d.score || '0'}`, meaning: RUN_KEY_INFO[k] });
-		if (d.type === 'obsSaveReplay' && d.highlight?.trim()) for (const k of CLIP_KEYS) put(k, { kind: 'action', type: 'obsSaveReplay', detail: `highlight ${d.highlight}`, meaning: RUN_KEY_INFO[k] });
+		if (d.type === 'obsSaveReplay') for (const k of SAVE_KEYS) put(k, { kind: 'action', type: 'obsSaveReplay', meaning: RUN_KEY_INFO[k] });
 	};
 	const self = byId.get(nodeId);
 	if (self?.kind === 'action' && self.data.type === 'calculate') made(self);
@@ -443,7 +436,7 @@ export const gameStartTokens = (state: FlowGameState): FlowTokens => ({
 export const SAMPLE_TOKENS: FlowTokens = {
 	scene: 'InGame', buttons: 'L+R', method: 'GAME', score: '1-0', total: 120, newSet: false, error: 'OBS did not accept the command — is OBS connected?',
 	kind: 'punish', character: 'Fox', victim: 2, victimName: 'Zain', victimCharacter: 'Marth', hits: 5, startPercent: 32, endPercent: 118, seconds: 3.2, hitsPerSecond: 1.6,
-	didKill: true, gameEnding: false, teamKills: 1, openingType: 'neutral-win', moves: 'Nair, Uthrow, Uair, Uair, Uair', lastMove: 'Uair', offstage: false, victimStocksLeft: 1,
+	didKill: true, gameEnding: false, teamKills: 1, openingType: 'neutral-win', moves: 'Nair, Uthrow, Uair, Uair, Uair', lastMove: 'Uair', offstage: false, victimStocksLeft: 1, gameStocksLeft: 3, gameStocksTotal: 8,
 	winChanceBefore: 52, winChanceAfter: 71, winChanceSwing: 19, setChanceSwing: 12, startTime: 1791753170000, endTime: 1791753173200, startFrame: 4210, endFrame: 4402,
 	player: 1, playerName: 'Mango', isCurrentPlayer: true, damage: 14.2, percent: 87.5, stocksLeft: 2,
 	p1Name: 'Mango', p2Name: 'Zain', bestOf: 3, ruleset: 'singles', connected: true, path: 'C:/Users/me/Videos/Replay 2026-10-11 21-30-02.mp4', fileName: 'Replay 2026-10-11 21-30-02.mp4',

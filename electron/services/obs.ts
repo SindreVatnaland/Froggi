@@ -231,9 +231,15 @@ export class ObsWebSocket {
 			await this.obs.call('SetProfileParameter', { parameterCategory: cat, parameterName: name, parameterValue: value });
 			changes.push(`${name}=${value}`);
 		}
-		if (!changes.length) return 'Replay buffer settings already set';
+		const active = (await this.obs.call('GetReplayBufferStatus')).outputActive;
+		if (!changes.length) {
+			// Settings match — still make sure it runs (highlights need it).
+			if (active) return 'Replay buffer settings already set';
+			await this.startReplayBuffer();
+			return 'Replay buffer started';
+		}
 		this.log.info('Replay buffer settings changed:', changes.join(', '));
-		if ((await this.obs.call('GetReplayBufferStatus')).outputActive) await this.restartReplayBuffer();
+		if (active) await this.restartReplayBuffer();
 		else await this.startReplayBuffer();
 		return `Replay buffer: ${changes.join(', ')}`;
 	};
@@ -308,7 +314,7 @@ export class ObsWebSocket {
 			this.updateObsData();
 		});
 		this.obs.on('ReplayBufferSaved', (event) => {
-			// Highlights: register the file (timed by Froggi's save request), then flows: "OBS saved a replay".
+			// "OBS: save replay" cards waiting for their file get it (timed by Froggi's save request), then flows: "OBS saved a replay".
 			if (event?.savedReplayPath) {
 				this.storeHighlights.saved(event.savedReplayPath);
 				this.messageHandler.sendMessage('ObsReplaySaved', event.savedReplayPath);
@@ -409,7 +415,7 @@ export class ObsWebSocket {
 			this.log.info(`Executing command: ${command}`, payload);
 			const requestedAt = Date.now();
 			await this.obs.call(command, payload);
-			// The saved file ends at this moment — highlight clips are timed from it.
+			// The saved file ends at this moment — "OBS: save replay" hands it on as {{savedAt}}.
 			if (command === 'SaveReplayBuffer') this.storeHighlights.requestedSave(requestedAt);
 			await this.updateObsData();
 			return true;

@@ -1,7 +1,7 @@
 """Generates demo-overlays/Highlights.json — what the "Highlights" flow shows: Post Game = the game's best 5,
 Post Set = the set's best 15, Menu = today's best. Each scene has a Media element (the OBS replay-buffer clips,
-key "game" / "set" / "daily") beside a Highlight Replay element (the same picks redrawn from the replays, key
-"replay-game" / "replay-set" / "replay-daily"). Plain elements by key — restyle freely."""
+key "game" / "set" / "daily") beside a Highlight Replay element (the same picks redrawn from the replays, list
+slippiReplayGame / slippiReplaySet / slippiReplayDaily). Plain elements by key / list — restyle freely."""
 import json, random, re, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from demo_overlay_lib import *  # noqa: F401,F403
@@ -21,7 +21,7 @@ def scene(title, key):
         item(E('CustomString'), 14, y - 12, w, 8, string='VIDEO · OBS REPLAY BUFFER', color=DIM),
         item(E('PostGameHighlightVideo'), 14, y, w, h, rounded='rounded-md', data={"video": {"key": key, "volume": 0}}),
         item(E('CustomString'), 262, y - 12, w, 8, string='REPLAY · NO OBS NEEDED', color=DIM),
-        item(E('HighlightReplay'), 262, y, w, h, rounded='rounded-md', data={"video": {"key": f"replay-{key}", "volume": 0}}),
+        item(E('HighlightReplay'), 262, y, w, h, rounded='rounded-md', data={"replay": {"list": f"slippiReplay{key.capitalize()}"}}),
     ]
     return {
         "active": True, "fallback": "menu",
@@ -34,7 +34,7 @@ def scene(title, key):
 
 overlay = {
     "isDemo": True,
-    "description": "What the \"Highlights\" flow shows: Post Game = the game's best 5, Post Set = the set's best 15, Menu = today's best. Left: the OBS replay-buffer clips (Media, keys game / set / daily); right: the same highlights redrawn from the replays (Highlight Replay, keys replay-game / replay-set / replay-daily — no OBS needed). Turn the flow on in Automation → Flows.",
+    "description": "What the \"Highlights\" flow shows: Post Game = the game's best 5, Post Set = the set's best 15, Menu = today's best. Left: the OBS replay-buffer clips (Media, keys game / set / daily); right: the same highlights redrawn from the replays (Highlight Replay, lists slippiReplayGame / slippiReplaySet / slippiReplayDaily — no OBS needed). Turn the flow on in Automation → Flows.",
     "froggiVersion": "2.0.0-beta.90", "id": "highlights", "aspectRatio": {"width": 16, "height": 9},
     "title": "Highlights (game, set, daily)",
     "postGame": scene("THIS GAME'S HIGHLIGHTS", 'game'),

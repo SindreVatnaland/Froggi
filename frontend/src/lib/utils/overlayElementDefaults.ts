@@ -97,12 +97,21 @@ export function getDefaultElementPayload(): ElementPayload {
 	};
 }
 
+/** Media (2100): a fade when what it shows changes (the next clip may take a moment to load). Highlight Replay
+ *  switches instantly (user decision) — its next highlight is already loaded. */
+const FADES_ON_CHANGE = new Set([2100]);
+
 /**
  * A NEW element's payload: animation 1 replays when the element changes ("self") — nothing happens until
- * an animation type is set. Not part of getDefaultElementPayload: that one is merged into old elements too.
+ * an animation type is set (Media / Highlight Replay: a fade). Not part of getDefaultElementPayload: that
+ * one is merged into old elements too.
  */
-export function getNewElementPayload(): ElementPayload {
+export function getNewElementPayload(elementId?: number): ElementPayload {
 	const payload = getDefaultElementPayload();
 	payload.animationTrigger.elementTriggers = defaultElementTriggers();
+	if (elementId !== undefined && FADES_ON_CHANGE.has(elementId)) {
+		payload.animationTrigger.in = { ...payload.animationTrigger.in, type: Animation.Fade, options: { ...payload.animationTrigger.in.options, duration: 300 } };
+		payload.animationTrigger.out = { ...payload.animationTrigger.out, type: Animation.Fade, options: { ...payload.animationTrigger.out.options, duration: 200 } };
+	}
 	return payload;
 }

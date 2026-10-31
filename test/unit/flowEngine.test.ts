@@ -274,7 +274,7 @@ describe('outputs: And cards Yes / No, actions Continue / Error', () => {
 				{ id: 't', kind: 'trigger', position: { x: 0, y: 0 }, data: { type: 'sequence', kind: 'punish', player: 'any' } },
 				{ id: 'kill', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'calculate', key: 'total', formula: '{{didKill}} * 50' } },
 				{ id: 'gate', kind: 'condition', position: { x: 0, y: 0 }, data: { type: 'compare', left: '{{total}}', op: '>=', right: '40' } },
-				{ id: 'mark', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'markHighlight', before: 2, after: 2, score: '{{total}}' } },
+				{ id: 'mark', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'log', message: 'score {{total}}' } },
 			],
 			edges: [
 				{ id: 'e1', source: 't', target: 'kill' },
@@ -300,7 +300,7 @@ describe('outputs: And cards Yes / No, actions Continue / Error', () => {
 	it('old ✓/✕ edges on actions are migrated (once)', () => {
 		const old: Flow = {
 			...branching(),
-			nodes: [...branching().nodes, { id: 'reel', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'buildHighlightReel', key: 'game', list: 'gameList' } }, { id: 'cancel', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'cancelTimer', key: 'x' } }],
+			nodes: [...branching().nodes, { id: 'reel', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'setHighlightVideo', key: 'game', path: '' } }, { id: 'cancel', kind: 'action', position: { x: 0, y: 0 }, data: { type: 'cancelTimer', key: 'x' } }],
 			edges: [
 				{ id: 'e4', source: 'post', target: 'ok', sourceHandle: 'true' as never },
 				{ id: 'e5', source: 'post', target: 'fail', sourceHandle: 'false' },
@@ -328,31 +328,32 @@ describe('flow problems', () => {
 });
 
 describe('keys a card can use (editor chips)', () => {
-	it('only from the cards before it: When keys, Calculate / List values, {{highlight}} after Mark, {{error}} behind Error', () => {
+	it('only from the cards before it: When keys, Calculate / List values, {{file}} after OBS: save replay, {{error}} behind Error', () => {
 		const f = HIGHLIGHTS_FLOW;
 		const at = (id: string) => keysBefore(f, id);
 		expect(at('calc-kill')).toEqual(expect.arrayContaining(['didKill', 'damage', 'kill']));
 		expect(at('calc-kill')).not.toContain('total'); // set later in the chain
 		expect(at('calc-total')).toEqual(expect.arrayContaining(['kill', 'damage', 'speed', 'swing', 'multi', 'long']));
-		expect(at('add-game')).toEqual(expect.arrayContaining(['highlight', 'total']));
-		expect(at('add-game')).not.toContain('newSet'); // a Game starts key — not on this path
+		expect(at('replay-add-Game')).toEqual(expect.arrayContaining(['total', 'fromFrame', 'toFrame']));
+		expect(at('replay-add-Game')).not.toContain('file'); // only after OBS: save replay
+		expect(at('video-add-Game')).toEqual(expect.arrayContaining(['file', 'fileSeconds', 'savedAt', 'clipStart', 'clipEnd']));
+		expect(at('replay-add-Game')).not.toContain('newSet'); // a Game starts key — not on this path
 		expect(at('new-set')).toContain('newSet');
 		expect(at('save-failed')).toContain('error');
 		expect(at('save')).not.toContain('error');
-		expect(at('sort-score')).toEqual(expect.arrayContaining(['item.id', 'item.score', 'item.game', 'item.added'])); // its list's item fields
-		expect(at('set-sort')).toEqual(expect.arrayContaining(['item.score', 'item.seconds'])); // fields come along with addList
-		expect(at('wait-game')).toEqual(expect.arrayContaining(['gameList.count'])); // the loop's timer reads the list
+		expect(at('slippiReplay-game-sort')).toEqual(expect.arrayContaining(['item.replay', 'item.startFrame', 'item.score', 'item.added'])); // its list's item fields
+		expect(at('replayBuffer-daily-sort')).toEqual(expect.arrayContaining(['item.file', 'item.seconds'])); // fields come along with addList
+		expect(at('game-wait')).toEqual(expect.arrayContaining(['replayBufferGame.count', 'iGame'])); // the loop's timer reads the list + index
 	});
 
 	it('tooltips name the card that makes a key and what it means (nearest before)', () => {
-		const origins = keyOrigins(HIGHLIGHTS_FLOW, 'add-game');
+		const origins = keyOrigins(HIGHLIGHTS_FLOW, 'video-add-Game');
 		expect(origins.total).toMatchObject({ kind: 'action', type: 'calculate', detail: expect.stringMatching(/^total = /) });
-		expect(origins.highlight).toMatchObject({ type: 'markHighlight', meaning: expect.stringMatching(/id of the highlight/) });
-		expect(origins.highlightSeconds).toMatchObject({ type: 'markHighlight' });
+		expect(origins.file).toMatchObject({ type: 'obsSaveReplay', meaning: expect.stringMatching(/id of the file/) });
 		expect(origins.didKill).toEqual({ kind: 'trigger', type: 'sequence' }); // When keys: meaning from KEY_INFO
-		expect(keyOrigins(HIGHLIGHTS_FLOW, 'sort-score')['item.score'].meaning).toMatch(/Each item's "score"/);
+		expect(keyOrigins(HIGHLIGHTS_FLOW, 'slippiReplay-game-sort')['item.score'].meaning).toMatch(/Each item's "score"/);
 		expect(keyOrigins(HIGHLIGHTS_FLOW, 'calc-kill').total).toBeUndefined();
 		const described = { ...HIGHLIGHTS_FLOW, nodes: HIGHLIGHTS_FLOW.nodes.map((n) => (n.id === 'calc-total' && n.kind === 'action' && n.data.type === 'calculate' ? { ...n, data: { ...n.data, description: 'How good the moment is' } } : n)) };
-		expect(keyOrigins(described, 'add-game').total.meaning).toBe('How good the moment is');
+		expect(keyOrigins(described, 'replay-add-Game').total.meaning).toBe('How good the moment is');
 	});
 });

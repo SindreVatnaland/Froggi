@@ -34,9 +34,9 @@
 	let stateOpen = false;
 	const insertKey = (key: string) => $activeKeyField?.(key);
 	// Node types with {{key}} fields show the key chips.
-	$: hasKeys = ['httpPost', 'notify', 'log', 'compare', 'setHighlightVideo', 'markHighlight', 'calculate', 'obsReplayBufferSettings', 'obsSaveReplay', 'timer'].includes(d.type) || (d.type === 'list' && ['add', 'sort', 'filter', 'map', 'limit', 'limitPer'].includes(d.op));
+	$: hasKeys = ['httpPost', 'notify', 'log', 'compare', 'setHighlightVideo', 'calculate', 'obsReplayBufferSettings', 'timer', 'cancelTimer'].includes(d.type) || (d.type === 'list' && ['add', 'sort', 'filter', 'map', 'limit', 'limitPer'].includes(d.op));
 	$: listFormulaError = d.type === 'list' && d.formula?.trim() ? formulaProblem(d.formula, templateKeys(d.formula)) : null;
-	$: formulaError = d.type === 'calculate' ? formulaProblem(d.formula ?? '', templateKeys(d.formula)) : d.type === 'markHighlight' ? formulaProblem(d.score || '0', templateKeys(d.score)) : null;
+	$: formulaError = d.type === 'calculate' ? formulaProblem(d.formula ?? '', templateKeys(d.formula)) : null;
 	$: pretty = d.type === 'httpPost' && d.body === 'custom' ? prettifyTemplate(d.template ?? '') : null;
 	// Output schema popup: the card's keys (When cards: their trigger keys; Mark / Calculate / List: what they hand on).
 	let outputOpen = false;
@@ -194,12 +194,14 @@
 	{/if}
 	{#if d.type === 'timer'}
 		<label>Wait (seconds — a number or a formula)</label>
-		<KeyField bind:value={d.seconds} {isKnown} placeholder={'10 or {{clipSeconds}}'} on:change={changed} />
-		<label>Key<input class="field" bind:value={d.key} on:change={changed} placeholder="e.g. scene" /></label>
-		<p class="hint">The cards after this one run when the time is up — their And conditions are checked then. Starting a timer with a key that is already running restarts it. Keys are shared by all flows.</p>
+		<KeyField bind:value={d.seconds} {isKnown} placeholder={'10 or {{list[i].seconds}}'} on:change={changed} />
+		<label>Key</label>
+		<KeyField bind:value={d.key} {isKnown} placeholder={'scene, or save-{{startFrame}}'} on:change={changed} />
+		<p class="hint">The cards after this one run when the time is up — their And conditions are checked then. Starting a timer with a key that is already running restarts it. Keys are shared by all flows; a key with {'{{keys}}'} (save-{'{{startFrame}}'}) gives each run its own timer.</p>
 	{/if}
 	{#if d.type === 'cancelTimer'}
-		<label>Key of the timer to cancel<input class="field" bind:value={d.key} on:change={changed} placeholder="e.g. scene" /></label>
+		<label>Key of the timer to cancel</label>
+		<KeyField bind:value={d.key} {isKnown} placeholder="e.g. scene" on:change={changed} />
 	{/if}
 
 	{#if d.type === 'controllerCombo'}
@@ -279,15 +281,15 @@
 
 	{#if d.type === 'setHighlightVideo'}
 		<label>Media key<input class="field" bind:value={d.key} on:change={changed} placeholder="game" /></label>
-		<label>Show (file path, web link or highlight)</label>
-		<KeyField bind:value={d.path} {isKnown} placeholder={'{{clipPath}} or {{list.first.id}}'} on:change={changed} />
+		<label>Show (a file id, a file path or a web link)</label>
+		<KeyField bind:value={d.path} {isKnown} placeholder={'{{file}} or {{videoList[i].file}}'} on:change={changed} />
 		<div class="row">
 			<label>From (s)</label>
 			<KeyField bind:value={d.start} {isKnown} placeholder="start" on:change={changed} />
 			<label>To (s)</label>
 			<KeyField bind:value={d.end} {isKnown} placeholder="end" on:change={changed} />
 		</div>
-		<p class="hint">Every Media element with this key shows this one thing: a video or image file, a web link, or a highlight id ({'{{highlight}}'} — its replay-buffer clip). From / To are seconds into the video (empty = the whole video). An empty source clears the key. To play a list one by one: Set media → Timer ({'{{list.first.seconds}}'}) → List "next" → back to Set media. Error runs when the file can't be used.</p>
+		<p class="hint">Every Media element with this key shows this one thing: a video or image ({'{{file}}'} from OBS: save replay, a path) or a web link. From / To are seconds into the video (empty = the whole video). An empty source clears the key. To play a list one by one, count i up: Set media {'{{list[i].file}}'} → Timer → Calculate i = i + 1 → back. Error runs when the file can't be used.</p>
 	{/if}
 	{#if d.type === 'calculate'}
 		<label>Key<input class="field" bind:value={d.key} on:change={changed} placeholder="total" /></label>
@@ -296,45 +298,15 @@
 		<KeyField bind:value={d.formula} {isKnown} placeholder={'didKill * 50 + Math.min(damage, 60)'} on:change={changed} />
 		{#if formulaError}<p class="hint hint--error">{formulaError}</p>{/if}
 	{/if}
-	{#if d.type === 'markHighlight'}
-		<div class="row">
-			<label>Seconds before<input class="field" type="number" min="0" step="0.5" bind:value={d.before} on:change={changed} /></label>
-			<label>Seconds after<input class="field" type="number" min="0" step="0.5" bind:value={d.after} on:change={changed} /></label>
-			<label>Max length<input class="field" type="number" min="0" step="1" bind:value={d.maxSeconds} on:change={changed} placeholder="none" /></label>
-		</div>
-		<label use:tooltip={{ content: 'The value of your formula (e.g. the Calculate card total) — it ranks the highlights. Not the in-game score.', placement: 'top', delay: [300, 0] }}>Highlight score</label>
-		<KeyField bind:value={d.score} {isKnown} placeholder={'total'} on:change={changed} />
-		{#if formulaError}<p class="hint hint--error">{formulaError}</p>{/if}
+	{#if d.type === 'obsSaveReplay'}
+		<p class="hint">Saves OBS's replay buffer, waits for the file and gives the cards after it {'{{file}}'} (its id — store it in a list, Set media shows it), {'{{path}}'}, {'{{fileSeconds}}'} (its length) and {'{{savedAt}}'} (when it ends, ms). A moment that started at {'{{startTime}}'} begins at {'{{fileSeconds}} - ({{savedAt}} - {{startTime}}) / 1000'} seconds into the file.</p>
 	{/if}
 	{#if d.type === 'setVideoVolume'}
 		<div class="row">
-			<label>Video key<input class="field" bind:value={d.key} on:change={changed} placeholder="game" /></label>
+			<label>Media key<input class="field" bind:value={d.key} on:change={changed} placeholder="game" /></label>
 			<label>Volume (0–100)<input class="field" type="number" min="0" max="100" step="5" bind:value={d.volume} on:change={changed} /></label>
 		</div>
-		<p class="hint">Every Video element with this key plays at this volume (instead of its own) until a flow sets it again. 0 = muted.</p>
-	{/if}
-	{#if d.type === 'setReplayList'}
-		<div class="row">
-			<label>Replay key<input class="field" bind:value={d.key} on:change={changed} placeholder="replay" /></label>
-			<label>From list<input class="field" bind:value={d.list} on:change={changed} placeholder="gameList" /></label>
-		</div>
-		<label>Highlight field<input class="field" bind:value={d.field} on:change={changed} placeholder="id" /></label>
-		<p class="hint">Every Highlight Replay element with this key plays these highlights from their game replays (animated, no video), one after another, in list order.</p>
-	{/if}
-	{#if d.type === 'obsSaveReplay'}
-		<label>Highlight (optional)</label>
-		<KeyField bind:value={d.highlight} {isKnown} placeholder={'{{highlight}}'} on:change={changed} />
-		<p class="hint">With a highlight: waits for OBS's file and gives the cards after it {'{{clipPath}}'}, {'{{clipStart}}'}, {'{{clipEnd}}'} and {'{{clipSeconds}}'} — where the highlight is in the file. Put a Timer before this card that waits until the moment is over (its "seconds after").</p>
-	{/if}
-	{#if d.type === 'buildHighlightReel'}
-		<div class="row">
-			<label>Video key<input class="field" bind:value={d.key} on:change={changed} placeholder="game" /></label>
-			<label>From list<input class="field" bind:value={d.list} on:change={changed} placeholder="gameList" /></label>
-		</div>
-		<div class="row">
-			<label>Highlight field<input class="field" bind:value={d.field} on:change={changed} placeholder="id" /></label>
-			<label>Stream delay (s)<input class="field" type="number" min="0" step="0.05" bind:value={d.delay} on:change={changed} placeholder="0" /></label>
-		</div>
+		<p class="hint">Every Media element with this key plays at this volume (instead of its own) until a flow sets it again. 0 = muted.</p>
 	{/if}
 	{#if d.type === 'list'}
 		<label>List<input class="field" bind:value={d.key} on:change={changed} placeholder="gameList" /></label>
@@ -376,8 +348,6 @@
 			{/if}
 			<label>How many (a number or a formula)</label>
 			<KeyField bind:value={d.count} {isKnown} placeholder={'5 or max(10, min(30, gameList.count * 0.05))'} on:change={changed} />
-		{:else if d.op === 'next'}
-			<p class="hint">Moves the first item to the end — {'{{' + (d.key || 'list') + '.first}}'} is then the next one. Loops a list.</p>
 		{/if}
 	{/if}
 	{#if d.type === 'clearValues'}

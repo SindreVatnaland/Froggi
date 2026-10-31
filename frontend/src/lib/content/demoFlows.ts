@@ -95,6 +95,6 @@ export const DEMO_FLOWS: (Flow & { description: string })[] = [
 	{
 		...HIGHLIGHTS_FLOW,
 		id: 'demo-highlights',
-		description: 'Highlights: every punish is scored by Calculate cards (kill, damage, speed, win-chance swing, multi-kill, long-sequence penalty); those from 40 are marked and the OBS replay buffer is saved. At every game end: game = best 5, set = best 15 (time order), daily = today\'s top 5 % (10–30, at most 3 per game). Media elements (keys "game" / "set" / "daily") loop the clips one by one (Set media → Timer → List next); Highlight Replay elements ("replay-game" / "replay-set" / "replay-daily") redraw them from the replays. A game start stops the loops. The same flow is installed (off) as "Highlights". Tell the AI assistant your own rules and it edits the cards.',
+		description: 'Scores every punish and keeps the best of the game, the set and the day. Show them with a Media element (key game / set / daily — OBS replay buffer) or a Highlight Replay element (list slippiReplayGame / slippiReplaySet / slippiReplayDaily — no OBS needed).',
 	},
 ];

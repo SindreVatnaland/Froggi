@@ -91,12 +91,11 @@
 <header>
   <img class="app-icon" src="icon.png" alt="Froggi" />
   <h1>Froggi</h1>
-  <p class="tagline">The stream and tournament tool for Super Smash Bros. Melee — live Slippi overlays for OBS, stage striking on players' phones, a tournament dashboard and automation. Free and open source.</p>
+  <p class="tagline">Stream and tournament tool for Super Smash Bros. Melee. Free and open source.</p>
 </header>
 
 <main>
   <div class="card">
-    <p class="label">Download</p>
     <div class="download">
       <div>
         <p class="dl-name" id="dl-name">Download Froggi</p>
@@ -114,43 +113,36 @@
 
   <section>
     <h2>For streamers</h2>
-    <p>Overlays that follow the game by themselves — no clicking during a match.</p>
     <div class="grid">
-      <div class="feat"><b>Live overlays</b><span>Percent, stocks, characters, score, rank, win chance, fight stats and more — build your own in the editor or start from a demo (HUD, scoreboard, doubles, post-game stats).</span></div>
-      <div class="feat"><b>OBS in one click</b><span>Froggi connects to OBS, adds your overlay as a browser source and switches scenes for menus, games, post-game and sets.</span></div>
-      <div class="feat"><b>Overlays on the game</b><span>Draw your HUD straight on the Dolphin window — no OBS needed (Windows).</span></div>
-      <div class="feat"><b>Highlights</b><span>Froggi spots punishes and combos live and plays the best moments from OBS's replay buffer after each game, set or event.</span></div>
-      <div class="feat"><b>Ranked &amp; sessions</b><span>Slippi rank, rating changes and session wins/losses — shown on stream as they happen.</span></div>
-      <div class="feat"><b>Singles &amp; doubles</b><span>Every player element works for all four doubles players, with team names, team colours and team stocks.</span></div>
+      <div class="feat"><b>Live overlays</b><span>Percent, stocks, rank, win chance and more — build your own or start from a demo.</span></div>
+      <div class="feat"><b>OBS in one click</b><span>Adds your overlay and switches scenes by itself.</span></div>
+      <div class="feat"><b>On the game window</b><span>Overlays straight on Dolphin, no OBS needed (Windows).</span></div>
+      <div class="feat"><b>Highlights</b><span>The best moments of each game, set and day — as video or redrawn from replays.</span></div>
+      <div class="feat"><b>Singles &amp; doubles</b><span>Every element works for all four players.</span></div>
     </div>
   </section>
 
   <section>
     <h2>For tournaments</h2>
-    <p>Run sets from one dashboard while the stream keeps up.</p>
     <div class="grid">
-      <div class="feat"><b>Stage striking on phones</b><span>Each player scans a link: character pick, rock-paper-scissors, strikes, bans and counterpicks with DSR — shown live on stream.</span></div>
-      <div class="feat"><b>Tournament dashboard</b><span>Set score, best of, player and team names, fixing a set by hand, and loading earlier replays into a set.</span></div>
-      <div class="feat"><b>Automatic scores</b><span>Wins are reported from the Slippi replays, in singles and doubles.</span></div>
+      <div class="feat"><b>Stage striking on phones</b><span>Picks, strikes, bans and DSR — live on stream.</span></div>
+      <div class="feat"><b>Tournament dashboard</b><span>Set score and names, with wins reported from the replays.</span></div>
     </div>
   </section>
 
   <section>
     <h2>Automate &amp; play</h2>
-    <p>Make Froggi react to the game exactly the way you want.</p>
     <div class="grid">
-      <div class="feat"><b>Flows</b><span>When → And → Then cards: switch scenes, call webhooks, control OBS, run timers and build highlight reels from game events.</span></div>
-      <div class="feat"><b>Webhooks</b><span>Send game events to Discord bots, dashboards or your own tools.</span></div>
-      <div class="feat"><b>AI assistant</b><span>Connect Claude (or another AI app) to build overlays, set up OBS and fix problems by chatting.</span></div>
-      <div class="feat"><b>Minigames</b><span>Bingo and Iron Man — solo, local or online against a friend, with a live overlay.</span></div>
-      <div class="feat"><b>Remote control</b><span>Control scenes and overlays from your phone, at home or over the internet.</span></div>
-      <div class="feat"><b>No account</b><span>Runs on your computer. Free forever, open source.</span></div>
+      <div class="feat"><b>Flows</b><span>React to the game: switch scenes, control OBS, call webhooks.</span></div>
+      <div class="feat"><b>AI assistant</b><span>Build overlays and set up OBS by chatting with Claude.</span></div>
+      <div class="feat"><b>Minigames</b><span>Bingo and Iron Man — solo or online with a friend.</span></div>
+      <div class="feat"><b>Remote control</b><span>Scenes and overlays from your phone.</span></div>
     </div>
   </section>
 
   <section>
     <h2>Support Froggi</h2>
-    <p>Froggi is made in spare time. If it helps your stream or your event, a coffee keeps it going.</p>
+    <p>Made in spare time — a coffee keeps it going.</p>
     <div class="support">
       <a class="bmc" href="https://buymeacoffee.com/sindrevatnw"><img src="bmc-cup.svg" alt="" />Buy me a coffee</a>
       <a class="link" href="https://github.com/SindreVatnaland/Froggi">GitHub</a>
@@ -159,14 +151,15 @@
   </section>
 </main>
 
-<footer>Froggi · free and open source · not affiliated with Nintendo or Project Slippi</footer>
+<footer>Not affiliated with Nintendo or Project Slippi</footer>
 
 <script>
-  // The newest release that has a file for this OS — betas included (Froggi 2 ships as betas; files are
-  // uploaded OS by OS, so the newest release may not have this OS's file yet).
+  // The newest stable (non-beta) release that has a file for this OS (files are uploaded OS by OS, so the
+  // newest release may not have this OS's file yet). Betas: All releases.
   (async function () {
     const RELEASES = 'https://github.com/SindreVatnaland/Froggi/releases';
-    const API = 'https://api.github.com/repos/SindreVatnaland/Froggi/releases?per_page=30';
+    const LATEST = 'https://api.github.com/repos/SindreVatnaland/Froggi/releases/latest';
+    const API = 'https://api.github.com/repos/SindreVatnaland/Froggi/releases?per_page=100';
     const ua = navigator.userAgent;
     const os = /Win/i.test(ua) ? 'win' : /Mac/i.test(ua) ? 'mac' : /Linux/i.test(ua) && !/Android/i.test(ua) ? 'linux' : null;
     const isArm = /arm|aarch/i.test(navigator.platform || ua);
@@ -188,16 +181,19 @@
       return assets.find((a) => a.name.endsWith('.AppImage'));
     };
     try {
-      const res = await fetch(API, { headers: { Accept: 'application/vnd.github+json' } });
-      if (!res.ok) throw new Error('API error');
-      const releases = (await res.json())
-        .filter((r) => !r.draft)
-        .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
-      for (const r of releases) {
+      // GitHub's "latest" = the newest stable release; if it lacks this OS's file, the newest stable one that has it.
+      const latest = await fetch(LATEST, { headers: { Accept: 'application/vnd.github+json' } }).then((r) => (r.ok ? r.json() : null));
+      const candidates = [latest].filter(Boolean);
+      if (!latest || !pick(latest.assets || [])) {
+        const res = await fetch(API, { headers: { Accept: 'application/vnd.github+json' } });
+        if (!res.ok) throw new Error('API error');
+        candidates.push(...(await res.json()).filter((r) => !r.draft && !r.prerelease).sort((x, y) => new Date(y.published_at) - new Date(x.published_at)));
+      }
+      for (const r of candidates) {
         const asset = pick(r.assets || []);
         if (!asset) continue;
         btn.href = asset.browser_download_url;
-        sub.textContent = r.tag_name + (r.prerelease ? ' (beta)' : '') + ' · ' + asset.name;
+        sub.textContent = r.tag_name + ' · ' + asset.name;
         return;
       }
       throw new Error('no file');
