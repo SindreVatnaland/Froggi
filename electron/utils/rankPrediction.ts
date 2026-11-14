@@ -5,11 +5,11 @@ import { Player, RatingPrediction } from '../../frontend/src/lib/models/types/sl
 const TAU = 0.3;
 
 const ORDINAL_SCALING = 25.0;
-const ORDINAL_OFFSET = 1100.0;
+const ORDINAL_OFFSET = 905.5755484250005;
 
 export const slippiOrdinal = (rating: Rating) => {
   // The constants used get a range fairly close to glicko's range
-  return ORDINAL_SCALING * (rating.mu - 3 * rating.sigma) + ORDINAL_OFFSET;
+  return ORDINAL_SCALING * rating.mu + ORDINAL_OFFSET;
 };
 
 export const predictNewRating = (player: Player, opponent: Player): RatingPrediction => {
