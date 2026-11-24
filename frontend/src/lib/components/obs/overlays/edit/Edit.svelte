@@ -32,7 +32,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import ExternalPreviewSettings from '../preview/ExternalPreviewSettings.svelte';
 	import { goto } from '$app/navigation';
-	import { House } from 'lucide-svelte';
+	import { House, Redo2, Undo2 } from 'lucide-svelte';
 
 	const overlayId = $page.params.overlay;
 
@@ -61,6 +61,22 @@
 		overlay = await getOverlayById(overlayId);
 	}
 	$: $overlays, refreshOverlay();
+
+	// Undo / redo one history entry of this scene. Froggi keeps the history; the result comes back as SceneUpdate.
+	const undo = () => $electronEmitter.emit('OverlayUndo', overlayId, $statsScene);
+	const redo = () => $electronEmitter.emit('OverlayRedo', overlayId, $statsScene);
+	function onKeydown(e: KeyboardEvent) {
+		if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+		const key = e.key.toLowerCase();
+		if (key !== 'z' && key !== 'y') return;
+		// Text fields keep their own undo; open dialogs edit their own copy.
+		const target = e.target as HTMLElement | null;
+		if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+		if (isElementModalOpen || isSceneModalOpen || isPreviewModalOpen || isEmbedModalOpen) return;
+		e.preventDefault();
+		if (key === 'y' || e.shiftKey) redo();
+		else undo();
+	}
 
 	function downloadOverlay() {
 		$electronEmitter.emit('OverlayDownload', overlayId);
@@ -108,7 +124,6 @@
 
 	$: boardAspectW = overlay?.aspectRatio?.width ?? 16;
 	$: boardAspectH = overlay?.aspectRatio?.height ?? 9;
-	$: isVertical = (overlay?.aspectRatio?.height ?? 0) > (overlay?.aspectRatio?.width ?? 0);
 
 	// Board canvas padding: 8px each side.
 	const BOARD_PAD = 8;
@@ -121,32 +136,14 @@
 	const selectedEditorHeight = 52;
 	$: availableHeight = Math.max(0, canvasHeight - BOARD_PAD * 2);
 
-	$: horizontalWidth = availableWidth;
-	$: horizontalHeight = Math.floor((horizontalWidth / boardAspectW) * boardAspectH);
-
-	$: verticalHeight = availableHeight;
-	$: verticalWidth = Math.floor((verticalHeight * boardAspectW) / boardAspectH);
-
-	// If the computed height is too tall, constrain it
-	$: boardWidth = isVertical
-		? Math.min(verticalWidth, availableWidth)
-		: Math.min(horizontalWidth, availableWidth);
-	$: boardHeight = isVertical
-		? Math.min(verticalHeight, availableHeight)
-		: Math.min(horizontalHeight, availableHeight);
-
-	// Recalculate constrained height/width when limits apply
-	$: constrainedBoardHeight = isVertical
-		? boardHeight
-		: Math.floor((boardWidth / boardAspectW) * boardAspectH);
-	$: constrainedBoardWidth = isVertical
-		? Math.floor((constrainedBoardHeight * boardAspectW) / boardAspectH)
-		: boardWidth;
+	// Largest board of the overlay's aspect ratio that fits both the width and the height.
+	$: constrainedBoardWidth = Math.floor(Math.min(availableWidth, (availableHeight * boardAspectW) / boardAspectH));
+	$: constrainedBoardHeight = Math.floor((constrainedBoardWidth * boardAspectH) / boardAspectW);
 
 
 </script>
 
-<svelte:window bind:innerWidth bind:innerHeight />
+<svelte:window bind:innerWidth bind:innerHeight on:keydown={onKeydown} />
 
 <main
 	class="fixed top-0 left-0 w-screen h-screen background-primary-color text-secondary-color overflow-hidden"
@@ -220,6 +217,12 @@
 					{#if !displayPreview && selectedLayer}
 						<LayerEdit {overlay} bind:selectedLayer />
 					{/if}
+					<button class="toolbar-btn shrink-0" title="Undo (Ctrl+Z)" aria-label="Undo" on:click={undo}>
+						<Undo2 size={16} strokeWidth={1.5} />
+					</button>
+					<button class="toolbar-btn shrink-0" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" on:click={redo}>
+						<Redo2 size={16} strokeWidth={1.5} />
+					</button>
 					<button class="toolbar-btn shrink-0" on:click={() => (isSceneModalOpen = true)}>Configure</button>
 					<button class="toolbar-btn shrink-0" on:click={downloadOverlay}>Export</button>
 					<button class="toolbar-btn shrink-0" on:click={() => (isEmbedModalOpen = true)}>Embed</button>
@@ -242,7 +245,7 @@
 							background-position: center;
 						"
 					>
-						<BoardEdit bind:borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} {showDemo} />
+						<BoardEdit borderHeight={constrainedBoardHeight} borderWidth={constrainedBoardWidth} {showDemo} />
 					</div>
 					{/if}
 				</div>

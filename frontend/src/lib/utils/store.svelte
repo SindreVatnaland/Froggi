@@ -46,6 +46,10 @@
 
 	export const authorizationKey = writable<string>(safeLocalStorage('AuthorizationKey'));
 	export const isAuthorized = writable<boolean>(Boolean(window.electron));
+	/** Host-password prompt (components/auth/AuthPrompt.svelte): opened when a remote device's command is blocked. */
+	export const authPromptOpen = writable<boolean>(false);
+	/** Time of the host's last Authorize reply — the prompt waits for a NEW one after submitting. */
+	export const authorizeReplyAt = writable<number>(0);
 	export const isBrowser = writable<boolean>(!window.electron && browser);
 	export const isDesktop = writable<boolean>(
 		!window.electron && browser && !Device.isMobile && !Device.isTablet,
@@ -171,4 +175,7 @@
 	// A froggi://join/<code> deep link or Discord "Join" arrived — the minigames page
 	// consumes this, routes it through the normal connect-code join, then clears it.
 	export const pendingJoinCode = writable<string | null>(null);
+
+	// Game history import progress (Settings → Game history).
+	export const historyStatus = writable<import('$lib/models/types/history').HistoryStatus | null>(null);
 </script>

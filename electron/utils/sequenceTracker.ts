@@ -1,6 +1,6 @@
 import { ComboComputer, ConversionComputer, Stats, moves } from '@slippi/slippi-js';
 import type { ComboType as SlpComboType, FrameEntryType as SlpFrameEntryType, GameStartType as SlpGameStartType } from '@slippi/slippi-js';
-import type { ComboType, ConversionType, FrameEntryType, GameStartType } from '../../frontend/src/lib/models/types/slippiTypes';
+import type { ComboType, ConversionType, FrameEntryType, GameStartType, PreFrameUpdateType } from '../../frontend/src/lib/models/types/slippiTypes';
 import { nulled, unnulled } from '../../frontend/src/lib/models/types/slippiTypes';
 import { isOffStage } from './framesPredicates';
 import { STAGE_DATA } from '../../frontend/src/lib/models/constants/stageData';
@@ -12,7 +12,39 @@ export interface PlayerSnapshot {
 	x: number;
 	y: number;
 	lastHitBy: number | null;
+	/** Input changes since the game started (cumulative) + the controller state they were counted from. */
+	inputs: number;
+	input: InputState;
 }
+
+/** What counts as an input: a new button press, the stick / C-stick moving into another direction, a trigger
+ *  pressed past 0.3 (like Slippi's own input count). */
+interface InputState { buttons: number; stick: number; cstick: number; trigger: boolean }
+const DEAD_ZONE = 0.2875; // Melee's stick dead zone
+const NEUTRAL = 4;
+const direction = (x?: number | null, y?: number | null) => {
+	const axis = (v?: number | null) => ((v ?? 0) > DEAD_ZONE ? 2 : (v ?? 0) < -DEAD_ZONE ? 0 : 1);
+	return axis(x) * 3 + axis(y); // 4 = neutral
+};
+const inputState = (pre: PreFrameUpdateType | null | undefined): InputState => ({
+	buttons: pre?.physicalButtons ?? 0,
+	stick: direction(pre?.joystickX, pre?.joystickY),
+	cstick: direction(pre?.cStickX, pre?.cStickY),
+	trigger: Math.max(pre?.physicalLTrigger ?? 0, pre?.physicalRTrigger ?? 0) > 0.3,
+});
+const bits = (n: number) => {
+	let c = 0;
+	for (let v = n >>> 0; v; v &= v - 1) c++;
+	return c;
+};
+const inputChanges = (a: InputState, b: InputState) =>
+	bits(b.buttons & ~a.buttons) +
+	(b.stick !== a.stick && b.stick !== NEUTRAL ? 1 : 0) +
+	(b.cstick !== a.cstick && b.cstick !== NEUTRAL ? 1 : 0) +
+	(b.trigger && !a.trigger ? 1 : 0);
+
+/** The victim's controller activity is measured over the sequence and the 3 s before it. */
+const ACTIVITY_WINDOW_FRAMES = 180;
 
 /** A finished punish or combo (Slippi's own definitions — the same as Project Clippi). */
 export interface SequenceEvent {
@@ -40,6 +72,10 @@ export interface SequenceEvent {
 	after: Record<number, PlayerSnapshot>;
 	/** KOs by the attacker's team in the last 5 s, this one included (doubles multi-kills). */
 	teamKills: number;
+	/** The victim is a CPU. */
+	victimIsCpu: boolean;
+	/** The victim's inputs per second over the sequence and the 3 s before it (0 = not touching the controller). */
+	victimInputsPerSecond: number;
 }
 
 const MULTI_KILL_MS = 5000;
@@ -94,7 +130,12 @@ export class SequenceTracker {
 		const snap: Record<number, PlayerSnapshot> = {};
 		for (const [index, data] of Object.entries(frame.players ?? {})) {
 			const post = data?.post;
-			if (post) snap[Number(index)] = { stocks: post.stocksRemaining ?? 0, percent: post.percent ?? 0, x: post.positionX ?? 0, y: post.positionY ?? 0, lastHitBy: post.lastHitBy ?? null };
+			if (!post) continue;
+			// Counted from the previous frame's snapshot (not a running total), so a frame sent twice can't count twice.
+			const prev = this.snapshots.get(frame.frame - 1)?.[Number(index)];
+			const input = inputState(data?.pre);
+			const inputs = (prev?.inputs ?? 0) + (prev ? inputChanges(prev.input, input) : 0);
+			snap[Number(index)] = { stocks: post.stocksRemaining ?? 0, percent: post.percent ?? 0, x: post.positionX ?? 0, y: post.positionY ?? 0, lastHitBy: post.lastHitBy ?? null, inputs, input };
 		}
 		this.snapshots.set(frame.frame, snap);
 		this.times.set(frame.frame, this.now());
@@ -162,6 +203,13 @@ export class SequenceTracker {
 			this.kills = [...this.kills.filter((k) => endTime - k.at < MULTI_KILL_MS), { team, at: endTime }];
 			teamKills = this.kills.filter((k) => k.team === team).length;
 		}
+		// Victim activity: inputs over the sequence and the 3 s before it (from the first frame we have).
+		let from = startFrame - ACTIVITY_WINDOW_FRAMES;
+		while (from < startFrame && !this.snapshots.get(from)?.[combo.playerIndex]) from++;
+		const inputsAt = (f: number) => this.snapshots.get(f)?.[combo.playerIndex]?.inputs ?? 0;
+		const windowSeconds = Math.max(endFrame - from, 1) / 60;
+		const victimInputsPerSecond = Math.round(((inputsAt(endFrame) - inputsAt(from)) / windowSeconds) * 10) / 10;
+		const victimIsCpu = this.settings?.players?.find((p) => p?.playerIndex === combo.playerIndex)?.type === 1;
 		this.onSequence({
 			kind,
 			attackerIndex: attacker,
@@ -181,6 +229,8 @@ export class SequenceTracker {
 			before,
 			after,
 			teamKills,
+			victimIsCpu,
+			victimInputsPerSecond,
 		});
 	}
 }

@@ -116,6 +116,9 @@ top-right ≈ {x:392,y:8,...}. Only ask if the request is genuinely ambiguous be
 ## Payload shape (data)
 Pass a partial payload to add_overlay_element / update_overlay_element; omitted fields use defaults.
 - \`string\`: text content (for text elements).
+- \`description\`: YOUR note on this element (hidden from the user, only you write it): what it shows and why it is
+  there, e.g. "P1 stock icons; hidden on the last stock because the big counter takes over". Set it when you add or
+  change an element; list_elements returns it as aiNote.
 - \`css\`: { background, color, borderTop/Right/Bottom/Left (rem), borderColor, opacity (0-1),
   fill, fillOpacity, stroke, strokeWidth (SVG/controller elements), customParent/customBox/customText/customImage
   (raw CSS strings applied to those DOM layers when advancedStyling is on) }.
@@ -206,7 +209,8 @@ pre-animated Custom variant (see above). Reads 0 when that player is dead.
 ON TOP; higher indexes are further behind (backgrounds/panels → higher index than the text over them).
 Group by kind, split by proximity: all stock icons can share one layer, percentages go on another;
 HUD elements can share a layer, but elements close together (touching / nearly overlapping) go on
-different layers. Overlapping items on one layer fight for grid space, and separate layers animate
+different layers. Elements that overlap can NOT share a layer — Froggi refuses the write (the error names the
+pair); a panel behind text goes on its own layer. Separate layers also animate
 independently (stock-loss vs percent punch). Name every layer you add (add_overlay_layer titles, or
 rename_overlay_layer) after what it holds — the user sees those names in the layer panel.
 

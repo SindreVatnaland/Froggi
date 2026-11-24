@@ -41,5 +41,5 @@ overlay = {
     "postSet": scene('SET HIGHLIGHTS', 'set'),
     "menu": scene("TODAY'S HIGHLIGHTS", 'daily'),
 }
-json.dump(overlay, open(ROOT / 'demo-overlays' / 'Highlights.json', 'w'), indent=2, ensure_ascii=False)
+json.dump(no_overlaps(overlay), open(ROOT / 'demo-overlays' / 'Highlights.json', 'w'), indent=2, ensure_ascii=False)
 print('Highlights.json written')

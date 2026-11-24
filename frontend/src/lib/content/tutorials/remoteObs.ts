@@ -40,7 +40,7 @@ export const remoteObsTutorial: Tutorial = {
 			blocks: [
 				{ type: 'text', text: 'On your own Wi-Fi nothing is needed. To control Froggi from anywhere — or give a co-host a link that never changes — use **Tailscale** (free).' },
 				{ type: 'list', ordered: true, items: ['Install Tailscale and log in.', 'In Froggi: [Settings → Remote Access](/settings#remote-access) — follow the status there until it is green.', 'Turn on **Funnel** to get your permanent link. It stays hidden until you click it; Copy always works.'] },
-				{ type: 'note', text: 'Anyone with the link can open Froggi, but controlling it needs your host password. For playing minigames online, the host uses ngrok instead — see Play minigames online.' },
+				{ type: 'note', text: 'Anyone with the link can open Froggi, but controlling it needs your host password — set it in [Settings → Authorization](/settings). The other device asks for it the first time it tries to control something. For playing minigames online, the host uses ngrok instead — see Play minigames online.' },
 			],
 		},
 		{
@@ -48,7 +48,7 @@ export const remoteObsTutorial: Tutorial = {
 			blocks: [
 				{ type: 'text', text: 'The **Tournament Dashboard** works in any browser. Open it on your phone and you have your scenes, sources, volume and replay buffer in your hand.' },
 				{ type: 'image', src: '/image/tutorial/tournament/phone-dashboard.jpg', caption: 'The Dashboard on a phone.' },
-				{ type: 'list', ordered: true, items: ['Click the **phone icon** in Froggi\'s sidebar.', '**Local** works on your Wi-Fi; **Remote** works from anywhere (needs Tailscale, Settings → Remote Access).', 'Scan the QR code and enter the host password on the phone.'] },
+				{ type: 'list', ordered: true, items: ['Click the **phone icon** in Froggi\'s sidebar.', '**Local** works on your Wi-Fi; **Remote** works from anywhere (needs Tailscale, Settings → Remote Access).', 'Scan the QR code. The first time you control something, the phone asks for the host password (on this PC: Settings → Authorization) and checks it.'] },
 			],
 		},
 		{

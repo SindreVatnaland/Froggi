@@ -81,5 +81,5 @@ overlay = {
     "title": "Doubles (game right, webcams left)", "inGame": scene,
 }
 out = pathlib.Path(__file__).resolve().parent.parent / 'demo-overlays' / 'Doubles.json'
-json.dump(overlay, open(out, 'w'), indent=2, ensure_ascii=False)
+json.dump(no_overlaps(overlay), open(out, 'w'), indent=2, ensure_ascii=False)
 print(len(layers), 'layers,', sum(len(l['items']) for l in layers), 'elements')

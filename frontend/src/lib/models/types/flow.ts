@@ -166,6 +166,9 @@ export interface Flow {
 	nodes: FlowNode[];
 	edges: FlowEdge[];
 	updatedAt?: string;
+	/** The AI assistant's own context on the flow (why it exists, what the user asked for). Hidden in the UI;
+	 *  written only by the MCP; travels with the flow (export, copy). Visible Note cards stay for the user. */
+	aiNote?: string | null;
 }
 
 /** Something that happened (raised by the backend) — matched against flow triggers. */

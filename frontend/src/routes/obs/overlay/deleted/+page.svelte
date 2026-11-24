@@ -25,11 +25,18 @@
 		setTimeout(() => $electronEmitter.emit('OverlayRestore', id), MODAL_CLOSE_MS);
 	};
 
+	// The id is taken when the confirm opens: clicking Confirm also counts as a click outside the preview
+	// modal, which clears `selected` before on:confirm runs.
+	let pendingDeleteId: string | undefined = undefined;
+	const askDeletePermanently = () => {
+		pendingDeleteId = selected?.id;
+		confirmPermanentOpen = true;
+	};
 	const deletePermanently = () => {
-		if (!selected) return;
-		const id = selected.id;
+		const id = pendingDeleteId;
+		pendingDeleteId = undefined;
 		selected = undefined;
-		setTimeout(() => $electronEmitter.emit('OverlayDeletePermanent', id), MODAL_CLOSE_MS);
+		if (id) setTimeout(() => $electronEmitter.emit('OverlayDeletePermanent', id), MODAL_CLOSE_MS);
 	};
 </script>
 
@@ -77,7 +84,7 @@
 			</div>
 			{#if $isElectron}
 				<div class="confirm-actions">
-					<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={() => (confirmPermanentOpen = true)}>
+					<button class="btn text-sm h-9 px-5 border-secondary rounded" on:click={askDeletePermanently}>
 						Delete permanently
 					</button>
 					<button class="btn text-sm h-9 px-5 border-secondary rounded confirm-ok" on:click={restore}>

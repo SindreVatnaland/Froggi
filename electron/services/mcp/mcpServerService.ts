@@ -44,10 +44,13 @@ import { IronManService } from '../ironmanService';
 import { AssetPackService } from '../assetPackService';
 import { registerAssetPackReadTools, registerAssetPackWriteTools } from './tools/assetPacks';
 import { registerWebhookReadTools } from './tools/webhooks';
+import { registerGameHistoryReadTools, registerGameHistoryWriteTools } from './tools/gameHistory';
+import { HistoryService } from '../history/historyService';
 import { registerFlowReadTools, registerFlowWriteTools } from './tools/flows';
 import { FlowService } from '../flowService';
 import { ElectronWebhookStore } from '../store/storeWebhook';
-import { registerOverlayUndoTools } from './tools/overlayUndo';
+import { registerOverlayHistoryReadTools, registerOverlayHistoryWriteTools } from './tools/overlayHistory';
+import { changeContext } from '../../utils/overlayHistory';
 import { registerObsSetupTools } from './tools/obsSetup';
 import { registerObsReadTools } from './tools/obsRead';
 import { registerObsAddSourceTools } from './tools/obsAddSource';
@@ -90,9 +93,11 @@ Playing minigames online: only the HOST needs ngrok; guests just need Froggi and
 
 When the user reports something broken, crashing, or not showing up, call diagnose_errors (it covers the last few sessions, including the one before a crash). Fix "local" issues with the user; ignore "benign" ones. If an error needs the developer, explain why and ASK whether to send a crash report — only call submit_crash_report after they say yes (it needs write access; if unavailable, point them to Settings → Feedback → Bug report).
 
+Your own notes (hidden from the user, travel with exports and copies): every overlay has aiNote (update_overlay_settings), every element data.description (add/update_overlay_element; list_elements shows it as aiNote), every flow aiNote (save_flow; Note cards beside cards stay the visible explanation for the user). Read them before changing something (list_overlays / get_overlay, list_elements, get_flow). Keep them current after you build or change something: what it is for, what the user asked for and decided, and anything non-obvious (e.g. "elements on layer 2 overlap the game timer on purpose"). Short and factual — no personal details beyond the setup. Demo overlays can't be noted (read-only).
+
 Integrations people love — offer them when they fit: (1) stream alerts / chat in an overlay with the Embed element (3001, payload.url = the StreamElements / Streamlabs alert-box or Twitch chat URL) — injected into Dolphin it shows in-game while playing (explain_topic overlay-embed-url); (2) the game driving the room: flow cards send HTTP requests (GET / POST / PUT…, custom JSON bodies with {{keys}}, headers, bearer / OAuth) on game events — smart lights through Homey or Home Assistant webhooks, Streamer.bot, Discord, any API (explain_topic for webhooks / smart home; get_flow_schemas for the keys); (3) every event also streams over WebSocket for bridges. Automation flows (WHEN → AND → THEN cards) do scene switching, highlights, OBS control, web requests and more. Ready-made demo flows exist for common wishes — list_flows returns them under demoFlows (id, name, description; get_flow "<demo id>" gives one in full): e.g. demo-highlights (score punishes → best of the game / set / day, for Media videos from the OBS replay buffer AND Highlight Replay elements redrawn from the replays), demo-scene-switching (the default scene rules), saving a replay with a controller combo, game scenes per singles/doubles, smart-home webhooks, a striking display. When someone asks for something like that ("custom highlights", "save clips of my combos"…), start from the matching demo, adapt its cards to what they describe, explain it in plain words, and save_flow it with a new id (off unless they want it on).
 
-Ask before destructive edits (deleting overlays/elements). delete_overlay only moves an overlay to Deleted Overlays (restore_overlay brings it back); you can never permanently delete anything. Keep changes reversible (undo/revert tools exist).`;
+Ask before destructive edits (deleting overlays/elements). delete_overlay only moves an overlay to Deleted Overlays (restore_overlay brings it back); you can never permanently delete anything. Keep changes reversible: every element / layer change (the user's in the editor and yours) is in the overlay history — get_overlay_history to read it (compact; ids → full before/after), undo_overlay_change to undo / redo like Ctrl+Z (newest first; count, or untilId = back to an entry). Nothing is deleted: undone edits are marked and every undo / redo is logged as its own entry. get_overlay / list_elements show manualChangesSinceAi when the user edited by hand after your last change — read those entries before building on your old notes, and treat a small nudge differently from a full move. Ask before undoing the user's own edits.`;
 
 @singleton()
 export class McpServerService {
@@ -124,6 +129,7 @@ export class McpServerService {
 		@inject(delay(() => ElectronWebhookStore)) private webhookStore: ElectronWebhookStore,
 		@inject(delay(() => FlowService)) private flowService: FlowService,
 		@inject(delay(() => StatsDisplay)) private statsDisplay: StatsDisplay,
+		@inject(delay(() => HistoryService)) private historyService: HistoryService,
 	) {
 		this.log = scopedLog(this.log, 'MCP');
 		this.log.info('Initializing MCP Server Service');
@@ -150,6 +156,7 @@ export class McpServerService {
 		mcpContext.assetPackService = this.assetPackService;
 		mcpContext.webhookStore = this.webhookStore;
 		mcpContext.flowService = this.flowService;
+		mcpContext.historyService = this.historyService;
 
 		void this.applyDesiredState();
 		this.clientEmitter.on('SetMcpReadEnabled', () => void this.applyDesiredState());
@@ -222,13 +229,15 @@ export class McpServerService {
 			registerOnlinePlayReadTools(server);
 			registerAssetPackReadTools(server);
 			registerWebhookReadTools(server);
+			registerGameHistoryReadTools(server);
+			registerOverlayHistoryReadTools(server);
 			registerFlowReadTools(server);
 			registerObsReadTools(server);
 		}
 		if (this.froggiStore.getMcpWriteEnabled()) {
 			registerFlowWriteTools(server);
 			registerOverlayWriteTools(server);
-			registerOverlayUndoTools(server);
+			registerOverlayHistoryWriteTools(server);
 			registerObsSetupTools(server);
 			registerObsAddSourceTools(server);
 			registerAutomationComboTools(server);
@@ -237,6 +246,7 @@ export class McpServerService {
 			registerCrashDiagnosisWriteTools(server);
 			registerOnlinePlayWriteTools(server);
 			registerAssetPackWriteTools(server);
+			registerGameHistoryWriteTools(server);
 		}
 
 		return server;
@@ -283,7 +293,8 @@ export class McpServerService {
 						void server.close();
 					});
 					await server.connect(transport);
-					await transport.handleRequest(req, res, req.body);
+					// Overlay edits made by tools are recorded as 'ai' in the overlay history.
+					await changeContext.run({ source: 'ai' }, () => transport.handleRequest(req, res, req.body));
 				} catch (err) {
 					this.log.error('Error handling MCP request:', err);
 					if (!res.headersSent) {

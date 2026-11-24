@@ -154,6 +154,26 @@ export const overlayBasicsTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'overlay-undo-history',
+		title: 'Undo, redo and the edit history',
+		category: 'overlays',
+		summary: 'The editor has Undo / Redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y, and the arrow buttons in the top bar) — one element or layer change per step, in the scene you are editing.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'How it works:',
+				items: [
+					'Froggi records every element change (added, moved, resized, restyled, deleted, changed into another element) and every layer change (added, deleted, renamed, reordered) — yours and the AI assistant\'s.',
+					'One undo step = one change: deleting a layer with 5 elements takes 6 steps to bring back (the layer, then each element). Undo works in the scene you are editing.',
+					'Undo goes back strictly in order and never erases anything: the change is marked as undone, and the undo itself is recorded (who and when) — so is every redo. Redo brings back what you undid, oldest first — until you make a new edit; after that the undone changes stay in the history but can\'t be redone.',
+					'Scene settings (background, font, scene animation) and overlay settings (title, aspect ratio) are not in the history.',
+					'The history stays on this computer: it is not in exported .froggi files or copies, and it is removed when the overlay is permanently deleted. Demo overlays have none (they are read-only).',
+					'The AI assistant can read the history (it sees which changes you made or undid since it last worked on the overlay, and how big they were) and undo the same way — a number of steps, or back to a given change. It asks before undoing yours.',
+				],
+			},
+		],
+	},
+	{
 		id: 'overlay-one-click-vs-manual',
 		title: 'One-click templates vs. building from scratch',
 		category: 'overlays',

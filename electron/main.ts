@@ -45,6 +45,7 @@ import { AssetPackService } from './services/assetPackService';
 import { FlowService } from './services/flowService';
 import { IronManService } from './services/ironmanService';
 import { LobbyService } from './services/lobbyService';
+import { HistoryService } from './services/history/historyService';
 import { TwitchChatService } from './services/twitchChatService';
 
 let mainLog: ElectronLog = log
@@ -396,6 +397,7 @@ try {
 			container.resolve(BingoService);
 			container.resolve(IronManService);
 			container.resolve(LobbyService);
+			container.resolve(HistoryService);
 
 			// Deep links can now be acted on; flush any that arrived during cold start.
 			servicesReady = true;

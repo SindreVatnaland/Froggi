@@ -25,6 +25,8 @@
 		obsPreviewFrame,
 		currentOverlayEditor,
 		isAuthorized,
+		authPromptOpen,
+		authorizeReplyAt,
 		authorizationKey,
 		sceneSwitch,
 		controller,
@@ -52,6 +54,7 @@
 		teamNames,
 		liveFightStats,
 		continueSetAcrossSessions,
+		historyStatus,
 		previewFrozen,
 		recentReplays,
 		webhookProfiles,
@@ -88,6 +91,7 @@
 		NotificationType,
 	} from '$lib/components/notification/Notifications.svelte';
 	import type { MessageEvents } from './customEventEmitter';
+	import { isAllowedUnauthenticated } from './authTopics';
 	import { get } from 'svelte/store';
 	import { throttle, isNil } from 'lodash';
 	import { AutoUpdater } from '$lib/models/types/autoUpdaterTypes';
@@ -136,6 +140,7 @@
 
 					if (isNil(value)) return;
 					isAuthorized.set(value || _isElectron);
+					authorizeReplyAt.set(Date.now());
 				})();
 				break;
 			case 'AutoUpdaterStatus':
@@ -406,6 +411,9 @@
 				break;
 			case 'RecentReplays':
 				recentReplays.set(payload[0] as Parameters<MessageEvents['RecentReplays']>[0]);
+				break;
+			case 'HistoryStatus':
+				historyStatus.set(payload[0] as Parameters<MessageEvents['HistoryStatus']>[0]);
 				break;
 			case 'ContinueSetAcrossSessions':
 				continueSetAcrossSessions.set(payload[0] as Parameters<MessageEvents['ContinueSetAcrossSessions']>[0]);
@@ -743,6 +751,9 @@
 		const _electronEmitter = await getElectronEmitter();
 
 		const emitElectronMessage = async (event: any, ...data: any) => {
+			// A command the host will drop (no / wrong host password): ask for the password — but only when the
+			// user just clicked / typed (userActivation), so OBS browser sources and automatic requests never prompt.
+			if (!get(isAuthorized) && !isAllowedUnauthenticated(event, data) && navigator.userActivation?.isActive) authPromptOpen.set(true);
 			const _authorizationKey = await getAuthorizationKey();
 			const matchId = new URLSearchParams(window.location.search).get('matchId') ?? '';
 			socket.send(

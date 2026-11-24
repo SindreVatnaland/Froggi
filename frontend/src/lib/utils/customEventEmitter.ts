@@ -134,6 +134,9 @@ export interface MessageEvents {
 	OverlayUpload: () => void;
 	SceneItemDuplicate: (overlayId: string, liveStatsScene: LiveStatsScene, layerIndex: number, prevItemId: string) => void;
 	SceneUpdate: (overlayId: string, liveStatsScene: LiveStatsScene, scene: Scene) => void;
+	/** Editor undo / redo of one history entry in this scene (the backend owns the history; the result arrives as SceneUpdate). */
+	OverlayUndo: (overlayId: string, liveStatsScene: LiveStatsScene) => void;
+	OverlayRedo: (overlayId: string, liveStatsScene: LiveStatsScene) => void;
 	SelectedItemChange: (itemId: string) => void;
 	SessionStats: (session: SessionStats | undefined) => void;
 	SimulateGameStart: () => void;
@@ -267,6 +270,12 @@ export interface MessageEvents {
 	/** Electron-internal: a set was started from the Dashboard (flows trigger "Set starts"). */
 	/** A game ended but its replay was not found (no stats) — flows still get "Game ends". */
 	GameEndWithoutReplay: (gameEnd: import('../models/types/slippiTypes').GameEndType) => void;
+	// Game history (history.sqlite, read by the AI): import progress + Settings → Game history controls.
+	HistoryStatus: (status: import('../models/types/history').HistoryStatus) => void;
+	HistoryStatusRequest: () => void;
+	HistoryImportStart: () => void;
+	HistoryImportCancel: () => void;
+	HistoryImportOnGameEnd: (enabled: boolean) => void;
 	/** Electron-internal: a player did a striking action on their phone (flows trigger). */
 	/** Something happened in stage striking (a player's choice, or event "change") — flows' "Stage Striking" trigger. */
 	StrikePlayerAction: (action: { event: import('../models/types/flow').StrikeEvent; player: 1 | 2 | null; playerName: string | null; phase: string; stage?: string | null; character?: string | null; rps?: string | null }) => void;

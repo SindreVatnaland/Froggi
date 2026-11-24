@@ -118,7 +118,6 @@ export const stageNameByExternalId = [
   "Kongo Jungle N64", // 30, 0x1e
   "Battlefield", // 31, 0x1f
   "Final Destination", // 32, 0x20
-  // TODO: Single player mode stages, goes up to 285
 ] as const;
 export type ExternalStageName = typeof stageNameByExternalId[number];
 

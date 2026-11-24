@@ -1,6 +1,7 @@
 import path from 'path';
 import { SlippiGame } from '@slippi/slippi-js/node';
-import { getTeamWinnerIndex, isLighterTeammate, orderTeams, playersForSlot, slotOrder, teamReference } from '../../frontend/src/lib/utils/teams';
+import { getTeamWinnerIndex, isLighterTeammate, isTeamsTie, orderTeams, playersForSlot, slotOrder, teamReference } from '../../frontend/src/lib/utils/teams';
+import { isTiedGame } from '../../frontend/src/lib/utils/gamePredicates';
 import type { GameStats } from '../../frontend/src/lib/models/types/slippiData';
 import { nulled } from '../../frontend/src/lib/models/types/slippiTypes';
 
@@ -62,6 +63,28 @@ describe('teams: winner', () => {
 		expect(getTeamWinnerIndex(game({ method: 1, last: { 1: [2, 10], 2: [0, 999], 0: [2, 20], 3: [0, 0] } }))).toBe(1);
 		// full tie
 		expect(getTeamWinnerIndex(game({ method: 1, last: { 1: [1, 50], 2: [1, 0], 0: [1, 25], 3: [1, 25] } }))).toBeUndefined();
+	});
+
+	it('ties (→ 1-stock tiebreaker): equal timeout, both teams wiped out together, sudden death', () => {
+		const fullTie = game({ method: 1, last: { 1: [1, 50], 2: [1, 0], 0: [1, 25], 3: [1, 25] } });
+		expect(isTeamsTie(fullTie)).toBe(true);
+		expect(isTiedGame(fullTie)).toBe(true);
+		// last players of both teams KO'd on the same frame: everyone at 0 stocks
+		const wiped = game({ first: 0, last: { 0: [0, 0], 1: [0, 0], 2: [0, 0], 3: [0, 0] } });
+		expect(getTeamWinnerIndex(wiped)).toBeUndefined();
+		expect(isTeamsTie(wiped)).toBe(true);
+		// first place shared across both teams
+		const shared = { ...game({}), gameEnd: { gameEndMethod: 2, lrasInitiatorIndex: -1, placements: [0, 1, 2, 3].map((i) => ({ playerIndex: i, position: i < 2 ? 0 : 2 })) } } as unknown as GameStats;
+		expect(isTeamsTie(shared)).toBe(true);
+		const suddenDeath = { ...game({ first: 0 }), settings: { isTeams: true, players, gameInfoBlock: { bombRainEnabled: true } } } as unknown as GameStats;
+		expect(getTeamWinnerIndex(suddenDeath)).toBeUndefined();
+		expect(isTeamsTie(suddenDeath)).toBe(true);
+	});
+
+	it('not ties: a normal win, LRAS, a cut-off replay', () => {
+		expect(isTeamsTie(game({ first: 2, last: { 0: [0, 0], 1: [1, 30], 2: [0, 0], 3: [0, 0] } }))).toBe(false);
+		expect(isTeamsTie(game({ lras: 1 }))).toBe(false);
+		expect(isTeamsTie(game({ method: 0 }))).toBe(false);
 	});
 
 	it('singles games are not handled here', () => {

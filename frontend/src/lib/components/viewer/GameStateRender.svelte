@@ -201,9 +201,11 @@
 		getStateOnFrame,
 	} as RenderOptions;
 
-	$: renderDatas = ((): RenderData[] => {
+	/** A star-KO'd player also carries where the flight has them (`starPlace`) and the spin (degrees). */
+	type DrawData = RenderData & { starPlace?: string; starSpin?: number };
+	$: renderDatas = ((): DrawData[] => {
 		if (!frame) return [];
-		const out: RenderData[] = [];
+		const out: DrawData[] = [];
 		for (const [idxStr, player] of Object.entries(frame.players ?? {})) {
 			if (!player?.post) continue;
 			const playerIndex = Number(idxStr);
@@ -218,13 +220,15 @@
 			const raw = toViewerState(player.post, player.pre ?? undefined, frame.frame ?? 0);
 			// The flight has no animation here: a still tumble pose (DamageFlyN, 88) that spins like a wheel instead.
 			const state = dying ? { ...raw, actionStateId: 88, actionStateFrameCounter: 0 } : raw;
-			const rd = computeRenderData(state, anims, { ...renderOptions, teamId: teamId ?? undefined });
+			const rd: DrawData | null | undefined = computeRenderData(state, anims, { ...renderOptions, teamId: teamId ?? undefined });
 			if (rd && dying && start) {
 				const x = player.post.positionX ?? 0;
 				const y = player.post.positionY ?? 0;
 				const at = starFlight(start, start.end, t, raw.facingDirection);
-				// Feet → origin, spin around the body's middle (0, 8), shrink, then to where the flight has got to.
-				rd.transforms = [`translate(${at.x} ${at.y}) scale(${at.scale}) rotate(${at.angle} 0 8) translate(${-x} ${-y})`, ...rd.transforms];
+				// Feet → origin, shrink, then to where the flight has got to; the spin turns around the drawn body's own
+				// middle (its bounding box — every character and pose has a different one), see the template.
+				rd.starPlace = `translate(${at.x} ${at.y}) scale(${at.scale}) translate(${-x} ${-y})`;
+				rd.starSpin = at.angle;
 			}
 			if (rd) out.push(rd);
 		}
@@ -245,6 +249,8 @@
 	let effects: Effect[] = [];
 	let effectId = 0;
 	let prevActions: Record<number, number | undefined> = {};
+	/** Each player's colour as last drawn (port or team colour) — for the KO effects of a player no longer drawn. */
+	const lastColors: Record<number, string> = {};
 	/** Each player's stocks on the previous frame — a star KO twinkles when the game takes the stock. */
 	let prevStocks: Record<number, number | null | undefined> = {};
 	const stockLost = (p: { playerIndex: number; stocks: number | null }) => {
@@ -317,7 +323,8 @@
 		}
 		for (const ko of due) {
 			const at = koPlacement(ko, visible, blastZone);
-			const color = renderDatas.find((rd) => rd.playerState.playerIndex === ko.playerIndex)?.innerColor ?? PALETTE[ko.playerIndex] ?? '#ffffff';
+			// The player's own colour (team colour in doubles) as last drawn — a KO'd player isn't drawn any more.
+			const color = renderDatas.find((rd) => rd.playerState.playerIndex === ko.playerIndex)?.innerColor ?? lastColors[ko.playerIndex] ?? PALETTE[ko.playerIndex] ?? '#ffffff';
 			// Blasts are world-sized (like Melee's beam from the blast zone); stars keep one size on screen.
 			const size = ko.kind === 'blast' ? 0.65 : ((visible.xMax - visible.xMin) / 700) * 0.64;
 			const effect: Effect = { id: ++effectId, kind: ko.kind, ...at, color, size };
@@ -328,6 +335,7 @@
 			}, KO_DURATION_MS[ko.kind]);
 			timers.add(t);
 		}
+		for (const rd of renderDatas) if (rd.innerColor && !rd.starPlace) lastColors[rd.playerState.playerIndex] = rd.innerColor;
 		prevActions = Object.fromEntries(players.map((p) => [p.playerIndex, p.actionStateId]));
 		prevStocks = Object.fromEntries(players.map((p) => [p.playerIndex, p.stocks]));
 		prevPositions = Object.fromEntries(players.map((p) => [p.playerIndex, { x: p.x, y: p.y }]));
@@ -388,7 +396,13 @@
 						<rect x="-11" y="-2.6" width="22" height="1" rx="0.5" fill={rd.innerColor} opacity="0.8" />
 					</g>
 				{/if}
-				{#if rd.path}
+				{#if rd.path && rd.starPlace}
+					<g transform={rd.starPlace}>
+						<g class="star-spin" style={`transform: rotate(${rd.starSpin ?? 0}deg)`}>
+							<path transform={rd.transforms.join(' ')} d={rd.path} fill={rd.innerColor} stroke={rd.outerColor} stroke-width="2" />
+						</g>
+					</g>
+				{:else if rd.path}
 					<path
 						class:char-invuln={rd.invulnerable}
 						transform={rd.transforms.join(' ')}
@@ -499,6 +513,9 @@
 		0%, 100% { opacity: 1; }
 		50% { opacity: 0.45; }
 	}
+
+	/* A star-KO'd player spins around the middle of what is drawn (its bounding box), whatever the character. */
+	.star-spin { transform-box: fill-box; transform-origin: center; }
 
 	/* Stage rendered as thin outlines so the character renders read clearly. */
 	.viewer-stage :global(polyline) {

@@ -75,7 +75,7 @@ export const tournamentTutorial: Tutorial = {
 		{
 			title: 'Run it from your phone',
 			blocks: [
-				{ type: 'list', ordered: true, items: ['Click the **phone icon** in Froggi\'s sidebar.', 'Use **Local** on the venue Wi-Fi, or **Remote** with Tailscale to reach it from anywhere.', 'Scan the QR and enter the host password on your phone.'] },
+				{ type: 'list', ordered: true, items: ['Click the **phone icon** in Froggi\'s sidebar.', 'Use **Local** on the venue Wi-Fi, or **Remote** with Tailscale to reach it from anywhere.', 'Scan the QR. The first time you control something, your phone asks for the host password (on this PC: Settings → Authorization) and checks it.'] },
 				{ type: 'note', text: 'Keep the Remote link private — it\'s your control panel. The player links are the ones you share.' },
 			],
 		},

@@ -14,6 +14,28 @@ export const remoteAccessTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'host-password',
+		title: 'Host password: controlling Froggi from another device',
+		category: 'remote-access',
+		summary: 'Other devices (phone, a co-host\'s browser) can always watch; to control Froggi they need the host password, set on the host PC in Settings → Authorization.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'How it works:',
+				items: [
+					'On the host PC: Froggi → Settings → Authorization. Type a password or press Generate, then Save. The password is shown there. Without one, no other device can control Froggi.',
+					'On the other device: the first time you try to control something (switch a scene, use the Tournament Dashboard, edit an overlay), Froggi asks for the host password and checks it right away — "Connected" or "Wrong password". It is remembered on that device. You can also enter it in that device\'s Settings → Authorization.',
+					'Without the password a device can still watch: overlays, the live game, OBS browser sources. Players\' stage-striking phone links work without it (they carry their own token).',
+					'Changing the password on the host locks out every device until they enter the new one.',
+				],
+			},
+			{
+				type: 'note',
+				text: 'The AI assistant never sees or hands out the password — it can only tell whether one is set (get_app_status → hostPasswordSet). Point the user to Settings → Authorization on the host PC.',
+			},
+		],
+	},
+	{
 		id: 'remote-access-tailscale-vs-ngrok',
 		title: 'Tailscale vs. ngrok — which one to use',
 		category: 'remote-access',

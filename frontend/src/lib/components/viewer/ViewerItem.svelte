@@ -40,7 +40,7 @@
 	$: heldY = item.state === 0 && ownerY !== null ? ownerY + 8 : y;
 	// A shot being charged (state 0): the game reports it where it was created (≈ head height), so it is drawn
 	// at the arm cannon / between Mewtwo's hands instead — in front of the owner, at chest height.
-	const HELD_CHARGE: Record<string, [number, number]> = { "Samus's chargeshot": [9, 9], "Mewtwo's Shadowball": [7, 10] };
+	const HELD_CHARGE: Record<string, [number, number]> = { "Samus's chargeshot": [5, 9], "Mewtwo's Shadowball": [7, 10] };
 	$: chargeAt = ((n) => {
 		const o = HELD_CHARGE[n];
 		return o && item.state === 0 && ownerX !== null && ownerY !== null ? [ownerX + o[0] * ownerFacing, ownerY + o[1]] : [x, y];

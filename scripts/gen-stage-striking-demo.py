@@ -169,5 +169,5 @@ overlay = {
     "froggiVersion": "2.0.0-beta.91", "id": "stage-striking", "aspectRatio": {"width": 16, "height": 9},
     "title": "Stage Striking", "strikePhase": scene,
 }
-json.dump(overlay, open(__import__('pathlib').Path(__file__).resolve().parent.parent / 'demo-overlays' / 'StageStriking.json', 'w'), indent=2, ensure_ascii=False)
+json.dump(no_overlaps(overlay), open(__import__('pathlib').Path(__file__).resolve().parent.parent / 'demo-overlays' / 'StageStriking.json', 'w'), indent=2, ensure_ascii=False)
 print(len(layers), 'layers,', sum(len(l['items']) for l in layers), 'elements')

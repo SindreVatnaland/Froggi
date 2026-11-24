@@ -45,4 +45,32 @@ describe('live sequences', () => {
 		expect(kills.length).toBeGreaterThan(0);
 		for (const k of kills) expect(k.teamKills).toBeGreaterThanOrEqual(1);
 	});
+
+	it('victim activity: people playing have inputs, an idle controller has none; CPUs are flagged', () => {
+		const { events } = play('ranked-set-1/Replay 1 [W].slp');
+		const punishes = events.filter((e) => e.kind === 'punish');
+		expect(punishes.length).toBeGreaterThan(0);
+		for (const e of punishes) {
+			expect(e.victimIsCpu).toBe(false);
+			expect(e.victimInputsPerSecond).toBeGreaterThan(1); // humans in the samples: median ~7/s
+		}
+
+		// The same game with the victims' controllers frozen (nobody touching them) and marked as CPUs.
+		const game = new SlippiGame(path.join(__dirname, '../sample-games/ranked-set-1/Replay 1 [W].slp'));
+		const settings = nulled(game.getSettings())!;
+		const frames = nulled(game.getFrames());
+		const idle: SequenceEvent[] = [];
+		const tracker = new SequenceTracker((e) => idle.push(e), () => 0);
+		tracker.start({ ...settings, players: settings.players.map((p) => ({ ...p, type: 1 })) });
+		for (const n of Object.keys(frames).map(Number).sort((a, b) => a - b)) {
+			const f = frames[n] as FrameEntryType;
+			const players = Object.fromEntries(Object.entries(f.players ?? {}).map(([i, d]) => [i, d && { ...d, pre: { ...d.pre, physicalButtons: 0, joystickX: 0, joystickY: 0, cStickX: 0, cStickY: 0, physicalLTrigger: 0, physicalRTrigger: 0 } }]));
+			tracker.frame({ ...f, players } as FrameEntryType);
+		}
+		expect(idle.length).toBeGreaterThan(0);
+		for (const e of idle) {
+			expect(e.victimInputsPerSecond).toBe(0);
+			expect(e.victimIsCpu).toBe(true);
+		}
+	});
 });

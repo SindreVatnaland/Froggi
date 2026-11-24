@@ -158,5 +158,5 @@ overlay = {
     "title": "Game & set stats (4:3 game, side bands)", "postGame": post_game, "postSet": post_set,
 }
 out = ROOT / 'demo-overlays' / 'GameStats.json'
-json.dump(overlay, open(out, 'w'), indent=2, ensure_ascii=False)
+json.dump(no_overlaps(overlay), open(out, 'w'), indent=2, ensure_ascii=False)
 print(sum(len(l['items']) for s in (post_game, post_set) for l in s['layers']), 'elements')

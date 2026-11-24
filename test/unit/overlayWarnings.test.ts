@@ -3,7 +3,7 @@ import path from 'path';
 import { HIGHLIGHTS_FLOW } from '../../frontend/src/lib/content/highlightsFlow';
 import { LiveStatsScene } from '../../frontend/src/lib/models/enum';
 import type { Overlay } from '../../frontend/src/lib/models/types/overlay';
-import { overlayWarnings } from '../../frontend/src/lib/utils/overlayWarnings';
+import { layerOverlaps, overlayWarnings } from '../../frontend/src/lib/utils/overlayWarnings';
 
 const load = (file: string) => JSON.parse(fs.readFileSync(path.join(__dirname, '../../../demo-overlays', file), 'utf8')) as Overlay;
 
@@ -27,5 +27,21 @@ describe('overlay warnings (editor + AI)', () => {
 		expect(w[item.id]).toEqual(['Animation 1 watches an element that is no longer in this scene.']);
 		item.data.animationTrigger.elementTriggers = [{ source: scene.layers[0].items[1].id, when: 'change' }];
 		expect(overlayWarnings(overlay, [])).toEqual({});
+	});
+});
+
+describe('layer overlaps', () => {
+	const box = (id: string, x: number, y: number, w: number, h: number) => ({ id, 512: { x, y, w, h } });
+	const scene = (...items: unknown[]) => ({ layers: [{ items }] }) as never;
+
+	it('finds boxes that overlap on one layer (touching edges do not)', () => {
+		expect([...layerOverlaps(scene(box('a', 0, 0, 10, 10), box('b', 5, 5, 10, 10), box('c', 10, 0, 5, 5)))]).toEqual(['a|b']);
+	});
+
+	it('demo overlays: overlapping elements are on separate layers', () => {
+		for (const file of fs.readdirSync(path.join(__dirname, '../../../demo-overlays')).filter((f) => f.endsWith('.json'))) {
+			const overlay = load(file);
+			for (const s of Object.values(LiveStatsScene)) expect([file, s, [...layerOverlaps(overlay[s])]]).toEqual([file, s, []]);
+		}
 	});
 });

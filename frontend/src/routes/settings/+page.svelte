@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CopyAssistantInstructions from '$lib/components/CopyAssistantInstructions.svelte';
 	import SecretUrl from '$lib/components/SecretUrl.svelte';
+	import GameHistorySettings from '$lib/components/settings/GameHistorySettings.svelte';
 	import { notifications } from '$lib/components/notification/Notifications.svelte';
 	import { BACKEND_PORT, MCP_SERVER_PORT, MCP_SERVER_PATH } from '$lib/models/const';
 	import {
@@ -18,6 +19,9 @@
 	const port = BACKEND_PORT;
 
 	let authKey: string = $authorizationKey;
+	// The host's key can arrive after the page opened — follow it until the user types.
+	let authKeyEdited = false;
+	$: if (!authKeyEdited) authKey = $authorizationKey;
 
 	const authenticate = () => {
 		localStorage.setItem('AuthorizationKey', authKey);
@@ -33,6 +37,7 @@
 	// Generate a readable random password (no ambiguous chars) and save it.
 	const generateKey = () => {
 		const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+		authKeyEdited = true;
 		authKey = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 		updateKey();
 	};
@@ -221,6 +226,7 @@
 					type="text"
 					placeholder={$isElectron ? 'Create a key…' : 'Enter host key…'}
 					bind:value={authKey}
+					on:input={() => (authKeyEdited = true)}
 					disabled={!$isElectron && $isAuthorized}
 				/>
 				{#if $isElectron}
@@ -618,6 +624,10 @@
 			{/if}
 		</div>
 	</section>
+	{/if}
+
+	{#if $isElectron}
+		<GameHistorySettings />
 	{/if}
 
 	<!-- Diagnostics -->

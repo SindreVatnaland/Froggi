@@ -2,7 +2,7 @@ import { STAGE_DATA, Stage } from "../../lib/models/constants/stageData";
 import type { GameStartMode, GameStats, Player } from "../../lib/models/types/slippiData";
 import type { GameEndType, GameStartType, PostFrameUpdateType } from '../models/types/slippiTypes';
 import { isNil } from "lodash";
-import { getTeamWinnerIndex, setReference } from "./teams";
+import { getTeamWinnerIndex, isTeamsTie, setReference } from "./teams";
 
 /** The settings entry for a port index. `settings.players` skips empty ports (ports 1 + 3 →
  *  [port1, port3]), so array position ≠ playerIndex — always look players up by playerIndex. */
@@ -52,6 +52,7 @@ export const timeoutWinnerIndex = (game: GameStats): number | undefined => {
 
 export const isTiedGame = (game: GameStats | undefined | null) => {
     if (!game) return false
+    if (game.settings?.isTeams) return isTeamsTie(game)
     if (hasGameBombRain(game)) return true
     if (game.gameEnd?.gameEndMethod === TIME) return timeoutWinnerIndex(game) === undefined
     const placements = game.gameEnd.placements ?? [];
@@ -244,20 +245,11 @@ export const isHandwarmers = (gameStats: GameStats): boolean => {
         }
 
 
-        let stocksPlayer1 = 0;
-        let stocksPlayer2 = 0;
-
-        const player1Index = gameStats.settings.players.find((player) => player)?.playerIndex ?? 0;
-        gameStats.postGameStats.stocks.forEach((stock) => {
-            if (stock.playerIndex == player1Index) {
-                stocksPlayer1 += 1;
-            } else {
-                stocksPlayer2 += 1;
-            }
-        });
-
-        // Checking if the lras was not for the last stock.
-        if (stocksPlayer1 < startStocks - 1 && stocksPlayer2 < startStocks - 1) {
+        // Checking if the lras was not for the last stock: every player (singles or doubles) has used fewer
+        // than startStocks - 1 stocks (stock entries count the one they are on).
+        const used = (playerIndex: number) => gameStats.postGameStats!.stocks.filter((stock) => stock.playerIndex === playerIndex).length;
+        const players = gameStats.settings.players.filter((player) => player);
+        if (players.every((player) => used(player.playerIndex) < startStocks - 1)) {
             weight += 2;
         }
     } else {

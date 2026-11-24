@@ -196,6 +196,9 @@ export interface Overlay {
 	/** ISO time the overlay was moved to Deleted Overlays (soft delete); null/absent = live. */
 	deletedAt?: string | null;
 	description: string;
+	/** The AI assistant's own context on the overlay (purpose, layout, what the user asked for). Hidden in the UI;
+	 *  written only by the MCP; travels with the overlay (export, copy). Per element: `data.description`. */
+	aiNote?: string | null;
 	id: string;
 	title: string;
 	[LiveStatsScene.WaitingForDolphin]: Scene;

@@ -223,6 +223,7 @@ export function validateFlow(flow: Flow): string[] {
 export const SEQUENCE_KEYS = [
 	'kind', 'player', 'playerName', 'character', 'isCurrentPlayer', 'victim', 'victimName', 'victimCharacter',
 	'hits', 'damage', 'startPercent', 'endPercent', 'seconds', 'hitsPerSecond', 'didKill', 'gameEnding', 'teamKills',
+	'victimIsCpu', 'victimInputsPerSecond',
 	'openingType', 'moves', 'lastMove', 'offstage', 'victimStocksLeft', 'gameStocksLeft', 'gameStocksTotal',
 	'winChanceBefore', 'winChanceAfter', 'winChanceSwing', 'setChanceSwing', 'startTime', 'endTime', 'startFrame', 'endFrame',
 ];
@@ -436,7 +437,7 @@ export const gameStartTokens = (state: FlowGameState): FlowTokens => ({
 export const SAMPLE_TOKENS: FlowTokens = {
 	scene: 'InGame', buttons: 'L+R', method: 'GAME', score: '1-0', total: 120, newSet: false, error: 'OBS did not accept the command — is OBS connected?',
 	kind: 'punish', character: 'Fox', victim: 2, victimName: 'Zain', victimCharacter: 'Marth', hits: 5, startPercent: 32, endPercent: 118, seconds: 3.2, hitsPerSecond: 1.6,
-	didKill: true, gameEnding: false, teamKills: 1, openingType: 'neutral-win', moves: 'Nair, Uthrow, Uair, Uair, Uair', lastMove: 'Uair', offstage: false, victimStocksLeft: 1, gameStocksLeft: 3, gameStocksTotal: 8,
+	didKill: true, gameEnding: false, teamKills: 1, victimIsCpu: false, victimInputsPerSecond: 6.4, openingType: 'neutral-win', moves: 'Nair, Uthrow, Uair, Uair, Uair', lastMove: 'Uair', offstage: false, victimStocksLeft: 1, gameStocksLeft: 3, gameStocksTotal: 8,
 	winChanceBefore: 52, winChanceAfter: 71, winChanceSwing: 19, setChanceSwing: 12, startTime: 1791753170000, endTime: 1791753173200, startFrame: 4210, endFrame: 4402,
 	player: 1, playerName: 'Mango', isCurrentPlayer: true, damage: 14.2, percent: 87.5, stocksLeft: 2,
 	p1Name: 'Mango', p2Name: 'Zain', bestOf: 3, ruleset: 'singles', connected: true, path: 'C:/Users/me/Videos/Replay 2026-10-11 21-30-02.mp4', fileName: 'Replay 2026-10-11 21-30-02.mp4',

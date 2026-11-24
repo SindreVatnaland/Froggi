@@ -19,6 +19,10 @@ export class OverlayEntity implements Overlay {
   @Column({ default: "0.0.0" })
   froggiVersion: string = "0.0.0";
 
+  /** The AI assistant's context on the overlay (Overlay.aiNote). */
+  @Column({ type: "text", nullable: true })
+  aiNote: string | null;
+
   @Column({ type: "varchar", nullable: true })
   deletedAt: string | null = null;
 

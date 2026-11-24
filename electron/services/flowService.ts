@@ -51,7 +51,7 @@ const SCENE_FLOW_SEEDED = 'migrations.sceneFlowInstalled';
 /** electron-store: every flow's values + lists (Calculate / List cards), kept across restarts. */
 const FLOW_VALUES_KEY = 'flows.values';
 // v2: the rule-card version (replaces the first, never-released one once).
-const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV5';
+const HIGHLIGHTS_FLOW_SEEDED = 'migrations.highlightsFlowInstalledV6';
 
 /** Minimum time between two runs of the same flow (damage events can come in bursts). */
 const FLOW_COOLDOWN_MS = 250;
@@ -157,7 +157,7 @@ export class FlowService {
 		if (problems.length) return { ok: false, problems };
 		await this.sqlite.initializing;
 		const repo = this.repo ?? this.sqlite.getRepository(FlowEntity);
-		await repo.save(repo.create({ id: flow.id, name: flow.name.trim(), enabled: flow.enabled, format: 'any', nodes: flow.nodes, edges: flow.edges }));
+		await repo.save(repo.create({ id: flow.id, name: flow.name.trim(), enabled: flow.enabled, format: 'any', nodes: flow.nodes, edges: flow.edges, aiNote: flow.aiNote ?? null }));
 		const saved = { ...flow, name: flow.name.trim(), updatedAt: new Date().toISOString() };
 		this.flows = [...this.flows.filter((f) => f.id !== flow.id), saved];
 		this.emitFlows();
@@ -330,6 +330,8 @@ export class FlowService {
 			didKill: e.didKill,
 			gameEnding: e.didKill && victimSideStocks === 0,
 			teamKills: e.teamKills,
+			victimIsCpu: e.victimIsCpu,
+			victimInputsPerSecond: e.victimInputsPerSecond,
 			openingType: e.openingType || null,
 			moves: e.moves.join(', '),
 			lastMove: e.moves.at(-1) ?? null,

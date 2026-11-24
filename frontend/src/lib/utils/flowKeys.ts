@@ -68,6 +68,8 @@ export const KEY_INFO: Record<FlowTrigger['type'], Record<string, string>> = {
 		didKill: 'true when the sequence took a stock.',
 		gameEnding: 'true when it took the last stock (won the game).',
 		teamKills: 'KOs by the attacker\'s team in the last 5 s, this one included (2+ = a doubles multi-kill).',
+		victimIsCpu: 'true when the victim is a CPU.',
+		victimInputsPerSecond: 'The victim\'s controller activity: inputs per second (button presses, stick / C-stick moves, trigger presses) over the sequence and the 3 s before it. 0 = not touching the controller; people playing usually do 4+.',
 		openingType: 'How it started (punishes): neutral-win, counter-attack or trade.',
 		moves: 'The moves in order, e.g. "Nair, Uthrow, Uair".',
 		lastMove: 'The last move, e.g. "Uair".',

@@ -90,131 +90,6 @@
                 "y": 511,
                 "h": 513
               },
-              "w": 512,
-              "h": 288,
-              "x": 0,
-              "y": 0,
-              "id": "ssyvokys9"
-            },
-            "elementId": 3000,
-            "id": "ssyvokys9",
-            "data": {
-              "advancedStyling": false,
-              "animationTrigger": {
-                "in": {
-                  "options": {
-                    "delay": 0,
-                    "duration": 0,
-                    "easing": "",
-                    "start": 0,
-                    "x": 0,
-                    "y": 0
-                  },
-                  "type": "none"
-                },
-                "out": {
-                  "options": {
-                    "delay": 0,
-                    "duration": 0,
-                    "easing": "",
-                    "start": 0,
-                    "x": 0,
-                    "y": 0
-                  },
-                  "type": "none"
-                },
-                "selectedOptions": {}
-              },
-              "class": {
-                "rounded": "",
-                "alignment": "justify-center"
-              },
-              "css": {
-                "background": "#0b0e13f2",
-                "borderLeft": "0rem solid",
-                "borderRight": "0rem solid",
-                "borderTop": "0rem solid",
-                "borderBottom": "0rem solid",
-                "borderColor": "#ffffffff",
-                "color": "#ffffffff",
-                "opacity": 1,
-                "fill": "#ff000000",
-                "stroke": "#ff000000",
-                "strokeWidth": 3,
-                "fillOpacity": 1
-              },
-              "description": "",
-              "percent": {
-                "startColor": "#ffffff",
-                "endColor": "#6f1622"
-              },
-              "font": {
-                "family": "default"
-              },
-              "image": {
-                "objectFit": "cover"
-              },
-              "visibility": {
-                "in": {
-                  "options": {
-                    "delay": 0,
-                    "duration": 150,
-                    "easing": "sineOut",
-                    "start": 0,
-                    "x": 0,
-                    "y": 0
-                  },
-                  "type": "fade"
-                },
-                "out": {
-                  "options": {
-                    "delay": 0,
-                    "duration": 150,
-                    "easing": "sineIn",
-                    "start": 0,
-                    "x": 0,
-                    "y": 0
-                  },
-                  "type": "fade"
-                },
-                "selectedOptions": []
-              },
-              "shadow": {
-                "x": 0,
-                "y": 0,
-                "spread": 0,
-                "color": "#000000ff"
-              },
-              "string": "",
-              "textStroke": {
-                "size": 0,
-                "color": "#000000ff"
-              },
-              "transform": {
-                "rotate": 0,
-                "scale": "1, 1",
-                "translate": {
-                  "x": 0,
-                  "y": 0
-                }
-              }
-            }
-          },
-          {
-            "512": {
-              "fixed": true,
-              "resizable": true,
-              "draggable": true,
-              "customDragger": false,
-              "customResizer": true,
-              "min": {
-                "w": 1,
-                "h": 1
-              },
-              "max": {
-                "y": 511,
-                "h": 513
-              },
               "w": 448,
               "h": 16,
               "x": 32,
@@ -836,75 +711,9 @@
         "preview": true,
         "id": null,
         "index": 0
-      }
-    ]
-  },
-  "postSet": {
-    "active": true,
-    "fallback": "menu",
-    "animation": {
-      "duration": 250,
-      "in": {
-        "options": {
-          "delay": 0,
-          "duration": 250,
-          "easing": "expoIn",
-          "start": 0,
-          "x": 0,
-          "y": 0
-        },
-        "type": "fly automatic"
       },
-      "out": {
-        "options": {
-          "delay": 0,
-          "duration": 150,
-          "easing": "expoIn",
-          "start": 0,
-          "x": 0,
-          "y": 0
-        },
-        "type": "fly"
-      },
-      "layerRenderDelay": 60
-    },
-    "background": {
-      "color": "#000000",
-      "customImage": {},
-      "image": {},
-      "opacity": 100,
-      "type": "None",
-      "animation": {
-        "in": {
-          "options": {
-            "delay": 0,
-            "duration": 0,
-            "easing": "",
-            "start": 0,
-            "x": 0,
-            "y": 0
-          },
-          "type": "none"
-        },
-        "out": {
-          "options": {
-            "delay": 0,
-            "duration": 0,
-            "easing": "",
-            "start": 0,
-            "x": 0,
-            "y": 0
-          },
-          "type": "none"
-        }
-      }
-    },
-    "font": {
-      "family": "Roboto Bold Italic"
-    },
-    "layers": [
       {
-        "title": "Highlights \"set\"",
+        "title": "Highlights \"game\" · back",
         "items": [
           {
             "512": {
@@ -925,10 +734,10 @@
               "h": 288,
               "x": 0,
               "y": 0,
-              "id": "sstzjgf0b"
+              "id": "ssyvokys9"
             },
             "elementId": 3000,
-            "id": "sstzjgf0b",
+            "id": "ssyvokys9",
             "data": {
               "advancedStyling": false,
               "animationTrigger": {
@@ -1030,7 +839,81 @@
                 }
               }
             }
+          }
+        ],
+        "preview": true,
+        "id": null,
+        "index": 1
+      }
+    ]
+  },
+  "postSet": {
+    "active": true,
+    "fallback": "menu",
+    "animation": {
+      "duration": 250,
+      "in": {
+        "options": {
+          "delay": 0,
+          "duration": 250,
+          "easing": "expoIn",
+          "start": 0,
+          "x": 0,
+          "y": 0
+        },
+        "type": "fly automatic"
+      },
+      "out": {
+        "options": {
+          "delay": 0,
+          "duration": 150,
+          "easing": "expoIn",
+          "start": 0,
+          "x": 0,
+          "y": 0
+        },
+        "type": "fly"
+      },
+      "layerRenderDelay": 60
+    },
+    "background": {
+      "color": "#000000",
+      "customImage": {},
+      "image": {},
+      "opacity": 100,
+      "type": "None",
+      "animation": {
+        "in": {
+          "options": {
+            "delay": 0,
+            "duration": 0,
+            "easing": "",
+            "start": 0,
+            "x": 0,
+            "y": 0
           },
+          "type": "none"
+        },
+        "out": {
+          "options": {
+            "delay": 0,
+            "duration": 0,
+            "easing": "",
+            "start": 0,
+            "x": 0,
+            "y": 0
+          },
+          "type": "none"
+        }
+      }
+    },
+    "font": {
+      "family": "Roboto Bold Italic"
+    },
+    "layers": [
+      {
+        "title": "Highlights \"set\"",
+        "items": [
           {
             "512": {
               "fixed": true,
@@ -1667,75 +1550,9 @@
         "preview": true,
         "id": null,
         "index": 0
-      }
-    ]
-  },
-  "menu": {
-    "active": true,
-    "fallback": "menu",
-    "animation": {
-      "duration": 250,
-      "in": {
-        "options": {
-          "delay": 0,
-          "duration": 250,
-          "easing": "expoIn",
-          "start": 0,
-          "x": 0,
-          "y": 0
-        },
-        "type": "fly automatic"
       },
-      "out": {
-        "options": {
-          "delay": 0,
-          "duration": 150,
-          "easing": "expoIn",
-          "start": 0,
-          "x": 0,
-          "y": 0
-        },
-        "type": "fly"
-      },
-      "layerRenderDelay": 60
-    },
-    "background": {
-      "color": "#000000",
-      "customImage": {},
-      "image": {},
-      "opacity": 100,
-      "type": "None",
-      "animation": {
-        "in": {
-          "options": {
-            "delay": 0,
-            "duration": 0,
-            "easing": "",
-            "start": 0,
-            "x": 0,
-            "y": 0
-          },
-          "type": "none"
-        },
-        "out": {
-          "options": {
-            "delay": 0,
-            "duration": 0,
-            "easing": "",
-            "start": 0,
-            "x": 0,
-            "y": 0
-          },
-          "type": "none"
-        }
-      }
-    },
-    "font": {
-      "family": "Roboto Bold Italic"
-    },
-    "layers": [
       {
-        "title": "Highlights \"daily\"",
+        "title": "Highlights \"set\" · back",
         "items": [
           {
             "512": {
@@ -1756,10 +1573,10 @@
               "h": 288,
               "x": 0,
               "y": 0,
-              "id": "ssfr8npry"
+              "id": "sstzjgf0b"
             },
             "elementId": 3000,
-            "id": "ssfr8npry",
+            "id": "sstzjgf0b",
             "data": {
               "advancedStyling": false,
               "animationTrigger": {
@@ -1861,7 +1678,81 @@
                 }
               }
             }
+          }
+        ],
+        "preview": true,
+        "id": null,
+        "index": 1
+      }
+    ]
+  },
+  "menu": {
+    "active": true,
+    "fallback": "menu",
+    "animation": {
+      "duration": 250,
+      "in": {
+        "options": {
+          "delay": 0,
+          "duration": 250,
+          "easing": "expoIn",
+          "start": 0,
+          "x": 0,
+          "y": 0
+        },
+        "type": "fly automatic"
+      },
+      "out": {
+        "options": {
+          "delay": 0,
+          "duration": 150,
+          "easing": "expoIn",
+          "start": 0,
+          "x": 0,
+          "y": 0
+        },
+        "type": "fly"
+      },
+      "layerRenderDelay": 60
+    },
+    "background": {
+      "color": "#000000",
+      "customImage": {},
+      "image": {},
+      "opacity": 100,
+      "type": "None",
+      "animation": {
+        "in": {
+          "options": {
+            "delay": 0,
+            "duration": 0,
+            "easing": "",
+            "start": 0,
+            "x": 0,
+            "y": 0
           },
+          "type": "none"
+        },
+        "out": {
+          "options": {
+            "delay": 0,
+            "duration": 0,
+            "easing": "",
+            "start": 0,
+            "x": 0,
+            "y": 0
+          },
+          "type": "none"
+        }
+      }
+    },
+    "font": {
+      "family": "Roboto Bold Italic"
+    },
+    "layers": [
+      {
+        "title": "Highlights \"daily\"",
+        "items": [
           {
             "512": {
               "fixed": true,
@@ -2498,6 +2389,139 @@
         "preview": true,
         "id": null,
         "index": 0
+      },
+      {
+        "title": "Highlights \"daily\" · back",
+        "items": [
+          {
+            "512": {
+              "fixed": true,
+              "resizable": true,
+              "draggable": true,
+              "customDragger": false,
+              "customResizer": true,
+              "min": {
+                "w": 1,
+                "h": 1
+              },
+              "max": {
+                "y": 511,
+                "h": 513
+              },
+              "w": 512,
+              "h": 288,
+              "x": 0,
+              "y": 0,
+              "id": "ssfr8npry"
+            },
+            "elementId": 3000,
+            "id": "ssfr8npry",
+            "data": {
+              "advancedStyling": false,
+              "animationTrigger": {
+                "in": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 0,
+                    "easing": "",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "none"
+                },
+                "out": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 0,
+                    "easing": "",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "none"
+                },
+                "selectedOptions": {}
+              },
+              "class": {
+                "rounded": "",
+                "alignment": "justify-center"
+              },
+              "css": {
+                "background": "#0b0e13f2",
+                "borderLeft": "0rem solid",
+                "borderRight": "0rem solid",
+                "borderTop": "0rem solid",
+                "borderBottom": "0rem solid",
+                "borderColor": "#ffffffff",
+                "color": "#ffffffff",
+                "opacity": 1,
+                "fill": "#ff000000",
+                "stroke": "#ff000000",
+                "strokeWidth": 3,
+                "fillOpacity": 1
+              },
+              "description": "",
+              "percent": {
+                "startColor": "#ffffff",
+                "endColor": "#6f1622"
+              },
+              "font": {
+                "family": "default"
+              },
+              "image": {
+                "objectFit": "cover"
+              },
+              "visibility": {
+                "in": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 150,
+                    "easing": "sineOut",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "fade"
+                },
+                "out": {
+                  "options": {
+                    "delay": 0,
+                    "duration": 150,
+                    "easing": "sineIn",
+                    "start": 0,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "type": "fade"
+                },
+                "selectedOptions": []
+              },
+              "shadow": {
+                "x": 0,
+                "y": 0,
+                "spread": 0,
+                "color": "#000000ff"
+              },
+              "string": "",
+              "textStroke": {
+                "size": 0,
+                "color": "#000000ff"
+              },
+              "transform": {
+                "rotate": 0,
+                "scale": "1, 1",
+                "translate": {
+                  "x": 0,
+                  "y": 0
+                }
+              }
+            }
+          }
+        ],
+        "preview": true,
+        "id": null,
+        "index": 1
       }
     ]
   }

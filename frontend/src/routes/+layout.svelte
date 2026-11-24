@@ -28,6 +28,7 @@
 	// so no horizontal padding there.
 	import GlobalModal from '$lib/components/global/GlobalModal.svelte';
 	import BuyMeACoffeeModal from '$lib/components/bmc/BuyMeACoffeeModal.svelte';
+	import AuthPrompt from '$lib/components/auth/AuthPrompt.svelte';
 	import Toast from '$lib/components/notification/Toast.svelte';
 	import { initClient } from '$lib/utils/init.svelte';
 	import { page } from '$app/stores';
@@ -106,6 +107,7 @@
 	{#if !chromeless}<Navbar />{/if}
 	<GlobalModal />
 	<BuyMeACoffeeModal />
+	<AuthPrompt />
 	<Toast />
 	<div class:nav-pad={!chromeless}>
 		<slot />

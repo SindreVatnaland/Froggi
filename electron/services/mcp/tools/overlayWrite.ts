@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cloneDeep, merge } from 'lodash';
+import { merge } from 'lodash';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
 import { Animation, LiveStatsScene, SceneBackground } from '../../../../frontend/src/lib/models/enum';
@@ -10,6 +10,8 @@ import { newId } from '../../../utils/functions';
 
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const error = (message: string) => ({ content: [{ type: 'text' as const, text: message }], isError: true });
+// Why the store refused the last scene write (overlap on one layer, demo overlay), else the log hint.
+const refused = () => mcpContext.overlayStore?.sceneRejection ?? 'see logs';
 
 const STATS_SCENES = Object.values(LiveStatsScene);
 
@@ -83,7 +85,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const source = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			if (!source) return error(`No overlay with id "${overlayId}"`);
 			const newId = await mcpContext.overlayStore!.copyOverlay(overlayId, title);
-			if (!newId) return error('Failed to duplicate overlay — see logs');
+			if (!newId) return error("Failed to duplicate overlay — see logs");
 			return text({ ok: true, overlayId: newId, title: title || `${source.title} - copy` });
 		},
 	);
@@ -108,9 +110,8 @@ export function registerOverlayWriteTools(server: McpServer) {
 
 			const added = Math.max(count, titles?.length ?? 0);
 			const afterScene = await mcpContext.overlayStore!.addLayersToScene(overlayId, statsScene as LiveStatsScene, added, start, titles);
-			if (!afterScene) return error('Failed to add layer — see logs');
+			if (!afterScene) return error(`Failed to add layer — ${refused()}`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${added} layer(s) to ${statsScene}`);
 			return text({ ok: true, layerCount: afterScene.layers.length, addedLayerIndexes: Array.from({ length: added }, (_, i) => start + i), note: 'Index 0 is on top; higher = further behind.' });
 		},
 	);
@@ -132,8 +133,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 			const afterScene = await mcpContext.overlayStore!.renameLayer(overlayId, statsScene as LiveStatsScene, layerIndex, title);
-			if (!afterScene) return error('Failed to rename layer — see logs');
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `rename layer ${layerIndex}`);
+			if (!afterScene) return error(`Failed to rename layer — ${refused()}`);
 			return text({ ok: true, layerIndex, title: afterScene.layers[layerIndex]?.title ?? null });
 		},
 	);
@@ -155,8 +155,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 			const afterScene = await mcpContext.overlayStore!.moveLayerTo(overlayId, statsScene as LiveStatsScene, layerIndex, toIndex);
-			if (!afterScene) return error('Failed to move layer — see logs');
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `move layer ${layerIndex} → ${toIndex}`);
+			if (!afterScene) return error(`Failed to move layer — ${refused()}`);
 			return text({ ok: true, layerCount: afterScene.layers.length, movedTo: Math.min(toIndex, afterScene.layers.length - 1) });
 		},
 	);
@@ -177,8 +176,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (!sceneBefore) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
 			if (!sceneBefore.layers[layerIndex]) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 			const afterScene = await mcpContext.overlayStore!.duplicateSceneLayer(overlayId, statsScene as LiveStatsScene, layerIndex);
-			if (!afterScene) return error('Failed to duplicate layer — see logs');
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `duplicate layer ${layerIndex}`);
+			if (!afterScene) return error(`Failed to duplicate layer — ${refused()}`);
 			return text({
 				ok: true,
 				copyLayerIndex: layerIndex,
@@ -191,21 +189,22 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'update_overlay_settings',
 		{
-			description: 'Rename an overlay, change its description, or change its aspect ratio (e.g. {width:16,height:9} landscape, {width:9,height:16} portrait). Element grid positions are relative, so they stretch to the new ratio. Not recorded in scene undo history — tell the user the previous values.',
+			description: 'Rename an overlay, change its description, or change its aspect ratio (e.g. {width:16,height:9} landscape, {width:9,height:16} portrait). Element grid positions are relative, so they stretch to the new ratio. Not recorded in scene undo history — tell the user the previous values. aiNote = YOUR notes on the overlay (hidden from the user, only you write them): what it is for, the layout, what the user asked for and decided — keep it current after you build or change it.',
 			inputSchema: {
 				overlayId: z.string(),
 				title: z.string().min(1).max(100).optional(),
 				description: z.string().max(500).optional(),
 				aspectRatio: z.object({ width: z.number().int().min(1).max(64), height: z.number().int().min(1).max(64) }).optional(),
+				aiNote: z.string().max(4000).optional().describe('Your notes on this overlay (replaces the old ones; "" clears).'),
 			},
 		},
-		async ({ overlayId, title, description, aspectRatio }) => {
-			if (title === undefined && description === undefined && !aspectRatio) return error('Provide at least one of title, description, aspectRatio.');
+		async ({ overlayId, title, description, aspectRatio, aiNote }) => {
+			if (title === undefined && description === undefined && !aspectRatio && aiNote === undefined) return error('Provide at least one of title, description, aspectRatio, aiNote.');
 			const before = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			if (!before) return error(`No overlay with id "${overlayId}"`);
 			if (before.isDemo) return error('Demo overlays are read-only — duplicate it in Froggi first.');
-			const after = await mcpContext.overlayStore!.updateOverlaySettings(overlayId, { title, description, aspectRatio });
-			if (!after) return error('Failed to update overlay — see logs');
+			const after = await mcpContext.overlayStore!.updateOverlaySettings(overlayId, { title, description, aspectRatio, aiNote });
+			if (!after) return error("Failed to update overlay — see logs");
 			return text({
 				ok: true,
 				before: { title: before.title, description: before.description, aspectRatio: before.aspectRatio },
@@ -296,9 +295,8 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const itemId = newId();
 			merged.font = withCustomFontFamily(merged.font, itemId);
 			const afterScene = await mcpContext.overlayStore!.addItemToLayer(overlayId, statsScene as LiveStatsScene, layerIndex, elementId as CustomElement, merged, itemId, position);
-			if (!afterScene) return error('Failed to add element — see logs');
+			if (!afterScene) return error(`Failed to add element — ${refused()}`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `add ${CustomElement[elementId as CustomElement]}`);
 			return text({ ok: true, addedItemId: afterScene.layers[layerIndex]?.items.at(-1)?.id });
 		},
 	);
@@ -306,7 +304,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'add_overlay_elements',
 		{
-			description: 'Add MULTIPLE elements to one scene in a single call (one save, one undo entry) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512×288 grid (x 0-512, y 0-288); optional layerIndex (default 0; index 0 is on top — add layers first with add_overlay_layer). Elements without a position auto-place, accounting for others added earlier in the same batch.',
+			description: 'Add MULTIPLE elements to one scene in a single call (one save; the history gets one entry per element) — use this to build a whole HUD at once instead of many add_overlay_element calls. Each element: elementId (required); optional payload (partial, deep-merged over defaults); optional position {x,y,w,h} on the 512×288 grid (x 0-512, y 0-288); optional layerIndex (default 0; index 0 is on top — add layers first with add_overlay_layer). Elements without a position auto-place, accounting for others added earlier in the same batch.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
@@ -333,9 +331,8 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (missing) return error(`No layer at index ${missing.layerIndex} in "${statsScene}"`);
 
 			const result = await mcpContext.overlayStore!.addItemsToScene(overlayId, statsScene as LiveStatsScene, items);
-			if (!result) return error('Failed to add elements — see logs');
+			if (!result) return error(`Failed to add elements — ${refused()}`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(result.scene), `add ${result.addedIds.length} elements`);
 			return text({ ok: true, addedItemIds: result.addedIds });
 		},
 	);
@@ -360,9 +357,8 @@ export function registerOverlayWriteTools(server: McpServer) {
 			if (!item) return error(`No element "${itemId}" in layer ${layerIndex} of "${statsScene}"`);
 
 			const afterScene = await mcpContext.overlayStore!.moveItemInLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId, position);
-			if (!afterScene) return error('Failed to move element — see logs');
+			if (!afterScene) return error(`Failed to move element — ${refused()}`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `move ${itemId}`);
 			return text({ ok: true, movedItemId: itemId });
 		},
 	);
@@ -370,7 +366,7 @@ export function registerOverlayWriteTools(server: McpServer) {
 	server.registerTool(
 		'configure_overlay_scene',
 		{
-			description: 'Configure a whole scene (not individual elements): enable/disable + fallback, the scene default font, the background, and the scene-switch (transition) animation. All fields optional and merged over current values. Examples: keep a controller overlay only in inGame+menu (disable others, fallback "menu"); set a default font for every text element in the scene; give a scene a colored/None background; use "fly automatic" as the automatic scene-switch animation (recommended default). Records undo history.',
+			description: 'Configure a whole scene (not individual elements): enable/disable + fallback, the scene default font, the background, and the scene-switch (transition) animation. All fields optional and merged over current values. Examples: keep a controller overlay only in inGame+menu (disable others, fallback "menu"); set a default font for every text element in the scene; give a scene a colored/None background; use "fly automatic" as the automatic scene-switch animation (recommended default). Scene settings are NOT in the overlay history (only elements and layers are) — tell the user the previous values.',
 			inputSchema: {
 				overlayId: z.string(),
 				statsScene: z.enum(STATS_SCENES as [string, ...string[]]),
@@ -412,9 +408,8 @@ export function registerOverlayWriteTools(server: McpServer) {
 				background: background as Partial<Scene['background']> as Scene['background'] | undefined,
 				animation: animation as Partial<Scene['animation']> as Scene['animation'] | undefined,
 			});
-			if (!afterScene) return error('Failed to configure scene — see logs');
+			if (!afterScene) return error(`Failed to configure scene — ${refused()}`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `configure scene ${statsScene}`);
 			return text({ ok: true, statsScene, active: afterScene.active, fallback: afterScene.fallback, font: afterScene.font, background: { type: afterScene.background?.type }, animation: { in: afterScene.animation?.in?.type, out: afterScene.animation?.out?.type } });
 		},
 	);
@@ -483,7 +478,6 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const afterScene = await mcpContext.overlayStore!.updateItemInLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId, patch);
 			if (!afterScene) return error(`No element "${itemId}" at layer ${layerIndex} in "${statsScene}"`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `update ${itemId}`);
 			return text({ ok: true });
 		},
 	);
@@ -507,7 +501,6 @@ export function registerOverlayWriteTools(server: McpServer) {
 			const afterScene = await mcpContext.overlayStore!.deleteItemFromLayer(overlayId, statsScene as LiveStatsScene, layerIndex, itemId);
 			if (!afterScene) return error(`No layer at index ${layerIndex} in "${statsScene}"`);
 
-			await mcpContext.overlayHistory!.recordEdit(overlayId, statsScene as LiveStatsScene, cloneDeep(sceneBefore), cloneDeep(afterScene), `delete ${itemId}`);
 			return text({ ok: true });
 		},
 	);

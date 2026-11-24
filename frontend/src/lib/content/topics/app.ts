@@ -55,6 +55,7 @@ export const appTopics: ContentTopic[] = [
 					'Overlay injection (Windows only) — render an overlay directly over the Dolphin game window, not just in OBS',
 					'Minigames — Bingo and Iron Man, playable solo, local co-op, or remote with a friend',
 					'Remote access — Tailscale or ngrok let you (or a friend) reach Froggi from outside your local network',
+					'Game history — your replays in a local database the AI assistant can query (records, matchups, tech skill; Settings → Game History)',
 				],
 			},
 		],
@@ -93,11 +94,41 @@ export const appTopics: ContentTopic[] = [
 			},
 			{
 				type: 'note',
+				text: 'The assistant keeps short notes for itself on the overlays, elements and flows it builds or changes (what they are for, what you asked for) so it understands them next time. They are hidden in Froggi and travel with exported overlays and flows. Ask it to show or change them.',
+			},
+			{
+				type: 'note',
 				text: 'If the assistant seems to be missing tools after a Froggi update, restart the AI app (or toggle the Froggi extension/server off and on) so it reloads the tool list.',
 			},
 			{
 				type: 'note',
 				text: 'Apps on this computer always use the local URL — no Tailscale needed. The local URL and "Expose over Tailscale (HTTPS)" sit under Settings → AI Assistant → Advanced (collapsed); the "Connect an AI app" buttons need neither. "Expose over Tailscale (HTTPS)" is only for an MCP app on ANOTHER of your devices in the same tailnet. Web/cloud apps (claude.ai, the Claude mobile app\'s connectors) run on remote servers and cannot reach a tailnet-only URL, so exposing it does not help them.',
+			},
+		],
+	},
+	{
+		id: 'game-history',
+		title: 'Game history: ask the AI about your play',
+		category: 'app',
+		summary: 'Froggi imports your Slippi replays into a local game history so the AI assistant can answer questions about your performance — records vs a player, matchups, stages, tech skill, trends.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'Settings → Game History:',
+				items: [
+					'Import replays — imports every replay in the Slippi replay folder that isn\'t in the history yet (the card shows how many), newest first, with a progress bar. It runs in the background (~0.5 s per replay) and pauses while a game is running.',
+					'Cancel — stops the import; imported games stay and the next import picks up the rest (Resume import).',
+					'Add each game when it ends (on by default) — keeps the history up to date after the first import.',
+					'"Me" is the connect code you are signed in to Slippi with — offline games have no connect code, so they are in the history but not in your personal record.',
+				],
+			},
+			{
+				type: 'paragraph',
+				text: 'Ask the assistant things like "what is my record vs ABC#123 in friendlies", "which matchup do I lose most in ranked", "how is my L-cancel rate this month", "my best stage as Falco". It reads the history with read-only queries (get_game_history_schema → query_game_history); with edits allowed it can also start or cancel an import (import_replays). Doubles games are included: stocks, KOs, damage, tech skill and inputs per player; punish / neutral stats are singles-only (Slippi computes them for two players).',
+			},
+			{
+				type: 'note',
+				text: 'The history is a separate local file (history.sqlite in the Froggi app-data folder) built only from your replays — the assistant can\'t read anything else through it. Only replays in the Slippi replay folder are included; deleting history.sqlite rebuilds it from the replays.',
 			},
 		],
 	},

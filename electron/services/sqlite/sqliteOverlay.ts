@@ -80,6 +80,20 @@ export class SqliteOverlay {
     return null;
   }
 
+  async getOverlay(overlayId: string): Promise<OverlayEntity | null> {
+    await this.sqlite.initializing;
+    const overlay = await this.overlayRepo.findOne({ where: { id: overlayId }, ...OVERLAY_LOAD_OPTIONS });
+    // Layers load in row order — their place in the scene is `index` (same as getOverlays).
+    for (const statsScene of Object.values(LiveStatsScene)) overlay?.[statsScene]?.layers?.sort((a, b) => a.index - b.index);
+    return overlay;
+  }
+
+  async isDemo(overlayId: string): Promise<boolean> {
+    await this.sqlite.initializing;
+    const overlay = await this.overlayRepo.findOne({ where: { id: overlayId }, select: { id: true, isDemo: true } });
+    return overlay?.isDemo ?? false;
+  }
+
   async deleteOverlayById(overlayId: string) {
     await this.sqlite.initializing;
     this.log.info("Deleting overlay:", overlayId)
@@ -131,15 +145,4 @@ export class SqliteOverlay {
     return null;
   }
 
-  async deleteLayer(layerId: number) {
-    await this.sqlite.initializing;
-    this.log.info("Deleting layer:", layerId)
-    try {
-      const deleted = await this.sceneRepo.delete({ id: layerId })
-      return deleted
-    } catch (error) {
-      this.log.error("Error deleting layer:", error);
-      return null
-    }
-  }
 }

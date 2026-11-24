@@ -37,7 +37,8 @@ describe('KO effects (live viewer)', () => {
 		expect(at(STAR_FRAMES / 2).y).toBeCloseTo(160 - 60 * 0.75); // 75 % of the way at half time
 		expect(at(STAR_FRAMES / 2).scale).toBeCloseTo(STAR_START_SCALE + (STAR_END_SCALE - STAR_START_SCALE) * 0.75);
 		expect(at(STAR_FRAMES / 2).angle).toBeCloseTo(STAR_SPIN / 2); // the spin keeps one speed
-		expect(at(STAR_FRAMES)).toEqual({ x: 0, y: 100, scale: STAR_END_SCALE, angle: STAR_SPIN });
+		expect(at(STAR_FRAMES)).toMatchObject({ x: 0, y: 100, angle: STAR_SPIN });
+		expect(at(STAR_FRAMES).scale).toBeCloseTo(STAR_END_SCALE);
 		expect(starFlight(start, end, 10, -1).angle).toBeLessThan(0); // facing left spins the other way
 
 		// Where it ends: toward the middle (at most 30° from straight down), in the top 30 % of the off-stage zone

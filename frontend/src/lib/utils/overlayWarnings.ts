@@ -1,5 +1,6 @@
 import { CustomElement } from '../models/constants/customElement';
 import { LiveStatsScene } from '../models/enum';
+import { COL } from '../models/const';
 import type { Flow } from '../models/types/flow';
 import type { GridContentItem, Overlay, Scene } from '../models/types/overlay';
 import { SELF, triggerAnimations } from './elementTriggers';
@@ -58,4 +59,20 @@ export function overlayWarnings(overlay: Overlay, flows: Flow[]): Partial<Record
 		if (Object.keys(w).length) out[scene] = w;
 	}
 	return out;
+}
+
+/** Pairs of element ids whose boxes overlap on one layer ("a|b", a < b). Elements that overlap belong on separate
+ *  layers — the editor's grid can't move them, and a write that adds a new pair is refused (storeOverlay.setScene). */
+export function layerOverlaps(scene: Scene | undefined | null): Set<string> {
+	const pairs = new Set<string>();
+	for (const layer of scene?.layers ?? []) {
+		const boxes = layer.items.map((i) => ({ ...i[COL], id: i.id })).filter((b) => b.w > 0 && b.h > 0);
+		for (let i = 0; i < boxes.length; i++)
+			for (let j = i + 1; j < boxes.length; j++) {
+				const [a, b] = [boxes[i], boxes[j]];
+				if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h)
+					pairs.add([a.id, b.id].sort().join('|'));
+			}
+	}
+	return pairs;
 }

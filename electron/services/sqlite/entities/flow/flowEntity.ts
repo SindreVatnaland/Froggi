@@ -24,4 +24,8 @@ export class FlowEntity {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  /** The AI assistant's context on the flow (Flow.aiNote). */
+  @Column({ type: 'text', nullable: true })
+  aiNote: string | null;
 }

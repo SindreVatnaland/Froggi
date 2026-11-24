@@ -8,6 +8,8 @@ import type { GameStats } from '../models/types/slippiData';
  *    Player 2" elements show each team's first player. Within a team, the lower port is P1.
  *  - Winner: LRAS → the quitter's team loses; time → more team stocks, then lower team percent
  *    (an eliminated player counts as 0 stocks / 0%); otherwise the team of the player placed first.
+ *  - Tie (tournament rulesets → 1-stock tiebreaker): time with equal team stocks + percent, both teams'
+ *    last players KO'd on the same frame, or sudden death (bomb rain — its result never counts).
  */
 export const TEAM_COLORS = ['red', 'blue', 'green'] as const;
 
@@ -103,6 +105,9 @@ export function getTeamWinnerIndex(game: GameStats | undefined, reference?: stri
 		return quitter < 0 ? undefined : other(quitter);
 	}
 
+	if (game.settings.gameInfoBlock?.bombRainEnabled) return undefined; // sudden death
+
+
 	if (end?.gameEndMethod === 1 /* TIME */) {
 		const frame = game.lastFrame?.players ?? {};
 		const totals = teams.map((t) =>
@@ -121,6 +126,11 @@ export function getTeamWinnerIndex(game: GameStats | undefined, reference?: stri
 		return undefined; // full tie → tiebreaker game
 	}
 
+	// Both teams wiped out (their last players KO'd on the same frame) → tie.
+	const posts = (game.settings.players ?? []).map((p) => (p ? game.lastFrame?.players?.[p.playerIndex]?.post : undefined));
+	if (posts.length && posts.every((post) => post) && posts.every((post) => (post?.stocksRemaining ?? 0) === 0)) return undefined;
+	const firsts = new Set((end?.placements ?? []).filter((pl) => pl.position === 0).map((pl) => teamOf(pl.playerIndex)));
+	if (firsts.size > 1) return undefined;
 	const first = end?.placements?.find((pl) => pl.position === 0);
 	if (!first) return undefined;
 	const winner = teamOf(first.playerIndex);
@@ -163,4 +173,13 @@ export function teamDisplayName(custom: string | undefined, players: (TeamsPlaye
 	const present = players.filter(Boolean) as TeamsPlayer[];
 	const tags = present.map((p) => p.displayName || p.connectCode || '');
 	return present.length && tags.every(Boolean) ? tags.join(' & ') : fallback;
+}
+
+/** A finished teams game without a winning team (see the rules at the top). LRAS / disconnects are no result, not ties. */
+export function isTeamsTie(game: GameStats | undefined | null): boolean {
+	const end = game?.gameEnd;
+	if (!game?.settings?.isTeams || !end || (end.lrasInitiatorIndex ?? -1) >= 0) return false;
+	if (game.settings.gameInfoBlock?.bombRainEnabled) return true;
+	if (![1, 2, 3].includes(end.gameEndMethod ?? 0)) return false; // 0 = cut off, 7 = no contest
+	return getTeamWinnerIndex(game) === undefined;
 }

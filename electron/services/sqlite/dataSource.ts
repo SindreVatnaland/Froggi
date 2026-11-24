@@ -4,6 +4,7 @@ import { LayerEntity } from './entities/overlay/layerEntity';
 import { OverlayEntity } from './entities/overlay/overlayEntity';
 import { SceneEntity } from './entities/overlay/sceneEntity';
 import { OverlayHistoryEntity } from './entities/overlay/overlayHistoryEntity';
+import { OverlayChangeEntity } from './entities/overlay/overlayChangeEntity';
 import { PlayerTypeEntity } from './entities/player/playerEntity';
 import { GameStatsEntity } from './entities/game/gameStatsEntity';
 import { GameSettingsEntity } from './entities/game/gameSettingsEntity';
@@ -23,7 +24,7 @@ import { ControllerCommandEntity, SceneCommandEntity, WebhookProfileEntity } fro
 // host (dbHost.ts) and the in-process fallback (initiSqlite.ts, used under jest where Electron's
 // utilityProcess isn't available).
 export const ENTITIES = [
-	OverlayEntity, SceneEntity, LayerEntity, OverlayHistoryEntity,
+	OverlayEntity, SceneEntity, LayerEntity, OverlayHistoryEntity, OverlayChangeEntity,
 	CurrentPlayerEntity, CurrentPlayerRankEntity,
 	PlayerTypeEntity,
 	GameStatsEntity, GameSettingsEntity, GameEndTypeEntity, MatchInfoEntity,

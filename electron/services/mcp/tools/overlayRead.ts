@@ -1,4 +1,5 @@
 import { overlayWarnings } from '../../../../frontend/src/lib/utils/overlayWarnings';
+import { manualChangesSinceAi as manualChangesSinceAi_ } from '../../../utils/overlayHistory';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { mcpContext } from '../mcpContext';
@@ -58,7 +59,7 @@ request('ui/initialize', { protocolVersion: '2025-06-18', appCapabilities: {}, a
 	.then(() => { send({ jsonrpc: '2.0', method: 'ui/notifications/initialized', params: {} }); size(); });
 </script></body></html>`;
 
-function summarizeOverlay(overlay: Record<string, unknown> & { id: string; title: string; isDemo: boolean; aspectRatio: unknown; deletedAt?: string | null }) {
+function summarizeOverlay(overlay: Record<string, unknown> & { id: string; title: string; isDemo: boolean; aspectRatio: unknown; deletedAt?: string | null; aiNote?: string | null }) {
 	const scenes: Record<string, { layers: number; items: number; active: boolean; fallback?: string }> = {};
 	for (const statsScene of STATS_SCENES) {
 		const scene = overlay[statsScene] as { layers?: { items?: unknown[] }[]; active?: boolean; fallback?: string } | undefined;
@@ -70,7 +71,7 @@ function summarizeOverlay(overlay: Record<string, unknown> & { id: string; title
 			fallback: scene?.fallback,
 		};
 	}
-	return { id: overlay.id, title: overlay.title, isDemo: overlay.isDemo, aspectRatio: overlay.aspectRatio, deletedAt: overlay.deletedAt ?? undefined, scenes };
+	return { id: overlay.id, title: overlay.title, isDemo: overlay.isDemo, aspectRatio: overlay.aspectRatio, deletedAt: overlay.deletedAt ?? undefined, aiNote: overlay.aiNote || undefined, scenes };
 }
 
 export function registerOverlayReadTools(server: McpServer) {
@@ -190,7 +191,7 @@ export function registerOverlayReadTools(server: McpServer) {
 	server.registerTool(
 		'get_overlay',
 		{
-			description: 'Get one overlay by id. Summarized by default (counts only); pass verbose:true for the full raw structure including every element\'s styling. `warnings` (scene → item id → messages) lists what the overlay points at that does not exist: a Video key no enabled flow sets a video for, or an element trigger watching an element that is gone (e.g. after importing an overlay).',
+			description: 'Get one overlay by id. manualChangesSinceAi = how many element / layer changes the user made by hand since your last edit (get_overlay_history shows them). Summarized by default (counts only); pass verbose:true for the full raw structure including every element\'s styling. `warnings` (scene → item id → messages) lists what the overlay points at that does not exist: a Video key no enabled flow sets a video for, or an element trigger watching an element that is gone (e.g. after importing an overlay).',
 			inputSchema: { overlayId: z.string(), verbose: z.boolean().optional() },
 		},
 		async ({ overlayId, verbose }) => {
@@ -200,20 +201,23 @@ export function registerOverlayReadTools(server: McpServer) {
 			// deleted elements) — fix them or tell the user (utils/overlayWarnings.ts; the editor shows them too).
 			const warnings = overlayWarnings(overlay as never, mcpContext.flowService?.getFlows() ?? []);
 			const result = verbose ? overlay : summarizeOverlay(overlay as never);
-			return text(Object.keys(warnings).length ? { ...result, warnings } : result);
+			// Edits the user made by hand since your last change (details: get_overlay_history).
+			const manualChangesSinceAi = manualChangesSinceAi_(await mcpContext.overlayHistory!.rows(overlayId)).overlay;
+			return text({ ...result, ...(Object.keys(warnings).length ? { warnings } : {}), ...(manualChangesSinceAi ? { manualChangesSinceAi } : {}) });
 		},
 	);
 
 	server.registerTool(
 		'list_elements',
 		{
-			description: 'List elements in one scene of an overlay — id, element type, layer index, grid position/size, and when each element shows (visibleWhen = visibility conditions) / what animates it (animatesOn = animation trigger). Read those to understand what an element is for (e.g. a stock row only visible on stock loss). Use get_overlay with verbose:true for full styling.',
+			description: 'List elements in one scene of an overlay — id, element type, layer index, grid position/size, your aiNote, manualChangesSinceAi (the user\'s edits of an element since you last changed it — see get_overlay_history), and when each element shows (visibleWhen = visibility conditions) / what animates it (animatesOn = animation trigger). Read those to understand what an element is for (e.g. a stock row only visible on stock loss). Use get_overlay with verbose:true for full styling.',
 			inputSchema: { overlayId: z.string(), statsScene: z.enum(STATS_SCENES as [string, ...string[]]) },
 		},
 		async ({ overlayId, statsScene }) => {
 			const overlay = await mcpContext.overlayStore!.getOverlayById(overlayId);
 			const scene = overlay?.[statsScene as LiveStatsScene];
 			if (!scene) return error(`No scene "${statsScene}" on overlay "${overlayId}"`);
+			const manual = manualChangesSinceAi_(await mcpContext.overlayHistory!.rows(overlayId, { statsScene: statsScene as LiveStatsScene }));
 
 			const elements = scene.layers.flatMap((layer, layerIndex) =>
 				layer.items.map((item) => ({
@@ -224,6 +228,10 @@ export function registerOverlayReadTools(server: McpServer) {
 					layerTitle: layer.title || undefined,
 					position: { x: item[COL]?.x, y: item[COL]?.y, w: item[COL]?.w, h: item[COL]?.h },
 					text: item.data?.string || undefined,
+					// Your note on this element (data.description — hidden from the user).
+					aiNote: item.data?.description || undefined,
+					// The user's edits of this element since you last changed it (get_overlay_history itemId for what).
+					manualChangesSinceAi: manual.items[item.id],
 					// When it shows / what animates it — e.g. a stock icon gated on "Player 1 Stock 3", or a
 					// banner that plays on "Player1 Stock Loss".
 					visibleWhen: item.data?.visibility?.selectedOptions?.length ? item.data.visibility.selectedOptions : undefined,

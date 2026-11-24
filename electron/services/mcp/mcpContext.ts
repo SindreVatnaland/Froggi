@@ -19,6 +19,7 @@ import type { ElectronWebhookStore } from '../store/storeWebhook';
 import type { FlowService } from '../flowService';
 import type { IronManService } from '../ironmanService';
 import type { StatsDisplay } from '../statsDisplay';
+import type { HistoryService } from '../history/historyService';
 import type { TypedEmitter } from '../../../frontend/src/lib/utils/customEventEmitter';
 
 /**
@@ -52,4 +53,5 @@ export const mcpContext: {
 	webhookStore?: ElectronWebhookStore;
 	flowService?: FlowService;
 	statsDisplay?: StatsDisplay;
+	historyService?: HistoryService;
 } = {};

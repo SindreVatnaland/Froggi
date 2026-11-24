@@ -40,7 +40,10 @@
 		const lengths = items.map(lengthOf);
 		const total = lengths.reduce((a, b) => a + b, 0);
 		if (total <= 0) return null;
-		let at = Math.floor(((Date.now() + $serverClockOffset - list.changedAt) / 1000) * 60) % total;
+		// The paint time of this display frame (rAF), not "now" in the callback: callback times jitter, so floors of
+		// them repeat one game frame and skip the next (looks like 30 fps); paint times step evenly.
+		const now = paintTime ?? Date.now();
+		let at = Math.floor(((now + $serverClockOffset - list.changedAt) / 1000) * 60) % total;
 		let index = 0;
 		while (at >= lengths[index]) at -= lengths[index++];
 		return { index, at };
@@ -97,8 +100,11 @@
 		const wanted = items[pos.index].startFrame + pos.at;
 		frame = numbered(loaded.frames).get(wanted) ?? loaded.frames[Math.min(pos.at, loaded.frames.length - 1)];
 	}
-	function tick() {
+	/** When the current display frame is painted (wall clock ms, from the rAF timestamp). */
+	let paintTime: number | null = null;
+	function tick(ts: number) {
 		raf = requestAnimationFrame(tick);
+		paintTime = performance.timeOrigin + ts;
 		update();
 	}
 	// Also right away: a copy mounted by an animation shows the right highlight from its first render.

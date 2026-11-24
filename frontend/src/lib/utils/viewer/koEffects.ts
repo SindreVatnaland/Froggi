@@ -16,9 +16,9 @@ export const koKind = (actionStateId: number | null | undefined): KoKind | null 
  *  The viewer twinkles on the frame the stock count drops; this is the fallback when that isn't seen. */
 export const STAR_FRAMES = 131;
 
-/** A star-KO'd player's size over the flight: 60 % of full size at the start, 20 % when the star twinkles. */
+/** A star-KO'd player's size over the flight: 60 % of full size at the start, 10 % when the star twinkles. */
 export const STAR_START_SCALE = 0.6;
-export const STAR_END_SCALE = 0.2;
+export const STAR_END_SCALE = 0.1;
 
 /** Turns (degrees) a star-KO'd player spins like a wheel over the whole flight. */
 export const STAR_SPIN = 1080;

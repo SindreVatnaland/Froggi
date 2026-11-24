@@ -9,7 +9,7 @@ const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typ
 export function registerDiagnosticsTools(server: McpServer) {
 	server.registerTool(
 		'get_app_status',
-		{ description: 'Snapshot of Froggi\'s current state: Dolphin/OBS connection, game state, injected overlays, ngrok/Tailscale remote access, and what screen the user is on.', inputSchema: {} },
+		{ description: 'Snapshot of Froggi\'s current state: Dolphin/OBS connection, game state, injected overlays, ngrok/Tailscale remote access, whether a host password is set (hostPasswordSet — remote devices can only control Froggi with it), and what screen the user is on.', inputSchema: {} },
 		async () => {
 			return text({
 				dolphinConnection: mcpContext.storeDolphin!.getDolphinConnectionState(),
@@ -23,6 +23,8 @@ export function registerDiagnosticsTools(server: McpServer) {
 				injectedOverlayIds: mcpContext.overlayInjector!.injectedOverlayIds,
 				ngrok: mcpContext.ngrokService!.getStatus(),
 				tailscale: mcpContext.messageHandler!.getTailscaleStatus(),
+				// Whether remote devices can control Froggi at all (never the password itself). See explain_topic host-password.
+				hostPasswordSet: Boolean(mcpContext.storeSettings!.getAuthorizationKey()),
 				currentScreen: mcpContext.routeStore!.getCurrentRoute(),
 			});
 		},

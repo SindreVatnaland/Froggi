@@ -20,8 +20,14 @@ import semver from 'semver'
 import { OverlayEntity } from 'services/sqlite/entities/overlay/overlayEntity';
 import { fillOverlayDefaults, getNewOverlay } from './../../utils/overlayHandler';
 import { migrateOverlayTriggers } from '../../../frontend/src/lib/utils/elementTriggers';
+import { layerOverlaps } from '../../../frontend/src/lib/utils/overlayWarnings';
 import { buildFroggiZip, FROGGI_EXT, isZip, readFroggiZip, readJsonEntry, safeName, wrongKindMessage } from '../../utils/froggiFile';
 import { AssetPackService } from '../assetPackService';
+import { SqliteOverlayHistory } from '../sqlite/sqliteOverlayHistory';
+import { applyChange, changeContext, currentChangeSource, diffScenes, invertChange } from '../../utils/overlayHistory';
+
+/** A scene with its layers in drawing order (`index`) — the order history diffs and undo steps use. */
+const byIndex = (scene: Scene): Scene => ({ ...scene, layers: [...scene.layers].sort((a, b) => a.index - b.index) });
 
 /** Grid placement patch (grid is COL x COL units). Any omitted field keeps the item's current value. */
 export type GridPosition = { x?: number; y?: number; w?: number; h?: number };
@@ -62,6 +68,9 @@ const buildGridItem = (
 
 @singleton()
 export class ElectronOverlayStore {
+	/** Why the last setScene was refused (read by the MCP write tools), undefined when it saved. */
+	sceneRejection: string | undefined;
+
 	constructor(
 		@inject('AppDir') private appDir: string,
 		@inject('BrowserWindow') private mainWindow: BrowserWindow,
@@ -73,6 +82,7 @@ export class ElectronOverlayStore {
 		@inject(delay(() => AssetPackService)) private assetPackService: AssetPackService,
 		@inject(ElectronFroggiStore) private froggiStore: ElectronFroggiStore,
 		@inject(SqliteOverlay) private sqliteOverlay: SqliteOverlay,
+		@inject(SqliteOverlayHistory) private history: SqliteOverlayHistory,
 	) {
 		this.log.info('Initializing Obs Overlay Store');
 		this.initDemoOverlays();
@@ -90,17 +100,27 @@ export class ElectronOverlayStore {
 		}, {} as Record<string, OverlayEntity>);
 	}
 
+	/** Demo overlays are read-only: edits are ignored (and the editor gets the stored copy back). Copy to edit. */
 	async setOverlay(value: Overlay) {
-		await this.persistOverlay(value);
+		if (!value || await this.sqliteOverlay.isDemo(value.id)) return this.emitOverlayUpdate();
+		const { source, record } = currentChangeSource();
+		const stored = record === false ? null : await this.sqliteOverlay.getOverlay(value.id);
+		const saved = await this.persistOverlay(value);
+		// History only for edits of an existing overlay (create / copy / import start without one).
+		if (stored && saved) {
+			for (const statsScene of Object.values(LiveStatsScene)) {
+				if (stored[statsScene] && saved[statsScene]) await this.history.record(value.id, statsScene, diffScenes(stored[statsScene], byIndex(saved[statsScene])), source);
+			}
+		}
 		await this.emitOverlayUpdate();
 	}
 
 	/** Save an overlay WITHOUT broadcasting. Use in bulk loops, then emit once at the end. */
 	private async persistOverlay(value: Overlay) {
-		if (!value) return;
+		if (!value) return null;
 		const froggiVersion = this.froggiStore.getFroggiConfig().version ?? "0.0.0";
 		const overlay = { ...value, froggiVersion } as Overlay;
-		await this.sqliteOverlay.addOrUpdateOverlay(overlay);
+		return this.sqliteOverlay.addOrUpdateOverlay(overlay);
 	}
 
 	getScene(overlayId: string, statsScene: string): Scene {
@@ -108,7 +128,27 @@ export class ElectronOverlayStore {
 	}
 
 	async setScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene): Promise<Scene | undefined> {
+		return (await this.saveScene(overlayId, statsScene, scene)).scene;
+	}
+
+	/** setScene + the history entry ids the save recorded (utils/overlayHistory.ts). */
+	private async saveScene(overlayId: string, statsScene: LiveStatsScene, scene: Scene): Promise<{ scene?: Scene; entryIds: number[] }> {
 		this.log.info("Update scene", overlayId, statsScene, scene.id);
+		const { source, record } = currentChangeSource();
+		this.sceneRejection = undefined;
+		const stored = scene.id ? await this.sqliteOverlay.getScene(scene.id) : null;
+		// Refused writes send the stored scene back so the editor drops the change.
+		const refuse = (reason: string) => {
+			this.sceneRejection = reason;
+			this.log.warn("Scene update refused:", overlayId, statsScene, reason);
+			if (stored) this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, stored);
+			return { entryIds: [] };
+		};
+		if (await this.sqliteOverlay.isDemo(overlayId)) return refuse('demo overlays are read-only — duplicate it first');
+		// Only NEW overlaps are refused, so older overlays that already have some stay editable.
+		const before = layerOverlaps(stored);
+		const added = [...layerOverlaps(scene)].filter((p) => !before.has(p));
+		if (added.length) return refuse(`elements ${added.join(', ').replace(/\|/g, ' and ')} would overlap on one layer — put one of them on another layer`);
 
 		for (const [index, layer] of scene.layers.entries()) {
 			layer.index = index;
@@ -117,9 +157,54 @@ export class ElectronOverlayStore {
 		scene.layers.sort((a, b) => a.index - b.index);
 
 		const updatedScene = await this.sqliteOverlay.addOrUpdateScene(scene);
-		if (!updatedScene) return;
+		if (!updatedScene) return { entryIds: [] };
+		const entryIds = stored && record !== false ? await this.history.record(overlayId, statsScene, diffScenes(stored, updatedScene), source) : [];
 		this.messageHandler.sendMessage('SceneUpdate', overlayId, statsScene, updatedScene);
-		return updatedScene;
+		return { scene: updatedScene, entryIds };
+	}
+
+	/**
+	 * Undo / redo ONE edit of a scene, strictly in order (utils/overlayHistory.ts): undo applies the newest
+	 * live edit in reverse, redo re-applies the next redoable one; both are logged as entries (action undo |
+	 * redo → the edit) and toggle the edit's undone mark. Nothing is removed. `untilId` (the AI's "back to
+	 * entry X"; an undo / redo entry means its edit) undoes step by step until X is undone.
+	 */
+	undoRedo(overlayId: string, statsScene: LiveStatsScene, opts: { redo?: boolean; untilId?: number } = {}): Promise<{ steps: number[] } | { error: string; steps?: number[] }> {
+		// One at a time: a save takes a while, and a second Ctrl+Z must see the mark the first one set.
+		// ponytail: one global queue — per-overlay queues if many overlays get undone at once.
+		const run = this.undoQueue.then(() => this.undoRedoNow(overlayId, statsScene, opts));
+		this.undoQueue = run.catch(() => undefined);
+		return run;
+	}
+	private undoQueue: Promise<unknown> = Promise.resolve();
+
+	private async undoRedoNow(overlayId: string, statsScene: LiveStatsScene, opts: { redo?: boolean; untilId?: number }): Promise<{ steps: number[] } | { error: string; steps?: number[] }> {
+		const { source } = currentChangeSource();
+		let untilId = opts.untilId;
+		if (untilId !== undefined) {
+			const [given] = await this.history.getByIds([untilId]);
+			const [target] = given?.originId ? await this.history.getByIds([given.originId]) : [given];
+			if (!target || target.overlayId !== overlayId || target.statsScene !== statsScene) return { error: `No history entry ${untilId} in ${statsScene} of this overlay` };
+			if (target.undoneAt !== null) return { error: `Change ${target.id} is already undone` };
+			untilId = target.id;
+		}
+		const steps: number[] = [];
+		for (;;) {
+			const row = opts.redo ? await this.history.latestRedoable(overlayId, statsScene) : await this.history.latestUndoable(overlayId, statsScene);
+			if (!row) return steps.length ? { steps } : { error: opts.redo ? 'Nothing to redo' : 'Nothing to undo' };
+			const [entry] = await this.history.getByIds([row.id]);
+			const overlay = await this.sqliteOverlay.getOverlay(overlayId);
+			const scene = overlay?.[statsScene];
+			if (!scene || !entry) return { error: 'Overlay or scene not found', steps };
+			const change = opts.redo ? entry.change : invertChange(entry.change);
+			const applied = applyChange(scene.layers, change);
+			if ('error' in applied) return { error: `Can't ${opts.redo ? 'redo' : 'undo'} entry ${entry.id}: ${applied.error}`, steps };
+			const saved = await changeContext.run({ source, record: false }, () => this.saveScene(overlayId, statsScene, { ...scene, layers: applied.layers }));
+			if (!saved.scene) return { error: this.sceneRejection ?? 'The scene could not be saved', steps };
+			await this.history.logUndoRedo(entry, opts.redo ? 'redo' : 'undo', source, change);
+			steps.push(entry.id);
+			if (untilId === undefined || entry.id === untilId) return { steps };
+		}
 	}
 
 	async getOverlayById(overlayId: string): Promise<Overlay | undefined> {
@@ -475,6 +560,7 @@ export class ElectronOverlayStore {
 	/** Delete an overlay WITHOUT broadcasting. Use in bulk loops, then emit once at the end. */
 	private async deleteOverlaySilent(overlayId: string): Promise<void> {
 		await this.sqliteOverlay.deleteOverlayById(overlayId)
+		await this.history.deleteForOverlay(overlayId)
 		const source = path.join(this.appDir, "public", "custom", overlayId)
 		fs.rm(source, { recursive: true, force: true }, (err => { if (err) this.log.error(err) }))
 	}
@@ -720,7 +806,7 @@ export class ElectronOverlayStore {
 	}
 
 	/** Update overlay-level settings (title / description / aspect ratio). */
-	async updateOverlaySettings(overlayId: string, settings: { title?: string; description?: string; aspectRatio?: AspectRatio }): Promise<Overlay | undefined> {
+	async updateOverlaySettings(overlayId: string, settings: { title?: string; description?: string; aspectRatio?: AspectRatio; aiNote?: string }): Promise<Overlay | undefined> {
 		const overlay = await this.getOverlayById(overlayId);
 		if (!overlay) return;
 		const updated = { ...overlay, ...Object.fromEntries(Object.entries(settings).filter(([, v]) => v !== undefined)) } as Overlay;
@@ -746,8 +832,8 @@ export class ElectronOverlayStore {
 
 		scene.layers = scene.layers.filter((layer) => layer.id !== layerId);
 
+		// The save drops the layer (orphanedRowAction: delete).
 		await this.setScene(overlayId, statsScene, scene)
-		await this.sqliteOverlay.deleteLayer(layerId)
 	}
 
 	async moveLayer(
@@ -791,6 +877,10 @@ export class ElectronOverlayStore {
 		this.clientEmitter.on('SceneUpdate', async (overlayId, statsScene, scene) => {
 			this.setScene(overlayId, statsScene, scene)
 		})
+
+		// Editor Ctrl+Z / Ctrl+Shift+Z: the frontend never sees the history — the result is a normal SceneUpdate.
+		this.clientEmitter.on('OverlayUndo', (overlayId, statsScene) => void this.undoRedo(overlayId, statsScene).then((r) => 'error' in r && this.log.info('Undo:', r.error)));
+		this.clientEmitter.on('OverlayRedo', (overlayId, statsScene) => void this.undoRedo(overlayId, statsScene, { redo: true }).then((r) => 'error' in r && this.log.info('Redo:', r.error)));
 
 		this.clientEmitter.on('OverlayDuplicate', (overlayId: string) => void this.copyOverlay(overlayId));
 

@@ -6,7 +6,7 @@ export const HIGHLIGHTS_FLOW_ID = 'highlights';
 /**
  * Highlights for videos AND replays, built only from generic cards — every rule and list is a card the user
  * (or the AI) can read and change:
- *  - a punish ends → Calculate cards score it → total ≥ 40 → its frames go into the slippiReplay lists
+ *  - a punish ends → not on a CPU / an idle opponent → Calculate cards score it → total ≥ 40 → its frames go into the slippiReplay lists
  *    (Highlight Replay elements) → 1.5 s later OBS saves its replay buffer → where the moment is in that file
  *    goes into the replayBuffer lists (Media elements)
  *  - game end → each kind: game = best 5, set = best 15 (time order), daily = today's top 20 % (20–100, at
@@ -26,7 +26,8 @@ const RULES: { key: string; formula: string; note: string }[] = [
 	{ key: 'multi', formula: '({{teamKills}} >= 2) * 40', note: 'Multi-kill (doubles): two KOs by the same team within 5 s, 40.' },
 	{ key: 'long', formula: '-max({{seconds}} - 8, 0) * 3', note: 'Long sequences (e.g. a slow off-stage chase) lose 3 per second after 8 s.' },
 	{ key: 'depth', formula: '1 + 0.2 * (1 - {{gameStocksLeft}} / max({{gameStocksTotal}}, 1)) + 0.1 * ({{state.match.gameNumber}} - 1) / max({{state.match.bestOf}} - 1, 1)', note: 'Depth: later counts a bit more — up to +20 % for the last stocks of a game, up to +10 % for the last game of a set (a last-stock clutch beats the same combo on the first stock).' },
-	{ key: 'total', formula: '({{kill}} + {{damage}} + {{speed}} + {{swing}} + {{multi}} + {{long}}) * {{depth}}', note: 'Total: the rules above added up, times depth — the highlight\'s score.' },
+	{ key: 'activity', formula: 'clamp({{victimInputsPerSecond}} / 3, 0.25, 1)', note: 'Opponent activity: people playing do 4+ inputs per second; below 3 the score shrinks (down to ×0.25) — a combo on someone barely holding the controller isn\'t a highlight.' },
+	{ key: 'total', formula: '({{kill}} + {{damage}} + {{speed}} + {{swing}} + {{multi}} + {{long}}) * {{depth}} * {{activity}}', note: 'Total: the rules above added up, times depth and activity — the highlight\'s score.' },
 ];
 
 type Step = { id: string; data: FlowAction | Extract<FlowNode, { kind: 'condition' }>['data']; kind?: 'condition'; note?: string };
@@ -60,6 +61,8 @@ const START: Step[] = [
 // ── A punish ends ─────────────────────────────────────────────────────────────────────────────────
 const SEQ_ROW = START.length + 2;
 const SEQUENCE: Step[] = [
+	{ id: 'not-cpu', kind: 'condition', data: { type: 'compare', left: '{{victimIsCpu}}', op: '==', right: 'false' }, note: 'Only against people: punishes on a CPU are skipped.' },
+	{ id: 'active', kind: 'condition', data: { type: 'compare', left: '{{victimInputsPerSecond}}', op: '>', right: '0' }, note: 'Skip it when the opponent isn\'t touching the controller (no inputs during it and the 3 s before).' },
 	...RULES.map((r): Step => ({ id: `calc-${r.key}`, data: { type: 'calculate', key: r.key, formula: r.formula, description: r.note }, note: r.note })),
 	{ id: 'gate', kind: 'condition', data: { type: 'compare', left: '{{total}}', op: '>=', right: '40' }, note: 'A candidate from 40: every kill passes; other punishes need damage, speed or a big swing.' },
 	{ id: 'calc-to', data: { type: 'calculate', key: 'toFrame', formula: '{{endFrame}} + 60', description: 'The last frame to show: 1 s after the punish.' } },
