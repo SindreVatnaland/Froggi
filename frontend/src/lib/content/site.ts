@@ -1,16 +1,13 @@
 /**
- * The GitHub Pages site (docs/): one page per landing-page feature card. Pages show what is possible — pictures
- * first, a short `intro` — and keep the step-by-step `setup` folded away ("How to set it up"), so visitors aren't
- * overwhelmed. The text and pictures come from the app's own tutorials and explainer topics, so the pages change
- * with the app; `shots` are fresh screenshots taken by `npm run site:shots` (scripts/site/screenshots.mjs, a clean
+ * The GitHub Pages site (docs/): one page per landing-page feature card. Pages sell what is possible — pictures
+ * first, a short `intro`, then a download button; step-by-step setup stays in the app (tutorials + the AI), so
+ * visitors aren't overwhelmed (user decision). The text and pictures come from the app's own tutorials and
+ * explainer topics, so the pages change with the app; `shots` are fresh screenshots taken by `npm run site:shots` (scripts/site/screenshots.mjs, a clean
  * "site" profile) into frontend/static/image/site/<feature>/<shot>.png. `npm run site` (part of every compile)
  * writes the pages: scripts/site/generateSite.ts. test/unit/site.test.ts checks every source and picture exists.
  */
 
-/**
- * Text + pictures reused from the app: tutorial pages (by title; omitted = all) or an explainer topic. In `intro`
- * a topic shows only its title + summary; in `setup` all of it.
- */
+/** Text + pictures reused from the app: tutorial pages (by title; omitted = all) or an explainer topic (title + summary). */
 export type SiteSource = { tutorial: string; pages?: string[] } | { topic: string };
 
 /** A screenshot of a (demo) overlay at a replay moment — the MCP capture_overlay_screenshot tool. */
@@ -37,10 +34,13 @@ export interface SiteFeature {
 	/** The one line on the landing-page card. */
 	card: string;
 	shots: SiteShot[];
-	/** Shown: what it gives you. Keep it short — one tutorial page or a couple of topic summaries. */
+	/** What it gives you. Keep it short — one tutorial page or a couple of topic summaries. */
 	intro: SiteSource[];
-	/** Folded under "How to set it up". */
-	setup: SiteSource[];
+	/**
+	 * Something live on the page: `liveViewer` = the app's replay viewer playing the sample clip (docs/viewer, built
+	 * by `npm run site:viewer`); `discordCards` = Discord profile cards showing what Froggi's Rich Presence sends.
+	 */
+	embed?: 'liveViewer' | 'discordCards';
 }
 
 export interface SiteSection {
@@ -66,7 +66,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'editor', caption: 'The overlay editor: scenes, layers and elements on a grid.', page: { route: '/obs/overlay/player1-controller?edit', width: 1440, height: 900, waitMs: 5000, click: { text: 'In Game' } } },
 				],
 				intro: [{ tutorial: 'new-overlay', pages: ['What you can build'] }],
-				setup: [{ tutorial: 'new-overlay', pages: ['The quickest start', 'Scenes', 'Layers and elements', 'Make it react'] }],
 			},
 			{
 				id: 'obs-one-click',
@@ -77,7 +76,14 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'overlays', caption: 'Your overlays, ready to add to OBS.', page: { route: '/obs/overlay', width: 1280, height: 800 } },
 				],
 				intro: [{ tutorial: 'integrate-obs', pages: ['What it gives you'] }, { topic: 'scene-switching' }],
-				setup: [{ tutorial: 'integrate-obs', pages: ['Connect OBS', 'Add an overlay', 'Check it'] }],
+			},
+			{
+				id: 'share-live-game',
+				title: 'Share your live game',
+				card: 'Send a link — friends watch your game live in their browser, no stream needed.',
+				embed: 'liveViewer',
+				shots: [],
+				intro: [{ topic: 'share-live-game' }],
 			},
 			{
 				id: 'game-window',
@@ -87,7 +93,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'scoreboard', caption: 'An overlay on the game itself: names and set score above the action.', overlay: { id: 'scoreboard', scene: 'inGame', background: GAME, replay: 'latest', atSeconds: 40 } },
 				],
 				intro: [{ topic: 'os-limitations' }],
-				setup: [],
 			},
 			{
 				id: 'highlights',
@@ -96,7 +101,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 				// ponytail: no fresh shots — a clean profile has no highlights yet; add some once a seeded replay list exists.
 				shots: [],
 				intro: [{ topic: 'highlights' }],
-				setup: [{ topic: 'highlights' }, { tutorial: 'flows', pages: ['What are flows?'] }],
 			},
 			{
 				id: 'singles-doubles',
@@ -106,7 +110,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'doubles', caption: 'The Doubles demo: teams, stocks and percent for all four players.', overlay: { id: 'doubles', scene: 'inGame', replay: 'latest', atSeconds: 40 } },
 				],
 				intro: [{ topic: 'overlay-doubles' }],
-				setup: [{ topic: 'overlay-doubles' }],
 			},
 		],
 	},
@@ -119,7 +122,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 				card: 'Connect Claude, Cursor or VS Code and build overlays, flows and your OBS setup by chatting.',
 				shots: [{ id: 'settings', caption: 'Settings → AI Assistant: turn it on and connect your AI app.', page: { route: '/settings', width: 1280, height: 1000, scrollTo: 'AI Assistant (MCP)' } }],
 				intro: [{ tutorial: 'ai-assistant', pages: ['What it does'] }],
-				setup: [{ tutorial: 'ai-assistant', pages: ['Turn it on', 'Connect your AI app', 'Getting good results'] }],
 			},
 			{
 				id: 'ai-fixes',
@@ -127,7 +129,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 				card: "Your AI reads Froggi's state and logs to help when something breaks.",
 				shots: [],
 				intro: [{ topic: 'troubleshooting-crash-reports' }],
-				setup: [{ topic: 'troubleshooting-crash-reports' }],
 			},
 		],
 	},
@@ -141,7 +142,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 				// The tournament tutorial's pictures show it (a fresh profile has no set running for a fresh shot).
 				shots: [],
 				intro: [{ tutorial: 'tournament', pages: ['Players strike on their phones', 'Your stream follows along'] }],
-				setup: [{ tutorial: 'tournament', pages: ['What you need', 'Player links', 'Start a set', 'The rules on the phones'] }],
 			},
 			{
 				id: 'tournament-dashboard',
@@ -152,7 +152,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'dashboard-phone', caption: 'The same dashboard on a phone.', page: { route: '/obs/dashboard', width: 390, height: 844, mobile: true } },
 				],
 				intro: [{ tutorial: 'tournament', pages: ['You stay in control'] }],
-				setup: [{ tutorial: 'tournament', pages: ['Start a set', 'During the set', 'Run it from your phone'] }],
 			},
 		],
 	},
@@ -172,7 +171,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 					{ id: 'flows', caption: 'Ready-made demo flows to start from.', page: { route: '/obs/flows', width: 1280, height: 800 } },
 				],
 				intro: [{ tutorial: 'flows', pages: ['What are flows?'] }],
-				setup: [{ tutorial: 'flows', pages: ['Build a flow', 'Example: your smart home'] }, { tutorial: 'webhook', pages: ['What webhooks do'] }],
 			},
 			{
 				id: 'minigames',
@@ -180,7 +178,14 @@ export const SITE_SECTIONS: SiteSection[] = [
 				card: 'Bingo and Iron Man — solo or online with a friend.',
 				shots: [{ id: 'minigames', caption: 'Pick a minigame and a mode.', page: { route: '/minigames', width: 1280, height: 900 } }],
 				intro: [{ topic: 'bingo-rules' }, { topic: 'ironman-rules' }],
-				setup: [{ tutorial: 'minigames-online' }],
+			},
+			{
+				id: 'discord-rich-presence',
+				title: 'Discord Rich Presence',
+				card: 'Your Discord shows the game, score and rank — friends join your minigame lobby in one click.',
+				embed: 'discordCards',
+				shots: [],
+				intro: [{ topic: 'discord-rich-presence' }],
 			},
 			{
 				id: 'remote-control',
@@ -188,7 +193,6 @@ export const SITE_SECTIONS: SiteSection[] = [
 				card: 'Scenes and overlays from your phone.',
 				shots: [{ id: 'automation-phone', caption: 'Stream controls on a phone.', page: { route: '/obs/automation', width: 390, height: 844, mobile: true } }],
 				intro: [{ tutorial: 'remote-obs', pages: ['What it gives you'] }],
-				setup: [{ tutorial: 'remote-obs', pages: ['Access from anywhere', 'OBS from your phone'] }, { topic: 'host-password' }],
 			},
 		],
 	},

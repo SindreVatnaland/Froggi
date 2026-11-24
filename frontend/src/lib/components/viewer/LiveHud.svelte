@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { viewerAsset } from '$lib/utils/viewer/assetBase';
 	/**
 	 * HUD for the live view: Melee's layout (players along the bottom by port, timer + set score on top).
 	 * Pure presentational — fed a frame + settings so it works for both the live
@@ -62,7 +63,7 @@
 				<span class="hud-stocks">
 					{#each Array(4) as _, i}
 						{#if p.characterId != null}
-							<img class="stock-icon" class:stock-icon--lost={i >= stocks(p.post)} src="/image/characters/{p.characterId}/0/stock.png" alt="" />
+							<img class="stock-icon" class:stock-icon--lost={i >= stocks(p.post)} src={viewerAsset(`/image/characters/${p.characterId}/0/stock.png`)} alt="" />
 						{:else}
 							<span class="stock-dot" class:stock-dot--on={i < stocks(p.post)} />
 						{/if}

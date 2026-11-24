@@ -4,7 +4,7 @@
 	 * from a GameStart + one frame, drawing the stage, animated character renders,
 	 * and projectiles in shared world-space coordinates.
 	 *
-	 * Faithful SVG port of SlippiLab's viewer (MIT) — character art is SlippiLab's
+	 * Faithful SVG port of SlippiLab's viewer (MIT — static/licenses/slippilab.txt) — character art is SlippiLab's
 	 * per-frame animation data, lazy-loaded per character. Living camera and HUD
 	 * are layered on later; this component is the no-HUD building block.
 	 */

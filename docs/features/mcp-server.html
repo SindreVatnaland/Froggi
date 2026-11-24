@@ -18,23 +18,12 @@
     <h1>Built-in MCP server</h1>
     <p class="tagline">Connect Claude, Cursor or VS Code and build overlays, flows and your OBS setup by chatting.</p>
   </header>
+  
   <div class="shots"><figure class="hero"><a href="../image/site/mcp-server/settings.png"><img src="../image/site/mcp-server/settings.png" alt="Settings → AI Assistant: turn it on and connect your AI app." loading="lazy" /></a><figcaption>Settings → AI Assistant: turn it on and connect your AI app.</figcaption></figure></div>
   <section class="prose"><h2>What it does</h2><p>Connect an AI app — like <b>Claude</b> — to Froggi and it can see your running app: overlays, OBS, flows, logs, and these tutorials. Then just ask, in plain words:</p>
 <ul><li><i>&quot;Build me an Ultimate-style HUD for a 4:3 game window.&quot;</i></li><li><i>&quot;Why isn't my overlay showing up in OBS?&quot;</i></li><li><i>&quot;Make a flow that flashes my lights when I lose my last stock.&quot;</i></li><li><i>&quot;How do I run a doubles set with stage striking?&quot;</i></li><li><i>&quot;Froggi crashed yesterday — what happened?&quot;</i></li></ul>
 <p>It explains first and only changes things when you ask. It talks to Froggi on <b>your computer</b> — nothing is opened to the internet. What you type goes to your AI app's provider, like any chat.</p></section>
-  <details class="setup"><summary>How to set it up</summary><section class="prose"><h2>Turn it on</h2><p>Go to <b>Settings</b> → <b>AI Assistant (MCP)</b>:</p>
-<ul><li><b>Read &amp; explain</b> — status, logs, settings and how-tos. Start here.</li><li><b>Allow edits</b> — it can also build and change overlays, flows and OBS automation.</li></ul>
-<p class="note">Switch either off any time — it takes effect on the assistant's next step.</p></section>
-<section class="prose"><h2>Connect your AI app</h2><p>Under <b>Connect an AI app</b>, pick your app and press its button:</p>
-<ul><li><b>Claude Desktop</b> — <b>Add to Claude Desktop</b> hands Claude the <b>Froggi extension</b>, a <code>.mcpb</code> file. Click <b>Install</b> in Claude.</li><li><b>Claude Code</b> — copies a command. Run it in a terminal, then type <code>/mcp</code> in Claude Code.</li><li><b>Cursor</b> / <b>VS Code</b> — opens the app and asks to add Froggi.</li><li><b>Other app</b> — copies the server address for any app that supports MCP.</li></ul>
-<h3>What is the .mcpb file?</h3>
-<p>An <b>MCP Bundle</b> — a small extension Claude Desktop installs in one click. It contains no copy of Froggi: it passes Claude's questions to Froggi on this computer. If Froggi is closed it tells Claude so, and reconnects when Froggi starts. If Claude doesn't open it by itself, Froggi shows you the file — double-click it with Claude Desktop open.</p>
-<p class="note"><b>AI app on another device?</b> With Tailscale set up, <b>Advanced → Expose over Tailscale</b> gives a private HTTPS address only your own devices can reach.</p></section>
-<section class="prose"><h2>Getting good results</h2><p>Talk to it like a co-streamer who knows Froggi. Things to try:</p>
-<ul><li>&quot;Build a 16:9 HUD for my Melee stream that <b>replaces the game HUD</b> — names, percent and stocks along the bottom.&quot;</li><li>&quot;Make my post-game scene show the <b>set score and both players' damage dealt</b>.&quot;</li><li>&quot;When I lose my <b>last stock</b>, switch OBS to my <b>close-up camera</b> for 5 seconds.&quot;</li><li>&quot;Post the <b>set score to my server</b> after every game&quot; — it builds the flow; you paste the URL and token in the editor.</li><li>&quot;Why is my overlay <b>blank in OBS</b>?&quot; — it checks the connection, the scene and Froggi's logs.</li></ul>
-<h3>Iterate in small steps</h3>
-<p>Keep the <b>preview</b> open next to the chat (Claude shows it in the conversation; other apps give you a link to the editor) and adjust one thing at a time: &quot;bigger percent&quot;, &quot;move the stocks under the name&quot;, &quot;use the Ultimate font&quot;. It checks each change with a screenshot from your own replays, and every change can be undone.</p>
-<p class="note">It explains first and only changes things when you ask. It never deletes anything for good, and never asks for passwords, tokens or connect codes in chat.</p></section></details>
+  <section class="cta"><a class="btn" href="../index.html#download">⬇ Get Froggi</a><p>Free and open source — Windows, macOS and Linux. Step-by-step guides are built into the app, or ask the AI assistant.</p></section>
   <nav class="pager"><a href="singles-doubles.html">← Singles &amp; doubles</a><a href="../index.html">All features</a><a href="ai-fixes.html">Fixes too →</a></nav>
 </main>
 <footer>Not affiliated with Nintendo or Project Slippi</footer>

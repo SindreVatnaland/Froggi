@@ -1,4 +1,5 @@
 import { unzipSync, strFromU8 } from 'fflate';
+import { viewerAsset } from './assetBase';
 
 /**
  * Per-character animation data, ported from SlippiLab (MIT).
@@ -70,8 +71,9 @@ export async function fetchAnimations(externalCharacterId: number): Promise<Char
 	const pending = inFlight.get(externalCharacterId);
 	if (pending) return pending;
 
-	const url = characterZipUrlByExternalId[externalCharacterId];
-	if (!url) return {};
+	const path = characterZipUrlByExternalId[externalCharacterId];
+	if (!path) return {};
+	const url = viewerAsset(path);
 
 	const promise = load(url)
 		.then((animations) => {

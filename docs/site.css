@@ -98,13 +98,36 @@ figcaption { font-size: 0.82rem; color: var(--muted); padding: 0.5rem 0.75rem; }
 .pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; border-top: 1px solid var(--line); padding-top: 1.25rem; font-size: 0.9rem; }
 .pager a { text-decoration: none; opacity: 0.8; }
 .pager a:hover { opacity: 1; text-decoration: underline; }
-details.setup { border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.9rem 1.1rem; }
-details.setup > summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
-details.setup > summary::-webkit-details-marker { display: none; }
-details.setup > summary::before { content: '▸'; transition: transform 0.15s; }
-details.setup[open] > summary::before { transform: rotate(90deg); }
-details.setup[open] > summary { margin-bottom: 1rem; }
-details.setup .prose + .prose { margin-top: 1.5rem; }
+/* Live viewer (docs/viewer) */
+.viewer-figure { border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; background: #111; }
+.viewer { width: 100%; aspect-ratio: 16 / 9; position: relative; background: #111; }
+.viewer > * { width: 100%; height: 100%; }
+.viewer-figure figcaption { background: color-mix(in srgb, var(--secondary) 8%, var(--primary)); }
+.viewer-figure figcaption a { color: inherit; }
+
+/* Simulated Discord profile cards (Rich Presence) */
+.discord-figure { border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; background: var(--soft); }
+.dc-cards { display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: center; padding: 1.5rem 1rem; }
+.dc-card { width: 320px; background: #232428; color: #dbdee1; border-radius: 0.75rem; overflow: hidden; font-family: 'gg sans', 'Noto Sans', -apple-system, 'Segoe UI', sans-serif; position: relative; padding-bottom: 0.9rem; }
+.dc-banner { height: 64px; background: linear-gradient(135deg, #1f8a4c, #2ea44f); }
+.dc-avatar { position: absolute; top: 28px; left: 16px; width: 72px; height: 72px; border-radius: 50%; border: 6px solid #232428; background: #5865f2; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 1.6rem; }
+.dc-name { margin: 44px 16px 10px; font-size: 1.25rem; font-weight: 800; color: #f2f3f5; display: flex; flex-direction: column; line-height: 1.25; }
+.dc-name span { font-size: 0.85rem; font-weight: 500; color: #b5bac1; }
+.dc-activity { margin: 0 12px; background: #2b2d31; border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.dc-label { font-size: 0.75rem; font-weight: 700; color: #f2f3f5; }
+.dc-row { display: flex; gap: 0.75rem; align-items: center; }
+.dc-art { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+.dc-art > img:first-child { width: 76px; height: 76px; border-radius: 0.5rem; object-fit: cover; background: #111; }
+.dc-badge { position: absolute; right: -6px; bottom: -6px; width: 30px; height: 30px; border-radius: 50%; background: #232428; padding: 3px; }
+.dc-text { display: flex; flex-direction: column; font-size: 0.82rem; line-height: 1.35; min-width: 0; }
+.dc-text b { color: #f2f3f5; font-size: 0.9rem; }
+.dc-time { color: #23a55a; font-weight: 700; }
+.dc-button { background: #4e5058; color: #f2f3f5; border-radius: 0.3rem; padding: 0.45rem; text-align: center; font-size: 0.82rem; font-weight: 500; }
+
+/* Download call to action at the end of every feature page */
+.cta { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; text-align: center; border: 1px solid var(--line); border-radius: 0.6rem; padding: 1.5rem; background: var(--soft); }
+.cta p { color: var(--muted); font-size: 0.9rem; max-width: 520px; }
+
 /* The first screenshot is the page's hero; phone screenshots stay phone-sized. */
 .shots figure.hero { grid-column: 1 / -1; }
 .shots figure.phone { max-width: 300px; justify-self: center; }

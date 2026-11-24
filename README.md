@@ -17,6 +17,10 @@ Latest version can be downloaded [here](https://github.com/SindreVatnaland/Frogg
 
 <sub>Installer downloads (.exe, .dmg, .AppImage) of every release, auto-updates included — refreshed every 6 hours.</sub>
 
+## Credits
+
+The replay / live game viewer is a port of [SlippiLab](https://github.com/frankborden/slippilab) by Frank Borden (MIT — [license](frontend/static/licenses/slippilab.txt)).
+
 ## Discord
 
 Got any questions or feedback. Maybe want to contribute? Join our [Discord](https://discord.gg/rX7aQmbrEa)

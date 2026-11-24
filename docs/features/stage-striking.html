@@ -19,24 +19,14 @@
     <p class="tagline">Picks, strikes, bans and DSR — live on stream.</p>
   </header>
   
+  
   <section class="prose"><h2>Players strike on their phones</h2><p>Froggi runs your Melee sets by the tournament rules — <b>at a venue or online</b>. Each player (each team in doubles) opens a link on their phone and does everything there: <b>characters</b> (double blind in game 1), <b>rock-paper-scissors</b>, <b>striking</b> and <b>banning stages</b>, and <b>counterpicks</b> with DSR.</p>
 <p>The phone shows whose turn it is and only lets a player act on their own turn, so the order always follows the rules — even with players in different cities.</p>
 <figure><img src="../image/tutorial/tournament/phone-striking.jpg" alt="A player's phone during striking: struck stages crossed out, and how many they still strike." loading="lazy" /><figcaption>A player's phone during striking: struck stages crossed out, and how many they still strike.</figcaption></figure></section>
 <section class="prose"><h2>Your stream follows along</h2><p>Viewers see the striking live: which stages are left, which are struck, and whose turn it is. When the game starts your overlay switches to the game, and when it ends <b>the result counts itself</b> — Froggi reads it from Slippi.</p>
 <figure><img src="../image/tutorial/tournament/overlay-striking.jpg" alt="The Stage Striking demo overlay on stream." loading="lazy" /><figcaption>The Stage Striking demo overlay on stream.</figcaption></figure>
 <p>With OBS connected, OBS switches scenes on its own too: your striking scene between games, the game scene during a game, a camera scene after — see <b>Remote control OBS</b>.</p></section>
-  <details class="setup"><summary>How to set it up</summary><section class="prose"><h2>What you need</h2><ul><li><b>Froggi</b> on the PC that plays or spectates the games (Slippi Dolphin)</li><li>A phone or any browser per player (per team in doubles)</li><li>For online sets: <b>ngrok</b> or <b>Tailscale</b> (next page)</li><li>Optional: OBS connected, and an overlay with a Stage Striking scene — the <b>Stage Striking</b> demo overlay is ready to use</li></ul>
-<p>Now let's set it up.</p></section>
-<section class="prose"><h2>Player links</h2><p>Each player (or team) gets their <b>own link</b> — it only lets that phone act as that player, and only on their turn. A new set makes new links.</p>
-<ul><li><b>Tailscale</b> (recommended) — a permanent public address: the links work at the venue and online, and never change. When Tailscale Funnel is on, the links use it.</li><li><b>ngrok</b> — a free temporary address for online sets when Tailscale isn't set up (changes when ngrok restarts; the <b>Online</b> toggle on the Dashboard).</li><li><b>Neither</b> — devices on the same Wi-Fi as your PC still work.</li></ul>
-<p>The QR codes on the Dashboard stay <b>hidden until you click them</b>, so your links don't end up on stream. Click a shown QR to copy the link for Discord, or put a tablet with the QR at the setup.</p></section>
-<section class="prose"><h2>Start a set</h2><ol><li>Open <b>Stream</b> → <b>Tournament Dashboard</b>. Pick <b>Singles</b> or <b>Doubles</b> (Auto follows the game being played).</li><li>Click <b>Start Set</b>: the names (empty = the players' Slippi tags), <b>Bo3</b> or <b>Bo5</b>, and whether players may agree to replay a stage DSR blocks.</li><li>Players scan their QR code. They can type their own name on their phone (✎) — you can still change it on the Dashboard.</li></ol>
-<p>Froggi switches your overlay to the <b>Stage Striking</b> scene.</p></section>
-<section class="prose"><h2>The rules on the phones</h2><h3>Game 1</h3>
-<ol><li><b>Characters</b> — double blind: both pick at the same time without seeing each other.</li><li><b>Rock · paper · scissors</b> — 30 seconds, a random pick if time runs out, ties go again.</li><li>The RPS winner chooses to <b>strike first or second</b>, then the starters are struck <b>1 – 2 – 1</b>. The last stage is played.</li></ol>
-<h3>Game 2 and later</h3>
-<ol><li>The winner <b>bans</b> a stage (no ban in Bo5).</li><li>The loser <b>picks</b> the stage — not one they already won on (<b>DSR</b>), unless both agree on their phones.</li><li>The winner picks a character, then the loser.</li></ol>
-<p class="note"><b>Doubles:</b> each team's phone picks for <b>both</b> teammates and confirms them together. Doubles stages: Battlefield, Dream Land, Final Destination, Pokémon Stadium, Yoshi's Story.</p></section></details>
+  <section class="cta"><a class="btn" href="../index.html#download">⬇ Get Froggi</a><p>Free and open source — Windows, macOS and Linux. Step-by-step guides are built into the app, or ask the AI assistant.</p></section>
   <nav class="pager"><a href="ai-fixes.html">← Fixes too</a><a href="../index.html">All features</a><a href="tournament-dashboard.html">Tournament dashboard →</a></nav>
 </main>
 <footer>Not affiliated with Nintendo or Project Slippi</footer>

@@ -5,7 +5,6 @@ import { TUTORIALS } from '../../frontend/src/lib/content/tutorials';
 import { ALL_TOPICS } from '../../frontend/src/lib/content';
 import { formatInline } from '../../frontend/src/lib/content/tutorials/format';
 import type { TutorialBlock } from '../../frontend/src/lib/content/tutorials/types';
-import type { ContentBlock } from '../../frontend/src/lib/content/types';
 
 /**
  * Writes the GitHub Pages feature pages (docs/features/<id>.html) and the landing page's feature cards
@@ -45,25 +44,15 @@ function tutorialBlock(b: TutorialBlock): string {
 	}
 }
 
-function topicBlock(b: ContentBlock): string {
-	switch (b.type) {
-		case 'heading': return `<h3>${esc(b.text ?? '')}</h3>`;
-		case 'paragraph': return `<p>${inline(b.text ?? '')}</p>`;
-		case 'note': return `<p class="note">${inline(b.text ?? '')}</p>`;
-		case 'list': return `${b.text ? `<p>${inline(b.text)}</p>` : ''}<ul>${(b.items ?? []).map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`;
-	}
-}
-
 /**
- * The HTML of one source. `intro` = what visitors see first: a topic shows only its title + summary. `setup` (folded
- * under "How to set it up") shows everything. Throws on an unknown topic / tutorial / page (the test reports it).
+ * The HTML of one source: a topic's title + summary, or whole tutorial pages (text + pictures). Throws on an unknown
+ * topic / tutorial / page (the test reports it).
  */
-export function renderSource(source: SiteSource, mode: 'intro' | 'setup' = 'setup'): string {
+export function renderSource(source: SiteSource): string {
 	if ('topic' in source) {
 		const topic = ALL_TOPICS.find((t) => t.id === source.topic);
 		if (!topic) throw new Error(`site: unknown topic "${source.topic}"`);
-		const blocks = mode === 'setup' ? topic.blocks.map(topicBlock).join('\n') : '';
-		return `<section class="prose"><h2>${esc(topic.title)}</h2><p class="lead">${inline(topic.summary)}</p>${blocks}</section>`;
+		return `<section class="prose"><h2>${esc(topic.title)}</h2><p class="lead">${inline(topic.summary)}</p></section>`;
 	}
 	const tutorial = TUTORIALS.find((t) => t.id === source.tutorial);
 	if (!tutorial) throw new Error(`site: unknown tutorial "${source.tutorial}"`);
@@ -90,6 +79,32 @@ const head = (title: string, description: string, css: string) => `<!DOCTYPE htm
   <link rel="stylesheet" href="${css}" />
 </head>`;
 
+/** The live viewer: the app's ReplayDemo (SlippiLab port) playing the sample clip — docs/viewer, npm run site:viewer. */
+const liveViewer = () => `<figure class="hero viewer-figure"><div class="viewer" data-froggi-viewer></div>
+  <figcaption>A sample game, drawn live in your browser — what friends see when you share the link. Viewer based on <a href="https://github.com/frankborden/slippilab">SlippiLab</a> (<a href="../licenses/slippilab.txt">MIT license</a>).</figcaption></figure>
+  <link rel="stylesheet" href="../viewer/style.css" />
+  <script type="module" src="../viewer/viewer.js"></script>`;
+
+/**
+ * Simulated Discord profile cards with what Froggi's Rich Presence sends (electron/services/discord.ts): in a game
+ * (mode, codes + set score, stage + rank badge, time left, a button per player) and a minigame lobby (Join).
+ * Neutral example players — never a real profile.
+ */
+function discordCards(): string {
+	const card = (body: string) => `<div class="dc-card"><div class="dc-banner"></div><div class="dc-avatar">Y</div><div class="dc-name">You<span>you</span></div><div class="dc-activity"><p class="dc-label">Playing</p>${body}</div></div>`;
+	const activity = (large: string, small: string | null, lines: string[], extra: string, buttons: string[]) =>
+		`<div class="dc-row"><div class="dc-art"><img src="${large}" alt="" />${small ? `<img class="dc-badge" src="${small}" alt="" />` : ''}</div><div class="dc-text"><b>Melee</b>${lines.map((l) => `<span>${esc(l)}</span>`).join('')}${extra}</div></div>${buttons.map((b) => `<div class="dc-button">${esc(b)}</div>`).join('')}`;
+	const stage = encodeURI(picture('/image/stages/31.png'));
+	const rank = encodeURI(picture('/image/rank-icons/GOLD 2.svg'));
+	return `<figure class="hero discord-figure"><div class="dc-cards">
+    ${card(activity(stage, rank, ['Ranked - In Game', 'FROG#123 (1 - 0) TOAD#456'], '<span class="dc-time">07:42 left</span>', ['FROG - Falco - 3 - 42%', 'TOAD - Marth - 2 - 87%']))}
+    ${card(activity('../icon.png', null, ['Bingo · Lobby', 'Waiting for opponent… (1 of 2)'], '', ['Join']))}
+  </div><figcaption>Simulated: what friends see on your Discord profile — in a game, and while you host a minigame lobby.</figcaption></figure>`;
+}
+
+/** Every page ends with a download button — setup steps live in the app (tutorials + the AI assistant). */
+const cta = `<section class="cta"><a class="btn" href="../index.html#download">⬇ Get Froggi</a><p>Free and open source — Windows, macOS and Linux. Step-by-step guides are built into the app, or ask the AI assistant.</p></section>`;
+
 function featurePage(feature: SiteFeature): string {
 	const all = SITE_FEATURES;
 	const i = all.indexOf(feature);
@@ -108,9 +123,10 @@ function featurePage(feature: SiteFeature): string {
     <h1>${esc(feature.title)}</h1>
     <p class="tagline">${inline(feature.card)}</p>
   </header>
+  ${feature.embed === 'liveViewer' ? liveViewer() : feature.embed === 'discordCards' ? discordCards() : ''}
   ${gallery}
-  ${feature.intro.map((src) => renderSource(src, 'intro')).join('\n')}
-  ${feature.setup.length ? `<details class="setup"><summary>How to set it up</summary>${feature.setup.map((src) => renderSource(src, 'setup')).join('\n')}</details>` : ''}
+  ${feature.intro.map(renderSource).join('\n')}
+  ${cta}
   <nav class="pager"><a href="${prev.id}.html">← ${esc(prev.title)}</a><a href="../index.html">All features</a><a href="${next.id}.html">${esc(next.title)} →</a></nav>
 </main>
 <footer>Not affiliated with Nintendo or Project Slippi</footer>
@@ -147,6 +163,10 @@ export function generateSite() {
 	const a = index.indexOf(START), b = index.indexOf(END);
 	if (a === -1 || b === -1) throw new Error('site: docs/index.html is missing the features markers');
 	fs.writeFileSync(indexPath, index.slice(0, a + START.length) + '\n' + cards() + '\n  ' + index.slice(b));
+
+	// The live viewer is a SlippiLab port: its MIT notice goes with it.
+	fs.mkdirSync(path.join(DOCS, 'licenses'), { recursive: true });
+	fs.copyFileSync(path.join(STATIC, 'licenses/slippilab.txt'), path.join(DOCS, 'licenses/slippilab.txt'));
 
 	// Pictures: exactly the ones the pages use (docs/image mirrors frontend/static/image).
 	fs.rmSync(path.join(DOCS, 'image'), { recursive: true, force: true });

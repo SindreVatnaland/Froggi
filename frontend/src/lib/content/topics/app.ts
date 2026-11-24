@@ -37,6 +37,28 @@ export const appTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'discord-rich-presence',
+		title: 'Discord Rich Presence',
+		category: 'app',
+		summary: 'While Froggi runs, your Discord profile shows what you are playing — the mode, the stage, both players with character, stocks and percent, the set score and your rank — and minigame lobbies get a Join button your friends can click.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'What your profile shows:',
+				items: [
+					'In a game: the mode (e.g. "Ranked - In Game"), both connect codes with the set score, the stage picture with your rank badge, and the time left. Two buttons show each player\'s tag, character, stocks and percent and open their slippi.gg profile.',
+					'In the menus: your rank and rating, or the set score after a game.',
+					'Minigames (Bingo, Iron Man): the game and its progress. While you host an online lobby with a free spot, Discord shows a Join button — a friend who clicks it joins your lobby in Froggi.',
+					'In the menus and in minigames without a free spot, a "Get Froggi" button links to the download page.',
+				],
+			},
+			{
+				type: 'note',
+				text: 'It works when the Discord desktop app is running on the same computer. Discord\'s own setting (User Settings → Activity Privacy) decides whether others can see it.',
+			},
+		],
+	},
+	{
 		id: 'app-overview',
 		title: 'What Froggi does',
 		category: 'app',

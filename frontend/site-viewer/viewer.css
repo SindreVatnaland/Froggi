@@ -1,0 +1,3 @@
+/* base = only Tailwind's --tw-* variable defaults (preflight is off in tailwind.config.cjs); the transforms need them. */
+@tailwind base;
+@tailwind utilities;

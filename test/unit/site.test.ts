@@ -10,15 +10,18 @@ describe('site feature pages', () => {
 	it('ids are unique and every source (tutorial page / topic) exists', () => {
 		const ids = SITE_FEATURES.map((f) => f.id);
 		expect(new Set(ids).size).toBe(ids.length);
-		for (const f of SITE_FEATURES) {
-			for (const s of f.intro) expect(() => renderSource(s, 'intro')).not.toThrow();
-			for (const s of f.setup) expect(() => renderSource(s, 'setup')).not.toThrow();
-		}
+		for (const f of SITE_FEATURES) for (const s of f.intro) expect(() => renderSource(s)).not.toThrow();
 	});
 
 	it('every screenshot was taken (npm run site:shots with the dev app running)', () => {
 		const missing = SITE_FEATURES.flatMap((f) => f.shots.map((s) => siteShotSrc(f, s))).filter((src) => !fs.existsSync(path.join(ROOT, 'frontend/static', src)));
 		expect(missing).toEqual([]);
+	});
+
+	it('the live viewer page has its build and the SlippiLab license', () => {
+		expect(fs.existsSync(path.join(ROOT, 'docs/viewer/viewer.js'))).toBe(true);
+		expect(fs.existsSync(path.join(ROOT, 'docs/viewer/sample-game.json'))).toBe(true);
+		expect(fs.readFileSync(path.join(ROOT, 'docs/licenses/slippilab.txt'), 'utf8')).toMatch(/MIT License[\s\S]*Frank Borden/);
 	});
 
 	it('the pages and the landing-page cards are generated', () => {
