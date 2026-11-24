@@ -1,0 +1,54 @@
+name: Download Count
+
+# Adds up the installer downloads (.exe + .dmg + .AppImage, every release — GitHub counts each file download,
+# auto-updates included) and writes downloads.json (total) + downloads-windows/-macos/-linux.json to the
+# unprotected `stats` branch. The README badge
+# (shields.io endpoint) and the landing page (docs/index.html) read that file — no PRs, no own service.
+
+on:
+    schedule:
+        - cron: '0 */6 * * *'
+    release:
+        types: [published]
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+concurrency:
+    group: download-count
+    cancel-in-progress: false
+
+jobs:
+    count:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Count installer downloads
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  # name<TAB>count of every installer file of every release
+                  gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" \
+                    --jq '.[].assets[] | select(.name | test("\\.(exe|dmg|AppImage)$")) | "\(.name)\t\(.download_count)"' > assets.tsv
+                  mkdir -p out
+                  badge() { # file label total
+                    local n; n=$(echo "$3" | perl -pe '1 while s/^(\d+)(\d{3})/$1,$2/')
+                    printf '{"schemaVersion":1,"label":"%s","message":"%s","color":"2ea44f"}\n' "$2" "$n" > "out/$1"
+                    echo "$2: $3"
+                  }
+                  sum() { awk -F'\t' -v re="$1" '$1 ~ re { s += $2 } END { print s + 0 }' assets.tsv; }
+                  badge downloads.json downloads "$(sum '\\.(exe|dmg|AppImage)$')"
+                  badge downloads-windows.json Windows "$(sum '\\.exe$')"
+                  badge downloads-macos.json macOS "$(sum '\\.dmg$')"
+                  badge downloads-linux.json Linux "$(sum '\\.AppImage$')"
+
+            - name: Publish to the stats branch
+              run: |
+                  git init -q stats && cd stats
+                  git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+                  git fetch -q --depth 1 origin stats && git checkout -q stats || git checkout -q --orphan stats
+                  cp ../out/*.json .
+                  git add *.json
+                  git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                    commit -q -m "Download count" || { echo "No change"; exit 0; }
+                  git push -q origin stats

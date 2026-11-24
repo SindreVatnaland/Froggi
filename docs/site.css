@@ -1,0 +1,111 @@
+/* Shared by docs/index.html and the generated docs/features/*.html (scripts/site/generateSite.ts). */
+@font-face { font-family: 'Cookie'; src: url('Cookie-Regular.woff2') format('woff2'); font-display: swap; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Froggi's own colours (app.css): cream + maroon, dark mode grey */
+:root {
+  --primary: #fbf0e5;
+  --secondary: #450d21;
+  --success: #22c55e;
+  --soft: color-mix(in srgb, var(--secondary) 8%, transparent);
+  --line: color-mix(in srgb, var(--secondary) 22%, transparent);
+  --muted: color-mix(in srgb, var(--secondary) 65%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --primary: #1a1a1a; --secondary: #d1d1d1; --success: #16a34a; }
+}
+
+body {
+  background: var(--primary);
+  color: var(--secondary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.55;
+  display: flex; flex-direction: column; align-items: center;
+}
+a { color: inherit; }
+main { width: 100%; max-width: 920px; padding: 0 1.25rem 3rem; display: flex; flex-direction: column; gap: 2.75rem; }
+
+header { text-align: center; padding: 3.5rem 1rem 0.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.app-icon { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 6px 24px rgba(0,0,0,0.15); }
+h1 { font-size: 2.8rem; font-weight: 800; font-style: italic; letter-spacing: -0.02em; }
+.tagline { max-width: 560px; font-size: 1.05rem; color: var(--muted); }
+
+.card { border: 1px solid var(--line); border-radius: 0.6rem; padding: 1.25rem; background: var(--soft); }
+.label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 0.6rem; }
+
+.download { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.dl-name { font-size: 1.15rem; font-weight: 700; }
+.dl-sub { font-size: 0.8rem; opacity: 0.6; word-break: break-all; }
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 700;
+  border-radius: 0.4rem; padding: 0.7rem 1.4rem; background: var(--secondary); color: var(--primary);
+  transition: transform 0.12s, opacity 0.12s;
+}
+.btn:hover { transform: translateY(-1px); opacity: 0.92; }
+.alts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; font-size: 0.85rem; }
+.alt { border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.85rem; text-decoration: none; opacity: 0.75; }
+.alt:hover { opacity: 1; background: var(--soft); }
+.dl-count { margin-top: 0.9rem; font-size: 0.8rem; opacity: 0.55; text-align: center; }
+
+section h2 { font-size: 1.35rem; font-weight: 800; font-style: italic; margin-bottom: 0.25rem; }
+section > p { color: var(--muted); margin-bottom: 1rem; font-size: 0.95rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.feat { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.95rem 1rem; }
+.feat b { display: block; margin-bottom: 0.25rem; }
+.feat span { font-size: 0.88rem; color: var(--muted); }
+
+.support { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: center; }
+/* Buy Me a Coffee — official yellow + cup + Cookie wordmark */
+.bmc {
+  display: inline-flex; align-items: center; gap: 0.55rem; text-decoration: none;
+  background: #FFDD00; color: #000; border-radius: 0.6rem; padding: 0.45rem 1.2rem 0.45rem 0.9rem;
+  font-family: 'Cookie', cursive; font-size: 1.65rem; line-height: 1; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  transition: transform 0.12s;
+}
+.bmc:hover { transform: translateY(-1px); }
+.bmc img { height: 1.6rem; }
+.link { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.6rem 1.1rem; text-decoration: none; font-weight: 600; }
+.link:hover { background: var(--soft); }
+
+footer { padding: 1.5rem; font-size: 0.8rem; opacity: 0.55; text-align: center; }
+
+/* Feature cards link to their page */
+a.feat { display: block; text-decoration: none; transition: background 0.12s, transform 0.12s; }
+a.feat:hover { background: var(--soft); transform: translateY(-1px); }
+a.feat b::after { content: ' →'; opacity: 0.4; }
+
+/* Feature pages (docs/features/*.html) */
+.topbar { width: 100%; max-width: 920px; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; }
+.topbar a { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 800; font-style: italic; }
+.topbar img { width: 28px; height: 28px; border-radius: 7px; }
+.btn.small { padding: 0.4rem 0.9rem; font-size: 0.85rem; font-style: normal; }
+main.feature { gap: 2rem; }
+.feature-head { text-align: left; padding: 1rem 0 0; align-items: flex-start; }
+.feature-head h1 { font-size: 2.2rem; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1rem; }
+.shots figure, .prose figure { border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; background: var(--soft); }
+.shots img, .prose img, .prose video { display: block; width: 100%; height: auto; }
+figcaption { font-size: 0.82rem; color: var(--muted); padding: 0.5rem 0.75rem; }
+.prose { display: flex; flex-direction: column; gap: 0.75rem; }
+.prose h2 { font-size: 1.3rem; font-weight: 800; font-style: italic; }
+.prose h3 { font-size: 1.05rem; font-weight: 700; margin-top: 0.4rem; }
+.prose .lead { color: var(--muted); }
+.prose ul, .prose ol { padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.prose code { font-size: 0.85em; background: var(--soft); border: 1px solid var(--line); border-radius: 0.25rem; padding: 0 0.3rem; word-break: break-word; }
+.prose figure { max-width: 640px; width: fit-content; }
+.prose figure img { width: auto; max-width: 100%; max-height: 560px; margin: 0 auto; }
+.note { border-left: 3px solid var(--line); padding: 0.4rem 0.8rem; background: var(--soft); border-radius: 0 0.4rem 0.4rem 0; font-size: 0.92rem; }
+.pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; border-top: 1px solid var(--line); padding-top: 1.25rem; font-size: 0.9rem; }
+.pager a { text-decoration: none; opacity: 0.8; }
+.pager a:hover { opacity: 1; text-decoration: underline; }
+details.setup { border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.9rem 1.1rem; }
+details.setup > summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
+details.setup > summary::-webkit-details-marker { display: none; }
+details.setup > summary::before { content: '▸'; transition: transform 0.15s; }
+details.setup[open] > summary::before { transform: rotate(90deg); }
+details.setup[open] > summary { margin-bottom: 1rem; }
+details.setup .prose + .prose { margin-top: 1.5rem; }
+/* The first screenshot is the page's hero; phone screenshots stay phone-sized. */
+.shots figure.hero { grid-column: 1 / -1; }
+.shots figure.phone { max-width: 300px; justify-self: center; }
+@media (max-width: 520px) { .shots { grid-template-columns: 1fr; } }

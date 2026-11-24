@@ -82,7 +82,11 @@ function setLoggingPath(log: ElectronLog, appName: string, dev: boolean): Electr
 
 try {
 	const dev = !app.isPackaged;
-	const appName = dev ? "Electron" : "froggi";
+	// Dev only: FROGGI_PROFILE=<name> runs on its own, fresh data folder (settings, database, logs) — the site
+	// screenshots (scripts/site/screenshots.mjs) use FROGGI_PROFILE=site so no personal setup can show up.
+	const profile = dev ? (process.env.FROGGI_PROFILE ?? '').replace(/[^a-z0-9-]/gi, '') : '';
+	const appName = dev ? (profile ? `Electron-${profile}` : "Electron") : "froggi";
+	if (profile) app.setPath('userData', getAppDataPath(appName));
 	mainLog = setLoggingPath(log, appName, dev);
 	mainLog.info('Starting app');
 	handleMultipleInstances();
@@ -351,7 +355,7 @@ try {
 			container.register<ElectronLog>('ElectronLog', { useValue: mainLog });
 
 			container.register<string>('AppDir', {
-				useValue: dev ? getAppDataPath('Electron') : getAppDataPath('froggi'),
+				useValue: getAppDataPath(appName),
 			});
 			container.register<Electron.App>('App', { useValue: app });
 			container.register<BrowserWindow>('BrowserWindow', { useValue: mainWindow });

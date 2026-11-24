@@ -29,6 +29,7 @@
 	"include": [
 		".",
 		"../test",
+		"../scripts/site",
 		"../frontend/src/lib/utils/gamePredicates.ts",
 		"../demo-overlays",
 		"../public",

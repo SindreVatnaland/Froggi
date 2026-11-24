@@ -10,6 +10,13 @@ https://buymeacoffee.com/sindrevatnw
 
 Latest version can be downloaded [here](https://github.com/SindreVatnaland/Froggi/releases/latest)
 
+[![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FSindreVatnaland%2FFroggi%2Fstats%2Fdownloads.json)](https://github.com/SindreVatnaland/Froggi/releases)
+[![Windows](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FSindreVatnaland%2FFroggi%2Fstats%2Fdownloads-windows.json&logo=windows)](https://github.com/SindreVatnaland/Froggi/releases)
+[![macOS](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FSindreVatnaland%2FFroggi%2Fstats%2Fdownloads-macos.json&logo=apple)](https://github.com/SindreVatnaland/Froggi/releases)
+[![Linux](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FSindreVatnaland%2FFroggi%2Fstats%2Fdownloads-linux.json&logo=linux)](https://github.com/SindreVatnaland/Froggi/releases)
+
+<sub>Installer downloads (.exe, .dmg, .AppImage) of every release, auto-updates included — refreshed every 6 hours.</sub>
+
 ## Discord
 
 Got any questions or feedback. Maybe want to contribute? Join our [Discord](https://discord.gg/rX7aQmbrEa)

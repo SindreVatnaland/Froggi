@@ -84,6 +84,25 @@ export const automationTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'highlights',
+		title: 'Highlights: the best moments on stream',
+		category: 'automation',
+		summary: 'Froggi picks the best moments of each game, set and day by itself and plays them on stream — as video clips from OBS, or redrawn from the Slippi replay without OBS.',
+		blocks: [
+			{
+				type: 'list',
+				text: 'How it works:',
+				items: [
+					'The "Highlights" flow (Stream → Automation → Flows; off until you turn it on) scores every punish and combo: kills count most, plus damage, speed, how much it swung the win chance and doubles multi-kills. Long chases lose points, and moments against CPUs or idle opponents are skipped.',
+					'Video: OBS\'s replay buffer saves the moment, and a Media element plays the clips — this game\'s best 5, the set\'s best 15, or the day\'s best.',
+					'No OBS needed: a Highlight Replay element redraws the same moments from the replay file.',
+					'The demo overlay "Highlights" shows both. Every rule is a card in the flow — change what counts as a highlight, or ask the AI assistant to.',
+					'Froggi never deletes your replay or video files.',
+				],
+			},
+		],
+	},
+	{
 		id: 'automation-flows',
 		title: 'Flows: WHEN → AND → THEN automation',
 		category: 'automation',

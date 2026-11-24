@@ -92,6 +92,9 @@ export const POST_BODIES: { value: string; label: string }[] = [
 ];
 
 const who = (p?: string) => (p === 'current' ? 'You' : p === 'p1' ? 'Player 1' : p === 'p2' ? 'Player 2' : 'Any player');
+/** "You lose" / "Player 1 loses", "Your stocks" / "Player 1 stocks". */
+const does = (p: string | undefined, you: string, other: string) => `${who(p)} ${p === 'current' ? you : other}`;
+const whose = (p?: string) => (p === 'current' ? 'Your' : who(p));
 
 /** One-line summary shown on a node. */
 export function describe(node: FlowNode): string {
@@ -102,8 +105,8 @@ export function describe(node: FlowNode): string {
 		case 'controllerCombo': return `Hold ${BUTTONS.filter((b) => (d.buttons as Record<string, boolean>)?.[b.key]).map((b) => b.label).join(' + ') || '…'}`;
 		case 'gameStart': return 'Game starts';
 		case 'gameEnd': return 'Game ends';
-		case 'damageTaken': return `${who(d.player as string)} takes ≥ ${d.minDamage ?? 0}% damage`;
-		case 'stockLost': return `${who(d.player as string)} loses a stock`;
+		case 'damageTaken': return `${does(d.player as string, 'take', 'takes')} ≥ ${d.minDamage ?? 0}% damage`;
+		case 'stockLost': return `${does(d.player as string, 'lose', 'loses')} a stock`;
 		case 'rankChange': return 'Rank changes';
 		case 'setStart': return 'A set starts';
 		case 'obsReplaySaved': return 'OBS saved a replay';
@@ -111,7 +114,7 @@ export function describe(node: FlowNode): string {
 		case 'setVideoVolume': return `Media "${d.key || 'game'}" volume ${d.volume ?? 0}`;
 		case 'calculate': return `${d.key || '…'} = ${d.formula || '…'}`;
 		case 'clearValues': return `Clear ${d.keys || '…'}`;
-		case 'sequence': return `${who(d.player as string)} ${d.kind === 'combo' ? 'combo' : 'punish'} ends`;
+		case 'sequence': return `${whose(d.player as string)} ${d.kind === 'combo' ? 'combo' : 'punish'} ends`;
 		case 'list': {
 			const fields = ((d.fields as { name: string; value: string }[] | undefined) ?? []).filter((f) => f.name).map((f) => `${f.name}: ${f.value}`).join(', ');
 			const what =
@@ -137,8 +140,8 @@ export function describe(node: FlowNode): string {
 		case 'notify': return `Notify: ${d.message || '…'}`;
 		case 'log': return `Log: ${d.message || '…'}`;
 		case 'scene': return `Scene is ${SCENE_LABEL[d.scene as LiveStatsScene] ?? d.scene}`;
-		case 'playerStocks': return `${who(d.player as string)} stocks ${d.compare} ${d.value}`;
-		case 'playerPercent': return `${who(d.player as string)} percent ${d.compare} ${d.value}`;
+		case 'playerStocks': return `${whose(d.player as string)} stocks ${d.compare} ${d.value}`;
+		case 'playerPercent': return `${whose(d.player as string)} percent ${d.compare} ${d.value}`;
 		case 'strikePhase': return `Striking phase is ${d.phase}`;
 		case 'obsScene': return node.kind === 'condition' ? `OBS scene is "${d.sceneName || '…'}"` : `Switch to "${d.sceneName || '…'}"`;
 		case 'obsReplayBuffer': return `Replay buffer is ${d.active ? 'on' : 'off'}`;

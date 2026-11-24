@@ -46,6 +46,12 @@ npm run build
 
 # Run tests (compiles electron first, copies sample games, runs jest)
 npm run test
+
+# GitHub Pages feature pages (docs/features) — also part of every compile
+npm run site
+
+# Fresh site screenshots — before each release, with Froggi closed (starts its own clean profile)
+npm run site:shots
 ```
 
 Tests live in `test/unit/` but run from `build_electron/test/` after compilation. Jest matches `build_electron/test/**/*.test.js`.
@@ -111,7 +117,9 @@ Remote clients connect via WS upgrade on port 3200 (not port 3100). Tailscale Fu
 
 ### Landing page
 
-`docs/index.html` (GitHub Pages, https://sindrevatnaland.github.io/Froggi/): download button for the visitor's OS (newest stable — non-beta — release with a file for it, via the GitHub API; betas under All releases), short feature cards, Buy Me a Coffee + GitHub + Discord. Keep the cards to one short line each. `docs/join.html` = the invite bounce page.
+`docs/index.html` (GitHub Pages, https://sindrevatnaland.github.io/Froggi/): download button for the visitor's OS (newest stable — non-beta — release with a file for it, via the GitHub API; betas under All releases), short feature cards, Buy Me a Coffee + GitHub + Discord. Keep the cards to one short line each. `docs/join.html` = the invite bounce page. Download counter: `.github/workflows/download-count.yml` (every 6 h, on release published, manual) adds up the .exe + .dmg + .AppImage downloads of every release (GitHub's per-file counts — auto-updates included) into shields endpoint files `downloads.json` + `downloads-windows/-macos/-linux.json` on the unprotected `stats` branch (main needs reviewed PRs, the bot can't push there); the README badges (img.shields.io/endpoint) and the landing page's `#dl-count` line read them from raw.githubusercontent.com.
+
+**Feature pages (GitHub Pages sub-pages):** every landing-page card links to `docs/features/<id>.html`, generated on every compile (`copy` → `npm run site` → `scripts/site/generateSite.ts`) from `frontend/src/lib/content/site.ts` (user decisions: one page per card; show what's possible, don't overwhelm). Per feature: `card` (the landing-page line — the cards between the `features:start/end` markers in docs/index.html are generated too), `shots`, `intro` (shown: a tutorial's first page / topic title + summary only) and `setup` (folded under "How to set it up": full tutorial pages / topics). Text + pictures are reused from the app's tutorials and explainer topics, so the pages follow the app; pictures are copied from frontend/static into `docs/image/` (exactly the ones used); shared CSS `docs/site.css`. `shots` = fresh screenshots by `npm run site:shots` (`scripts/site/screenshots.mjs`, **before each release**, Froggi closed): it resets and starts the dev app on its own clean profile (`FROGGI_PROFILE=site` → data folder `Electron-site`, dev only — so no personal setup like a stream channel can appear), turns MCP read on in that profile, takes overlay shots with `capture_overlay_screenshot` (newest replay moments) and page shots over CDP (:9222; `click` {text, near} / `scrollTo`), writes `frontend/static/image/site/<feature>/<shot>.png`, closes it. `test/unit/site.test.ts`: every source exists, every shot was taken, pages + cards generated.
 
 ### Frontend styling conventions
 
