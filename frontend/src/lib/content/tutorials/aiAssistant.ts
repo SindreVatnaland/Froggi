@@ -10,17 +10,17 @@ export const aiAssistantTutorial: Tutorial = {
 		{
 			title: 'What it does',
 			blocks: [
-				{ type: 'text', text: 'Connect an AI app — like **Claude** — to Froggi and it can see your running app: overlays, OBS, flows, logs, and these tutorials. Then just ask, in plain words:' },
-				{ type: 'list', items: ['*"Build me an Ultimate-style HUD for a 4:3 game window."*', '*"Why isn\'t my overlay showing up in OBS?"*', '*"Make a flow that flashes my lights when I lose my last stock."*', '*"How do I run a doubles set with stage striking?"*', '*"Froggi crashed yesterday — what happened?"*'] },
-				{ type: 'text', text: 'It explains first and only changes things when you ask. It talks to Froggi on **your computer** — nothing is opened to the internet. What you type goes to your AI app\'s provider, like any chat.' },
+				{ type: 'text', text: 'Connect an AI app like **Claude** to Froggi and it sees your running app: overlays, OBS, flows and logs. Then ask in plain words:' },
+				{ type: 'list', items: ['*"Build me an Ultimate-style HUD for a 4:3 game window."*', '*"Make a flow that flashes my lights when I lose my last stock."*', '*"Set up stage striking for a doubles set."*', '*"Add my overlay to OBS."*'] },
+				{ type: 'text', text: 'It explains first and changes things when you ask.' },
 			],
 		},
 		{
 			title: 'Turn it on',
 			blocks: [
 				{ type: 'text', text: 'Go to **Settings** → **AI Assistant (MCP)**:' },
-				{ type: 'list', items: ['**Read & explain** — status, logs, settings and how-tos. Start here.', '**Allow edits** — it can also build and change overlays, flows and OBS automation.'] },
-				{ type: 'note', text: 'Switch either off any time — it takes effect on the assistant\'s next step.' },
+				{ type: 'list', items: ['**Read & explain**: status, logs, settings and how-tos. Start here.', '**Allow edits**: it can also build and change overlays, flows and OBS automation.'] },
+				{ type: 'note', text: 'Switch either off any time; it takes effect on the assistant\'s next step. Froggi stays on your computer; what you type goes to your AI app\'s provider, like any chat.' },
 			],
 		},
 		{

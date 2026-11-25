@@ -10,9 +10,9 @@ export const buildOverlayTutorial: Tutorial = {
 		{
 			title: 'What you can build',
 			blocks: [
-				{ type: 'text', text: 'An overlay is a transparent layer on top of your stream (or injected straight into the game window). It reads the game live: **percent, stocks, characters, timer, tags, set score, ranks, combos, controller inputs** and more.' },
+				{ type: 'text', text: 'An overlay is a layer on top of your stream or right on the game window. It reads the game live: **percent, stocks, characters, timer, tags, set score, ranks, combos, controller inputs** and more.' },
 				{ type: 'video', src: '/image/tutorial/new-overlay/preview-embed-demo-overlay.mp4', caption: 'A Froggi overlay reacting to a live game.' },
-				{ type: 'list', items: ['**A custom HUD** — replace Melee\'s own HUD with your own design', '**Stats around the game** — names, score, ranks next to a 4:3 game', '**Between games** — session stats in the menu, post-game and post-set stats', '**Stage striking** — which stages are struck and whose turn it is', '**Doubles** — team names, team stocks and all four players'] },
+				{ type: 'list', items: ['**A custom HUD** in your own design', '**Stats around the game**: names, score and ranks next to a 4:3 game', '**Between games**: session, post-game and post-set stats', '**Stage striking**: which stages are left and whose turn it is', '**Doubles**: team names, team stocks and all four players'] },
 			],
 		},
 		{

@@ -22,6 +22,29 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 // App links (/settings#…) don't exist on the site — keep the words, drop the link.
 const inline = (s: string) => formatInline(s).replace(/<a class="t-link" href="\/[^"]*">([^<]*)<\/a>/g, '<b>$1</b>');
 
+/** Width / height of a PNG or JPEG in frontend/static (header only), or null for anything else. */
+function imageSize(src: string): { w: number; h: number } | null {
+	const file = path.join(STATIC, src);
+	if (!fs.existsSync(file)) return null;
+	const b = fs.readFileSync(file);
+	if (b.readUInt32BE(0) === 0x89504e47) return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+	if (b[0] === 0xff && b[1] === 0xd8) {
+		for (let i = 2; i < b.length - 9; ) {
+			if (b[i] !== 0xff) { i++; continue; }
+			const marker = b[i + 1];
+			const len = b.readUInt16BE(i + 2);
+			if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7) };
+			i += 2 + len;
+		}
+	}
+	return null;
+}
+/** Phone-shaped and square pictures sit beside the text instead of under it (user: no tall white space). */
+export const isPortrait = (src: string) => {
+	const size = imageSize(src);
+	return !!size && size.h >= size.w * 0.9;
+};
+
 const images = new Set<string>();
 /** A picture from frontend/static, copied to docs/ under the same path; returns its URL from a feature page. */
 const picture = (src: string) => {
@@ -45,14 +68,14 @@ function tutorialBlock(b: TutorialBlock): string {
 }
 
 /**
- * The HTML of one source: a topic's title + summary, or whole tutorial pages (text + pictures). Throws on an unknown
+ * The HTML of one source: a topic's summary, or whole tutorial pages (text + pictures). Throws on an unknown
  * topic / tutorial / page (the test reports it).
  */
 export function renderSource(source: SiteSource): string {
 	if ('topic' in source) {
 		const topic = ALL_TOPICS.find((t) => t.id === source.topic);
 		if (!topic) throw new Error(`site: unknown topic "${source.topic}"`);
-		return `<section class="prose"><h2>${esc(topic.title)}</h2><p class="lead">${inline(topic.summary)}</p></section>`;
+		return `<section class="prose"><p class="lead">${inline(topic.summary)}</p></section>`;
 	}
 	const tutorial = TUTORIALS.find((t) => t.id === source.tutorial);
 	if (!tutorial) throw new Error(`site: unknown tutorial "${source.tutorial}"`);
@@ -63,7 +86,14 @@ export function renderSource(source: SiteSource): string {
 			return page;
 		})
 		: tutorial.pages;
-	return pages.map((p) => `<section class="prose"><h2>${esc(p.title)}</h2>${p.blocks.map(tutorialBlock).join('\n')}</section>`).join('\n');
+	return pages.map((p) => {
+		const side = p.blocks.filter((b) => b.type === 'image' && isPortrait(b.src));
+		const main = p.blocks.filter((b) => !side.includes(b));
+		const body = main.map(tutorialBlock).join('\n');
+		return side.length
+			? `<section class="prose split"><div class="split-main"><h2>${esc(p.title)}</h2>${body}</div><div class="split-side">${side.map(tutorialBlock).join('')}</div></section>`
+			: `<section class="prose"><h2>${esc(p.title)}</h2>${body}</section>`;
+	}).join('\n');
 }
 
 const head = (title: string, description: string, css: string) => `<!DOCTYPE html>
@@ -81,7 +111,7 @@ const head = (title: string, description: string, css: string) => `<!DOCTYPE htm
 
 /** The live viewer: the app's ReplayDemo (SlippiLab port) playing the sample clip — docs/viewer, npm run site:viewer. */
 const liveViewer = () => `<figure class="hero viewer-figure"><div class="viewer" data-froggi-viewer></div>
-  <figcaption>A sample game, drawn live in your browser — what friends see when you share the link. Viewer based on <a href="https://github.com/frankborden/slippilab">SlippiLab</a> (<a href="../licenses/slippilab.txt">MIT license</a>).</figcaption></figure>
+  <figcaption>A sample game drawn live in your browser, just like friends see it when you share the link. Viewer based on <a href="https://github.com/frankborden/slippilab">SlippiLab</a> (<a href="../licenses/slippilab.txt">MIT license</a>).</figcaption></figure>
   <link rel="stylesheet" href="../viewer/style.css" />
   <script type="module" src="../viewer/viewer.js"></script>`;
 
@@ -99,11 +129,8 @@ function discordCards(): string {
 	return `<figure class="hero discord-figure"><div class="dc-cards">
     ${card(activity(stage, rank, ['Ranked - In Game', 'FROG#123 (1 - 0) TOAD#456'], '<span class="dc-time">07:42 left</span>', ['FROG - Falco - 3 - 42%', 'TOAD - Marth - 2 - 87%']))}
     ${card(activity('../icon.png', null, ['Bingo · Lobby', 'Waiting for opponent… (1 of 2)'], '', ['Join']))}
-  </div><figcaption>Simulated: what friends see on your Discord profile — in a game, and while you host a minigame lobby.</figcaption></figure>`;
+  </div><figcaption>Simulated: what friends see on your Discord profile in a game and while you host a minigame lobby.</figcaption></figure>`;
 }
-
-/** Every page ends with a download button — setup steps live in the app (tutorials + the AI assistant). */
-const cta = `<section class="cta"><a class="btn" href="../index.html#download">⬇ Get Froggi</a><p>Free and open source — Windows, macOS and Linux. Step-by-step guides are built into the app, or ask the AI assistant.</p></section>`;
 
 function featurePage(feature: SiteFeature): string {
 	const all = SITE_FEATURES;
@@ -111,12 +138,15 @@ function featurePage(feature: SiteFeature): string {
 	const prev = all[(i - 1 + all.length) % all.length];
 	const next = all[(i + 1) % all.length];
 	const shots = feature.shots.filter((s) => fs.existsSync(path.join(STATIC, siteShotSrc(feature, s))));
+	const phoneOnly = shots.length > 0 && shots.every((s) => 'page' in s && s.page.mobile);
+	const intro = feature.intro.map(renderSource).join('\n');
+	const hero = (i: number) => (feature.shotLayout === 'grid' ? '' : i === 0 ? 'hero' : '');
 	const gallery = shots.length
-		? `<div class="shots">${shots.map((s, i) => `<figure class="${'page' in s && s.page.mobile ? 'phone' : i === 0 ? 'hero' : ''}"><a href="${picture(siteShotSrc(feature, s))}"><img src="${picture(siteShotSrc(feature, s))}" alt="${esc(s.caption)}" loading="lazy" /></a><figcaption>${inline(s.caption)}</figcaption></figure>`).join('')}</div>`
+		? `<div class="shots">${shots.map((s, i) => `<figure class="${'page' in s && s.page.mobile ? 'phone' : hero(i)}"><a href="${picture(siteShotSrc(feature, s))}"><img src="${picture(siteShotSrc(feature, s))}" alt="${esc(s.caption)}" loading="lazy" /></a><figcaption>${inline(s.caption)}</figcaption></figure>`).join('')}</div>`
 		: '';
-	return `${head(`${feature.title} — Froggi`, feature.card, '../site.css')}
+	return `${head(`${feature.title} · Froggi`, feature.card, '../site.css')}
 <body>
-<!-- Generated by scripts/site/generateSite.ts from frontend/src/lib/content/site.ts — edit those, not this file. -->
+<!-- Generated by scripts/site/generateSite.ts from frontend/src/lib/content/site.ts. Edit those, not this file. -->
 <nav class="topbar"><a href="../index.html"><img src="../icon.png" alt="" /> Froggi</a><a class="btn small" href="../index.html#download">⬇ Download</a></nav>
 <main class="feature">
   <header class="feature-head">
@@ -124,9 +154,7 @@ function featurePage(feature: SiteFeature): string {
     <p class="tagline">${inline(feature.card)}</p>
   </header>
   ${feature.embed === 'liveViewer' ? liveViewer() : feature.embed === 'discordCards' ? discordCards() : ''}
-  ${gallery}
-  ${feature.intro.map(renderSource).join('\n')}
-  ${cta}
+  ${phoneOnly ? `<div class="split"><div class="split-main">${intro}</div><div class="split-side">${gallery}</div></div>` : `${gallery}\n  ${intro}`}
   <nav class="pager"><a href="${prev.id}.html">← ${esc(prev.title)}</a><a href="../index.html">All features</a><a href="${next.id}.html">${esc(next.title)} →</a></nav>
 </main>
 <footer>Not affiliated with Nintendo or Project Slippi</footer>

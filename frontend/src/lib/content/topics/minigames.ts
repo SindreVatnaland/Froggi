@@ -3,9 +3,9 @@ import type { ContentTopic } from '../types';
 export const minigamesTopics: ContentTopic[] = [
 	{
 		id: 'bingo-rules',
-		title: 'Bingo — how it works',
+		title: 'How Bingo works',
 		category: 'minigames',
-		summary: 'A grid of Melee-related challenges (win with a character, land a specific move, etc.) — complete a full line to win, like classic bingo. Board size, difficulty, and win condition are all configurable.',
+		summary: 'Bingo: complete Melee challenges on a board and be the first to finish a line. You pick the board size, difficulty and win condition.',
 		blocks: [
 			{
 				type: 'paragraph',
@@ -26,9 +26,9 @@ export const minigamesTopics: ContentTopic[] = [
 	},
 	{
 		id: 'ironman-rules',
-		title: 'Iron Man — how it works',
+		title: 'How Iron Man works',
 		category: 'minigames',
-		summary: 'Play through a character roster — win with one, move to the next; lose, and it\'s eliminated. Race to clear the whole roster (or survive longest).',
+		summary: 'Iron Man: play through a roster of characters one win at a time, on your own or racing a friend.',
 		blocks: [
 			{
 				type: 'paragraph',

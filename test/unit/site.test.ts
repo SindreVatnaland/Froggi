@@ -24,6 +24,13 @@ describe('site feature pages', () => {
 		expect(fs.readFileSync(path.join(ROOT, 'docs/licenses/slippilab.txt'), 'utf8')).toMatch(/MIT License[\s\S]*Frank Borden/);
 	});
 
+	it('site copy has no long dashes (user rule: short sentences, no dashes)', () => {
+		const visible = (html: string) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ');
+		const files = ['docs/index.html', ...fs.readdirSync(path.join(ROOT, 'docs/features')).map((f) => `docs/features/${f}`)];
+		const dashes = files.filter((f) => /[\u2013\u2014]/.test(visible(fs.readFileSync(path.join(ROOT, f), 'utf8'))));
+		expect(dashes).toEqual([]);
+	});
+
 	it('the pages and the landing-page cards are generated', () => {
 		const index = fs.readFileSync(path.join(ROOT, 'docs/index.html'), 'utf8');
 		for (const f of SITE_FEATURES) {

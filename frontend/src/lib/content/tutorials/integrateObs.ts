@@ -11,7 +11,7 @@ export const integrateObsTutorial: Tutorial = {
 			title: 'What it gives you',
 			blocks: [
 				{ type: 'text', text: 'With OBS connected, Froggi and OBS work as one:' },
-				{ type: 'list', items: ['**Overlays in one click** — Froggi adds them to your OBS scene at the right size.', '**OBS reacts to the game** — switch to your game scene when a game starts, a camera scene when it ends.', '**Control OBS from the Dashboard** — scenes, sources, volume and the replay buffer, also from your phone.'] },
+				{ type: 'list', items: ['**Overlays in one click**: Froggi adds them to your OBS scene at the right size.', '**OBS follows the game**: your game scene when a game starts, a camera scene when it ends.', '**OBS on the Dashboard**: scenes, sources, volume and the replay buffer, also from your phone.'] },
 				{ type: 'image', src: '/image/tutorial/integrate-obs/obs-live-preview.png', caption: 'A Froggi overlay live in OBS.' },
 				{ type: 'image', src: '/image/tutorial/obs/stream-hub.jpg', caption: 'Stream: everything for your stream in one place.' },
 			],

@@ -96,6 +96,8 @@ await waitFor('The dev window', async () => {
 }, 240);
 await sleep(8000); // services resolve after dom-ready; demo overlays + default flows install on first start
 let win = await devWindow();
+// The app follows the computer's light / dark setting; the site and the tutorial pictures are light.
+await win.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
 // MCP read access in THIS profile only (the overlay shots use its screenshot tool).
 await win.send('Runtime.evaluate', { expression: `window.electron.send('message', JSON.stringify({ SetMcpReadEnabled: [true] }))` });
 await waitFor('The MCP server', () => up(MCP.replace('/froggi/mcp', '/')), 30);
@@ -118,14 +120,15 @@ for (const feature of SITE_FEATURES) {
 				await win.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: mobile ? 2 : 1, mobile });
 				await win.send('Page.navigate', { url: win.origin + route });
 				await sleep(waitMs);
-				const { click, scrollTo } = shot.page;
+				const { clicks = [], scrollTo } = shot.page;
 				const find = (text, selector) => `[...document.querySelectorAll(${JSON.stringify(selector)})].find((e) => e.textContent.trim() === ${JSON.stringify(text)})`;
-				if (click) {
-					// The button with this text — with `near`, the one in the smallest block that shows that text and holds
-					// no other button with this label (its own row).
+				for (const click of clicks) {
+					// The button with this text (`partial`: starting with it). With `near`: the one in the smallest block that
+					// shows that text and holds no other button with this label (its own row).
 					const pick = `(() => {
-						const label = ${JSON.stringify(click.text)}, near = ${JSON.stringify(click.near ?? null)};
-						const same = (root) => [...root.querySelectorAll('button')].filter((b) => b.textContent.trim() === label);
+						const label = ${JSON.stringify(click.text)}, near = ${JSON.stringify(click.near ?? null)}, partial = ${!!click.partial};
+						const matches = (b) => (partial ? b.textContent.trim().startsWith(label) : b.textContent.trim() === label);
+						const same = (root) => [...root.querySelectorAll('button')].filter(matches);
 						return same(document).find((b) => {
 							if (!near) return true;
 							let e = b;
@@ -137,11 +140,16 @@ for (const feature of SITE_FEATURES) {
 					if (!result?.value) throw new Error(`no button "${click.text}"${click.near ? ` near "${click.near}"` : ''}`);
 					await sleep(3000);
 				}
+				if (shot.page.then) {
+					await win.send('Page.navigate', { url: win.origin + shot.page.then });
+					await sleep(waitMs + 1500);
+				}
 				if (scrollTo) {
 					await win.send('Runtime.evaluate', { expression: `${find(scrollTo, 'h1,h2,h3,p,span,label')}?.scrollIntoView({ block: 'start' })` });
 					await sleep(800);
 				}
-				const { data } = await win.send('Page.captureScreenshot', { format: 'png' });
+				const clip = shot.page.clipHeight ? { x: 0, y: 0, width, height: shot.page.clipHeight, scale: 1 } : undefined;
+				const { data } = await win.send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip } : {}) });
 				save(feature, shot, data);
 			}
 		} catch (e) {

@@ -14,6 +14,22 @@ export const remoteAccessTopics: ContentTopic[] = [
 		],
 	},
 	{
+		id: 'remote-tournament-control',
+		title: 'Remote tournament control',
+		category: 'remote-access',
+		summary: 'Start sets, act for a player, fix the score and switch OBS scenes from your phone. Players strike on their own phones.',
+		blocks: [
+			{
+				type: 'list',
+				items: [
+					'Open the Tournament Dashboard on your phone: the phone icon in Froggi\'s sidebar shows a QR code. Local works on the venue Wi-Fi, Remote works from anywhere (Tailscale, Settings → Remote Access).',
+					'Controlling Froggi needs the host password (Settings → Authorization on the host PC); the phone asks for it the first time.',
+					'Players only need their own striking link from the Dashboard, no password.',
+				],
+			},
+		],
+	},
+	{
 		id: 'host-password',
 		title: 'Host password: controlling Froggi from another device',
 		category: 'remote-access',

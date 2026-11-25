@@ -87,7 +87,7 @@ export const automationTopics: ContentTopic[] = [
 		id: 'highlights',
 		title: 'Highlights: the best moments on stream',
 		category: 'automation',
-		summary: 'Froggi picks the best moments of each game, set and day by itself and plays them on stream — as video clips from OBS, or redrawn from the Slippi replay without OBS.',
+		summary: 'Froggi picks the best moments of each game, set and day and plays them on stream, as video clips or redrawn from the replay.',
 		blocks: [
 			{
 				type: 'list',

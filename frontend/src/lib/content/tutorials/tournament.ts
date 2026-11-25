@@ -10,25 +10,25 @@ export const tournamentTutorial: Tutorial = {
 		{
 			title: 'Players strike on their phones',
 			blocks: [
-				{ type: 'text', text: 'Froggi runs your Melee sets by the tournament rules — **at a venue or online**. Each player (each team in doubles) opens a link on their phone and does everything there: **characters** (double blind in game 1), **rock-paper-scissors**, **striking** and **banning stages**, and **counterpicks** with DSR.' },
-				{ type: 'text', text: 'The phone shows whose turn it is and only lets a player act on their own turn, so the order always follows the rules — even with players in different cities.' },
+				{ type: 'text', text: 'Froggi runs your Melee sets by the tournament rules, **at a venue or online**. Setup takes seconds: each player **scans a QR code** and their phone is ready for striking.' },
+				{ type: 'text', text: 'On the phone they pick **characters**, play **rock-paper-scissors**, **strike** and **ban stages** and **counterpick**. It shows whose turn it is, so the order always follows the rules.' },
 				{ type: 'image', src: '/image/tutorial/tournament/phone-striking.jpg', caption: 'A player\'s phone during striking: struck stages crossed out, and how many they still strike.' },
 			],
 		},
 		{
 			title: 'Your stream follows along',
 			blocks: [
-				{ type: 'text', text: 'Viewers see the striking live: which stages are left, which are struck, and whose turn it is. When the game starts your overlay switches to the game, and when it ends **the result counts itself** — Froggi reads it from Slippi.' },
+				{ type: 'text', text: 'Viewers see the striking live: which stages are left and whose turn it is. When a game ends, **the result counts itself** from Slippi.' },
 				{ type: 'image', src: '/image/tutorial/tournament/overlay-striking.jpg', caption: 'The Stage Striking demo overlay on stream.' },
-				{ type: 'text', text: 'With OBS connected, OBS switches scenes on its own too: your striking scene between games, the game scene during a game, a camera scene after — see [Remote control OBS](/obs/tutorial/remote-obs).' },
+				{ type: 'text', text: 'With OBS connected, OBS switches scenes on its own too: striking between games, the game during a game, your camera after.' },
 			],
 		},
 		{
 			title: 'You stay in control',
 			blocks: [
-				{ type: 'text', text: 'The **Tournament Dashboard** shows the set as it happens. You can act for a player, undo a mistake, restart a step or pause the phones — and fix the score or load earlier games if something went wrong.' },
+				{ type: 'text', text: 'The **Tournament Dashboard** shows the set as it happens. Act for a player, undo, restart a step or pause the phones, and fix the score whenever you need to.' },
 				{ type: 'image', src: '/image/tutorial/tournament/dashboard-striking.jpg', caption: 'Stage striking on the Dashboard: click a stage to act for whoever\'s turn it is.' },
-				{ type: 'text', text: 'And it works from your phone: walk around the venue with the set, your OBS scenes, sources and volume in your hand.' },
+				{ type: 'text', text: 'It works from your phone too: walk around the venue with the set and your OBS scenes in your hand.' },
 				{ type: 'image', src: '/image/tutorial/tournament/phone-dashboard.jpg', caption: 'The Dashboard on a phone.' },
 			],
 		},

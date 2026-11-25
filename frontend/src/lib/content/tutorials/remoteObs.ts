@@ -10,10 +10,9 @@ export const remoteObsTutorial: Tutorial = {
 		{
 			title: 'What it gives you',
 			blocks: [
-				{ type: 'text', text: 'Run your stream without touching the keyboard during a match:' },
-				{ type: 'list', items: ['**Scene Commands** — OBS follows the game: your Game scene when a game starts, a big camera scene when it ends, the striking scene between games.', '**Controller Commands** — hold a combo on your controller to save a replay clip or toggle your camera.', '**The Dashboard on your phone** — switch scenes, show or hide sources, set volume and save replays from anywhere in the room.'] },
+				{ type: 'text', text: 'Run your stream from your controller or your phone:' },
+				{ type: 'list', items: ['**Scene Commands**: OBS follows the game, from your game scene to a big camera scene to striking.', '**Controller Commands**: hold a combo on your controller to save a replay or toggle your camera.', '**The Dashboard on your phone**: scenes, sources, volume and replays from anywhere in the room.'] },
 				{ type: 'image', src: '/image/tutorial/obs/automation.jpg', caption: 'Stream → Automation.' },
-				{ type: 'note', text: 'All of this needs OBS connected — see [Integrate with OBS](/obs/tutorial/integrate-obs).' },
 			],
 		},
 		{

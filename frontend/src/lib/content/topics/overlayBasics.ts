@@ -65,7 +65,7 @@ export const overlayBasicsTopics: ContentTopic[] = [
 		id: 'overlay-doubles',
 		title: 'Doubles overlays and live fight stats',
 		category: 'overlays',
-		summary: 'Every Player 1/2 element can show any of the four doubles players (Styling → Player); there are team elements, team conditions, and live fight stats for singles and doubles.',
+		summary: 'Every element works in doubles: show any of the four players, team names, team stocks and live fight stats.',
 		blocks: [
 			{
 				type: 'list',
@@ -138,6 +138,22 @@ export const overlayBasicsTopics: ContentTopic[] = [
 			{
 				type: 'paragraph',
 				text: 'Sharing: Export a pack from its page as a .froggi file and Import it on the Assets page. Exporting an overlay (.froggi) includes every custom pack it uses; importing restores them — an identical pack already on this computer is reused, a different one with the same id is added as a copy so your edits are never overwritten. Old .json overlay files still import.',
+			},
+		],
+	},
+	{
+		id: 'overlay-injection',
+		title: 'Overlays on the game window',
+		category: 'overlays',
+		summary: 'On Windows, Froggi draws your overlays right on the Dolphin game window. Turn on Inject on an overlay and it shows up in the game.',
+		blocks: [
+			{
+				type: 'list',
+				items: [
+					'Turn on Inject on an overlay\'s preview (Overlays) to add it to the game window. Settings → Overlay Injection → "Auto-inject on connect" brings your injected overlays back every time Dolphin connects.',
+					'The overlay follows the game window when it is resized or goes fullscreen.',
+					'This uses a Windows-only mechanism; on macOS and Linux, add the overlay to OBS as a browser source instead.',
+				],
 			},
 		],
 	},

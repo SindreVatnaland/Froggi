@@ -22,7 +22,7 @@ export const appTopics: ContentTopic[] = [
 		id: 'share-live-game',
 		title: 'Share your live game with friends',
 		category: 'app',
-		summary: 'Home → "Share live game": send friends a link and they watch your game live in their browser — nothing to install, no stream needed, read-only.',
+		summary: 'Send friends a link and they watch your game live in their browser while you play.',
 		blocks: [
 			{
 				type: 'list',
@@ -40,7 +40,7 @@ export const appTopics: ContentTopic[] = [
 		id: 'discord-rich-presence',
 		title: 'Discord Rich Presence',
 		category: 'app',
-		summary: 'While Froggi runs, your Discord profile shows what you are playing — the mode, the stage, both players with character, stocks and percent, the set score and your rank — and minigame lobbies get a Join button your friends can click.',
+		summary: 'Your Discord profile shows what you play: the mode, the stage, both players, the set score and your rank. Friends join your minigame lobby with one click.',
 		blocks: [
 			{
 				type: 'list',
@@ -158,7 +158,7 @@ export const appTopics: ContentTopic[] = [
 		id: 'troubleshooting-crash-reports',
 		title: 'Troubleshooting errors and sending crash reports',
 		category: 'app',
-		summary: 'Froggi logs every error. The AI assistant can read the last few sessions, tell whether a problem is fixable locally or a bug, and — only if you agree — send a crash report to the developer.',
+		summary: 'Your AI assistant reads Froggi\'s logs, tells you how to fix things and sends a crash report to the developer when you say so.',
 		blocks: [
 			{
 				type: 'paragraph',
